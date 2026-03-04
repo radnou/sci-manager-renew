@@ -1,0 +1,29 @@
+# Node and Python artifacts
+node_modules/
+frontend/node_modules/
+backend/__pycache__/
+*.pyc
+.env
+.env.*
+
+# Build outputs
+frontend/.svelte-kit/
+frontend/build/
+frontend/dist/
+
+# Coverage reports
+htmlcov/
+backend/htmlcov/
+frontend/coverage/
+
+# VS Code
+.vscode/
+
+# Docker
+docker-compose.override.yml
+
+# Supabase
+supabase/.cache/
+
+# Misc
+*.log
