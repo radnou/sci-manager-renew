@@ -1,37 +1,102 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { fetchBiens, createBien } from '$lib/api';
-  let biens = [];
-  let newAdresse = '';
-  let newVille = '';
+	import { onMount } from 'svelte';
+	import { createBien, fetchBiens, type Bien, type BienCreatePayload } from '$lib/api';
+	import BienForm from '$lib/components/BienForm.svelte';
+	import BienTable from '$lib/components/BienTable.svelte';
+	import KpiCard from '$lib/components/KPI-Card.svelte';
+	import { calculateBienMetrics } from '$lib/high-value/biens';
 
-  onMount(async () => {
-    biens = await fetchBiens();
-  });
+	let biens: Bien[] = [];
+	let loading = true;
+	let submitting = false;
+	let errorMessage = '';
 
-  async function addBien() {
-    const payload: any = { adresse: newAdresse };
-    if (newVille) payload.ville = newVille;
-    const created = await createBien(payload);
-    biens = [...biens, created];
-    newAdresse = '';
-    newVille = '';
-  }
+	$: metrics = calculateBienMetrics(biens);
+
+	onMount(loadBiens);
+
+	async function loadBiens() {
+		loading = true;
+		errorMessage = '';
+		try {
+			const data = await fetchBiens();
+			biens = Array.isArray(data) ? data : [];
+		} catch (error) {
+			errorMessage = toErrorMessage(error, 'Impossible de charger les biens.');
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function handleCreateBien(payload: BienCreatePayload): Promise<boolean> {
+		submitting = true;
+		errorMessage = '';
+
+		try {
+			const created = await createBien(payload);
+			biens = [created, ...biens];
+			return true;
+		} catch (error) {
+			errorMessage = toErrorMessage(error, 'Impossible d’ajouter le bien. Vérifie les champs requis.');
+			return false;
+		} finally {
+			submitting = false;
+		}
+	}
+
+	function toErrorMessage(error: unknown, fallback: string) {
+		if (error instanceof Error && error.message.trim().length > 0) {
+			return error.message;
+		}
+		return fallback;
+	}
 </script>
 
-<h2>Biens</h2>
-<form on:submit|preventDefault={addBien} class="mb-4">
-  <input bind:value={newAdresse} placeholder="Adresse" required class="mr-2" />
-  <input bind:value={newVille} placeholder="Ville" class="mr-2" />
-  <button type="submit" class="btn btn-primary">Ajouter</button>
-</form>
+<section class="sci-page-shell">
+	<header class="sci-page-header">
+		<p class="sci-eyebrow">SCI Manager • Opérations</p>
+		<h1 class="sci-page-title">Gestion des biens</h1>
+		<p class="sci-page-subtitle">
+			Centralise les actifs immobiliers, pilote les statuts d’occupation et structure la donnée locative pour
+			la comptabilité.
+		</p>
+	</header>
 
-{#if biens.length === 0}
-  <p>No properties yet.</p>
-{:else}
-  <ul>
-    {#each biens as b}
-      <li>{b.adresse} {#if b.ville}({b.ville}){/if}</li>
-    {/each}
-  </ul>
-{/if}
+	<div class="grid gap-4 md:grid-cols-3">
+		<KpiCard
+			label="Biens actifs"
+			value={metrics.count}
+			caption="portefeuille total"
+			trend="up"
+			trendValue={metrics.count > 0 ? '+1 ce mois' : 'démarrage'}
+			tone="accent"
+			{loading}
+		/>
+		<KpiCard
+			label="Loyer mensuel"
+			value={metrics.totalMonthlyRentLabel}
+			caption="loyer charges comprises"
+			trend="up"
+			trendValue="stabilisé"
+			tone="success"
+			{loading}
+		/>
+		<KpiCard
+			label="Loyer moyen"
+			value={metrics.averageRentLabel}
+			caption={`occupation ${metrics.occupancyRateLabel}`}
+			trend="neutral"
+			trendValue="benchmark"
+			tone="default"
+			{loading}
+		/>
+	</div>
+
+	{#if errorMessage}
+		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
+	{/if}
+
+	<BienForm submitting={submitting} onSubmit={handleCreateBien} />
+
+	<BienTable {biens} {loading} />
+</section>

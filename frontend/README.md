@@ -40,3 +40,13 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## High-Value Coverage Gate
+
+Pour sécuriser les features métier les plus critiques (API et logique de gestion biens/loyers), exécuter:
+
+```sh
+pnpm run test:high-value
+```
+
+Cette commande applique un seuil de couverture minimal de 90% (lignes/fonctions/statements/branches) sur le périmètre ciblé.

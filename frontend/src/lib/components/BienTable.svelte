@@ -1,22 +1,63 @@
 <script lang="ts">
-  export let biens = [] as any[];
+	import type { Bien } from '$lib/api';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { formatEur } from '$lib/high-value/formatters';
+	import { mapBienStatusClass, mapBienStatusLabel } from '$lib/high-value/biens';
+	import * as Table from '$lib/components/ui/table';
+
+	export let biens: Bien[] = [];
+	export let loading = false;
+	export let title = 'Portefeuille immobilier';
+	export let description = 'Vision opérationnelle des biens, villes et loyers mensuels.';
 </script>
 
-<table class="min-w-full divide-y divide-gray-200">
-  <thead class="bg-gray-50">
-    <tr>
-      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adresse</th>
-      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ville</th>
-      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loyer CC</th>
-    </tr>
-  </thead>
-  <tbody class="bg-white divide-y divide-gray-200">
-    {#each biens as bien}
-      <tr>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bien.adresse}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bien.ville}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bien.loyer_cc}</td>
-      </tr>
-    {/each}
-  </tbody>
-</table>
+<Card class="sci-section-card">
+	<CardHeader class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+		<div>
+			<CardTitle class="text-lg">{title}</CardTitle>
+			<CardDescription>{description}</CardDescription>
+		</div>
+		<p class="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">{biens.length} enregistrements</p>
+	</CardHeader>
+	<CardContent class="pt-0">
+		{#if loading}
+			<div class="space-y-2" aria-live="polite">
+				{#each Array.from({ length: 6 }) as _, index}
+					<div class="h-11 animate-pulse rounded-md bg-slate-100" data-index={index}></div>
+				{/each}
+			</div>
+		{:else if biens.length === 0}
+			<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+				<p class="text-sm font-medium text-slate-700">Aucun bien enregistré pour le moment.</p>
+				<p class="mt-1 text-sm text-slate-500">Ajoute une première adresse pour démarrer le suivi SCI.</p>
+			</div>
+		{:else}
+			<Table.Root>
+				<Table.Header>
+					<Table.Row>
+						<Table.Head class="px-3">Adresse</Table.Head>
+						<Table.Head class="px-3">Ville</Table.Head>
+						<Table.Head class="px-3">Statut</Table.Head>
+						<Table.Head class="px-3 text-right">Loyer CC</Table.Head>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each biens as bien}
+						<Table.Row>
+							<Table.Cell class="px-3 py-3 font-medium text-slate-900">{bien.adresse}</Table.Cell>
+							<Table.Cell class="px-3 py-3 text-slate-700">{bien.ville || '—'}</Table.Cell>
+							<Table.Cell class="px-3 py-3">
+								<span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${mapBienStatusClass(bien.statut)}`}>
+									{mapBienStatusLabel(bien.statut)}
+								</span>
+							</Table.Cell>
+							<Table.Cell class="px-3 py-3 text-right font-medium text-slate-900">
+								{formatEur(bien.loyer_cc, 'Non renseigné')}
+							</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		{/if}
+	</CardContent>
+</Card>

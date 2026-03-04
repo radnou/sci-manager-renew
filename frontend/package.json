@@ -13,8 +13,11 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
+		"test:high-value": "vitest run -c vitest.high-value.config.ts",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
@@ -55,7 +58,16 @@
 		"vite": "^7.3.1",
 		"vite-plugin-devtools-json": "^1.0.0",
 		"vitest": "^4.0.18",
-		"vitest-browser-svelte": "^2.0.2"
+		"vitest-browser-svelte": "^2.0.2",
+		"storybook": "^10.2.15",
+		"@storybook/sveltekit": "^10.2.15",
+		"@storybook/addon-svelte-csf": "^5.0.11",
+		"@chromatic-com/storybook": "^5.0.1",
+		"@storybook/addon-vitest": "^10.2.15",
+		"@storybook/addon-a11y": "^10.2.15",
+		"@storybook/addon-docs": "^10.2.15",
+		"eslint-plugin-storybook": "^10.2.15",
+		"@vitest/coverage-v8": "4.0.18"
 	},
 	"dependencies": {
 		"@stripe/stripe-js": "^8.9.0",
