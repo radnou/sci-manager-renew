@@ -12,6 +12,11 @@ MicroSaaS de gestion SCI + parc immobilier locatif (phase 1/6 en cours).
 # lever la base Supabase locale
 docker-compose up -d
 
+# configurer les variables d'environnement (copier et éditer le fichier voisin)
+cp .env.example .env
+# puis remplir SUPABASE_URL, SUPABASE_ANON_KEY et/ou SUPABASE_SERVICE_ROLE_KEY
+# ainsi que les clés Stripe
+
 # lancer le backend
 cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8001
 

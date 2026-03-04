@@ -1,20 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from typing import List
-from uuid import uuid4
 
 from ...schemas.biens import Bien, BienCreate
+from ...services import biens_service
 
 router = APIRouter()
 
-# simple in-memory storage
-BIENS_DB: List[Bien] = []
 
 @router.get("", response_model=List[Bien])
 def list_biens():
-    return BIENS_DB
+    """Return all biens from the database via the service layer."""
+    return biens_service.list_biens()
+
 
 @router.post("", response_model=Bien, status_code=201)
 def create_bien(bien: BienCreate):
-    new = Bien(id=uuid4(), **bien.dict())
-    BIENS_DB.append(new)
-    return new
+    """Create a new bien record using the service layer."""
+    return biens_service.create_bien(bien)

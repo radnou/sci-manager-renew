@@ -1,2 +1,6 @@
 fastapi
 uvicorn
+# Supabase Python client for interacting with the hosted database
+supabase>=2.28.0
+# httpx is a dependency of supabase but pin it to avoid surprises
+httpx>=0.26,<0.29
