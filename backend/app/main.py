@@ -1,13 +1,34 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
-from .api.v1 import biens, loyers, quitus
+from app.api.v1 import biens, cerfa, loyers, quitus, stripe
+from app.core.config import settings
+from app.core.rate_limit import limiter
 
-app = FastAPI(title="SCI Manager API")
+app = FastAPI(title="SCI-Manager API", version="1.0.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
-@app.get("/")
-def read_root():
-    return {"message": "SCI Manager is running"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app.include_router(biens.router, prefix="/v1/biens", tags=["biens"])
-app.include_router(loyers.router, prefix="/v1/loyers", tags=["loyers"])
-app.include_router(quitus.router, prefix="/v1/quitus", tags=["quitus"])
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+app.include_router(biens.router, prefix="/api/v1")
+app.include_router(loyers.router, prefix="/api/v1")
+app.include_router(quitus.router, prefix="/api/v1")
+app.include_router(cerfa.router, prefix="/api/v1")
+app.include_router(stripe.router, prefix="/api/v1")

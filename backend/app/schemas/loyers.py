@@ -1,24 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional
-from uuid import UUID
-from datetime import date
+"""Backward-compatible alias for migrated Pydantic models."""
 
+from app.models.loyers import LoyerCreate
+from app.models.loyers import LoyerResponse as Loyer
+from app.models.loyers import LoyerUpdate
 
-class LoyerBase(BaseModel):
-    id_bien: Optional[UUID]
-    date_loyer: Optional[date]
-    montant: Optional[float]
-    quitus_genere: Optional[bool] = False
-
-
-class LoyerCreate(LoyerBase):
-    id_bien: UUID
-    date_loyer: date
-    montant: float
-
-
-class Loyer(LoyerBase):
-    id: UUID
-
-    class Config:
-        orm_mode = True
+__all__ = ["Loyer", "LoyerCreate", "LoyerUpdate"]

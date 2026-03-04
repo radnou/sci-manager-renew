@@ -1,23 +1,15 @@
-from typing import Optional
+from functools import lru_cache
 
 from supabase import Client, create_client
 
-from .config import get_settings
-
-_client: Optional[Client] = None
+from .config import settings
 
 
-def get_supabase_client() -> Client:
-    """Return a cached Supabase client initialized with service role key.
+@lru_cache
+def get_supabase_anon_client() -> Client:
+    return create_client(settings.supabase_url, settings.supabase_anon_key)
 
-    Uses settings from environment via ``app.core.config``. Calling multiple
-    times returns the same instance which is safe for reuse.
-    """
 
-    global _client
-    if _client is None:
-        settings = get_settings()
-        # use service role key on the server side so we can bypass RLS when
-        # necessary and perform inserts/updates.
-        _client = create_client(str(settings.supabase_url), settings.supabase_key)
-    return _client
+@lru_cache
+def get_supabase_service_client() -> Client:
+    return create_client(settings.supabase_url, settings.supabase_service_role_key)

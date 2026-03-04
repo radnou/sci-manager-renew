@@ -10,6 +10,7 @@ describe('high-value loyers helpers', () => {
 	it('builds payload from valid form inputs', () => {
 		const payload = buildLoyerPayload({
 			idBien: ' BIEN-001 ',
+			idLocataire: ' LOC-001 ',
 			dateLoyer: '2026-03-01',
 			montant: '1300',
 			statut: 'paye'
@@ -17,6 +18,7 @@ describe('high-value loyers helpers', () => {
 
 		expect(payload).toEqual({
 			id_bien: 'BIEN-001',
+			id_locataire: 'LOC-001',
 			date_loyer: '2026-03-01',
 			montant: 1300,
 			statut: 'paye'
@@ -27,6 +29,7 @@ describe('high-value loyers helpers', () => {
 		expect(
 			buildLoyerPayload({
 				idBien: '',
+				idLocataire: '',
 				dateLoyer: '2026-03-01',
 				montant: '1000',
 				statut: 'paye'
@@ -36,6 +39,7 @@ describe('high-value loyers helpers', () => {
 		expect(
 			buildLoyerPayload({
 				idBien: 'BIEN-002',
+				idLocataire: '',
 				dateLoyer: '',
 				montant: '1200',
 				statut: 'paye'
@@ -45,6 +49,7 @@ describe('high-value loyers helpers', () => {
 		expect(
 			buildLoyerPayload({
 				idBien: 'BIEN-002',
+				idLocataire: '',
 				dateLoyer: '2026-03-01',
 				montant: 'abc',
 				statut: 'paye'
@@ -54,20 +59,21 @@ describe('high-value loyers helpers', () => {
 
 	it('maps status labels and classes', () => {
 		expect(mapLoyerStatusLabel('paye')).toBe('Payé');
-		expect(mapLoyerStatusLabel('retard')).toBe('Retard');
+		expect(mapLoyerStatusLabel('en_retard')).toBe('En retard');
 		expect(mapLoyerStatusLabel('en_attente')).toBe('En attente');
+		expect(mapLoyerStatusLabel('retard')).toBe('En retard');
 		expect(mapLoyerStatusLabel(undefined)).toBe('Enregistré');
 		expect(mapLoyerStatusClass('paye')).toBe('bg-emerald-100 text-emerald-800');
 		expect(mapLoyerStatusClass('en_attente')).toBe('bg-amber-100 text-amber-800');
-		expect(mapLoyerStatusClass('retard')).toBe('bg-rose-100 text-rose-800');
+		expect(mapLoyerStatusClass('en_retard')).toBe('bg-rose-100 text-rose-800');
 		expect(mapLoyerStatusClass('autre')).toBe('bg-cyan-100 text-cyan-800');
 	});
 
 	it('calculates revenue metrics and late count', () => {
 		const metrics = calculateLoyerMetrics([
-			{ id_bien: 'A', date_loyer: '2026-03-01', montant: 1000, statut: 'paye' },
-			{ id_bien: 'B', date_loyer: '2026-03-01', montant: 800, statut: 'retard' },
-			{ id_bien: 'C', date_loyer: '2026-03-01', montant: 1200, statut: 'en_attente' }
+			{ id_bien: 'A', date_loyer: '2026-03-01', montant: 1000, statut: 'paye', quitus_genere: false },
+			{ id_bien: 'B', date_loyer: '2026-03-01', montant: 800, statut: 'en_retard', quitus_genere: false },
+			{ id_bien: 'C', date_loyer: '2026-03-01', montant: 1200, statut: 'en_attente', quitus_genere: false }
 		]);
 
 		expect(metrics.count).toBe(3);

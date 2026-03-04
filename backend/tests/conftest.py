@@ -1,67 +1,160 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
+from jose import jwt
 
-# when running inside backend directory, import from app package directly
+from app.core.config import settings
 from app.main import app
 
-# the client to interact with HTTP endpoints
-@pytest.fixture(scope="module")
-def client():
-    with TestClient(app) as c:
-        yield c
+
+class FakeResult:
+    def __init__(self, data: list[dict], error: str | None = None):
+        self.data = data
+        self.error = error
 
 
-# fake Supabase client used by service layer tests and routers
-class FakeTable:
-    def __init__(self, store):
+class FakeQuery:
+    def __init__(self, store: dict[str, list[dict]], table_name: str):
         self._store = store
+        self._table_name = table_name
+        self._filters: list[tuple[str, str]] = []
+        self._gte_filters: list[tuple[str, str]] = []
+        self._lte_filters: list[tuple[str, str]] = []
+        self._operation = "select"
+        self._payload: list[dict] = []
+        self._update_payload: dict = {}
 
-    def select(self, *args, **kwargs):
-        class Query:
-            def __init__(self, store):
-                self.data = store
-                self.error = None
+    def select(self, *_args, **_kwargs) -> "FakeQuery":
+        self._operation = "select"
+        return self
 
-            def execute(self):
-                return self
+    def insert(self, payload: dict | list[dict]) -> "FakeQuery":
+        self._operation = "insert"
+        if isinstance(payload, list):
+            self._payload = [deepcopy(item) for item in payload]
+        else:
+            self._payload = [deepcopy(payload)]
+        return self
 
-        return Query(self._store)
+    def update(self, payload: dict) -> "FakeQuery":
+        self._operation = "update"
+        self._update_payload = deepcopy(payload)
+        return self
 
-    def insert(self, data):
-        # simulate database auto-generated id if not provided
-        obj = data.copy()
-        if "id" not in obj:
-            from uuid import uuid4
+    def delete(self) -> "FakeQuery":
+        self._operation = "delete"
+        return self
 
-            obj["id"] = uuid4()
-        self._store.append(obj)
+    def eq(self, key: str, value: object) -> "FakeQuery":
+        self._filters.append((key, str(value)))
+        return self
 
-        class Query:
-            def __init__(self, d):
-                self.data = [d]
-                self.error = None
+    def gte(self, key: str, value: object) -> "FakeQuery":
+        self._gte_filters.append((key, str(value)))
+        return self
 
-            def execute(self):
-                return self
+    def lte(self, key: str, value: object) -> "FakeQuery":
+        self._lte_filters.append((key, str(value)))
+        return self
 
-        return Query(obj)
+    def _matches(self, row: dict) -> bool:
+        for key, value in self._filters:
+            if str(row.get(key)) != value:
+                return False
+        for key, value in self._gte_filters:
+            candidate = row.get(key)
+            if candidate is None or str(candidate) < value:
+                return False
+        for key, value in self._lte_filters:
+            candidate = row.get(key)
+            if candidate is None or str(candidate) > value:
+                return False
+        return True
+
+    def execute(self) -> FakeResult:
+        rows = self._store.setdefault(self._table_name, [])
+
+        if self._operation == "select":
+            data = [deepcopy(row) for row in rows if self._matches(row)]
+            return FakeResult(data=data)
+
+        if self._operation == "insert":
+            inserted: list[dict] = []
+            for payload in self._payload:
+                payload.setdefault("id", str(uuid4()))
+                rows.append(deepcopy(payload))
+                inserted.append(deepcopy(payload))
+            return FakeResult(data=inserted)
+
+        if self._operation == "update":
+            updated: list[dict] = []
+            for row in rows:
+                if self._matches(row):
+                    row.update(deepcopy(self._update_payload))
+                    updated.append(deepcopy(row))
+            return FakeResult(data=updated)
+
+        if self._operation == "delete":
+            kept: list[dict] = []
+            deleted: list[dict] = []
+            for row in rows:
+                if self._matches(row):
+                    deleted.append(deepcopy(row))
+                else:
+                    kept.append(row)
+            self._store[self._table_name] = kept
+            return FakeResult(data=deleted)
+
+        return FakeResult(data=[], error="unsupported operation")
 
 
-class FakeClient:
+class FakeSupabaseClient:
     def __init__(self):
-        self.tables = {}
+        self.store: dict[str, list[dict]] = {
+            "biens": [],
+            "loyers": [],
+        }
 
-    def table(self, name):
-        if name not in self.tables:
-            self.tables[name] = []
-        return FakeTable(self.tables[name])
+    def table(self, name: str) -> FakeQuery:
+        return FakeQuery(self.store, name)
+
+
+@pytest.fixture
+def client() -> TestClient:
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def fake_supabase() -> FakeSupabaseClient:
+    return FakeSupabaseClient()
 
 
 @pytest.fixture(autouse=True)
-def patch_supabase(monkeypatch):
-    """Automatically replace Supabase client with a fake implementation."""
-    from app.core import supabase_client
+def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient):
+    from app.api.v1 import biens, loyers
 
-    fake = FakeClient()
-    monkeypatch.setattr(supabase_client, "get_supabase_client", lambda: fake)
-    return fake
+    monkeypatch.setattr(
+        biens,
+        "create_client",
+        lambda *_args, **_kwargs: fake_supabase,
+    )
+    monkeypatch.setattr(
+        loyers,
+        "create_client",
+        lambda *_args, **_kwargs: fake_supabase,
+    )
+
+
+@pytest.fixture
+def auth_headers() -> dict[str, str]:
+    token = jwt.encode(
+        {"sub": "user-123", "role": "authenticated"},
+        settings.supabase_jwt_secret,
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}"}

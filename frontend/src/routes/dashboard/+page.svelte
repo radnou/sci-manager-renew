@@ -15,7 +15,7 @@
 
 	$: bienMetrics = calculateBienMetrics(biens);
 	$: loyerMetrics = calculateLoyerMetrics(loyers);
-	$: activeAssets = biens.filter((bien) => (bien.statut ?? '').toLowerCase() !== 'vacant').length;
+	$: activeAssets = biens.length;
 
 	onMount(loadOverview);
 
@@ -54,9 +54,9 @@
 			{loading}
 		/>
 		<KpiCard
-			label="Potentiel mensuel"
+			label="Loyers mensuels"
 			value={bienMetrics.totalMonthlyRentLabel}
-			caption="loyer théorique"
+			caption="potentiel total"
 			trend="up"
 			trendValue="projection"
 			tone="success"

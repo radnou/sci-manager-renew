@@ -1,55 +1,114 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createBien, createLoyer, fetchBiens, fetchLoyers } from './api';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const getSessionMock = vi.fn();
+
+vi.mock('$lib/supabase', () => ({
+	supabase: {
+		auth: {
+			getSession: getSessionMock
+		}
+	}
+}));
+
+import { API_URL, createBien, createLoyer, fetchBiens, fetchLoyers } from './api';
 
 describe('api helpers', () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
 
+	beforeEach(() => {
+		getSessionMock.mockReset();
+		getSessionMock.mockResolvedValue({ data: { session: null } });
+	});
+
 	it('fetchBiens returns parsed payload', async () => {
-		const payload = [{ adresse: '14 rue Saint-Honore', ville: 'Paris' }];
+		const payload = [{ id_sci: 'sci-1', adresse: '14 rue Saint-Honore', ville: 'Paris' }];
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBiens()).resolves.toEqual(payload);
-		expect(fetchMock).toHaveBeenCalledWith('/v1/biens', undefined);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/biens/`);
+		expect(options).toBeDefined();
+		const headers = new Headers(options.headers);
+		expect(headers.get('Content-Type')).toBe('application/json');
+		expect(headers.get('Authorization')).toBeNull();
 	});
 
 	it('fetchLoyers returns parsed payload', async () => {
-		const payload = [{ id_bien: 'BIEN-001', date_loyer: '2026-03-01', montant: 1200 }];
+		const payload = [{ id_bien: 'BIEN-001', date_loyer: '2026-03-01', montant: 1200, statut: 'paye' }];
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchLoyers()).resolves.toEqual(payload);
-		expect(fetchMock).toHaveBeenCalledWith('/v1/loyers', undefined);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/loyers/`);
 	});
 
 	it('createBien posts JSON body', async () => {
-		const payload = { adresse: '8 avenue des Tilleuls', ville: 'Lyon', statut: 'occupe' };
-		const created = { id: 1, ...payload };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 200 }));
+		const payload = {
+			id_sci: 'sci-1',
+			adresse: '8 avenue des Tilleuls',
+			ville: 'Lyon',
+			code_postal: '69001',
+			type_locatif: 'nu' as const,
+			loyer_cc: 1100,
+			charges: 120,
+			tmi: 30
+		};
+		const created = { id: 'bien-1', ...payload };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createBien(payload)).resolves.toEqual(created);
-		expect(fetchMock).toHaveBeenCalledWith('/v1/biens', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(payload)
-		});
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/biens/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+		const headers = new Headers(options.headers);
+		expect(headers.get('Content-Type')).toBe('application/json');
 	});
 
 	it('createLoyer posts JSON body', async () => {
-		const payload = { id_bien: 'BIEN-004', date_loyer: '2026-03-02', montant: 930, statut: 'paye' };
-		const created = { id: 8, ...payload };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 200 }));
+		const payload = {
+			id_bien: 'BIEN-004',
+			date_loyer: '2026-03-02',
+			montant: 930,
+			statut: 'paye' as const
+		};
+		const created = { id: 'loyer-8', ...payload };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createLoyer(payload)).resolves.toEqual(created);
-		expect(fetchMock).toHaveBeenCalledWith('/v1/loyers', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(payload)
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/loyers/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+		const headers = new Headers(options.headers);
+		expect(headers.get('Content-Type')).toBe('application/json');
+	});
+
+	it('adds authorization header when a supabase session is available', async () => {
+		const payload = [{ adresse: '10 rue Victor Hugo' }];
+		getSessionMock.mockResolvedValue({
+			data: {
+				session: { access_token: 'token-test' }
+			}
 		});
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBiens()).resolves.toEqual(payload);
+
+		const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const headers = new Headers(options.headers);
+		expect(headers.get('Authorization')).toBe('Bearer token-test');
 	});
 
 	it('throws response text when backend returns an error', async () => {
@@ -64,7 +123,7 @@ describe('api helpers', () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 500 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await expect(fetchBiens()).rejects.toThrowError('HTTP 500 on /v1/biens');
+		await expect(fetchBiens()).rejects.toThrowError(/API error: 500/);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 

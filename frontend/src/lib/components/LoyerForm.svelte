@@ -1,27 +1,35 @@
 <script lang="ts">
-	import type { LoyerCreatePayload } from '$lib/api';
+	import type { LoyerCreatePayload, LoyerStatus } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { buildLoyerPayload } from '$lib/high-value/loyers';
 
-	type LoyerFormSubmit =
-		| ((payload: LoyerCreatePayload) => Promise<boolean | void> | boolean | void)
-		| undefined;
+	type LoyerFormSubmit = (payload: LoyerCreatePayload) => Promise<boolean | void> | boolean | void;
 
-	export let title = 'Nouveau loyer';
-	export let description = 'Enregistre un paiement mensuel pour un bien.';
-	export let submitting = false;
-	export let onSubmit: LoyerFormSubmit = () => true;
+	let {
+		title = 'Nouveau loyer',
+		description = 'Enregistre un paiement mensuel pour un bien.',
+		submitting = false,
+		onSubmit = () => true
+	}: {
+		title?: string;
+		description?: string;
+		submitting?: boolean;
+		onSubmit?: LoyerFormSubmit;
+	} = $props();
 
-	let idBien = '';
-	let dateLoyer = new Date().toISOString().slice(0, 10);
-	let montant = '';
-	let statut = 'paye';
+	let idBien = $state('');
+	let idLocataire = $state('');
+	let dateLoyer = $state(new Date().toISOString().slice(0, 10));
+	let montant = $state('');
+	let statut = $state<LoyerStatus>('paye');
 
-	async function handleSubmit() {
+	async function handleSubmit(event: SubmitEvent) {
+		event.preventDefault();
 		const payload = buildLoyerPayload({
 			idBien,
+			idLocataire,
 			dateLoyer,
 			montant,
 			statut
@@ -30,10 +38,11 @@
 			return;
 		}
 
-		const result = await onSubmit?.(payload);
+		const result = await onSubmit(payload);
 
 		if (result !== false) {
 			idBien = '';
+			idLocataire = '';
 			montant = '';
 			statut = 'paye';
 		}
@@ -46,10 +55,14 @@
 		<CardDescription>{description}</CardDescription>
 	</CardHeader>
 	<CardContent>
-		<form class="grid gap-3 md:grid-cols-4" on:submit|preventDefault={handleSubmit}>
+		<form class="grid gap-3 md:grid-cols-5" onsubmit={handleSubmit}>
 			<label class="sci-field">
 				<span class="sci-field-label">ID Bien</span>
-				<Input bind:value={idBien} required placeholder="BIEN-001" />
+				<Input bind:value={idBien} required placeholder="bien-001" />
+			</label>
+			<label class="sci-field">
+				<span class="sci-field-label">ID Locataire</span>
+				<Input bind:value={idLocataire} placeholder="loc-001" />
 			</label>
 			<label class="sci-field">
 				<span class="sci-field-label">Date</span>
@@ -64,10 +77,10 @@
 				<select bind:value={statut} class="sci-select">
 					<option value="paye">Payé</option>
 					<option value="en_attente">En attente</option>
-					<option value="retard">Retard</option>
+					<option value="en_retard">En retard</option>
 				</select>
 			</label>
-			<div class="md:col-span-4 flex justify-end">
+			<div class="md:col-span-5 flex justify-end">
 				<Button type="submit" disabled={submitting} class="min-w-[11rem]">
 					{submitting ? 'Enregistrement...' : 'Ajouter le loyer'}
 				</Button>

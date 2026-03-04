@@ -1,71 +1,91 @@
 import { describe, expect, it } from 'vitest';
-import { buildBienPayload, calculateBienMetrics, mapBienStatusClass, mapBienStatusLabel } from './biens';
+import { buildBienPayload, calculateBienMetrics, mapBienTypeClass, mapBienTypeLabel } from './biens';
 
 describe('high-value biens helpers', () => {
-	it('builds payload with normalized fields and parsed rent', () => {
+	it('builds payload with normalized fields and parsed values', () => {
 		const payload = buildBienPayload({
+			idSci: ' sci-1 ',
 			adresse: ' 14 rue Saint-Honore ',
 			ville: ' Paris ',
+			codePostal: '75001',
+			typeLocatif: 'nu',
 			loyerCC: '1450',
-			statut: 'occupe'
+			charges: '120',
+			tmi: '30',
+			acquisitionDate: '2024-01-15',
+			prixAcquisition: '250000'
 		});
 
 		expect(payload).toEqual({
+			id_sci: 'sci-1',
 			adresse: '14 rue Saint-Honore',
 			ville: 'Paris',
+			code_postal: '75001',
+			type_locatif: 'nu',
 			loyer_cc: 1450,
-			statut: 'occupe'
+			charges: 120,
+			tmi: 30,
+			acquisition_date: '2024-01-15',
+			prix_acquisition: 250000
 		});
 	});
 
-	it('returns null if required address is missing', () => {
+	it('returns null if required fields are missing', () => {
 		const payload = buildBienPayload({
+			idSci: '',
 			adresse: '   ',
 			ville: 'Paris',
+			codePostal: '75A01',
+			typeLocatif: 'nu',
 			loyerCC: '1200',
-			statut: 'occupe'
+			charges: '100',
+			tmi: '30',
+			acquisitionDate: '',
+			prixAcquisition: ''
 		});
 
 		expect(payload).toBeNull();
 	});
 
-	it('keeps payload valid when rent is not provided', () => {
-		const payload = buildBienPayload({
-			adresse: '8 avenue des Tilleuls',
-			ville: '',
-			loyerCC: '',
-			statut: 'vacant'
-		});
-
-		expect(payload).toEqual({
-			adresse: '8 avenue des Tilleuls',
-			ville: undefined,
-			statut: 'vacant'
-		});
-	});
-
-	it('maps status labels and classes', () => {
-		expect(mapBienStatusLabel('occupe')).toBe('Occupé');
-		expect(mapBienStatusLabel('vacant')).toBe('Vacant');
-		expect(mapBienStatusLabel(undefined)).toBe('Non défini');
-		expect(mapBienStatusLabel('travaux')).toBe('travaux');
-		expect(mapBienStatusClass('occupe')).toBe('bg-emerald-100 text-emerald-800');
-		expect(mapBienStatusClass('vacant')).toBe('bg-amber-100 text-amber-800');
-		expect(mapBienStatusClass('travaux')).toBe('bg-cyan-100 text-cyan-800');
+	it('maps type labels and classes', () => {
+		expect(mapBienTypeLabel('nu')).toBe('Nu');
+		expect(mapBienTypeLabel('meuble')).toBe('Meublé');
+		expect(mapBienTypeLabel('mixte')).toBe('Mixte');
+		expect(mapBienTypeLabel(undefined)).toBe('Non défini');
+		expect(mapBienTypeClass('nu')).toBe('bg-emerald-100 text-emerald-800');
+		expect(mapBienTypeClass('meuble')).toBe('bg-cyan-100 text-cyan-800');
+		expect(mapBienTypeClass('mixte')).toBe('bg-amber-100 text-amber-800');
 	});
 
 	it('calculates portfolio metrics', () => {
 		const metrics = calculateBienMetrics([
-			{ adresse: 'A', loyer_cc: 1000, statut: 'occupe' },
-			{ adresse: 'B', loyer_cc: 1200, statut: 'vacant' },
-			{ adresse: 'C', loyer_cc: 800, statut: 'occupe' }
+			{
+				id_sci: 'sci-1',
+				adresse: 'A',
+				ville: 'Paris',
+				code_postal: '75001',
+				type_locatif: 'nu',
+				loyer_cc: 1000,
+				charges: 100,
+				tmi: 30
+			},
+			{
+				id_sci: 'sci-1',
+				adresse: 'B',
+				ville: 'Lyon',
+				code_postal: '69001',
+				type_locatif: 'mixte',
+				loyer_cc: 1200,
+				charges: 150,
+				tmi: 30
+			}
 		]);
 
-		expect(metrics.count).toBe(3);
-		expect(metrics.totalMonthlyRent).toBe(3000);
+		expect(metrics.count).toBe(2);
+		expect(metrics.totalMonthlyRent).toBe(2200);
 		expect(metrics.totalMonthlyRentLabel).toContain('€');
+		expect(metrics.totalChargesLabel).toContain('€');
 		expect(metrics.averageRentLabel).toContain('€');
-		expect(metrics.occupancyRateLabel).toBe('67%');
 	});
 
 	it('returns safe defaults when no asset exists', () => {

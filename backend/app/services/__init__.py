@@ -1,9 +1,4 @@
-"""Service layer package."""
-from . import biens_service, loyers_service, quitus_service, sci_service
+from .quitus_service import QuitusService
+from .sci_service import SCIService
 
-__all__ = [
-    "biens_service",
-    "loyers_service",
-    "quitus_service",
-    "sci_service",
-]
+__all__ = ["SCIService", "QuitusService"]

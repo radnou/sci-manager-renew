@@ -1,17 +1,121 @@
-from fastapi import APIRouter
-from typing import List
+from datetime import date
+from typing import Any
 
-from ...schemas.loyers import Loyer, LoyerCreate
-from ...services import loyers_service
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from supabase import create_client
 
-router = APIRouter()
+from app.core.config import settings
+from app.core.security import get_current_user
+from app.models.loyers import LoyerCreate, LoyerResponse, LoyerUpdate
+
+router = APIRouter(prefix="/loyers", tags=["loyers"])
 
 
-@router.get("", response_model=List[Loyer])
-def list_loyers():
-    return loyers_service.list_loyers()
+def _get_client() -> Any:
+    return create_client(settings.supabase_url, settings.supabase_anon_key)
 
 
-@router.post("", response_model=Loyer, status_code=201)
-def create_loyer(loyer: LoyerCreate):
-    return loyers_service.create_loyer(loyer)
+def _extract_rows(result: Any) -> list[dict[str, Any]]:
+    if getattr(result, "error", None):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Supabase query failed",
+        )
+    rows = getattr(result, "data", None)
+    if rows is None:
+        return []
+    return list(rows)
+
+
+@router.get("/", response_model=list[LoyerResponse])
+async def get_loyers(
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    user_id: str = Depends(get_current_user),
+) -> list[LoyerResponse]:
+    client = _get_client()
+    query = client.table("loyers").select("*").eq("owner_id", user_id)
+
+    if date_from is not None:
+        query = query.gte("date_loyer", date_from.isoformat())
+    if date_to is not None:
+        query = query.lte("date_loyer", date_to.isoformat())
+
+    result = query.execute()
+    return [LoyerResponse.model_validate(row) for row in _extract_rows(result)]
+
+
+@router.get("/{loyer_id}", response_model=LoyerResponse)
+async def get_loyer(loyer_id: str, user_id: str = Depends(get_current_user)) -> LoyerResponse:
+    client = _get_client()
+    result = (
+        client.table("loyers")
+        .select("*")
+        .eq("id", loyer_id)
+        .eq("owner_id", user_id)
+        .execute()
+    )
+    rows = _extract_rows(result)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loyer not found")
+    return LoyerResponse.model_validate(rows[0])
+
+
+@router.post("/", response_model=LoyerResponse, status_code=status.HTTP_201_CREATED)
+async def create_loyer(
+    loyer: LoyerCreate,
+    user_id: str = Depends(get_current_user),
+) -> LoyerResponse:
+    client = _get_client()
+    payload = loyer.model_dump()
+    payload["owner_id"] = user_id
+    result = client.table("loyers").insert(payload).execute()
+    rows = _extract_rows(result)
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Loyer creation failed",
+        )
+    return LoyerResponse.model_validate(rows[0])
+
+
+@router.patch("/{loyer_id}", response_model=LoyerResponse)
+async def update_loyer(
+    loyer_id: str,
+    loyer: LoyerUpdate,
+    user_id: str = Depends(get_current_user),
+) -> LoyerResponse:
+    payload = loyer.model_dump(exclude_none=True)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No update fields provided",
+        )
+
+    client = _get_client()
+    result = (
+        client.table("loyers")
+        .update(payload)
+        .eq("id", loyer_id)
+        .eq("owner_id", user_id)
+        .execute()
+    )
+    rows = _extract_rows(result)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loyer not found")
+    return LoyerResponse.model_validate(rows[0])
+
+
+@router.delete("/{loyer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)) -> None:
+    client = _get_client()
+    result = (
+        client.table("loyers")
+        .delete()
+        .eq("id", loyer_id)
+        .eq("owner_id", user_id)
+        .execute()
+    )
+    rows = _extract_rows(result)
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loyer not found")

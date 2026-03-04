@@ -83,7 +83,7 @@
 		<KpiCard
 			label="Retards"
 			value={metrics.lateCount}
-			caption="lignes au statut retard"
+			caption="lignes au statut en retard"
 			trend={metrics.lateCount > 0 ? 'down' : 'up'}
 			trendValue={metrics.lateCount > 0 ? 'à traiter' : 'RAS'}
 			tone={metrics.lateCount > 0 ? 'warning' : 'default'}

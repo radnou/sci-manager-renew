@@ -57,8 +57,8 @@
 		<p class="sci-eyebrow">SCI Manager • Opérations</p>
 		<h1 class="sci-page-title">Gestion des biens</h1>
 		<p class="sci-page-subtitle">
-			Centralise les actifs immobiliers, pilote les statuts d’occupation et structure la donnée locative pour
-			la comptabilité.
+			Centralise les actifs immobiliers, les loyers et les charges pour garder une vision financière claire du
+			parc SCI.
 		</p>
 	</header>
 
@@ -77,16 +77,16 @@
 			value={metrics.totalMonthlyRentLabel}
 			caption="loyer charges comprises"
 			trend="up"
-			trendValue="stabilisé"
+			trendValue="projection"
 			tone="success"
 			{loading}
 		/>
 		<KpiCard
-			label="Loyer moyen"
-			value={metrics.averageRentLabel}
-			caption={`occupation ${metrics.occupancyRateLabel}`}
+			label="Charges mensuelles"
+			value={metrics.totalChargesLabel}
+			caption="charges récurrentes"
 			trend="neutral"
-			trendValue="benchmark"
+			trendValue="contrôle"
 			tone="default"
 			{loading}
 		/>

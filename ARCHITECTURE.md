@@ -1,81 +1,179 @@
-# Architecture Overview
+# SCI-Manager Architecture (Phase 1)
 
-SCI Manager repose sur une architecture web 2 couches avec séparation claire des responsabilités:
+## 1. Vision Globale
 
-- **Frontend (SvelteKit)**: expérience utilisateur, workflows métier, visualisation KPI.
-- **Backend (FastAPI)**: logique API, orchestration données, exposition endpoints métier.
-- **Supabase (PostgreSQL + RLS)**: persistance et gouvernance d'accès.
-- **Stripe**: monétisation (abonnements/plan payant).
+SCI-Manager suit une architecture web modulaire:
 
-## 1) Vue business -> technique
+- Frontend `SvelteKit` (UX, SSR, dashboard, parcours utilisateur)
+- Backend `FastAPI` (API metier, validation, orchestration)
+- Donnees `Supabase PostgreSQL` (RLS multi-utilisateurs)
+- Paiement `Stripe` (abonnements + lifetime)
+- Infra `Docker Compose` (reverse proxy + services applicatifs)
 
-Chaque capacité business est mappée à un bloc technique:
-
-- `Pilotage portefeuille` -> routes frontend `biens`, API `/v1/biens`, table `biens`.
-- `Suivi encaissements` -> routes frontend `loyers`, API `/v1/loyers`, table `loyers`.
-- `Production documentaire` -> composant quittus, API `/v1/quitus`.
-- `Synthèse décisionnelle` -> dashboard frontend + agrégations côté UI/API.
-
-## 2) Schéma de données cible (simplifié)
+## 2. Modele de Donnees Supabase
 
 ```mermaid
 erDiagram
     SCI ||--o{ ASSOCIES : has
     SCI ||--o{ BIENS : owns
-    BIENS ||--o{ LOYERS : generates
+    BIENS ||--o{ LOCATAIRES : hosts
+    BIENS ||--o{ LOYERS : bills
+    BIENS ||--o{ CHARGES : incurs
+    SCI ||--o{ FISCALITE : computes
+    LOCATAIRES ||--o{ LOYERS : pays
 
     SCI {
         uuid id PK
-        string nom
-        string siren
-        string regime_fiscal
+        text nom
+        text siren
+        text regime_fiscal
+        timestamptz created_at
+        timestamptz updated_at
     }
+
     ASSOCIES {
         uuid id PK
         uuid id_sci FK
         uuid user_id
-        float part
+        text nom
+        text email
+        numeric part
+        text role
+        timestamptz created_at
+        timestamptz updated_at
     }
+
     BIENS {
         uuid id PK
         uuid id_sci FK
-        string adresse
-        string ville
-        number loyer_cc
-        string statut
+        text adresse
+        text ville
+        text code_postal
+        text type_locatif
+        numeric loyer_cc
+        numeric charges
+        numeric tmi
+        date acquisition_date
+        timestamptz created_at
+        timestamptz updated_at
     }
+
+    LOCATAIRES {
+        uuid id PK
+        uuid id_bien FK
+        text nom
+        text email
+        date date_debut
+        date date_fin
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
     LOYERS {
         uuid id PK
         uuid id_bien FK
+        uuid id_locataire FK
         date date_loyer
-        number montant
-        string statut
+        numeric montant
+        text statut
         bool quitus_genere
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CHARGES {
+        uuid id PK
+        uuid id_bien FK
+        text type_charge
+        numeric montant
+        date date_paiement
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    FISCALITE {
+        uuid id PK
+        uuid id_sci FK
+        int annee
+        numeric total_revenus
+        numeric total_charges
+        numeric resultat_fiscal
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 
-## 3) API métier (version actuelle)
+## 3. Auth Flow: Supabase Auth -> JWT -> RLS
 
-- `GET /v1/biens` / `POST /v1/biens`
-- `GET /v1/loyers` / `POST /v1/loyers`
-- `GET /v1/quitus`
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant FE as Frontend (SvelteKit)
+    participant SA as Supabase Auth
+    participant BE as Backend (FastAPI)
+    participant DB as Supabase PostgreSQL (RLS)
 
-## 4) Flux applicatifs
+    U->>FE: Login
+    FE->>SA: signIn(email, password)
+    SA-->>FE: access_token (JWT)
+    FE->>BE: API call + Bearer JWT
+    BE->>BE: Verify JWT (claims: sub, exp)
+    BE->>DB: Query with user context
+    DB->>DB: Apply RLS policies
+    DB-->>BE: Filtered rows only
+    BE-->>FE: JSON response
+```
 
-1. L'utilisateur se connecte sur le frontend.
-2. Le frontend appelle les endpoints backend `/v1/*`.
-3. Le backend lit/écrit en base Supabase.
-4. Les modules frontend affichent KPI/tables et états métier (chargement, vide, erreur).
+## 4. Endpoints Backend FastAPI
 
-## 5) Contraintes architecture à respecter
+- `GET /health`
+- `POST /api/v1/auth/*` (placeholder integration Supabase Auth)
+- `GET|POST|PUT|DELETE /api/v1/sci`
+- `GET|POST|PUT|DELETE /api/v1/biens`
+- `GET|POST|PUT|DELETE /api/v1/loyers`
+- `POST /api/v1/quitus/generate`
+- `POST /api/v1/cerfa/2044`
+- `POST /api/v1/fiscalite/simulate`
+- `POST /api/v1/stripe/webhook`
 
-- RLS cohérent avec identité utilisateur (pas uniquement `id_sci`).
-- Contrats API typés et alignés frontend/backend.
-- Gestion d'erreurs explicite et homogène.
-- Couverture de tests renforcée sur la logique haute valeur.
+## 5. Pages Frontend SvelteKit
 
-## 6) Prochaine cible d'évolution
+- `/` landing
+- `/(auth)/login`
+- `/(auth)/register`
+- `/dashboard`
+- `/biens`
+- `/loyers`
+- `/pricing`
 
-- Intégrer l'authentification utilisateur côté backend (JWT contextuel).
-- Ajouter une couche de services métier backend plus riche (agrégations KPI server-side).
-- Introduire observabilité structurée (logs, trace IDs, erreurs).
+## 6. User Flow Produit
+
+```mermaid
+flowchart LR
+    A[Onboarding] --> B[Create SCI]
+    B --> C[Add Bien]
+    C --> D[Add Locataire]
+    D --> E[Track Loyers]
+    E --> F[Generate Quitus PDF]
+    E --> G[Fiscal Simulation IR/IS]
+    F --> H[Dashboard KPI]
+    G --> H
+```
+
+## 7. Docker Runtime Architecture
+
+```mermaid
+flowchart TB
+    N[Nginx Reverse Proxy] --> FE[Frontend SvelteKit]
+    N --> BE[Backend FastAPI]
+    BE --> DB[(Supabase PostgreSQL)]
+    BE --> ST[Stripe API]
+    FE --> SA[Supabase Auth]
+    SA --> DB
+```
+
+## 8. Notes Phase 1
+
+- Schema SQL initialise toutes les tables metier + indexes + triggers `updated_at`.
+- RLS est activee sur toutes les tables metier et filtre selon appartenance `associes.user_id`.
+- Les routers backend sont prets pour la Phase 2 (impl detaillee ensuite).

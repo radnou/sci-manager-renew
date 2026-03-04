@@ -2,25 +2,42 @@
 	import { onDestroy } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
+	import { downloadQuitus, generateQuitus as generateQuitusApi } from '$lib/api';
 
-	type GenerateQuitus = () => Promise<Blob>;
+	type GenerateQuitusFn = () => Promise<Blob>;
 
-	export let title = 'Quittance PDF';
-	export let description = 'Génère puis prévisualise le quittus directement dans l’interface.';
-	export let buttonLabel = 'Générer le quittus';
-	export let endpoint = '/v1/quitus';
-	export let generateQuitus: GenerateQuitus | undefined = undefined;
+	let {
+		title = 'Quittance PDF',
+		description = 'Génère puis prévisualise le quittus directement dans l’interface.',
+		buttonLabel = 'Générer le quittus',
+		generateQuitus = undefined
+	}: {
+		title?: string;
+		description?: string;
+		buttonLabel?: string;
+		generateQuitus?: GenerateQuitusFn;
+	} = $props();
 
-	let pdfUrl = '';
-	let isLoading = false;
-	let errorMessage = '';
+	let idLoyer = $state('loyer-demo');
+	let idBien = $state('bien-demo');
+	let nomLocataire = $state('Locataire Demo');
+	let periode = $state('Mars 2026');
+	let montant = $state('1200');
+	let pdfUrl = $state('');
+	let isLoading = $state(false);
+	let errorMessage = $state('');
 
 	async function defaultGenerateQuitus() {
-		const res = await fetch(endpoint);
-		if (!res.ok) {
-			throw new Error(`Impossible de générer le quittus (HTTP ${res.status})`);
-		}
-		return res.blob();
+		const generated = await generateQuitusApi({
+			id_loyer: idLoyer,
+			id_bien: idBien,
+			nom_locataire: nomLocataire,
+			periode,
+			montant: Number.parseFloat(montant)
+		});
+
+		return downloadQuitus(generated.pdf_url);
 	}
 
 	async function handleGenerate() {
@@ -48,16 +65,39 @@
 </script>
 
 <Card class="sci-section-card">
-	<CardHeader class="md:flex-row md:items-end md:justify-between">
+	<CardHeader>
 		<div>
 			<CardTitle class="text-lg">{title}</CardTitle>
 			<CardDescription>{description}</CardDescription>
 		</div>
-		<Button onclick={handleGenerate} disabled={isLoading} class="min-w-[12rem]">
-			{isLoading ? 'Génération…' : buttonLabel}
-		</Button>
 	</CardHeader>
 	<CardContent class="space-y-3 pt-0">
+		<div class="grid gap-3">
+			<label class="sci-field">
+				<span class="sci-field-label">ID Loyer</span>
+				<Input bind:value={idLoyer} />
+			</label>
+			<label class="sci-field">
+				<span class="sci-field-label">ID Bien</span>
+				<Input bind:value={idBien} />
+			</label>
+			<label class="sci-field">
+				<span class="sci-field-label">Locataire</span>
+				<Input bind:value={nomLocataire} />
+			</label>
+			<label class="sci-field">
+				<span class="sci-field-label">Période</span>
+				<Input bind:value={periode} />
+			</label>
+			<label class="sci-field">
+				<span class="sci-field-label">Montant</span>
+				<Input bind:value={montant} type="number" min="0" step="10" />
+			</label>
+			<Button onclick={handleGenerate} disabled={isLoading} class="w-full">
+				{isLoading ? 'Génération…' : buttonLabel}
+			</Button>
+		</div>
+
 		{#if errorMessage}
 			<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 		{/if}
