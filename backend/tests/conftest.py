@@ -10,6 +10,19 @@ from jose import jwt
 from app.core.config import settings
 from app.main import app
 
+# Override settings for tests
+settings.cors_origins = ["http://testserver"]
+
+@pytest.fixture
+def client():
+    # Temporarily allow testserver host
+    original_allowed = settings.allowed_hosts if hasattr(settings, 'allowed_hosts') else None
+    settings.allowed_hosts = ["testserver", "localhost", "*.scimanager.fr"]
+    with TestClient(app, base_url="http://testserver") as client:
+        yield client
+    if original_allowed:
+        settings.allowed_hosts = original_allowed
+
 
 class FakeResult:
     def __init__(self, data: list[dict], error: str | None = None):
