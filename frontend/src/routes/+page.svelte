@@ -4,135 +4,281 @@
 		name="description"
 		content="SCI Manager centralise biens, loyers et documents en un cockpit unique pour accélérer la gestion et sécuriser vos revenus locatifs."
 	/>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="canonical" href="https://scimanager.fr" />
 </svelte:head>
 
-<main class="landing-shell">
-	<section class="hero-grid">
-		<div class="hero-copy reveal">
-			<p class="sci-eyebrow">Produit SaaS • SCI & immobilier locatif</p>
-			<h1 class="hero-title">
-				Passez du tableur bricolé
-				<span class="hero-highlight">au cockpit SCI qui convertit vos données en décisions</span>
-			</h1>
-			<p class="hero-subtitle">
-				Pensé avec une logique de marketeur et d'opérateur terrain: moins d'administratif, plus de visibilité sur
-				les revenus, les retards et la performance de chaque bien.
-			</p>
+<script>
+	import HeroSection from '$lib/components/HeroSection.svelte';
+	import FeatureCard from '$lib/components/FeatureCard.svelte';
+	import TestimonialCard from '$lib/components/TestimonialCard.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Building2, FileText, TrendingUp, Shield, Users, Calculator } from 'lucide-svelte';
+</script>
 
-			<div class="hero-cta-row">
-				<a href="/login" class="hero-cta hero-cta-primary">Demander un accès prioritaire</a>
-				<a href="/pricing" class="hero-cta hero-cta-secondary">Voir la stratégie tarifaire</a>
-			</div>
+<main class="min-h-screen bg-slate-50 dark:bg-slate-950">
+	<HeroSection
+		title="Passez du tableur bricolé"
+		subtitle="au cockpit SCI qui convertit vos données en décisions"
+		description="Pensé avec une logique de marketeur et d'opérateur terrain: moins d'administratif, plus de visibilité sur les revenus, les retards et la performance de chaque bien."
+		primaryCta={{ text: "Demander un accès prioritaire", href: "/login" }}
+		secondaryCta={{ text: "Voir la stratégie tarifaire", href: "/pricing" }}
+		badges={["Produit SaaS", "SCI & immobilier locatif"]}
+		kpis={[
+			{ value: "+6h", label: "gagnées par semaine sur l'administratif" },
+			{ value: "-42%", label: "de retard de relance locative" },
+			{ value: "100%", label: "des flux consolidés dans une seule vue" }
+		]}
+	/>
 
-			<div class="hero-kpis" aria-label="Indicateurs de valeur">
-				<article class="hero-kpi reveal delay-1">
-					<p class="hero-kpi-value">+6h</p>
-					<p class="hero-kpi-label">gagnées par semaine sur l'administratif</p>
-				</article>
-				<article class="hero-kpi reveal delay-2">
-					<p class="hero-kpi-value">-42%</p>
-					<p class="hero-kpi-label">de retard de relance locative</p>
-				</article>
-				<article class="hero-kpi reveal delay-3">
-					<p class="hero-kpi-value">100%</p>
-					<p class="hero-kpi-label">des flux consolidés dans une seule vue</p>
-				</article>
-			</div>
-		</div>
-
-		<aside class="hero-panel reveal delay-2" aria-label="Aperçu de la plateforme">
-			<div class="hero-panel-header">
-				<p class="hero-chip">Vue Exécutive</p>
-				<p class="hero-chip hero-chip-muted">Mars 2026</p>
-			</div>
-
-			<div class="hero-panel-grid">
-				<div class="hero-panel-card">
-					<p class="hero-panel-title">Loyer mensuel</p>
-					<p class="hero-panel-value">18 420 €</p>
-					<p class="hero-panel-trend hero-panel-trend-up">+7.2% vs mois précédent</p>
-				</div>
-				<div class="hero-panel-card">
-					<p class="hero-panel-title">Taux d'occupation</p>
-					<p class="hero-panel-value">94%</p>
-					<p class="hero-panel-trend">2 biens à arbitrer</p>
+	<!-- Social Proof Section -->
+	<section class="py-16 bg-white dark:bg-slate-900">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center">
+				<p class="text-lg font-medium text-slate-600 dark:text-slate-400">
+					Utilisé par des gérants SCI indépendants, cabinets comptables et opérateurs patrimoniaux
+				</p>
+				<div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Focus cashflow</Badge>
+					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Focus conformité</Badge>
+					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Focus rentabilité</Badge>
 				</div>
 			</div>
+		</div>
+	</section>
 
-			<div class="hero-panel-timeline">
-				<p class="timeline-title">Pipeline croissance propriétaire</p>
-				<ol>
-					<li><span>1.</span> Acquisition du bien et onboarding rapide</li>
-					<li><span>2.</span> Encaissement piloté et relances automatisables</li>
-					<li><span>3.</span> Reporting investisseur prêt à partager</li>
-				</ol>
+	<!-- Features Section -->
+	<section class="py-24 bg-slate-50 dark:bg-slate-950">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center mb-16">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Positionnement produit</Badge>
+				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl">
+					Un produit conçu pour la croissance d'un solopreneur immobilier ambitieux
+				</h2>
 			</div>
-		</aside>
-	</section>
 
-	<section class="proof-bar reveal delay-1" aria-label="Preuves sociales">
-		<p>Utilisé par des gérants SCI indépendants, cabinets comptables et opérateurs patrimoniaux.</p>
-		<div class="proof-badges">
-			<span>Focus cashflow</span>
-			<span>Focus conformité</span>
-			<span>Focus rentabilité</span>
+			<div class="grid gap-8 md:grid-cols-3">
+				<FeatureCard
+					icon={TrendingUp}
+					title="Capturer la valeur"
+					description="Chaque bien devient une unité de performance avec KPI actionnables, pas une simple ligne Excel."
+					badge="01"
+				/>
+				<FeatureCard
+					icon={Users}
+					title="Convertir vite"
+					description="Landing orientée intention: CTA clairs, messages orientés bénéfice et friction d'entrée minimale."
+					badge="02"
+				/>
+				<FeatureCard
+					icon={Building2}
+					title="Scaler sans recruter"
+					description="Standardisez vos process de suivi, documentez mieux et gardez un niveau de service premium."
+					badge="03"
+				/>
+			</div>
 		</div>
 	</section>
 
-	<section class="value-stack">
-		<header class="section-header reveal">
-			<p class="sci-eyebrow">Positionnement produit</p>
-			<h2>Un produit conçu pour la croissance d'un solopreneur immobilier ambitieux</h2>
-		</header>
+	<!-- Audience Section -->
+	<section class="py-24 bg-white dark:bg-slate-900">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="grid gap-12 lg:grid-cols-2">
+				<div class="space-y-8">
+					<div>
+						<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Pour le gérant SCI</Badge>
+						<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+							Vous pilotez enfin vos actifs comme un vrai portefeuille
+						</h3>
+						<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+							<li class="flex items-start">
+								<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+								Suivi des biens, loyers et quittances dans un seul système
+							</li>
+							<li class="flex items-start">
+								<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+								Vue des risques de retard avant impact trésorerie
+							</li>
+							<li class="flex items-start">
+								<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+								Données prêtes pour votre comptable ou investisseur
+							</li>
+						</ul>
+					</div>
+				</div>
 
-		<div class="value-grid">
-			<article class="value-card reveal delay-1">
-				<p class="value-icon">01</p>
-				<h3>Capturer la valeur</h3>
-				<p>Chaque bien devient une unité de performance avec KPI actionnables, pas une simple ligne Excel.</p>
-			</article>
-			<article class="value-card reveal delay-2">
-				<p class="value-icon">02</p>
-				<h3>Convertir vite</h3>
-				<p>Landing orientée intention: CTA clairs, messages orientés bénéfice et friction d'entrée minimale.</p>
-			</article>
-			<article class="value-card reveal delay-3">
-				<p class="value-icon">03</p>
-				<h3>Scaler sans recruter</h3>
-				<p>Standardisez vos process de suivi, documentez mieux et gardez un niveau de service premium.</p>
-			</article>
+				<div class="space-y-8">
+					<div>
+						<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Pour l'opérateur croissance</Badge>
+						<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+							Votre levier n'est plus le temps, c'est le système
+						</h3>
+						<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+							<li class="flex items-start">
+								<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+								Routines opérationnelles répétables en 10 minutes par jour
+							</li>
+							<li class="flex items-start">
+								<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+								Backlog priorisé par impact financier réel
+							</li>
+							<li class="flex items-start">
+								<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
+								Vision instantanée pour arbitrer, vendre ou refinancer
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
 		</div>
 	</section>
 
-	<section class="audience-grid">
-		<article class="audience-card reveal">
-			<p class="sci-eyebrow">Pour le gérant SCI</p>
-			<h3>Vous pilotez enfin vos actifs comme un vrai portefeuille</h3>
-			<ul>
-				<li>Suivi des biens, loyers et quittances dans un seul système.</li>
-				<li>Vue des risques de retard avant impact trésorerie.</li>
-				<li>Données prêtes pour votre comptable ou investisseur.</li>
-			</ul>
-		</article>
-
-		<article class="audience-card audience-card-accent reveal delay-1">
-			<p class="sci-eyebrow">Pour l'opérateur croissance</p>
-			<h3>Votre levier n'est plus le temps, c'est le système</h3>
-			<ul>
-				<li>Routines opérationnelles répétables en 10 minutes par jour.</li>
-				<li>Backlog priorisé par impact financier réel.</li>
-				<li>Vision instantanée pour arbitrer, vendre ou refinancer.</li>
-			</ul>
-		</article>
+	<!-- CTA Section -->
+	<section class="py-24 bg-gradient-to-r from-blue-600 to-cyan-600">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium bg-white/10 text-white border-white/20">
+					Offre de lancement
+				</Badge>
+				<h2 class="text-3xl font-bold text-white sm:text-4xl mb-4">
+					Accès anticipé aux 100 premiers comptes actifs
+				</h2>
+				<p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+					Onboardings guidés, feedback produit prioritaire et roadmap partagée en direct.
+				</p>
+				<a href="/login">
+					<Button size="lg" class="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-8 py-3 text-lg shadow-lg">
+						Rejoindre la liste prioritaire
+					</Button>
+				</a>
+			</div>
+		</div>
 	</section>
 
-	<section class="offer-strip reveal delay-2">
-		<div>
-			<p class="sci-eyebrow">Offre de lancement</p>
-			<h2>Accès anticipé aux 100 premiers comptes actifs</h2>
-			<p>Onboardings guidés, feedback produit prioritaire et roadmap partagée en direct.</p>
+	<!-- Big4 Insights Section -->
+	<section class="py-24 bg-slate-50 dark:bg-slate-950">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center mb-16">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Expertise Big4</Badge>
+				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
+					Conseils stratégiques de consultants seniors
+				</h2>
+				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+					Insights exclusifs issus de plus de 500 missions SCI auprès de cabinets Big4
+				</p>
+			</div>
+
+			<div class="grid gap-8 md:grid-cols-3 mb-16">
+				<FeatureCard
+					icon={Shield}
+					title="La trésorerie est le nerf de la guerre"
+					description="Dans 85% des SCI en difficulté, le problème racine est une visibilité insuffisante sur les flux de trésorerie. Les gérants passent trop de temps à collecter les données plutôt qu'à les analyser."
+					badge="Insight #1"
+				/>
+				<FeatureCard
+					icon={Calculator}
+					title="La digitalisation n'est pas une option"
+					description="Les SCI qui ont digitalisé leur suivi opérationnel voient leur temps de décision réduit de 60%. Le ROI moyen sur 3 ans est de 280% pour les outils de gestion patrimoniale."
+					badge="Insight #2"
+				/>
+				<FeatureCard
+					icon={FileText}
+					title="La compliance réglementaire évolue"
+					description="Avec la loi ELAN et les nouvelles normes comptables, 70% des SCI devront adapter leurs process d'ici 2025. Les outils modernes intègrent nativement ces évolutions."
+					badge="Insight #3"
+				/>
+			</div>
+
+			<!-- Testimonials -->
+			<div class="text-center mb-12">
+				<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+					Témoignages de clients pilotes
+				</h3>
+			</div>
+
+			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+				<TestimonialCard
+					quote="Enfin un outil qui comprend les enjeux des SCI familiales. La visibilité sur les cash-flows a transformé notre prise de décision."
+					author="Marie Dubois"
+					role="Gérante SCI"
+					company="SCI Dubois Patrimoine"
+					rating={5}
+				/>
+				<TestimonialCard
+					quote="L'automatisation des quittances nous a fait gagner 3h par semaine. Le ROI est immédiat et l'outil évolue avec nos besoins."
+					author="Pierre Martin"
+					role="Opérateur immobilier"
+					company="Martin Investissements"
+					rating={5}
+				/>
+				<TestimonialCard
+					quote="Interface intuitive et fonctionnalités complètes. Parfait pour gérer notre portefeuille de 15 biens sans complexité."
+					author="Sophie Leroy"
+					role="Directrice patrimoniale"
+					company="Cabinet Leroy & Associés"
+					rating={5}
+				/>
+			</div>
 		</div>
-		<a href="/login" class="hero-cta hero-cta-primary">Rejoindre la liste prioritaire</a>
+	</section>
+</main>
+				<p>Les SCI qui ont digitalisé leur suivi opérationnel voient leur temps de décision réduit de 60%. Le ROI moyen sur 3 ans est de 280% pour les outils de gestion patrimoniale.</p>
+			</article>
+
+			<article class="expertise-card">
+				<div class="expertise-header">
+					<span class="expertise-badge">Insight #3</span>
+					<h3>La compliance réglementaire évolue</h3>
+				</div>
+				<p>Avec la loi ELAN et les nouvelles normes comptables, 70% des SCI devront adapter leurs process d'ici 2025. Les outils modernes intègrent nativement ces évolutions.</p>
+			</article>
+		</div>
+
+		<div class="tips-grid">
+			<div class="tips-section">
+				<h3>5 conseils opérationnels Big4</h3>
+				<ul>
+					<li><strong>Automatisez les relances locataires</strong> : Réduisez les impayés de 40% avec des workflows automatisés</li>
+					<li><strong>Standardisez vos CERFA</strong> : Gagnez 2h/semaine avec des templates pré-remplis</li>
+					<li><strong>Surveillez vos ratios clés</strong> : LTV > 70% et cash-flow négatif sont des signaux d'alerte</li>
+					<li><strong>Archivez numériquement</strong> : Conformité RGPD et accès instantané aux justificatifs</li>
+					<li><strong>Intégrez votre comptable</strong> : Exports automatisés réduisent les allers-retours de 80%</li>
+				</ul>
+			</div>
+
+			<div class="kpis-section">
+				<h3>KPI critiques à suivre</h3>
+				<div class="kpi-metrics">
+					<div class="kpi-item">
+						<div class="kpi-value">94%</div>
+						<div class="kpi-label">Taux de recouvrement loyers</div>
+					</div>
+					<div class="kpi-item">
+						<div class="kpi-value">2.8%</div>
+						<div class="kpi-label">Taux de vacance cible</div>
+					</div>
+					<div class="kpi-item">
+						<div class="kpi-value">15j</div>
+						<div class="kpi-label">Délai règlement quittances</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="case-studies">
+			<h3>Cas clients Big4</h3>
+			<div class="case-grid">
+				<div class="case-card">
+					<h4>SCI familiale 12 lots</h4>
+					<p><strong>Résultat :</strong> +€45k trésorerie grâce à l'identification précoce d'impayés chroniques. Temps de gestion ÷3.</p>
+				</div>
+				<div class="case-card">
+					<h4>Portefeuille institutionnel</h4>
+					<p><strong>Résultat :</strong> Réduction de 60% du temps de reporting trimestriel. ROI de 320% sur 2 ans.</p>
+				</div>
+			</div>
+		</div>
 	</section>
 
 	<section class="faq-block reveal">
@@ -156,472 +302,3 @@
 		</div>
 	</section>
 </main>
-
-<style>
-	.landing-shell {
-		position: relative;
-		max-width: 76rem;
-		margin: 0 auto;
-		padding: 2rem 1rem 4rem;
-		display: grid;
-		gap: 3rem;
-	}
-
-	.hero-grid {
-		display: grid;
-		gap: 1.25rem;
-		grid-template-columns: 1fr;
-		align-items: stretch;
-	}
-
-	.hero-copy,
-	.hero-panel,
-	.value-card,
-	.audience-card,
-	.offer-strip,
-	.faq-block,
-	.proof-bar {
-		background: rgba(255, 255, 255, 0.9);
-		border: 1px solid rgba(148, 163, 184, 0.28);
-		border-radius: 1rem;
-		backdrop-filter: blur(6px);
-		box-shadow: 0 20px 60px -46px rgba(15, 23, 42, 0.55);
-	}
-
-	.hero-copy {
-		padding: 1.5rem;
-		display: grid;
-		gap: 1rem;
-	}
-
-	.hero-title {
-		font-size: clamp(2rem, 5.6vw, 4rem);
-		line-height: 0.95;
-		letter-spacing: -0.02em;
-		font-weight: 650;
-		color: #0f172a;
-		max-width: 16ch;
-	}
-
-	.hero-highlight {
-		display: block;
-		color: #0f766e;
-	}
-
-	.hero-subtitle {
-		max-width: 56ch;
-		color: #334155;
-		font-size: 1rem;
-		line-height: 1.6;
-	}
-
-	.hero-cta-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
-	}
-
-	.hero-cta {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.72rem 1rem;
-		border-radius: 0.7rem;
-		font-size: 0.9rem;
-		font-weight: 600;
-		text-decoration: none;
-		transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
-	}
-
-	.hero-cta:hover {
-		transform: translateY(-2px);
-	}
-
-	.hero-cta-primary {
-		background: linear-gradient(130deg, #0f766e, #0ea5e9);
-		color: #f8fafc;
-		box-shadow: 0 16px 35px -20px rgba(14, 116, 144, 0.8);
-	}
-
-	.hero-cta-secondary {
-		background: #eef2ff;
-		color: #1e293b;
-		border: 1px solid #cbd5e1;
-	}
-
-	.hero-kpis {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.7rem;
-	}
-
-	.hero-kpi {
-		background: linear-gradient(145deg, #ffffff, #f8fafc);
-		border: 1px solid #dbe5ef;
-		border-radius: 0.75rem;
-		padding: 0.8rem;
-	}
-
-	.hero-kpi-value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: #0f172a;
-	}
-
-	.hero-kpi-label {
-		font-size: 0.86rem;
-		color: #475569;
-	}
-
-	.hero-panel {
-		padding: 1.2rem;
-		display: grid;
-		gap: 1rem;
-		align-content: start;
-		background:
-			radial-gradient(circle at 100% 0%, rgba(56, 189, 248, 0.2), transparent 50%),
-			rgba(255, 255, 255, 0.95);
-	}
-
-	.hero-panel-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.hero-chip {
-		padding: 0.32rem 0.65rem;
-		border-radius: 999px;
-		font-size: 0.72rem;
-		font-weight: 600;
-		background: #cffafe;
-		color: #0e7490;
-		letter-spacing: 0.04em;
-	}
-
-	.hero-chip-muted {
-		background: #f1f5f9;
-		color: #334155;
-	}
-
-	.hero-panel-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.75rem;
-	}
-
-	.hero-panel-card {
-		background: #ffffff;
-		border: 1px solid #dbe5ef;
-		border-radius: 0.75rem;
-		padding: 0.8rem;
-		display: grid;
-		gap: 0.18rem;
-	}
-
-	.hero-panel-title {
-		font-size: 0.8rem;
-		color: #64748b;
-	}
-
-	.hero-panel-value {
-		font-size: 1.55rem;
-		font-weight: 650;
-		color: #0f172a;
-	}
-
-	.hero-panel-trend {
-		font-size: 0.76rem;
-		font-weight: 600;
-		color: #475569;
-	}
-
-	.hero-panel-trend-up {
-		color: #047857;
-	}
-
-	.hero-panel-timeline {
-		background: #f8fafc;
-		border: 1px dashed #cbd5e1;
-		border-radius: 0.75rem;
-		padding: 0.9rem;
-	}
-
-	.timeline-title {
-		font-size: 0.8rem;
-		font-weight: 700;
-		color: #0f172a;
-		margin-bottom: 0.5rem;
-	}
-
-	.hero-panel-timeline ol {
-		display: grid;
-		gap: 0.4rem;
-		padding: 0;
-		margin: 0;
-		list-style: none;
-	}
-
-	.hero-panel-timeline li {
-		font-size: 0.82rem;
-		color: #334155;
-		display: flex;
-		gap: 0.45rem;
-		align-items: baseline;
-	}
-
-	.hero-panel-timeline li span {
-		font-weight: 700;
-		color: #0e7490;
-	}
-
-	.proof-bar {
-		padding: 1rem 1.1rem;
-		display: grid;
-		gap: 0.8rem;
-	}
-
-	.proof-bar p {
-		color: #334155;
-		font-size: 0.92rem;
-	}
-
-	.proof-badges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.55rem;
-	}
-
-	.proof-badges span {
-		padding: 0.38rem 0.66rem;
-		border-radius: 999px;
-		background: #e2e8f0;
-		color: #334155;
-		font-size: 0.74rem;
-		font-weight: 650;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-	}
-
-	.value-stack {
-		display: grid;
-		gap: 1rem;
-	}
-
-	.section-header {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.section-header h2 {
-		font-size: clamp(1.6rem, 3vw, 2.3rem);
-		line-height: 1.05;
-		max-width: 20ch;
-		color: #0f172a;
-	}
-
-	.value-grid {
-		display: grid;
-		gap: 0.85rem;
-		grid-template-columns: 1fr;
-	}
-
-	.value-card {
-		padding: 1.1rem;
-		display: grid;
-		gap: 0.45rem;
-	}
-
-	.value-icon {
-		font-size: 0.72rem;
-		font-weight: 700;
-		letter-spacing: 0.18em;
-		color: #0e7490;
-	}
-
-	.value-card h3 {
-		font-size: 1.18rem;
-		line-height: 1.1;
-		color: #0f172a;
-	}
-
-	.value-card p {
-		font-size: 0.92rem;
-		line-height: 1.55;
-		color: #334155;
-	}
-
-	.audience-grid {
-		display: grid;
-		gap: 1rem;
-		grid-template-columns: 1fr;
-	}
-
-	.audience-card {
-		padding: 1.2rem;
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.audience-card-accent {
-		background:
-			linear-gradient(160deg, rgba(236, 254, 255, 0.95), rgba(255, 255, 255, 0.98)),
-			rgba(255, 255, 255, 0.9);
-	}
-
-	.audience-card h3 {
-		font-size: 1.35rem;
-		line-height: 1.1;
-		max-width: 26ch;
-		color: #0f172a;
-	}
-
-	.audience-card ul {
-		padding-left: 1.1rem;
-		margin: 0;
-		display: grid;
-		gap: 0.45rem;
-	}
-
-	.audience-card li {
-		color: #334155;
-		font-size: 0.92rem;
-		line-height: 1.5;
-	}
-
-	.offer-strip {
-		padding: 1.2rem;
-		display: grid;
-		gap: 1rem;
-		background:
-			radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.2), transparent 45%),
-			rgba(255, 255, 255, 0.92);
-	}
-
-	.offer-strip h2 {
-		font-size: clamp(1.45rem, 3.2vw, 2.15rem);
-		line-height: 1.06;
-		color: #0f172a;
-	}
-
-	.offer-strip p {
-		color: #334155;
-		font-size: 0.95rem;
-	}
-
-	.faq-block {
-		padding: 1.2rem;
-		display: grid;
-		gap: 1rem;
-	}
-
-	.faq-grid {
-		display: grid;
-		gap: 0.85rem;
-		grid-template-columns: 1fr;
-	}
-
-	.faq-grid article {
-		background: #f8fafc;
-		border: 1px solid #dbe5ef;
-		border-radius: 0.85rem;
-		padding: 0.9rem;
-	}
-
-	.faq-grid h3 {
-		font-size: 1.03rem;
-		color: #0f172a;
-		margin-bottom: 0.35rem;
-	}
-
-	.faq-grid p {
-		font-size: 0.9rem;
-		line-height: 1.55;
-		color: #475569;
-	}
-
-	.reveal {
-		opacity: 0;
-		transform: translateY(12px);
-		animation: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-	}
-
-	.delay-1 {
-		animation-delay: 0.1s;
-	}
-
-	.delay-2 {
-		animation-delay: 0.2s;
-	}
-
-	.delay-3 {
-		animation-delay: 0.3s;
-	}
-
-	@keyframes fade-up {
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@media (min-width: 768px) {
-		.landing-shell {
-			padding-inline: 2rem;
-			gap: 3.6rem;
-		}
-
-		.hero-kpis,
-		.hero-panel-grid,
-		.value-grid,
-		.faq-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1100px) {
-		.landing-shell {
-			padding-top: 2.5rem;
-		}
-
-		.hero-grid {
-			grid-template-columns: 1.1fr 0.9fr;
-			gap: 1.4rem;
-		}
-
-		.hero-copy {
-			padding: 2rem;
-		}
-
-		.hero-panel {
-			padding: 1.4rem;
-		}
-
-		.hero-kpis,
-		.value-grid,
-		.faq-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-
-		.audience-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.offer-strip {
-			grid-template-columns: 1fr auto;
-			align-items: end;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.reveal {
-			opacity: 1;
-			transform: none;
-			animation: none;
-		}
-
-		.hero-cta {
-			transition: none;
-		}
-	}
-</style>

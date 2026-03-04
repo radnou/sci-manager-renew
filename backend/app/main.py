@@ -15,7 +15,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "*.scimanager.fr"])
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "*.scimanager.fr"])
 
 app.add_middleware(
     CORSMiddleware,

@@ -4,6 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Global theme transitions */
+* {
+	transition: var(--theme-transition, none);
+}
+
+/* Smooth transitions for theme changes */
+html {
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 :root {
 	--radius: 0.75rem;
 	--background: oklch(0.99 0.005 95.7);

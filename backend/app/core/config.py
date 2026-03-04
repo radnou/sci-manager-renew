@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5432/postgres"
     stripe_secret_key: str = "sk_test_placeholder"
     stripe_webhook_secret: str = "whsec_placeholder"
+    stripe_starter_price_id: str = "price_1T7MW5BCxd3SKdGJP2xjawrj"
+    stripe_pro_price_id: str = "price_1T7MW6BCxd3SKdGJKzcNqdkJ"
+    stripe_lifetime_price_id: str = "price_1T7MW7BCxd3SKdGJVrHWprJ8"
     resend_api_key: str = "re_placeholder"
     resend_from_email: str = "noreply@scimanager.fr"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
