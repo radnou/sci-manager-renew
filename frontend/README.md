@@ -1,52 +1,58 @@
-# sv
+# Frontend SCI Manager
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Interface SvelteKit orientée exécution métier pour la gestion SCI:
 
-## Creating a project
+- landing orientée conversion,
+- cockpit dashboard,
+- gestion `biens` / `loyers`,
+- génération de quittances.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## 1) Objectifs produit frontend
 
-```sh
-# create a new project
-npx sv create my-app
+- Rendre visibles les KPI clés sans retraitement manuel.
+- Réduire la friction de saisie pour les opérations quotidiennes.
+- Uniformiser la qualité UX via un design system documenté (Storybook).
+
+## 2) Scripts principaux
+
+```bash
+pnpm run dev                # développement local
+pnpm run check              # typecheck + diagnostics Svelte
+pnpm run build              # build production
+pnpm run storybook          # Storybook local
+pnpm run build-storybook    # build Storybook statique
+pnpm run test:high-value    # couverture >= 90% sur logique métier critique
 ```
 
-To recreate this project with the same configuration:
+## 3) Couverture haute valeur
 
-```sh
-# recreate this project
-pnpm dlx sv@0.12.4 create --template minimal --types ts --add prettier eslint vitest="usages:component,unit" playwright tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:auto" devtools-json paraglide="languageTags:en, fr,es+demo:no" mdsvex mcp="ide:other+setup:local" --install pnpm svelte-test
-```
+`test:high-value` cible les modules à impact business direct:
 
-## Developing
+- `src/lib/api.ts`
+- `src/lib/high-value/biens.ts`
+- `src/lib/high-value/loyers.ts`
+- `src/lib/high-value/formatters.ts`
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Seuils minimum imposés:
 
-```sh
-npm run dev
+- lines >= 90%
+- branches >= 90%
+- functions >= 90%
+- statements >= 90%
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## 4) Structure fonctionnelle
 
-## Building
+- `src/routes/+page.svelte`: landing et proposition de valeur.
+- `src/routes/dashboard/+page.svelte`: synthèse portefeuille.
+- `src/routes/biens/+page.svelte`: gestion des actifs.
+- `src/routes/loyers/+page.svelte`: suivi encaissements.
+- `src/lib/components/`: composants métier réutilisables.
+- `src/lib/high-value/`: logique métier pure testable.
+- `src/stories/`: documentation design system et compositions d'écran.
 
-To create a production version of your app:
+## 5) Règles d'implémentation
 
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## High-Value Coverage Gate
-
-Pour sécuriser les features métier les plus critiques (API et logique de gestion biens/loyers), exécuter:
-
-```sh
-pnpm run test:high-value
-```
-
-Cette commande applique un seuil de couverture minimal de 90% (lignes/fonctions/statements/branches) sur le périmètre ciblé.
+- TypeScript strict et gestion d'erreurs explicite.
+- États UI systématiques: `loading`, `empty`, `error`.
+- Composants orientés réutilisation et testabilité.
+- Aucune logique critique cachée exclusivement dans les composants visuels.

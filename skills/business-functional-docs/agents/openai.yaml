@@ -1,0 +1,4 @@
+interface:
+  display_name: "Business Functional Advisor"
+  short_description: "Cadre business et fonctionnel prêt à exécuter."
+  default_prompt: "Use $business-functional-docs to update business documentation, functional scope, and KPI tracking in this repository."

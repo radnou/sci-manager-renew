@@ -1,12 +1,26 @@
 # Architecture Overview
 
-The SCI-Manager system follows a two-tier architecture with a FastAPI backend and a SvelteKit frontend. The database is hosted on Supabase (PostgreSQL) with row-level security rules (RLS). Payments integrate with Stripe for subscription and one-time plans.
+SCI Manager repose sur une architecture web 2 couches avec séparation claire des responsabilités:
 
-## Database Tables (Supabase)
+- **Frontend (SvelteKit)**: expérience utilisateur, workflows métier, visualisation KPI.
+- **Backend (FastAPI)**: logique API, orchestration données, exposition endpoints métier.
+- **Supabase (PostgreSQL + RLS)**: persistance et gouvernance d'accès.
+- **Stripe**: monétisation (abonnements/plan payant).
+
+## 1) Vue business -> technique
+
+Chaque capacité business est mappée à un bloc technique:
+
+- `Pilotage portefeuille` -> routes frontend `biens`, API `/v1/biens`, table `biens`.
+- `Suivi encaissements` -> routes frontend `loyers`, API `/v1/loyers`, table `loyers`.
+- `Production documentaire` -> composant quittus, API `/v1/quitus`.
+- `Synthèse décisionnelle` -> dashboard frontend + agrégations côté UI/API.
+
+## 2) Schéma de données cible (simplifié)
 
 ```mermaid
 erDiagram
-    SCI ||--o{ ASSOCIÉS : has
+    SCI ||--o{ ASSOCIES : has
     SCI ||--o{ BIENS : owns
     BIENS ||--o{ LOYERS : generates
 
@@ -16,40 +30,52 @@ erDiagram
         string siren
         string regime_fiscal
     }
-    ASSOCIÉS {
+    ASSOCIES {
+        uuid id PK
         uuid id_sci FK
+        uuid user_id
         float part
     }
     BIENS {
         uuid id PK
         uuid id_sci FK
         string adresse
-        string type_locatif
+        string ville
         number loyer_cc
-        number charges
-        number tmi
+        string statut
     }
     LOYERS {
+        uuid id PK
         uuid id_bien FK
-        date date
+        date date_loyer
         number montant
+        string statut
         bool quitus_genere
     }
 ```
 
-## API Endpoints (FastAPI v1)
+## 3) API métier (version actuelle)
 
-- `GET /v1/biens` – list or create rental properties
-- `GET /v1/loyers` – list or record rents
-- `GET /v1/quitus` – generate quittus documents
+- `GET /v1/biens` / `POST /v1/biens`
+- `GET /v1/loyers` / `POST /v1/loyers`
+- `GET /v1/quitus`
 
-The routers will live under `backend/app/api/v1/` and be included in `main.py` with prefixes.
+## 4) Flux applicatifs
 
-## User Flow
+1. L'utilisateur se connecte sur le frontend.
+2. Le frontend appelle les endpoints backend `/v1/*`.
+3. Le backend lit/écrit en base Supabase.
+4. Les modules frontend affichent KPI/tables et états métier (chargement, vide, erreur).
 
-1. **Onboarding:** user signs up via frontend, account is created in Supabase.
-2. **Dashboard:** after login, dashboard shows owned SCIs, biens and rent overview.
-3. **Compta:** user can add loyers entries and generate quittus PDFs.
-4. **Billing:** Stripe handles subscription billing behind the scenes.
+## 5) Contraintes architecture à respecter
 
-The frontend communicates with the backend APIs and directly with Supabase for realtime features.
+- RLS cohérent avec identité utilisateur (pas uniquement `id_sci`).
+- Contrats API typés et alignés frontend/backend.
+- Gestion d'erreurs explicite et homogène.
+- Couverture de tests renforcée sur la logique haute valeur.
+
+## 6) Prochaine cible d'évolution
+
+- Intégrer l'authentification utilisateur côté backend (JWT contextuel).
+- Ajouter une couche de services métier backend plus riche (agrégations KPI server-side).
+- Introduire observabilité structurée (logs, trace IDs, erreurs).
