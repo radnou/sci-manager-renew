@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: supabase_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5432:5432"
+
+  supabase:
+    image: supabase/supabase-dev:latest
+    container_name: supabase_dev
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"    # Studio
+      - "8001:8001"    # API (GoTrue/PostgREST)
+    environment:
+      - POSTGRES_PASSWORD=example
+      - DB_PASSWORD=example
+      - ANON_KEY=anon_key_example
+      - SERVICE_ROLE_KEY=service_key_example
+      - SUPABASE_URL=http://localhost:8001
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PORT=5432
+      - DB_NAME=postgres
+    restart: unless-stopped
