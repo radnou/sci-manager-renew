@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api.v1 import auth, biens, cerfa, files, loyers, quitus, stripe
+from app.api.v1 import auth, biens, cerfa, files, gdpr, loyers, quitus, stripe
 from app.core.config import settings
 from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
@@ -44,7 +44,10 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "*.scimanager.fr"])
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", "*.scimanager.fr", "testserver"]
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -103,10 +106,47 @@ async def logging_middleware(
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
+
+    # Security Headers de base
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+
+    # Content Security Policy (CSP)
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' https://js.stripe.com; "
+        "style-src 'self' 'unsafe-inline'; "  # Tailwind nécessite unsafe-inline
+        f"img-src 'self' data: https:; "
+        "font-src 'self' data:; "
+        f"connect-src 'self' {settings.supabase_url} https://api.stripe.com; "
+        "frame-src https://js.stripe.com; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'; "
+        "upgrade-insecure-requests"
+    )
+    response.headers["Content-Security-Policy"] = csp_policy
+
+    # Permissions Policy (Feature Policy)
+    response.headers["Permissions-Policy"] = (
+        "geolocation=(), "
+        "microphone=(), "
+        "camera=(), "
+        "payment=(self), "
+        "usb=(), "
+        "accelerometer=(), "
+        "gyroscope=(), "
+        "magnetometer=()"
+    )
+
+    # Referrer Policy
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # X-Permitted-Cross-Domain-Policies
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+
     return response
 
 
@@ -123,3 +163,4 @@ app.include_router(files.router, prefix="/api/v1")
 
 app.include_router(cerfa.router, prefix="/api/v1")
 app.include_router(stripe.router, prefix="/api/v1")
+app.include_router(gdpr.router, prefix="/api/v1")
