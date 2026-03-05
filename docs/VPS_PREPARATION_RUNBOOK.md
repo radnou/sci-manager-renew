@@ -1,105 +1,173 @@
-# Runbook VPS GererSCI (Preparation SSH)
+# VPS Preparation Runbook - GererSCI (Production France)
 
 Date de reference: 2026-03-05
 
-## 1. Objectif
+## 1) Purpose and success criteria
 
-Ce document prepare un VPS de production pour GererSCI afin de permettre une intervention distante SSH sans ambiguite.
+Ce runbook prepare une execution distante SSH de niveau production pour GererSCI.
 
-Perimetre:
-- Frontend SvelteKit (service systemd)
-- Backend FastAPI (service systemd)
-- Reverse proxy Nginx
-- TLS Let's Encrypt (Certbot)
-- Hardening de base (UFW + utilisateur non-root)
+Succes =
+- application disponible en HTTPS sur `app.gerersci.fr`,
+- API disponible en HTTPS sur `api.gerersci.fr`,
+- checks de sante backend au vert,
+- securite de base activee (SSH durci, firewall, TLS, non-root runtime),
+- procedure rollback testable en moins de 15 minutes.
 
-## 2. Etat actuel du repository (verifie)
+## 2) Scope
 
-Points importants constates dans le repo:
-- Pas de fichier `docker-compose.yml`.
-- Pas de `backend/requirements.txt` versionne.
-- `frontend/Dockerfile` existe, mais backend Dockerfile absent.
-- Config backend attend un fichier `.env` dans le dossier `backend`.
+In scope:
+- preparation OS,
+- durcissement acces serveur,
+- deployment frontend + backend en `systemd`,
+- Nginx reverse proxy,
+- certificats Let's Encrypt,
+- verification go-live,
+- plan rollback et support post-go-live.
 
-Conclusion: pour un deploiement robuste immediat, utiliser une architecture native VPS (`systemd + nginx`) au lieu d'un compose incomplet.
+Out of scope:
+- migration cloud multi-region,
+- SOC 2 complet,
+- DR actif-actif,
+- bastion enterprise centralise.
 
-## 3. Sizing VPS recommande
+## 3) Current repository constraints (verified)
 
-Recommande (France):
-- 4 vCPU
-- 8 Go RAM
-- 75 Go SSD
-- Ubuntu 24.04 LTS
+Constats de structure:
+- pas de `docker-compose.yml` versionne,
+- pas de `backend/requirements.txt` versionne,
+- backend lit les variables via `backend/.env`,
+- frontend est exploitable via `npm run build` + `npm run preview`.
 
-Minimum acceptable:
-- 2 vCPU
-- 4 Go RAM
-- 40 Go SSD
+Decision d'architecture recommandee:
+- deployment natif VPS (`systemd + nginx`) pour minimiser risque et delai.
 
-## 4. Informations a fournir avant intervention SSH
+## 4) Operating model (consulting governance)
 
-### 4.1 Acces serveur
+## 4.1 RACI simplifie
 
-- IP publique du VPS
-- Port SSH
-- Utilisateur SSH (ex: `ubuntu`)
-- Methode d'auth (cle privee)
-- Confirmation que l'IP d'administration est autorisee
+| Activite | Accountable | Responsible | Consulted | Informed |
+|---|---|---|---|---|
+| Validation architecture cible | CTO/Founder | Tech Lead | Security advisor | Product |
+| Preparation serveur | Tech Lead | Ops engineer | Security advisor | Founder |
+| Configuration secrets | Founder | Tech Lead | Security advisor | Ops |
+| Go/No-Go production | Founder | Tech Lead | Product, Security | Stakeholders |
+| Suivi incident post-go-live | Tech Lead | Ops engineer | Founder | Product |
 
-### 4.2 DNS
+## 4.2 Gates de decision
 
-- Domaine principal: `gerersci.fr`
-- Sous-domaines:
-  - `app.gerersci.fr`
-  - `api.gerersci.fr`
+Gate 1 - Pre-flight:
+- DNS configure,
+- secrets complets,
+- acces SSH valide,
+- fenetre de deploiement validee.
 
-Enregistrements A requis:
-- `@` -> IP VPS
-- `app` -> IP VPS
-- `api` -> IP VPS
+Gate 2 - Pre-go-live:
+- services locaux en RUN,
+- Nginx configuration valide,
+- certificats TLS emis,
+- health checks internes OK.
 
-### 4.3 Secrets applicatifs
+Gate 3 - Go-live:
+- health checks externes OK,
+- aucune erreur bloquante logs,
+- rollback plan confirme.
 
-Backend (`/opt/gerersci/app/backend/.env`):
+## 5) Infrastructure target
+
+## 5.1 Sizing VPS
+
+Recommande:
+- 4 vCPU,
+- 8 Go RAM,
+- 75 Go SSD,
+- Ubuntu 24.04 LTS.
+
+Minimum:
+- 2 vCPU,
+- 4 Go RAM,
+- 40 Go SSD.
+
+## 5.2 Naming and domains
+
+Domaine principal: `gerersci.fr`
+
+Sous-domaines:
+- `app.gerersci.fr` -> frontend,
+- `api.gerersci.fr` -> backend.
+
+DNS A records:
+- `@` -> IP VPS,
+- `app` -> IP VPS,
+- `api` -> IP VPS.
+
+## 6) Required inputs before SSH execution
+
+## 6.1 Server access
+
+- IP publique VPS,
+- port SSH,
+- utilisateur SSH (`ubuntu`/`debian`/autre),
+- methode auth (cle privee recommandee),
+- confirmation allowlist IP administration.
+
+## 6.2 Git and release target
+
+- URL repository,
+- branche/tag deploiement,
+- hash commit cible (si release figee).
+
+## 6.3 Application secrets
+
+Backend file: `/opt/gerersci/app/backend/.env`
+
+Minimum attendu:
 - `APP_ENV=production`
 - `DEBUG=false`
 - `FRONTEND_URL=https://app.gerersci.fr`
 - `CORS_ORIGINS=["https://app.gerersci.fr","https://gerersci.fr"]`
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_JWT_SECRET`
-- `STRIPE_SECRET_KEY` (live)
-- `STRIPE_WEBHOOK_SECRET`
-- `RESEND_API_KEY`
+- `SUPABASE_URL=<value>`
+- `SUPABASE_ANON_KEY=<value>`
+- `SUPABASE_SERVICE_ROLE_KEY=<value>`
+- `SUPABASE_JWT_SECRET=<value>`
+- `STRIPE_SECRET_KEY=<sk_live_...>`
+- `STRIPE_WEBHOOK_SECRET=<whsec_...>`
+- `RESEND_API_KEY=<re_...>`
 - `RESEND_FROM_EMAIL=noreply@gerersci.fr`
 
-Frontend (`/opt/gerersci/app/frontend/.env`):
+Frontend file: `/opt/gerersci/app/frontend/.env`
+
+Minimum attendu:
 - `VITE_API_URL=https://api.gerersci.fr`
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_STRIPE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_URL=<value>`
+- `VITE_SUPABASE_ANON_KEY=<value>`
+- `VITE_STRIPE_PUBLISHABLE_KEY=<pk_live_...>`
 
-## 5. Preparation serveur (OS)
+## 7) Security baseline (minimum viable hardening)
 
-### 5.1 Mises a jour et paquets
+Controles obligatoires:
+- acces SSH par cle uniquement (desactiver mot de passe),
+- utilisateur runtime non-root,
+- UFW: seulement `22`, `80`, `443`,
+- Fail2ban actif,
+- TLS actif et renouvellement automatique,
+- journaux systeme et Nginx consultables,
+- variables secretes hors git.
+
+## 8) Execution plan (step-by-step)
+
+## 8.1 OS bootstrap
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y nginx ufw fail2ban certbot python3-certbot-nginx git curl jq
 sudo apt install -y python3.12 python3.12-venv python3-pip
-```
-
-Node.js LTS (22.x):
-
-```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 node -v
 npm -v
 ```
 
-### 5.2 Utilisateur d'exploitation
+## 8.2 Runtime user and folders
 
 ```bash
 sudo adduser --disabled-password --gecos "" gerersci
@@ -108,7 +176,7 @@ sudo mkdir -p /opt/gerersci
 sudo chown -R gerersci:gerersci /opt/gerersci
 ```
 
-### 5.3 Firewall
+## 8.3 Firewall and SSH policy
 
 ```bash
 sudo ufw default deny incoming
@@ -120,9 +188,16 @@ sudo ufw --force enable
 sudo ufw status verbose
 ```
 
-## 6. Deployment applicatif
+SSH hardening (a adapter selon politique):
 
-### 6.1 Checkout code
+```bash
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo systemctl reload ssh
+```
+
+## 8.4 Code checkout
 
 ```bash
 sudo -u gerersci -H bash -lc '
@@ -133,9 +208,7 @@ git checkout <BRANCH_OR_TAG>
 '
 ```
 
-### 6.2 Backend (venv + dependances)
-
-Si `backend/requirements.txt` est absent, installer le socle minimal:
+## 8.5 Backend setup
 
 ```bash
 sudo -u gerersci -H bash -lc '
@@ -150,13 +223,13 @@ pip install \
 '
 ```
 
-Creer le fichier d'environnement backend:
+Create backend env:
 
 ```bash
 sudo -u gerersci -H bash -lc 'nano /opt/gerersci/app/backend/.env'
 ```
 
-### 6.3 Frontend (build production)
+## 8.6 Frontend setup
 
 ```bash
 sudo -u gerersci -H bash -lc '
@@ -166,17 +239,15 @@ npm run build
 '
 ```
 
-Creer le fichier d'environnement frontend:
+Create frontend env:
 
 ```bash
 sudo -u gerersci -H bash -lc 'nano /opt/gerersci/app/frontend/.env'
 ```
 
-## 7. Services systemd
+## 8.7 systemd services
 
-### 7.1 Backend service
-
-Fichier `/etc/systemd/system/gerersci-backend.service`:
+Backend service `/etc/systemd/system/gerersci-backend.service`:
 
 ```ini
 [Unit]
@@ -196,9 +267,7 @@ RestartSec=3
 WantedBy=multi-user.target
 ```
 
-### 7.2 Frontend service
-
-Fichier `/etc/systemd/system/gerersci-frontend.service`:
+Frontend service `/etc/systemd/system/gerersci-frontend.service`:
 
 ```ini
 [Unit]
@@ -218,7 +287,7 @@ RestartSec=3
 WantedBy=multi-user.target
 ```
 
-### 7.3 Activation
+Enable/start:
 
 ```bash
 sudo systemctl daemon-reload
@@ -227,9 +296,9 @@ sudo systemctl status gerersci-backend --no-pager
 sudo systemctl status gerersci-frontend --no-pager
 ```
 
-## 8. Nginx reverse proxy
+## 8.8 Nginx reverse proxy
 
-Fichier `/etc/nginx/sites-available/gerersci.conf`:
+File `/etc/nginx/sites-available/gerersci.conf`:
 
 ```nginx
 server {
@@ -262,7 +331,7 @@ server {
 }
 ```
 
-Activation:
+Enable and reload:
 
 ```bash
 sudo ln -sf /etc/nginx/sites-available/gerersci.conf /etc/nginx/sites-enabled/gerersci.conf
@@ -270,16 +339,16 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## 9. TLS (Let's Encrypt)
+## 8.9 TLS certificates
 
 ```bash
 sudo certbot --nginx -d gerersci.fr -d app.gerersci.fr -d api.gerersci.fr
 sudo certbot renew --dry-run
 ```
 
-## 10. Verification complete
+## 9) Validation plan
 
-### 10.1 Local VPS
+## 9.1 Internal checks
 
 ```bash
 curl -f http://127.0.0.1:8000/health
@@ -288,7 +357,7 @@ curl -f http://127.0.0.1:8000/health/ready
 curl -I http://127.0.0.1:4173
 ```
 
-### 10.2 Externe
+## 9.2 External checks
 
 ```bash
 curl -I https://app.gerersci.fr
@@ -296,7 +365,7 @@ curl -f https://api.gerersci.fr/health/live
 curl -f https://api.gerersci.fr/health/ready
 ```
 
-### 10.3 Logs
+## 9.3 Logs and diagnostics
 
 ```bash
 sudo journalctl -u gerersci-backend -n 200 --no-pager
@@ -304,7 +373,37 @@ sudo journalctl -u gerersci-frontend -n 200 --no-pager
 sudo tail -n 200 /var/log/nginx/error.log
 ```
 
-## 11. Procedure de mise a jour
+Go/No-Go criteria:
+- 100% checks above green,
+- zero error critique repetee dans logs,
+- readiness backend `200` stable.
+
+## 10) Rollback plan (15-minute target)
+
+Scenario rollback standard:
+
+```bash
+sudo -u gerersci -H bash -lc '
+cd /opt/gerersci/app
+git checkout <PREVIOUS_STABLE_TAG_OR_COMMIT>
+'
+
+sudo -u gerersci -H bash -lc '
+cd /opt/gerersci/app/frontend
+npm ci
+npm run build
+'
+
+sudo systemctl restart gerersci-backend gerersci-frontend
+sudo systemctl status gerersci-backend gerersci-frontend --no-pager
+```
+
+Validation rollback:
+- health endpoints OK,
+- page app chargee,
+- erreurs critiques absentes logs.
+
+## 11) Update procedure (standard release)
 
 ```bash
 sudo -u gerersci -H bash -lc '
@@ -327,25 +426,27 @@ pip install --upgrade pip
 '
 
 sudo systemctl restart gerersci-backend gerersci-frontend
-sudo systemctl status gerersci-backend gerersci-frontend --no-pager
 ```
 
-## 12. Blocages frequents
+## 12) Common failure modes and mitigations
 
-- DNS non propage -> Certbot echoue.
-- CORS production mal regle -> appels frontend bloques.
-- Cle Stripe test en production -> readiness a 503.
-- Service role Supabase invalide -> endpoints metier en erreur.
-- Port 4173 ou 8000 deja occupe -> service systemd KO.
+| Failure mode | Detection | Mitigation |
+|---|---|---|
+| DNS non propage | certbot echoue | verifier A records, TTL, propagation |
+| CORS mal regle | erreurs navigateur | corriger `CORS_ORIGINS` backend |
+| Stripe test key en prod | `/health/ready` KO | injecter `sk_live` + restart |
+| Port occupe | service failed | `ss -ltnp` puis ajustement service |
+| Secret invalide Supabase | erreurs API metier | corriger `.env` et redemarrer |
 
-## 13. Dossier a transmettre avant execution SSH par Codex
+## 13) Deliverables package before remote SSH
 
 Checklist minimale:
-- [ ] IP serveur, port SSH, utilisateur
-- [ ] Cle privee SSH (ou methode d'acces)
-- [ ] Domaine et DNS A records configures
-- [ ] Secrets backend complets
-- [ ] Variables frontend completes
-- [ ] Branch/tag Git cible
+- [ ] IP serveur, port SSH, user,
+- [ ] acces cle privee valide,
+- [ ] DNS pointe vers VPS,
+- [ ] secrets backend/frontend complets,
+- [ ] branche ou tag release,
+- [ ] fenetre de deploiement validee,
+- [ ] contact de decision Go/No-Go disponible.
 
-Une fois ces elements fournis, l'intervention SSH peut etre executee de bout en bout.
+Quand ce package est complet, l'intervention SSH peut etre executee de bout en bout avec un risque controle.
