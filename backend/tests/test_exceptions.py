@@ -86,41 +86,65 @@ def test_sci_manager_exception_handler_returns_correct_status():
 
 
 def test_generic_exception_handler_hides_details_in_production():
-    """Test que les exceptions génériques sont loggées et gérées"""
-    from fastapi.testclient import TestClient
-    from app.main import app
+    """Test que le handler cache les détails en production"""
+    import pytest
+    from unittest.mock import Mock, patch
+    from app.main import global_exception_handler
     from app.core.config import settings
-    from fastapi import APIRouter
 
-    # Sauvegarder l'environnement original
-    original_env = settings.app_env
+    # Créer un mock request avec state
+    request = Mock()
+    request.state.request_id = "test-request-id"
+    request.url.path = "/test/path"
+    request.method = "GET"
 
-    try:
-        # Changer en production pour ce test
-        settings.app_env = "production"
+    # Créer une exception avec des infos sensibles
+    exc = Exception("Internal database connection string: postgresql://secret")
 
-        test_router = APIRouter()
-
-        @test_router.get("/test/generic-error-prod")
-        async def test_generic_error():
-            raise Exception("Internal database connection string: postgresql://secret")
-
-        app.include_router(test_router)
-
-        client = TestClient(app)
-        response = client.get("/test/generic-error-prod")
+    # Tester en mode production
+    with patch.object(settings, 'app_env', "production"):
+        response = pytest.importorskip("asyncio").run(
+            global_exception_handler(request, exc)
+        )
 
         assert response.status_code == 500
-        response_json = response.json()
+        content = response.body.decode()
 
         # En production, ne pas exposer les détails
-        assert "secret" not in response.text.lower()
-        assert response_json["error"] == "Internal server error"
-        assert "request_id" in response_json
+        assert "secret" not in content.lower()
+        assert "Internal server error" in content
+        assert "test-request-id" in content
 
-    finally:
-        # Restaurer l'environnement
-        settings.app_env = original_env
+
+def test_generic_exception_handler_shows_details_in_development():
+    """Test que le handler montre les détails en dev"""
+    import pytest
+    from unittest.mock import Mock, patch
+    from app.main import global_exception_handler
+    from app.core.config import settings
+
+    # Créer un mock request avec state
+    request = Mock()
+    request.state.request_id = "test-request-id"
+    request.url.path = "/test/path"
+    request.method = "GET"
+
+    # Créer une exception avec des infos de debug
+    exc = ValueError("Debug information here")
+
+    # Tester en mode development
+    with patch.object(settings, 'app_env', "development"):
+        response = pytest.importorskip("asyncio").run(
+            global_exception_handler(request, exc)
+        )
+
+        assert response.status_code == 500
+        content = response.body.decode()
+
+        # En dev, montrer les détails
+        assert "ValueError" in content
+        assert "Debug information" in content
+        assert "test-request-id" in content
 
 
 def test_pydantic_validation_error_handler():

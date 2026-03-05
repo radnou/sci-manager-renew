@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+import structlog
+from fastapi import APIRouter, Depends, Request
 
 from app.core.config import settings
+from app.core.exceptions import ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
@@ -17,7 +18,7 @@ from app.models.stripe import (
 )
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 def _to_str(value: Any) -> str | None:
@@ -109,6 +110,8 @@ async def create_checkout_session(
     payload: CheckoutSessionCreateRequest,
     user_id: str = Depends(get_current_user),
 ) -> CheckoutSessionCreateResponse:
+    logger.info("creating_checkout_session", user_id=user_id, price_id=payload.price_id, mode=payload.mode)
+
     stripe.api_key = settings.stripe_secret_key
 
     try:
@@ -126,35 +129,32 @@ async def create_checkout_session(
             client_reference_id=user_id,
         )
     except stripe.error.StripeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+        logger.error("stripe_checkout_session_failed", user_id=user_id, error=str(exc), exc_info=True)
+        raise ExternalServiceError("Stripe", f"Checkout session creation failed: {str(exc)}")
 
     session_url = _to_str(getattr(session, "url", None))
     if not session_url and hasattr(session, "get"):
         session_url = _to_str(session.get("url"))
 
     if not session_url:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Stripe checkout session URL unavailable",
-        )
+        logger.error("stripe_session_url_missing", user_id=user_id)
+        raise ExternalServiceError("Stripe", "Checkout session URL unavailable")
 
+    logger.info("checkout_session_created", user_id=user_id, session_url=session_url)
     return CheckoutSessionCreateResponse(url=session_url)
 
 
 @router.post("/webhook", response_model=StripeWebhookResponse)
 @limiter.limit("10/minute")
 async def stripe_webhook(request: Request) -> StripeWebhookResponse:
+    logger.info("stripe_webhook_received")
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
     if not sig_header:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing Stripe signature",
-        )
+        logger.warning("stripe_webhook_missing_signature")
+        raise ValidationError("Missing Stripe signature header")
 
     stripe.api_key = settings.stripe_secret_key
 
@@ -165,16 +165,14 @@ async def stripe_webhook(request: Request) -> StripeWebhookResponse:
             secret=settings.stripe_webhook_secret,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid Stripe payload",
-        ) from exc
+        logger.error("stripe_webhook_invalid_payload", error=str(exc))
+        raise ValidationError(f"Invalid Stripe payload: {str(exc)}")
     except stripe.error.SignatureVerificationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid Stripe signature",
-        ) from exc
+        logger.error("stripe_webhook_invalid_signature", error=str(exc))
+        raise ValidationError(f"Invalid Stripe signature: {str(exc)}")
 
+    logger.info("stripe_webhook_processing", event_type=event.get("type") if hasattr(event, "get") else None)
     _handle_event(event)
+    logger.info("stripe_webhook_processed_successfully")
     return StripeWebhookResponse(status="success")
 

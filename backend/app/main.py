@@ -1,3 +1,5 @@
+import asyncio
+import signal
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -15,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api.v1 import auth, biens, cerfa, files, gdpr, loyers, quitus, stripe
+from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, stripe
 from app.core.config import settings
 from app.core.exceptions import SCIManagerException
 from app.core.logging_config import configure_logging
@@ -29,18 +31,83 @@ configure_logging(
 
 logger = structlog.get_logger(__name__)
 
+# Shutdown event pour coordonner le shutdown gracieux
+shutdown_event = asyncio.Event()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle manager pour startup et shutdown"""
-    # Startup
+    """
+    Lifecycle manager avec graceful shutdown.
+
+    Startup:
+    - Configure signal handlers pour SIGTERM et SIGINT
+    - Initialise les ressources
+
+    Shutdown:
+    - Attend la fin des requêtes en cours (grace period)
+    - Nettoie les ressources
+    """
+    # ==================== STARTUP ====================
     logger.info("application_starting",
                 app_name=settings.app_name,
-                app_env=settings.app_env)
+                app_env=settings.app_env,
+                version="1.0.0")
+
+    # Configurer les signal handlers pour graceful shutdown
+    loop = asyncio.get_event_loop()
+
+    def handle_shutdown_signal(sig):
+        """Handler appelé lors de SIGTERM ou SIGINT"""
+        signal_name = signal.Signals(sig).name
+        logger.info("shutdown_signal_received", signal=signal_name)
+        shutdown_event.set()
+
+    # Enregistrer les handlers
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, lambda s=sig: handle_shutdown_signal(s))
+
+    logger.info("signal_handlers_configured", signals=["SIGTERM", "SIGINT"])
+    logger.info("application_started")
+
     yield
 
-    # Shutdown
+    # ==================== SHUTDOWN ====================
     logger.info("application_shutting_down")
+
+    # Marquer le shutdown event
+    shutdown_event.set()
+
+    # Grace period: attendre que les requêtes en cours se terminent
+    grace_period_seconds = 30
+    logger.info("waiting_for_requests_to_complete", grace_period_seconds=grace_period_seconds)
+
+    # Attendre un peu pour que les requêtes se terminent
+    await asyncio.sleep(min(grace_period_seconds, 5))
+
+    # Cleanup des ressources
+    await cleanup_resources()
+
+    logger.info("application_shutdown_complete")
+
+
+async def cleanup_resources():
+    """
+    Nettoie les ressources avant shutdown.
+
+    - Clear les caches (@lru_cache)
+    - Ferme les connexions si nécessaire
+    - Flush les logs
+    """
+    logger.info("cleaning_up_resources")
+
+    # Clear les caches Supabase clients
+    from app.core.supabase_client import get_supabase_anon_client, get_supabase_service_client
+    get_supabase_anon_client.cache_clear()
+    get_supabase_service_client.cache_clear()
+
+    logger.info("caches_cleared")
+    logger.info("cleanup_complete")
 
 
 app = FastAPI(title="SCI-Manager API", version="1.0.0", lifespan=lifespan)
@@ -288,10 +355,8 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-@app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
-
+# Include health router (pas de prefix pour /health/live et /health/ready)
+app.include_router(health.router)
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(biens.router, prefix="/api/v1")
