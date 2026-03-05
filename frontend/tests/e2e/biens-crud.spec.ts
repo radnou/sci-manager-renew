@@ -5,7 +5,6 @@ test.describe('Operations pages', () => {
 		await page.goto('/biens');
 
 		await expect(page.getByRole('heading', { name: 'Gestion des biens' })).toBeVisible();
-		await expect(page.getByLabel('ID SCI')).toBeVisible();
 		await expect(page.getByLabel('Adresse')).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Ajouter le bien' })).toBeVisible();
 	});
@@ -15,6 +14,9 @@ test.describe('Operations pages', () => {
 
 		await expect(page.getByRole('heading', { name: 'Suivi des loyers' })).toBeVisible();
 		await expect(page.getByText('Nouveau loyer')).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Ajouter le loyer' })).toBeVisible();
+		await expect(
+			page.getByText("Ajoute d'abord un bien dans le module Biens avant de saisir un loyer.")
+		).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Ajouter le loyer' })).toBeDisabled();
 	});
 });
