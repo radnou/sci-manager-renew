@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import { LucideIcon } from 'lucide-svelte';
+	import type { ComponentType } from 'svelte';
 
 	interface Props {
-		icon?: typeof LucideIcon;
+		icon?: ComponentType;
 		title: string;
 		description: string;
 		badge?: string;
