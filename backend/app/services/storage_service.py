@@ -22,7 +22,7 @@ class StorageService:
     async def upload_file(
         self, file_path: str, file_content: bytes, content_type: str = "application/octet-stream"
     ) -> str:
-        """Upload file to storage and return public URL
+        """Upload file to storage and return storage URL
 
         Raises:
             ExternalServiceError: Si l'upload échoue
@@ -33,13 +33,11 @@ class StorageService:
             self.client.storage.from_(self.bucket_name).upload(
                 path=file_path,
                 file=file_content,
-                file_options={"content-type": content_type},
+                file_options={"content-type": content_type, "upsert": "true"},
             )
 
-            # Get public URL
-            url = self.client.storage.from_(self.bucket_name).get_public_url(
-                file_path
-            )
+            # Keep returning a URL for backward compatibility, even when bucket is private.
+            url = self.client.storage.from_(self.bucket_name).get_public_url(file_path)
 
             logger.info("file_uploaded", path=file_path)
             return url
@@ -70,6 +68,22 @@ class StorageService:
             logger.error("file_deletion_failed", path=file_path, error=str(e), exc_info=True)
             raise ExternalServiceError("Supabase Storage", f"Deletion failed: {str(e)}")
 
+    async def download_file(self, file_path: str) -> bytes:
+        """Download file from storage.
+
+        Raises:
+            ExternalServiceError: Si le téléchargement échoue
+        """
+        logger.info("downloading_file", path=file_path)
+
+        try:
+            content = self.client.storage.from_(self.bucket_name).download(file_path)
+            logger.info("file_downloaded", path=file_path, size=len(content))
+            return content
+        except Exception as e:
+            logger.error("file_download_failed", path=file_path, error=str(e), exc_info=True)
+            raise ExternalServiceError("Supabase Storage", f"Download failed: {str(e)}")
+
     async def get_file_url(self, file_path: str) -> str:
         """Get public URL for a file"""
         return self.client.storage.from_(self.bucket_name).get_public_url(file_path)
@@ -90,7 +104,7 @@ class StorageService:
                 logger.info("creating_bucket", bucket=self.bucket_name)
                 self.client.storage.create_bucket(
                     bucket_id=self.bucket_name,
-                    options={"public": True},
+                    options={"public": False},
                 )
                 logger.info("bucket_created", bucket=self.bucket_name)
                 return True
