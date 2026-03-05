@@ -1,5 +1,4 @@
 """File management endpoints"""
-from io import BytesIO
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status

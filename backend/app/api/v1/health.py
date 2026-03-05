@@ -99,7 +99,7 @@ async def _check_database() -> dict:
 
         # Requête simple pour vérifier la connectivité
         # On limite à 1 résultat pour être rapide
-        result = client.table("sci").select("id").limit(1).execute()
+        _result = client.table("sci").select("id").limit(1).execute()
 
         latency_ms = int((time.time() - start) * 1000)
 

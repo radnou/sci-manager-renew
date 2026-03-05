@@ -1,6 +1,5 @@
 """File storage service using Supabase Storage"""
 from io import BytesIO
-from typing import Optional
 
 import structlog
 from supabase import create_client

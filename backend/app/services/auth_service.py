@@ -1,5 +1,4 @@
 """Magic Link authentication service"""
-from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from supabase import create_client
@@ -82,7 +81,7 @@ class MagicLinkService:
         try:
             user = self.client.auth.get_user(access_token)
             return user
-        except Exception as e:
+        except Exception:
             return None
 
     async def refresh_session(self, refresh_token: str) -> Optional[dict]:
@@ -92,7 +91,7 @@ class MagicLinkService:
         try:
             response = self.client.auth.refresh_session(refresh_token)
             return response
-        except Exception as e:
+        except Exception:
             return None
 
 

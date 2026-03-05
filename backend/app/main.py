@@ -15,7 +15,6 @@ from pydantic import ValidationError as PydanticValidationError
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, stripe
 from app.core.config import settings
