@@ -1,4 +1,4 @@
-import { supabase } from '$lib/supabase';
+import { getCurrentSession } from '$lib/auth/session';
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -88,9 +88,7 @@ export type CheckoutSessionResponsePayload = {
 export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
 	let accessToken: string | undefined;
 	try {
-		const {
-			data: { session }
-		} = await supabase.auth.getSession();
+		const session = await getCurrentSession();
 		accessToken = session?.access_token;
 	} catch {
 		accessToken = undefined;
@@ -124,9 +122,7 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 export async function apiFetchBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
 	let accessToken: string | undefined;
 	try {
-		const {
-			data: { session }
-		} = await supabase.auth.getSession();
+		const session = await getCurrentSession();
 		accessToken = session?.access_token;
 	} catch {
 		accessToken = undefined;

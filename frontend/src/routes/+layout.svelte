@@ -3,6 +3,7 @@
 	import type { User } from '@supabase/supabase-js';
 	import { page } from '$app/state';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
+	import { clearFakeSession, getCurrentSession, subscribeToSessionChanges } from '$lib/auth/session';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
@@ -21,15 +22,13 @@
 		// Initialize theme
 		theme.initialize();
 
-		supabase.auth.getSession().then(({ data }) => {
+		getCurrentSession().then((session) => {
 			if (mounted) {
-				user = data.session?.user ?? null;
+				user = session?.user ?? null;
 			}
 		});
 
-		const {
-			data: { subscription }
-		} = supabase.auth.onAuthStateChange((_event, session) => {
+		const subscription = subscribeToSessionChanges((session) => {
 			if (mounted) {
 				user = session?.user ?? null;
 			}
@@ -42,7 +41,9 @@
 	});
 
 	async function handleLogout() {
+		clearFakeSession();
 		await supabase.auth.signOut();
+		user = null;
 	}
 </script>
 
