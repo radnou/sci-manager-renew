@@ -21,6 +21,6 @@ test.describe('Authentication pages', () => {
 
 		await expect(page.getByText('Créer un compte')).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Recevoir le lien de création' })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Vous avez déjà un compte?' })).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Vous avez déjà un compte?' })).toBeVisible();
 	});
 });
