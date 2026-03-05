@@ -10,11 +10,13 @@
 		Users
 	} from 'lucide-svelte';
 	import {
+		fetchSciDetail,
 		fetchBiens,
 		fetchLoyers,
 		fetchScis,
 		type Bien,
 		type Loyer,
+		type SCIDetail,
 		type SCIOverview
 	} from '$lib/api';
 	import BienTable from '$lib/components/BienTable.svelte';
@@ -32,16 +34,30 @@
 	import { calculateBienMetrics } from '$lib/high-value/biens';
 	import { calculateLoyerMetrics, mapLoyerStatusLabel } from '$lib/high-value/loyers';
 	import { calculatePortfolioMetrics, calculateSciScopeMetrics } from '$lib/high-value/portfolio';
-	import { formatCompactNumber, formatEur, formatPercent } from '$lib/high-value/formatters';
-	import { formatApiErrorMessage, mapAssociateRoleLabel } from '$lib/high-value/presentation';
+	import {
+		formatCompactNumber,
+		formatEur,
+		formatFrDate,
+		formatPercent
+	} from '$lib/high-value/formatters';
+	import {
+		formatApiErrorMessage,
+		mapAssociateRoleLabel,
+		mapChargeTypeLabel
+	} from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
 	let loyers: Loyer[] = [];
 	let scis: SCIOverview[] = [];
+	let activeSciDetail: SCIDetail | null = null;
 	let activeSciId = '';
 	let loading = true;
+	let detailLoading = true;
 	let errorMessage = '';
+	let detailErrorMessage = '';
+	let detailLoadedFor = '';
+	let detailRequestVersion = 0;
 
 	const emptyBienMetrics = calculateBienMetrics([]);
 	const emptyLoyerMetrics = calculateLoyerMetrics([]);
@@ -57,6 +73,10 @@
 	$: activeSnapshot =
 		sciSnapshots.find((snapshot) => String(snapshot.sci.id) === resolvedActiveSciId) ?? null;
 	$: activeSci = activeSnapshot?.sci ?? null;
+	$: activeSciProfile =
+		activeSciDetail && String(activeSciDetail.id || '') === resolvedActiveSciId
+			? activeSciDetail
+			: activeSci;
 	$: scopedBiens = activeSnapshot?.biens ?? [];
 	$: scopedLoyers = activeSnapshot?.loyers ?? [];
 	$: bienMetrics = activeSnapshot?.bienMetrics ?? emptyBienMetrics;
@@ -64,10 +84,10 @@
 	$: portfolioMetrics = calculatePortfolioMetrics(scis, biens, loyers);
 	$: collectionRate = loyerMetrics.collectionRate;
 	$: avgAssociateShare =
-		activeSci && activeSci.associes_count && activeSci.associes_count > 0
-			? 100 / activeSci.associes_count
+		activeSciProfile && activeSciProfile.associes_count && activeSciProfile.associes_count > 0
+			? 100 / activeSciProfile.associes_count
 			: 0;
-	$: associateSummary = activeSci?.associes ?? [];
+	$: associateSummary = activeSciDetail?.associes ?? activeSci?.associes ?? [];
 	$: priorities = [
 		{
 			title:
@@ -110,6 +130,16 @@
 
 	$: if (resolvedActiveSciId) {
 		setStoredActiveSciId(resolvedActiveSciId);
+	}
+
+	$: if (!resolvedActiveSciId) {
+		activeSciDetail = null;
+		detailLoading = false;
+		detailErrorMessage = '';
+		detailLoadedFor = '';
+	} else if (detailLoadedFor !== resolvedActiveSciId) {
+		detailLoadedFor = resolvedActiveSciId;
+		void loadSciDetail(resolvedActiveSciId);
 	}
 
 	function statusLabel(status: SCIOverview['statut']) {
@@ -155,6 +185,10 @@
 		return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200';
 	}
 
+	function activeSciStatus(status: SCIOverview['statut'] | null | undefined) {
+		return statusClass(status ?? activeSciProfile?.statut ?? null);
+	}
+
 	onMount(loadOverview);
 
 	async function loadOverview() {
@@ -178,10 +212,39 @@
 					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
 					storedActiveSciId) ||
 				String(fallbackSci?.id || '');
+			if (!nextScis.length) {
+				activeSciDetail = null;
+				detailLoadedFor = '';
+				detailLoading = false;
+				detailErrorMessage = '';
+			}
 		} catch (error) {
 			errorMessage = formatApiErrorMessage(error, 'Impossible de charger le cockpit SCI.');
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadSciDetail(sciId: string) {
+		const requestVersion = ++detailRequestVersion;
+		detailLoading = true;
+		detailErrorMessage = '';
+		activeSciDetail = null;
+
+		try {
+			const nextDetail = await fetchSciDetail(sciId);
+			if (requestVersion !== detailRequestVersion) return;
+			activeSciDetail = nextDetail;
+		} catch (error) {
+			if (requestVersion !== detailRequestVersion) return;
+			activeSciDetail = null;
+			detailErrorMessage = formatApiErrorMessage(
+				error,
+				'Impossible de charger le dashboard spécifique de la SCI active.'
+			);
+		} finally {
+			if (requestVersion !== detailRequestVersion) return;
+			detailLoading = false;
 		}
 	}
 </script>
@@ -399,6 +462,25 @@
 	</div>
 
 	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
+		<div class="xl:col-span-2">
+			<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+				<div>
+					<p class="sci-eyebrow">SCI active • Dashboard spécifique</p>
+					<h2 class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+						{activeSciProfile?.nom || 'SCI active à détailler'}
+					</h2>
+					<p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+						Une fois la SCI sélectionnée, le cockpit descend au niveau entité: identité,
+						gouvernance, charges, fiscalité et exécution locative.
+					</p>
+				</div>
+			</div>
+
+			{#if detailErrorMessage}
+				<p class="sci-inline-alert sci-inline-alert-error">{detailErrorMessage}</p>
+			{/if}
+		</div>
+
 		<Card class="sci-section-card overflow-hidden">
 			<CardContent class="relative p-0">
 				<div
@@ -413,21 +495,21 @@
 								</p>
 								<div class="flex flex-wrap items-center gap-2">
 									<span
-										class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(activeSci?.statut)}`}
+										class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${activeSciStatus(activeSciProfile?.statut)}`}
 									>
-										{statusLabel(activeSci?.statut)}
+										{statusLabel(activeSciProfile?.statut)}
 									</span>
 									<span
 										class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
 									>
-										Régime {activeSci?.regime_fiscal || 'IR'}
+										Régime {activeSciProfile?.regime_fiscal || 'IR'}
 									</span>
 								</div>
 								<h2 class="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-									{activeSci?.nom || 'SCI à sélectionner'}
+									{activeSciProfile?.nom || 'SCI à sélectionner'}
 								</h2>
 								<p class="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-									{#if activeSci}
+									{#if activeSciProfile}
 										Lecture d’exécution de la SCI sélectionnée: identité, gouvernance, encaissements
 										et documents à produire.
 									{:else}
@@ -464,11 +546,11 @@
 									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Identité</p>
 								</div>
 								<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-									SIREN {activeSci?.siren || 'À compléter'}
+									SIREN {activeSciProfile?.siren || 'À compléter'}
 								</p>
 								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-									{activeSci?.user_role
-										? `${mapAssociateRoleLabel(activeSci.user_role)} connecté`
+									{activeSciProfile?.user_role
+										? `${mapAssociateRoleLabel(activeSciProfile.user_role)} connecté`
 										: 'Rôle utilisateur à confirmer'}
 								</p>
 							</div>
@@ -483,7 +565,7 @@
 									</p>
 								</div>
 								<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-									{activeSci?.associes_count || 0} associé(s)
+									{activeSciProfile?.associes_count || 0} associé(s)
 								</p>
 								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 									Part moyenne {formatPercent(avgAssociateShare, 'N/A')}
@@ -594,6 +676,175 @@
 							</p>
 						</div>
 					{/each}
+				{/if}
+			</CardContent>
+		</Card>
+	</div>
+
+	<div class="mt-6 grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+		<Card class="sci-section-card">
+			<CardHeader>
+				<CardTitle class="flex items-center gap-2 text-lg">
+					<Landmark class="h-5 w-5 text-sky-600" />
+					Fiche d’identité SCI active
+				</CardTitle>
+				<CardDescription>
+					Les caractéristiques centrales de la société sélectionnée, utiles pour les arbitrages et
+					la coordination.
+				</CardDescription>
+			</CardHeader>
+			<CardContent class="pt-0">
+				{#if detailLoading}
+					<div class="grid gap-3 md:grid-cols-2">
+						{#each Array.from({ length: 4 }) as _}
+							<div class="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
+						{/each}
+					</div>
+				{:else}
+					<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Société
+							</p>
+							<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								SIREN {activeSciProfile?.siren || 'À compléter'}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								{statusLabel(activeSciProfile?.statut)}
+							</p>
+						</div>
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Gouvernance
+							</p>
+							<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								{activeSciProfile?.user_role
+									? mapAssociateRoleLabel(activeSciProfile.user_role)
+									: 'Rôle à confirmer'}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								Part détenue {formatPercent(activeSciProfile?.user_part, 'N/A')}
+							</p>
+						</div>
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Patrimoine
+							</p>
+							<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								{activeSciDetail?.biens_count ?? scopedBiens.length} bien(s)
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								Loyer cible {formatEur(
+									activeSciDetail?.total_monthly_rent ?? bienMetrics.totalMonthlyRent
+								)}
+							</p>
+						</div>
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Documentation
+							</p>
+							<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								{activeSciDetail?.fiscalite?.length || 0} exercice(s)
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								{activeSciDetail?.charges_count ?? 0} charge(s) documentée(s)
+							</p>
+						</div>
+					</div>
+				{/if}
+			</CardContent>
+		</Card>
+
+		<Card class="sci-section-card">
+			<CardHeader>
+				<CardTitle class="flex items-center gap-2 text-lg">
+					<FileText class="h-5 w-5 text-emerald-600" />
+					Charges et fiscalité
+				</CardTitle>
+				<CardDescription>
+					Les derniers signaux spécifiques à la SCI active, pour la clôture et la conformité.
+				</CardDescription>
+			</CardHeader>
+			<CardContent class="space-y-4 pt-0">
+				{#if detailLoading}
+					<div class="space-y-3">
+						{#each Array.from({ length: 3 }) as _}
+							<div class="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
+						{/each}
+					</div>
+				{:else}
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Charges documentées
+						</p>
+						<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+							{formatEur(activeSciDetail?.total_recorded_charges, 'N/A')}
+						</p>
+						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+							{activeSciDetail?.charges_count ?? 0} mouvement(s) documenté(s) sur la SCI active.
+						</p>
+					</div>
+
+					<div class="space-y-3">
+						{#if activeSciDetail?.recent_charges?.length}
+							{#each activeSciDetail.recent_charges.slice(0, 2) as charge (String(charge.id || `${charge.id_bien}-${charge.date_paiement}`))}
+								<div
+									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+								>
+									<div class="flex items-center justify-between gap-3">
+										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+											{mapChargeTypeLabel(charge.type_charge)}
+										</p>
+										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+											{formatEur(charge.montant, 'N/A')}
+										</p>
+									</div>
+									<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+										Payée le {formatFrDate(charge.date_paiement)}
+									</p>
+								</div>
+							{/each}
+						{:else}
+							<div
+								class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+							>
+								Aucune charge récente documentée pour cette SCI.
+							</div>
+						{/if}
+					</div>
+
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Dernier exercice fiscal
+						</p>
+						{#if activeSciDetail?.fiscalite?.length}
+							<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								Exercice {activeSciDetail.fiscalite[0].annee}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								Résultat {formatEur(activeSciDetail.fiscalite[0].resultat_fiscal, 'N/A')} • revenus {formatEur(
+									activeSciDetail.fiscalite[0].total_revenus,
+									'N/A'
+								)}
+							</p>
+						{:else}
+							<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+								Aucun exercice consolidé pour la SCI active.
+							</p>
+						{/if}
+					</div>
 				{/if}
 			</CardContent>
 		</Card>
