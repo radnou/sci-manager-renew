@@ -31,7 +31,8 @@
 	} from '$lib/components/ui/card';
 	import { calculateBienMetrics } from '$lib/high-value/biens';
 	import { calculateLoyerMetrics, mapLoyerStatusLabel } from '$lib/high-value/loyers';
-	import { formatEur, formatPercent } from '$lib/high-value/formatters';
+	import { calculatePortfolioMetrics, calculateSciScopeMetrics } from '$lib/high-value/portfolio';
+	import { formatCompactNumber, formatEur, formatPercent } from '$lib/high-value/formatters';
 	import { formatApiErrorMessage, mapAssociateRoleLabel } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
@@ -42,34 +43,25 @@
 	let loading = true;
 	let errorMessage = '';
 
+	const emptyBienMetrics = calculateBienMetrics([]);
+	const emptyLoyerMetrics = calculateLoyerMetrics([]);
+
+	$: sciSnapshots = scis.map((sci) => ({
+		sci,
+		...calculateSciScopeMetrics(sci.id, biens, loyers)
+	}));
 	$: resolvedActiveSciId =
 		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
 			? activeSciId
 			: String(scis[0]?.id || '');
-	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
-	$: if (resolvedActiveSciId) {
-		setStoredActiveSciId(resolvedActiveSciId);
-	}
-
-	function loyerBelongsToActiveSci(loyer: Loyer) {
-		if (!activeSci) {
-			return true;
-		}
-
-		if (loyer.id_sci) {
-			return String(loyer.id_sci) === String(activeSci.id);
-		}
-
-		const bien = biens.find((entry) => String(entry.id || '') === String(loyer.id_bien || ''));
-		return String(bien?.id_sci || '') === String(activeSci.id);
-	}
-
-	$: scopedBiens = activeSci
-		? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id))
-		: biens;
-	$: scopedLoyers = activeSci ? loyers.filter(loyerBelongsToActiveSci) : loyers;
-	$: bienMetrics = calculateBienMetrics(scopedBiens);
-	$: loyerMetrics = calculateLoyerMetrics(scopedLoyers);
+	$: activeSnapshot =
+		sciSnapshots.find((snapshot) => String(snapshot.sci.id) === resolvedActiveSciId) ?? null;
+	$: activeSci = activeSnapshot?.sci ?? null;
+	$: scopedBiens = activeSnapshot?.biens ?? [];
+	$: scopedLoyers = activeSnapshot?.loyers ?? [];
+	$: bienMetrics = activeSnapshot?.bienMetrics ?? emptyBienMetrics;
+	$: loyerMetrics = activeSnapshot?.loyerMetrics ?? emptyLoyerMetrics;
+	$: portfolioMetrics = calculatePortfolioMetrics(scis, biens, loyers);
 	$: collectionRate = loyerMetrics.collectionRate;
 	$: avgAssociateShare =
 		activeSci && activeSci.associes_count && activeSci.associes_count > 0
@@ -116,6 +108,10 @@
 		}
 	];
 
+	$: if (resolvedActiveSciId) {
+		setStoredActiveSciId(resolvedActiveSciId);
+	}
+
 	function statusLabel(status: SCIOverview['statut']) {
 		if (!status) return 'À structurer';
 		if (status === 'configuration') return 'À structurer';
@@ -127,9 +123,36 @@
 		if (!status || status === 'configuration') {
 			return 'bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200';
 		}
-		if (status === 'mise_en_service')
+		if (status === 'mise_en_service') {
 			return 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/40 dark:text-cyan-200';
+		}
 		return 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200';
+	}
+
+	function snapshotAlertLabel(snapshot: (typeof sciSnapshots)[number]) {
+		if (snapshot.loyerMetrics.lateCount > 0) {
+			return `${snapshot.loyerMetrics.lateCount} retard(s)`;
+		}
+		if (snapshot.loyerMetrics.totalOutstanding > 0) {
+			return `${snapshot.loyerMetrics.totalOutstandingLabel} en attente`;
+		}
+		if (snapshot.biens.length === 0) {
+			return 'Patrimoine à structurer';
+		}
+		return 'Sous contrôle';
+	}
+
+	function snapshotAlertClass(snapshot: (typeof sciSnapshots)[number]) {
+		if (snapshot.loyerMetrics.lateCount > 0) {
+			return 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200';
+		}
+		if (snapshot.loyerMetrics.totalOutstanding > 0) {
+			return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200';
+		}
+		if (snapshot.biens.length === 0) {
+			return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+		}
+		return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200';
 	}
 
 	onMount(loadOverview);
@@ -168,8 +191,8 @@
 		<p class="sci-eyebrow">Pilotage SCI • Cockpit exécutif</p>
 		<h1 class="sci-page-title">Dashboard de portefeuille</h1>
 		<p class="sci-page-subtitle">
-			Un cockpit centré sur la SCI active, la gouvernance, les encaissements et les documents à
-			produire, sans exposer les identifiants techniques.
+			Une vue portefeuille de toutes les SCI accessibles par l’utilisateur. Sélectionne ensuite une
+			SCI active pour entrer dans la lecture opérationnelle, la gouvernance et les flux.
 		</p>
 	</header>
 
@@ -177,7 +200,205 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	<div class="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
+	<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+		<KpiCard
+			label="SCI suivies"
+			value={formatCompactNumber(portfolioMetrics.sciCount)}
+			caption={`${portfolioMetrics.operationalSciCount} opérationnelle(s) dans le portefeuille`}
+			trend={portfolioMetrics.attentionSciCount > 0 ? 'neutral' : 'up'}
+			trendValue={portfolioMetrics.attentionSciCount > 0
+				? `${portfolioMetrics.attentionSciCount} à surveiller`
+				: 'sous contrôle'}
+			tone={portfolioMetrics.attentionSciCount > 0 ? 'warning' : 'accent'}
+			{loading}
+		/>
+		<KpiCard
+			label="Patrimoine consolidé"
+			value={portfolioMetrics.bienMetrics.count}
+			caption="biens rattachés à l'ensemble du compte"
+			trend="up"
+			trendValue="multi-SCI"
+			tone="accent"
+			{loading}
+		/>
+		<KpiCard
+			label="Loyer cible global"
+			value={portfolioMetrics.bienMetrics.totalMonthlyRentLabel}
+			caption="potentiel mensuel sur l'ensemble des SCI"
+			trend="up"
+			trendValue="portefeuille"
+			tone="success"
+			{loading}
+		/>
+		<KpiCard
+			label="Encaissements sécurisés"
+			value={portfolioMetrics.loyerMetrics.totalPaidLabel}
+			caption={`reste à sécuriser ${portfolioMetrics.loyerMetrics.totalOutstandingLabel}`}
+			trend={portfolioMetrics.loyerMetrics.totalOutstanding > 0 ? 'neutral' : 'up'}
+			trendValue={portfolioMetrics.loyerMetrics.lateCount > 0
+				? 'retards'
+				: portfolioMetrics.loyerMetrics.totalOutstanding > 0
+					? 'en attente'
+					: 'conforme'}
+			tone={portfolioMetrics.loyerMetrics.lateCount > 0
+				? 'warning'
+				: portfolioMetrics.loyerMetrics.totalOutstanding > 0
+					? 'default'
+					: 'success'}
+			{loading}
+		/>
+	</div>
+
+	<div class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
+		<Card class="sci-section-card">
+			<CardHeader>
+				<CardTitle class="text-lg">Portefeuille multi-SCI</CardTitle>
+				<CardDescription>
+					Toutes les SCI accessibles par le compte. Clique sur une carte pour la rendre active dans
+					le cockpit.
+				</CardDescription>
+			</CardHeader>
+			<CardContent class="pt-0">
+				{#if loading}
+					<div class="grid gap-3 lg:grid-cols-2">
+						{#each Array.from({ length: 4 }) as _}
+							<div class="h-40 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-900"></div>
+						{/each}
+					</div>
+				{:else if sciSnapshots.length === 0}
+					<div
+						class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+					>
+						Aucune SCI accessible. Le dashboard portefeuille s’activera ici dès qu’une société sera
+						liée au compte.
+					</div>
+				{:else}
+					<div class="grid gap-3 lg:grid-cols-2">
+						{#each sciSnapshots as snapshot (String(snapshot.sci.id))}
+							<button
+								type="button"
+								class={`w-full rounded-[1.6rem] border p-4 text-left transition-colors ${
+									String(snapshot.sci.id) === resolvedActiveSciId
+										? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950'
+										: 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
+								}`}
+								aria-pressed={String(snapshot.sci.id) === resolvedActiveSciId}
+								onclick={() => {
+									activeSciId = String(snapshot.sci.id);
+									errorMessage = '';
+								}}
+							>
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<p class="text-sm font-semibold">{snapshot.sci.nom}</p>
+										<p class="mt-1 text-xs opacity-75">
+											SIREN {snapshot.sci.siren || 'À compléter'}
+										</p>
+										<p class="mt-2 text-xs opacity-80">
+											{snapshot.sci.user_role
+												? `${mapAssociateRoleLabel(snapshot.sci.user_role)} connecté`
+												: 'Rôle utilisateur à confirmer'}
+										</p>
+									</div>
+									<span
+										class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(snapshot.sci.statut)}`}
+									>
+										{statusLabel(snapshot.sci.statut)}
+									</span>
+								</div>
+
+								<div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+									<div>
+										<p class="font-semibold">{snapshot.bienMetrics.count}</p>
+										<p class="opacity-75">Biens</p>
+									</div>
+									<div>
+										<p class="font-semibold">{snapshot.bienMetrics.totalMonthlyRentLabel}</p>
+										<p class="opacity-75">Loyer cible</p>
+									</div>
+									<div>
+										<span
+											class={`inline-flex rounded-full px-2 py-1 font-semibold ${snapshotAlertClass(snapshot)}`}
+										>
+											{snapshotAlertLabel(snapshot)}
+										</span>
+									</div>
+								</div>
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</CardContent>
+		</Card>
+
+		<Card class="sci-section-card">
+			<CardHeader>
+				<CardTitle class="text-lg">Vue portefeuille</CardTitle>
+				<CardDescription>
+					Le cockpit global pour arbitrer entre structuration, trésorerie et priorité d’exécution.
+				</CardDescription>
+			</CardHeader>
+			<CardContent class="space-y-4 pt-0">
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						SCI opérationnelles
+					</p>
+					<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+						{portfolioMetrics.operationalSciCount}/{portfolioMetrics.sciCount}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						{portfolioMetrics.setupSciCount > 0
+							? `${portfolioMetrics.setupSciCount} société(s) restent à structurer.`
+							: 'Toutes les SCI du portefeuille sont mises en service ou en exploitation.'}
+					</p>
+				</div>
+
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Trésorerie consolidée
+					</p>
+					<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+						{portfolioMetrics.loyerMetrics.totalOutstandingLabel}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						restent à encaisser sur {portfolioMetrics.loyerMetrics.totalRecordedLabel} saisis.
+					</p>
+				</div>
+
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Points de vigilance
+					</p>
+					<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+						{portfolioMetrics.attentionSciCount}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						SCI demandent une action, avec {portfolioMetrics.loyerMetrics.lateCount} retard(s) identifié(s).
+					</p>
+				</div>
+
+				<div class="flex flex-wrap gap-2">
+					<a href="/scis">
+						<Button variant="outline" size="sm">Voir les SCI</Button>
+					</a>
+					<a href="/biens">
+						<Button size="sm">Gérer les biens</Button>
+					</a>
+					<a href="/loyers">
+						<Button variant="outline" size="sm">Suivre les loyers</Button>
+					</a>
+				</div>
+			</CardContent>
+		</Card>
+	</div>
+
+	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
 		<Card class="sci-section-card overflow-hidden">
 			<CardContent class="relative p-0">
 				<div
@@ -187,6 +408,9 @@
 					<div class="space-y-5">
 						<div class="flex flex-wrap items-start justify-between gap-4">
 							<div class="space-y-3">
+								<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+									SCI active
+								</p>
 								<div class="flex flex-wrap items-center gap-2">
 									<span
 										class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(activeSci?.statut)}`}
@@ -204,18 +428,18 @@
 								</h2>
 								<p class="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 									{#if activeSci}
-										Vision synthétique de la société civile immobilière active, de ses associés et
-										des flux à sécuriser cette semaine.
+										Lecture d’exécution de la SCI sélectionnée: identité, gouvernance, encaissements
+										et documents à produire.
 									{:else}
-										Le cockpit affichera ici la SCI active dès qu’une entité sera accessible depuis
-										ton compte.
+										Sélectionne une SCI depuis la vue portefeuille pour ouvrir le détail
+										d’exécution.
 									{/if}
 								</p>
 							</div>
 
 							{#if scis.length > 1}
 								<label class="sci-field min-w-[16rem]">
-									<span class="sci-field-label">SCI active</span>
+									<span class="sci-field-label">Basculer la SCI active</span>
 									<select
 										id="dashboard-active-sci"
 										name="dashboard-active-sci"
@@ -272,7 +496,7 @@
 								<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 									<ShieldCheck class="h-4 w-4" />
 									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
-										Santé portefeuille
+										Santé SCI active
 									</p>
 								</div>
 								<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -281,7 +505,9 @@
 								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 									{loyerMetrics.lateCount > 0
 										? `${loyerMetrics.lateCount} ligne(s) à traiter`
-										: 'Aucun retard détecté'}
+										: loyerMetrics.totalOutstanding > 0
+											? `${loyerMetrics.totalOutstandingLabel} restent à sécuriser`
+											: 'Aucun retard détecté'}
 								</p>
 							</div>
 						</div>
@@ -332,9 +558,9 @@
 					<Users class="h-5 w-5 text-cyan-600" />
 					Associés et gouvernance
 				</CardTitle>
-				<CardDescription
-					>Répartition du capital et rôle opérationnel sur la SCI active.</CardDescription
-				>
+				<CardDescription>
+					Répartition du capital et rôle opérationnel sur la SCI active.
+				</CardDescription>
 			</CardHeader>
 			<CardContent class="space-y-3">
 				{#if associateSummary.length === 0}
@@ -379,12 +605,12 @@
 			value={bienMetrics.count}
 			caption="actifs rattachés à la SCI"
 			trend="up"
-			trendValue="portefeuille"
+			trendValue="patrimoine"
 			tone="accent"
 			{loading}
 		/>
 		<KpiCard
-			label="Loyers du portefeuille"
+			label="Loyers de la SCI active"
 			value={bienMetrics.totalMonthlyRentLabel}
 			caption="potentiel mensuel sécurisé"
 			trend="up"
@@ -439,9 +665,9 @@
 						<HandCoins class="h-5 w-5 text-emerald-600" />
 						Mouvements et alertes
 					</CardTitle>
-					<CardDescription
-						>Les dernières lignes utiles pour la trésorerie et la production des quittances.</CardDescription
-					>
+					<CardDescription>
+						Les dernières lignes utiles pour la trésorerie et la production des quittances.
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<LoyerTable

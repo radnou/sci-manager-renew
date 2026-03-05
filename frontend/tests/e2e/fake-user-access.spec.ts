@@ -16,7 +16,13 @@ async function installCoreApiMocks(page: Page) {
 			user_part: 60,
 			associes: [
 				{ id: 'associe-1', nom: 'Rad Noumane', email: 'rad@sci.local', part: 60, role: 'gerant' },
-				{ id: 'associe-2', nom: 'Camille Bernard', email: 'camille@sci.local', part: 40, role: 'associe' }
+				{
+					id: 'associe-2',
+					nom: 'Camille Bernard',
+					email: 'camille@sci.local',
+					part: 40,
+					role: 'associe'
+				}
 			]
 		},
 		{
@@ -30,7 +36,9 @@ async function installCoreApiMocks(page: Page) {
 			loyers_count: 0,
 			user_role: 'associe',
 			user_part: 100,
-			associes: [{ id: 'associe-3', nom: 'Rad Noumane', email: 'rad@sci.local', part: 100, role: 'associe' }]
+			associes: [
+				{ id: 'associe-3', nom: 'Rad Noumane', email: 'rad@sci.local', part: 100, role: 'associe' }
+			]
 		}
 	];
 
@@ -120,7 +128,16 @@ async function installCoreApiMocks(page: Page) {
 			biens: biens.filter((bien) => bien.id_sci === 'sci-1'),
 			recent_loyers: loyers,
 			recent_charges: charges,
-			fiscalite: [{ id: 'fisc-1', id_sci: 'sci-1', annee: 2025, total_revenus: 34200, total_charges: 5400, resultat_fiscal: 28800 }]
+			fiscalite: [
+				{
+					id: 'fisc-1',
+					id_sci: 'sci-1',
+					annee: 2025,
+					total_revenus: 34200,
+					total_charges: 5400,
+					resultat_fiscal: 28800
+				}
+			]
 		},
 		'sci-2': {
 			...scis[1],
@@ -157,7 +174,11 @@ async function installCoreApiMocks(page: Page) {
 		}
 
 		if (method === 'GET' && (path === '/api/v1/scis' || path === '/api/v1/scis/')) {
-			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(scis) });
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(scis)
+			});
 			return;
 		}
 
@@ -173,13 +194,21 @@ async function installCoreApiMocks(page: Page) {
 
 		if (method === 'GET' && (path === '/api/v1/biens' || path === '/api/v1/biens/')) {
 			const filtered = idSci ? biens.filter((bien) => bien.id_sci === idSci) : biens;
-			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(filtered) });
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(filtered)
+			});
 			return;
 		}
 
 		if (method === 'GET' && (path === '/api/v1/loyers' || path === '/api/v1/loyers/')) {
 			const filtered = idSci ? loyers.filter((loyer) => String(loyer.id_sci) === idSci) : loyers;
-			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(filtered) });
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(filtered)
+			});
 			return;
 		}
 
@@ -205,21 +234,36 @@ async function installCoreApiMocks(page: Page) {
 			return;
 		}
 
-		await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'Not mocked' }) });
+		await route.fulfill({
+			status: 404,
+			contentType: 'application/json',
+			body: JSON.stringify({ detail: 'Not mocked' })
+		});
 	});
 }
 
 test.describe('Fake user access E2E', () => {
-	test('fake user can navigate portfolio, settings and generate a PDF', async ({ page, isMobile }) => {
+	test('fake user can navigate portfolio, settings and generate a PDF', async ({
+		page,
+		isMobile
+	}) => {
 		test.skip(isMobile, 'Ce scénario valide la navigation desktop authentifiée.');
 
 		await installCoreApiMocks(page);
 		await seedFakeUserContext(page, { email: 'fake.user@sci.test', sciId: 'sci-1' });
 
 		await page.goto('/dashboard');
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Dashboard de portefeuille');
+		await expect(page.getByRole('heading', { level: 1 })).toContainText(
+			'Dashboard de portefeuille'
+		);
+		await expect(page.getByText('Portefeuille multi-SCI')).toBeVisible();
+		await expect(page.getByText('Vue portefeuille', { exact: true })).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' })).toBeVisible();
 		await expect(page.getByRole('link', { name: 'SCI', exact: true })).toBeVisible();
+		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
+		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' })).toBeVisible();
+		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
+		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' })).toBeVisible();
 
 		await page.getByRole('link', { name: 'SCI', exact: true }).click();
 		await expect(page.getByRole('heading', { level: 1 })).toContainText('Pilotage des SCI');
@@ -231,7 +275,9 @@ test.describe('Fake user access E2E', () => {
 		await expect(page.getByText('Aucun loyer documenté sur la période récente.')).toBeVisible();
 
 		await page.getByRole('link', { name: 'Paramètres', exact: true }).click();
-		await expect(page.getByRole('heading', { level: 1 })).toContainText("Paramètres de l'application");
+		await expect(page.getByRole('heading', { level: 1 })).toContainText(
+			"Paramètres de l'application"
+		);
 		await page.getByLabel("Page d'ouverture par défaut").selectOption('/scis');
 		await page.getByRole('button', { name: 'Enregistrer les paramètres' }).click();
 		await expect(page.getByText('Paramètres enregistrés')).toBeVisible();
