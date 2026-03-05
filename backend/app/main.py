@@ -1,9 +1,10 @@
 import time
 import uuid
 from contextlib import asynccontextmanager
+from typing import Callable, Awaitable
 
 import structlog
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -19,7 +20,7 @@ from app.core.rate_limit import limiter
 # Configurer logging au démarrage
 configure_logging(
     log_level=settings.log_level,
-    log_format="json" if settings.app_env != "development" else "console"
+    log_format=settings.log_format
 )
 
 logger = structlog.get_logger(__name__)
@@ -55,7 +56,10 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def logging_middleware(request: Request, call_next):
+async def logging_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     """
     Middleware de logging pour toutes les requêtes.
     Ajoute un correlation ID et logge les détails de chaque requête.
