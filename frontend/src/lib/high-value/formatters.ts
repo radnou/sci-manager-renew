@@ -30,3 +30,24 @@ export function formatFrDate(value: string | null | undefined, fallback = 'Date 
 
 	return frDateFormatter.format(parsed);
 }
+
+export function formatPercent(value: number | null | undefined, fallback = 'N/A') {
+	if (typeof value !== 'number' || Number.isNaN(value)) {
+		return fallback;
+	}
+
+	return `${new Intl.NumberFormat('fr-FR', {
+		maximumFractionDigits: 1
+	}).format(value)}%`;
+}
+
+export function formatCompactNumber(value: number | null | undefined, fallback = '0') {
+	if (typeof value !== 'number' || Number.isNaN(value)) {
+		return fallback;
+	}
+
+	return new Intl.NumberFormat('fr-FR', {
+		notation: 'compact',
+		maximumFractionDigits: 1
+	}).format(value);
+}

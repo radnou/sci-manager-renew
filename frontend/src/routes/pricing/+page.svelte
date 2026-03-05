@@ -196,7 +196,7 @@
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center mb-16">
 				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
-					Pourquoi choisir SCI Manager ?
+					Pourquoi choisir GererSCI ?
 				</h2>
 				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
 					Une base opérationnelle claire pour piloter votre SCI sans Excel dispersé.

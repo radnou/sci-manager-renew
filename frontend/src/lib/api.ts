@@ -6,6 +6,47 @@ export type EntityId = number | string;
 
 export type BienType = 'nu' | 'meuble' | 'mixte';
 export type LoyerStatus = 'en_attente' | 'paye' | 'en_retard';
+export type SCIStatus = 'configuration' | 'mise_en_service' | 'exploitation';
+
+export type Associe = {
+	id: EntityId;
+	user_id?: EntityId | null;
+	nom: string;
+	email?: string | null;
+	part?: number | null;
+	role?: string | null;
+};
+
+export type SCIOverview = {
+	id: EntityId;
+	nom: string;
+	siren?: string | null;
+	regime_fiscal?: 'IR' | 'IS' | string | null;
+	statut?: SCIStatus | string | null;
+	associes_count?: number;
+	biens_count?: number;
+	loyers_count?: number;
+	user_role?: string | null;
+	user_part?: number | null;
+	associes?: Associe[];
+};
+
+export type Charge = {
+	id?: EntityId;
+	id_bien: EntityId;
+	type_charge: string;
+	montant: number;
+	date_paiement: string;
+};
+
+export type Fiscalite = {
+	id?: EntityId;
+	id_sci: EntityId;
+	annee: number;
+	total_revenus?: number | null;
+	total_charges?: number | null;
+	resultat_fiscal?: number | null;
+};
 
 export type Bien = {
 	id?: EntityId;
@@ -29,6 +70,7 @@ export type Bien = {
 export type Loyer = {
 	id?: EntityId;
 	id_bien: EntityId;
+	id_sci?: EntityId;
 	id_locataire?: EntityId | null;
 	date_loyer: string;
 	montant: number;
@@ -36,6 +78,19 @@ export type Loyer = {
 	quitus_genere?: boolean;
 	created_at?: string;
 	updated_at?: string;
+};
+
+export type SCIDetail = SCIOverview & {
+	charges_count?: number;
+	total_monthly_rent?: number;
+	total_monthly_property_charges?: number;
+	total_recorded_charges?: number;
+	paid_loyers_total?: number;
+	pending_loyers_total?: number;
+	biens?: Bien[];
+	recent_loyers?: Loyer[];
+	recent_charges?: Charge[];
+	fiscalite?: Fiscalite[];
 };
 
 export type BienCreatePayload = {
@@ -148,6 +203,14 @@ export async function apiFetchBlob(endpoint: string, options?: RequestInit): Pro
 
 export function fetchBiens() {
 	return apiFetch<Bien[]>('/api/v1/biens/');
+}
+
+export function fetchScis() {
+	return apiFetch<SCIOverview[]>('/api/v1/scis/');
+}
+
+export function fetchSciDetail(sciId: EntityId) {
+	return apiFetch<SCIDetail>(`/api/v1/scis/${sciId}`);
 }
 
 export function createBien(bien: BienCreatePayload) {

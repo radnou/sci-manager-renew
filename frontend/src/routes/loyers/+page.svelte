@@ -1,18 +1,40 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createLoyer, fetchBiens, fetchLoyers, type Bien, type Loyer, type LoyerCreatePayload } from '$lib/api';
+	import { createLoyer, fetchBiens, fetchLoyers, fetchScis, type Bien, type Loyer, type LoyerCreatePayload, type SCIOverview } from '$lib/api';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import { calculateLoyerMetrics } from '$lib/high-value/loyers';
+	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
 	let loyers: Loyer[] = [];
+	let scis: SCIOverview[] = [];
+	let activeSciId = '';
 	let loading = true;
 	let submitting = false;
 	let errorMessage = '';
 
-	$: metrics = calculateLoyerMetrics(loyers);
+	$: resolvedActiveSciId =
+		activeSciId && scis.some((sci) => String(sci.id) === activeSciId) ? activeSciId : String(scis[0]?.id || '');
+	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
+	$: if (resolvedActiveSciId) {
+		setStoredActiveSciId(resolvedActiveSciId);
+	}
+	$: scopedBiens = activeSci
+		? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id))
+		: biens;
+	$: scopedLoyers = activeSci
+		? loyers.filter((loyer) => {
+				if (loyer.id_sci) {
+					return String(loyer.id_sci) === String(activeSci.id);
+				}
+
+				const bien = biens.find((entry) => String(entry.id || '') === String(loyer.id_bien || ''));
+				return String(bien?.id_sci || '') === String(activeSci.id);
+			})
+		: loyers;
+	$: metrics = calculateLoyerMetrics(scopedLoyers);
 
 	onMount(loadLoyers);
 
@@ -20,9 +42,14 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const [nextBiens, nextLoyers] = await Promise.all([fetchBiens(), fetchLoyers()]);
+			const [nextBiens, nextLoyers, nextScis] = await Promise.all([fetchBiens(), fetchLoyers(), fetchScis()]);
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
+			scis = Array.isArray(nextScis) ? nextScis : [];
+			const storedActiveSciId = getStoredActiveSciId();
+			activeSciId =
+				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				String(nextScis[0]?.id || '');
 		} catch (error) {
 			errorMessage = toErrorMessage(error, 'Impossible de charger les loyers.');
 		} finally {
@@ -56,10 +83,10 @@
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">
-		<p class="sci-eyebrow">SCI Manager • Revenus</p>
+		<p class="sci-eyebrow">GererSCI • Revenus</p>
 		<h1 class="sci-page-title">Suivi des loyers</h1>
 		<p class="sci-page-subtitle">
-			Pilote les encaissements mensuels, détecte les retards et fiabilise les flux de trésorerie de la SCI.
+			Pilote les encaissements mensuels de la SCI active avec des libellés métier, pas des identifiants bruts.
 		</p>
 	</header>
 
@@ -97,13 +124,13 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	{#if !loading && biens.length === 0}
+	{#if !loading && scopedBiens.length === 0}
 		<p class="sci-inline-alert">
 			Ajoute d'abord un bien dans le module Biens avant de saisir un loyer.
 		</p>
 	{/if}
 
-	<LoyerForm {biens} submitting={submitting} onSubmit={handleCreateLoyer} />
+	<LoyerForm biens={scopedBiens} submitting={submitting} onSubmit={handleCreateLoyer} />
 
-	<LoyerTable {loyers} {loading} />
+	<LoyerTable loyers={scopedLoyers} biens={scopedBiens} {loading} />
 </section>

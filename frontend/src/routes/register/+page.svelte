@@ -49,7 +49,7 @@
 			<CardHeader>
 				<p class="sci-eyebrow">Authentification sans mot de passe</p>
 				<CardTitle class="text-2xl">Créer un compte</CardTitle>
-				<CardDescription>Démarre ton espace SCI Manager en moins de 2 minutes.</CardDescription>
+				<CardDescription>Démarre ton espace GererSCI en moins de 2 minutes.</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{#if showCheckEmail}

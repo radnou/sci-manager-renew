@@ -131,7 +131,7 @@
 </script>
 
 <svelte:head>
-	<title>Mes Données Personnelles - SCI Manager</title>
+	<title>Mes Données Personnelles - GererSCI</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -287,8 +287,8 @@
 					</p>
 					<p>
 						<strong>Contact RGPD :</strong> Pour toute question sur vos données personnelles, contactez
-						<a href="mailto:privacy@scimanager.fr" class="text-blue-600 dark:text-blue-400 hover:underline">
-							privacy@scimanager.fr
+						<a href="mailto:privacy@gerersci.fr" class="text-blue-600 dark:text-blue-400 hover:underline">
+							privacy@gerersci.fr
 						</a>
 					</p>
 					<p>

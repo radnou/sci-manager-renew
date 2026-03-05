@@ -1,14 +1,24 @@
 <script lang="ts">
-	import type { Loyer } from '$lib/api';
+	import type { Bien, Loyer } from '$lib/api';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { mapLoyerStatusClass, mapLoyerStatusLabel } from '$lib/high-value/loyers';
 	import * as Table from '$lib/components/ui/table';
 
 	export let loyers: Loyer[] = [];
+	export let biens: Pick<Bien, 'id' | 'adresse' | 'ville'>[] = [];
 	export let loading = false;
 	export let title = 'Journal des loyers';
 	export let description = 'Historique chronologique des encaissements et montants.';
+
+	function resolveBienLabel(idBien: Loyer['id_bien']) {
+		const bien = biens.find((entry) => String(entry.id || '') === String(idBien || ''));
+		if (!bien) {
+			return 'Bien non identifié';
+		}
+
+		return bien.ville ? `${bien.adresse} • ${bien.ville}` : bien.adresse;
+	}
 </script>
 
 <Card class="sci-section-card">
@@ -36,7 +46,7 @@
 				<Table.Header>
 					<Table.Row>
 						<Table.Head class="px-3">Date</Table.Head>
-						<Table.Head class="px-3">ID Bien</Table.Head>
+						<Table.Head class="px-3">Bien</Table.Head>
 						<Table.Head class="px-3">Statut</Table.Head>
 						<Table.Head class="px-3 text-right">Montant</Table.Head>
 					</Table.Row>
@@ -45,7 +55,7 @@
 						{#each loyers as loyer}
 							<Table.Row>
 								<Table.Cell class="px-3 py-3 font-medium text-slate-900">{formatFrDate(loyer.date_loyer)}</Table.Cell>
-								<Table.Cell class="px-3 py-3 text-slate-700">{loyer.id_bien}</Table.Cell>
+								<Table.Cell class="px-3 py-3 text-slate-700">{resolveBienLabel(loyer.id_bien)}</Table.Cell>
 								<Table.Cell class="px-3 py-3">
 									<span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${mapLoyerStatusClass(loyer.statut)}`}>
 										{mapLoyerStatusLabel(loyer.statut)}

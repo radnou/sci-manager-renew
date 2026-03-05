@@ -138,22 +138,51 @@ class FakeQuery:
 class FakeSupabaseClient:
     def __init__(self):
         self.store: dict[str, list[dict]] = {
+            "sci": [
+                {
+                    "id": "sci-1",
+                    "nom": "SCI Mosa Belleville",
+                    "siren": "123456789",
+                    "regime_fiscal": "IR",
+                },
+                {
+                    "id": "sci-2",
+                    "nom": "SCI Horizon Lyon",
+                    "siren": "987654321",
+                    "regime_fiscal": "IS",
+                },
+            ],
             "biens": [],
             "loyers": [],
+            "charges": [],
+            "fiscalite": [],
             "associes": [
                 {
                     "id": "associe-1",
                     "id_sci": "sci-1",
                     "user_id": "user-123",
                     "nom": "Test User",
-                    "part": 100,
+                    "email": "test.user@sci.local",
+                    "part": 60,
+                    "role": "gerant",
+                },
+                {
+                    "id": "associe-1b",
+                    "id_sci": "sci-1",
+                    "user_id": "user-456",
+                    "nom": "Camille Bernard",
+                    "email": "camille.bernard@sci.local",
+                    "part": 40,
+                    "role": "associe",
                 },
                 {
                     "id": "associe-2",
                     "id_sci": "sci-2",
                     "user_id": "user-123",
                     "nom": "Test User",
+                    "email": "test.user@sci.local",
                     "part": 100,
+                    "role": "associe",
                 },
             ],
         }
@@ -200,7 +229,7 @@ def fake_supabase() -> FakeSupabaseClient:
 
 @pytest.fixture(autouse=True)
 def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
-    from app.api.v1 import biens, loyers, quitus
+    from app.api.v1 import biens, loyers, quitus, scis
 
     monkeypatch.setattr(
         biens,
@@ -209,6 +238,11 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     )
     monkeypatch.setattr(
         loyers,
+        "create_client",
+        lambda *_args, **_kwargs: fake_supabase,
+    )
+    monkeypatch.setattr(
+        scis,
         "create_client",
         lambda *_args, **_kwargs: fake_supabase,
     )

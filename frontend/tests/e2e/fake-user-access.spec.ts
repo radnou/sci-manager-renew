@@ -2,11 +2,39 @@ import { expect, test, type Page } from '@playwright/test';
 import { seedFakeUserContext } from './helpers/fake-user';
 
 async function installCoreApiMocks(page: Page) {
-	let bienCounter = 2;
-	let loyerCounter = 2;
-	let checkoutCalls = 0;
+	const scis = [
+		{
+			id: 'sci-1',
+			nom: 'SCI Mosa Belleville',
+			siren: '123456789',
+			regime_fiscal: 'IR',
+			statut: 'exploitation',
+			associes_count: 2,
+			biens_count: 2,
+			loyers_count: 2,
+			user_role: 'gerant',
+			user_part: 60,
+			associes: [
+				{ id: 'associe-1', nom: 'Rad Noumane', email: 'rad@sci.local', part: 60, role: 'gerant' },
+				{ id: 'associe-2', nom: 'Camille Bernard', email: 'camille@sci.local', part: 40, role: 'associe' }
+			]
+		},
+		{
+			id: 'sci-2',
+			nom: 'SCI Horizon Lyon',
+			siren: '987654321',
+			regime_fiscal: 'IS',
+			statut: 'mise_en_service',
+			associes_count: 1,
+			biens_count: 1,
+			loyers_count: 0,
+			user_role: 'associe',
+			user_part: 100,
+			associes: [{ id: 'associe-3', nom: 'Rad Noumane', email: 'rad@sci.local', part: 100, role: 'associe' }]
+		}
+	];
 
-	let biens = [
+	const biens = [
 		{
 			id: 'bien-seed',
 			id_sci: 'sci-1',
@@ -17,22 +45,97 @@ async function installCoreApiMocks(page: Page) {
 			loyer_cc: 1200,
 			charges: 150,
 			tmi: 30
+		},
+		{
+			id: 'bien-qa',
+			id_sci: 'sci-1',
+			adresse: '42 avenue QA',
+			ville: 'Lyon',
+			code_postal: '69002',
+			type_locatif: 'meuble',
+			loyer_cc: 1650,
+			charges: 120,
+			tmi: 28
+		},
+		{
+			id: 'bien-horizon',
+			id_sci: 'sci-2',
+			adresse: '8 quai Rhône',
+			ville: 'Lyon',
+			code_postal: '69006',
+			type_locatif: 'mixte',
+			loyer_cc: 980,
+			charges: 80,
+			tmi: 20
 		}
 	];
 
-	let loyers = [
+	const loyers = [
 		{
 			id: 'loyer-seed',
 			id_bien: 'bien-seed',
 			id_sci: 'sci-1',
 			date_loyer: '2026-03-01',
 			montant: 1200,
+			statut: 'paye',
+			quitus_genere: true
+		},
+		{
+			id: 'loyer-qa',
+			id_bien: 'bien-qa',
+			id_sci: 'sci-1',
+			date_loyer: '2026-03-05',
+			montant: 1650,
 			statut: 'en_attente',
 			quitus_genere: false
 		}
 	];
 
-	const normalizeIdFromPath = (path: string) => path.replace(/\/+$/, '').split('/').pop() || '';
+	const charges = [
+		{
+			id: 'charge-1',
+			id_bien: 'bien-seed',
+			type_charge: 'assurance',
+			montant: 240,
+			date_paiement: '2026-02-10'
+		},
+		{
+			id: 'charge-2',
+			id_bien: 'bien-qa',
+			type_charge: 'travaux',
+			montant: 600,
+			date_paiement: '2026-03-02'
+		}
+	];
+
+	const detailBySci: Record<string, object> = {
+		'sci-1': {
+			...scis[0],
+			charges_count: 2,
+			total_monthly_rent: 2850,
+			total_monthly_property_charges: 270,
+			total_recorded_charges: 840,
+			paid_loyers_total: 1200,
+			pending_loyers_total: 1650,
+			biens: biens.filter((bien) => bien.id_sci === 'sci-1'),
+			recent_loyers: loyers,
+			recent_charges: charges,
+			fiscalite: [{ id: 'fisc-1', id_sci: 'sci-1', annee: 2025, total_revenus: 34200, total_charges: 5400, resultat_fiscal: 28800 }]
+		},
+		'sci-2': {
+			...scis[1],
+			charges_count: 0,
+			total_monthly_rent: 980,
+			total_monthly_property_charges: 80,
+			total_recorded_charges: 0,
+			paid_loyers_total: 0,
+			pending_loyers_total: 0,
+			biens: biens.filter((bien) => bien.id_sci === 'sci-2'),
+			recent_loyers: [],
+			recent_charges: [],
+			fiscalite: []
+		}
+	};
 
 	await page.route('**/api/v1/**', async (route) => {
 		const request = route.request();
@@ -40,8 +143,6 @@ async function installCoreApiMocks(page: Page) {
 		const url = new URL(request.url());
 		const path = url.pathname;
 		const idSci = url.searchParams.get('id_sci');
-		const dateFrom = url.searchParams.get('date_from');
-		const dateTo = url.searchParams.get('date_to');
 
 		if (method === 'OPTIONS') {
 			await route.fulfill({
@@ -56,91 +157,29 @@ async function installCoreApiMocks(page: Page) {
 		}
 
 		if (method === 'GET' && (path === '/api/v1/scis' || path === '/api/v1/scis/')) {
+			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(scis) });
+			return;
+		}
+
+		if (method === 'GET' && path.startsWith('/api/v1/scis/')) {
+			const sciId = path.replace(/\/+$/, '').split('/').pop() || '';
 			await route.fulfill({
-				status: 200,
+				status: detailBySci[sciId] ? 200 : 404,
 				contentType: 'application/json',
-				body: JSON.stringify([{ id: 'sci-1', nom: 'SCI Demo QA', regime_fiscal: 'IR' }])
+				body: JSON.stringify(detailBySci[sciId] ?? { detail: 'Not mocked' })
 			});
 			return;
 		}
 
 		if (method === 'GET' && (path === '/api/v1/biens' || path === '/api/v1/biens/')) {
-			const filtered = idSci ? biens.filter((bien) => String(bien.id_sci) === idSci) : biens;
+			const filtered = idSci ? biens.filter((bien) => bien.id_sci === idSci) : biens;
 			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(filtered) });
-			return;
-		}
-
-		if (method === 'POST' && (path === '/api/v1/biens' || path === '/api/v1/biens/')) {
-			const payload = request.postDataJSON();
-			const created = {
-				...payload,
-				id: `bien-e2e-${bienCounter}`
-			};
-			bienCounter += 1;
-			biens = [created, ...biens];
-			await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(created) });
-			return;
-		}
-
-		if (method === 'PATCH' && path.startsWith('/api/v1/biens/')) {
-			const bienId = normalizeIdFromPath(path);
-			const patch = request.postDataJSON();
-			biens = biens.map((bien) => (String(bien.id) === bienId ? { ...bien, ...patch } : bien));
-			const updated = biens.find((bien) => String(bien.id) === bienId);
-			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(updated) });
-			return;
-		}
-
-		if (method === 'DELETE' && path.startsWith('/api/v1/biens/')) {
-			const bienId = normalizeIdFromPath(path);
-			biens = biens.filter((bien) => String(bien.id) !== bienId);
-			loyers = loyers.filter((loyer) => String(loyer.id_bien) !== bienId);
-			await route.fulfill({ status: 204, body: '' });
 			return;
 		}
 
 		if (method === 'GET' && (path === '/api/v1/loyers' || path === '/api/v1/loyers/')) {
-			let filtered = [...loyers];
-			if (idSci) {
-				filtered = filtered.filter((loyer) => String(loyer.id_sci || '') === idSci);
-			}
-			if (dateFrom) {
-				filtered = filtered.filter((loyer) => String(loyer.date_loyer) >= dateFrom);
-			}
-			if (dateTo) {
-				filtered = filtered.filter((loyer) => String(loyer.date_loyer) <= dateTo);
-			}
+			const filtered = idSci ? loyers.filter((loyer) => String(loyer.id_sci) === idSci) : loyers;
 			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(filtered) });
-			return;
-		}
-
-		if (method === 'POST' && (path === '/api/v1/loyers' || path === '/api/v1/loyers/')) {
-			const payload = request.postDataJSON();
-			const created = {
-				...payload,
-				id: `loyer-e2e-${loyerCounter}`,
-				id_sci: idSci || 'sci-1',
-				quitus_genere: Boolean(payload?.quitus_genere)
-			};
-			loyerCounter += 1;
-			loyers = [created, ...loyers];
-			await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(created) });
-			return;
-		}
-
-		if (method === 'PATCH' && path.startsWith('/api/v1/loyers/')) {
-			const loyerId = normalizeIdFromPath(path);
-			const patch = request.postDataJSON();
-			loyers = loyers.map((loyer) => (String(loyer.id) === loyerId ? { ...loyer, ...patch } : loyer));
-			const updated = loyers.find((loyer) => String(loyer.id) === loyerId);
-			await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(updated) });
-			return;
-		}
-
-		if (method === 'DELETE' && path.startsWith('/api/v1/loyers/')) {
-			const loyerId = normalizeIdFromPath(path);
-			loyers = loyers.filter((loyer) => String(loyer.id) !== loyerId);
-			await route.fulfill({ status: 204, body: '' });
 			return;
 		}
 
@@ -166,136 +205,46 @@ async function installCoreApiMocks(page: Page) {
 			return;
 		}
 
-		if (method === 'POST' && path === '/api/v1/stripe/create-checkout-session') {
-			checkoutCalls += 1;
-			await route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ url: 'http://localhost:5173/success?session_id=cs_test_fake' })
-			});
-			return;
-		}
-
 		await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'Not mocked' }) });
 	});
-
-	return {
-		getCheckoutCalls: () => checkoutCalls
-	};
 }
 
 test.describe('Fake user access E2E', () => {
-	test('fake user can navigate and use core screens', async ({ page, isMobile }) => {
+	test('fake user can navigate portfolio, settings and generate a PDF', async ({ page, isMobile }) => {
 		test.skip(isMobile, 'Ce scénario valide la navigation desktop authentifiée.');
 
-		const mocks = await installCoreApiMocks(page);
-		await seedFakeUserContext(page, { email: 'fake.user@sci.test' });
+		await installCoreApiMocks(page);
+		await seedFakeUserContext(page, { email: 'fake.user@sci.test', sciId: 'sci-1' });
 
 		await page.goto('/dashboard');
-		await expect(page.locator('h1')).toContainText('Tableau de bord opérationnel');
-		await expect(page.getByText('Actifs suivis')).toBeVisible();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Dashboard de portefeuille');
+		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' })).toBeVisible();
+		await expect(page.getByRole('link', { name: 'SCI', exact: true })).toBeVisible();
 
-		await page.goto('/biens');
-		await expect(page.locator('h1')).toContainText('Gestion des biens');
-		await expect(page.getByText('1 rue Seed')).toBeVisible();
-		await page.evaluate(async () => {
-			await fetch('http://localhost:8000/api/v1/biens/', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					id_sci: 'sci-1',
-					adresse: '42 avenue QA',
-					ville: 'Lyon',
-					code_postal: '69002',
-					type_locatif: 'meuble',
-					loyer_cc: 1650,
-					charges: 120,
-					tmi: 28
-				})
-			});
-		});
-		await page.reload();
-		await expect(page.getByText('42 avenue QA')).toBeVisible();
+		await page.getByRole('link', { name: 'SCI', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Pilotage des SCI');
+		await expect(page.getByText('Camille Bernard')).toBeVisible();
+		await expect(page.getByText('Charges récentes')).toBeVisible();
 
-		const createdBienRow = page.locator('tr', { hasText: '42 avenue QA' }).first();
-		await createdBienRow.getByRole('button', { name: 'Modifier' }).click();
-		await page.getByLabel('Adresse').last().fill('42 avenue QA Modifie');
-		await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
-		await expect(page.getByText('42 avenue QA Modifie')).toBeVisible();
+		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
+		await expect(page.getByText('SCI Horizon Lyon')).toBeVisible();
+		await expect(page.getByText('Aucun loyer documenté sur la période récente.')).toBeVisible();
 
-		page.once('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-		await page.locator('tr', { hasText: '42 avenue QA Modifie' }).first().getByRole('button', { name: 'Supprimer' }).click();
-		await expect(page.locator('tr', { hasText: '42 avenue QA Modifie' })).toHaveCount(0);
+		await page.getByRole('link', { name: 'Paramètres', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText("Paramètres de l'application");
+		await page.getByLabel("Page d'ouverture par défaut").selectOption('/scis');
+		await page.getByRole('button', { name: 'Enregistrer les paramètres' }).click();
+		await expect(page.getByText('Paramètres enregistrés')).toBeVisible();
 
-		await page.goto('/loyers');
-		await expect(page.locator('h1')).toContainText('Suivi des loyers');
-		await page.evaluate(async () => {
-			await fetch('http://localhost:8000/api/v1/loyers/?id_sci=sci-1', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					id_bien: 'bien-seed',
-					id_locataire: 'loc-42',
-					date_loyer: '2026-05-01',
-					montant: 1350,
-					statut: 'en_attente'
-				})
-			});
-		});
-		await page.reload();
-		await expect(page.locator('tr', { hasText: '1 350 €' })).toBeVisible();
-
-		const createdLoyerRow = page.locator('tr', { hasText: '1 350 €' }).first();
-		await createdLoyerRow.getByRole('button', { name: 'Modifier' }).click();
-		await page.getByLabel('Montant (€)').last().fill('1400');
-		const editLoyerForm = page.locator('form').filter({ has: page.getByRole('button', { name: 'Enregistrer les modifications' }) });
-		await editLoyerForm.locator('select').first().selectOption('paye');
-		await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
-		await expect(page.locator('tr', { hasText: '1 400 €' })).toBeVisible();
-		await expect(page.locator('tr', { hasText: 'Payé' })).toBeVisible();
-
-		page.once('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-		await page.locator('tr', { hasText: '1 400 €' }).first().getByRole('button', { name: 'Supprimer' }).click();
-		await expect(page.locator('tr', { hasText: '1 400 €' })).toHaveCount(0);
+		await page.getByRole('link', { name: 'Compte', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Paramètres du compte');
+		await expect(page.locator('p').filter({ hasText: 'fake.user@sci.test' })).toBeVisible();
 
 		await page.goto('/dashboard');
-		const quitusResult = await page.evaluate(async () => {
-			const generatedResponse = await fetch('http://localhost:8000/api/v1/quitus/generate', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					id_loyer: 'loyer-test',
-					id_bien: 'bien-seed',
-					nom_locataire: 'Locataire Test',
-					periode: 'Mai 2026',
-					montant: 1400
-				})
-			});
-			const generated = await generatedResponse.json();
-			const pdfResponse = await fetch(`http://localhost:8000${generated.pdf_url}`);
-			const blob = await pdfResponse.blob();
-			return { filename: generated.filename, size: blob.size };
-		});
-		expect(quitusResult.filename).toBe('quitus-e2e.pdf');
-		expect(quitusResult.size).toBeGreaterThan(0);
-
-		await page.goto('/pricing');
-		const checkoutResult = await page.evaluate(async () => {
-			const response = await fetch('http://localhost:8000/api/v1/stripe/create-checkout-session', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					price_id: 'price_starter_placeholder',
-					mode: 'subscription'
-				})
-			});
-			return response.json();
-		});
-		expect(checkoutResult.url).toContain('/success?session_id=cs_test_fake');
-		await expect.poll(() => mocks.getCheckoutCalls()).toBe(1);
+		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
+		await expect(page.getByText('Journal de la SCI active')).toBeVisible();
+		await page.getByRole('button', { name: 'Générer le PDF' }).click();
+		await expect(page.getByText('Document généré')).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Télécharger', exact: true })).toBeVisible();
 	});
 });

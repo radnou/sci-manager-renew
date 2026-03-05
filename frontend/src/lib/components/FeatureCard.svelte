@@ -43,7 +43,7 @@
 			<ul class="space-y-2">
 				{#each features as feature}
 					<li class="flex items-center text-sm text-slate-700 dark:text-slate-300">
-						<div class="mr-3 h-1.5 w-1.5 rounded-full bg-blue-500" />
+						<div class="mr-3 h-1.5 w-1.5 rounded-full bg-blue-500"></div>
 						{feature}
 					</li>
 				{/each}

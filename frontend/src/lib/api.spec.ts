@@ -8,11 +8,10 @@ vi.mock(
 	'$lib/auth/session',
 	() => ({
 		getCurrentSession: getCurrentSessionMock
-	}),
-	{ virtual: true }
+	})
 );
 
-import { API_URL, createBien, createLoyer, fetchBiens, fetchLoyers } from './api';
+import { API_URL, createBien, createLoyer, fetchBiens, fetchLoyers, fetchSciDetail, fetchScis } from './api';
 
 describe('api helpers', () => {
 	afterEach(() => {
@@ -48,6 +47,28 @@ describe('api helpers', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/loyers/`);
+	});
+
+	it('fetchScis returns parsed payload', async () => {
+		const payload = [{ id: 'sci-1', nom: 'SCI Mosa Belleville', regime_fiscal: 'IR' }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchScis()).resolves.toEqual(payload);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/`);
+	});
+
+	it('fetchSciDetail targets the selected SCI detail endpoint', async () => {
+		const payload = { id: 'sci-1', nom: 'SCI Mosa Belleville', biens_count: 2 };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchSciDetail('sci-1')).resolves.toEqual(payload);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1`);
 	});
 
 	it('createBien posts JSON body', async () => {

@@ -70,14 +70,14 @@
 		<CardTitle class="text-lg">{title}</CardTitle>
 		<CardDescription>{description}</CardDescription>
 	</CardHeader>
-	<CardContent>
-		<form class="grid gap-3 md:grid-cols-5" onsubmit={handleSubmit}>
-			<label class="sci-field">
-				<span class="sci-field-label">Bien</span>
-				<select bind:value={idBien} class="sci-select" required disabled={biens.length === 0}>
-					{#if biens.length === 0}
-						<option value="">Aucun bien disponible</option>
-					{:else}
+		<CardContent>
+			<form class="grid gap-3 md:grid-cols-5" onsubmit={handleSubmit}>
+				<label class="sci-field" for="loyer-bien">
+					<span class="sci-field-label">Bien</span>
+					<select id="loyer-bien" name="loyer-bien" bind:value={idBien} class="sci-select" required disabled={biens.length === 0}>
+						{#if biens.length === 0}
+							<option value="">Aucun bien disponible</option>
+						{:else}
 						{#each biens as bien (bien.id)}
 							<option value={String(bien.id || '')}>
 								{bien.adresse} {bien.ville ? `- ${bien.ville}` : ''}
@@ -88,29 +88,29 @@
 				{#if selectedBien}
 					<span class="text-xs text-slate-500 dark:text-slate-400">
 						Loyer rattache au bien selectionne.
-					</span>
-				{/if}
-			</label>
-			<label class="sci-field">
-				<span class="sci-field-label">ID Locataire</span>
-				<Input bind:value={idLocataire} placeholder="loc-001" />
-			</label>
-			<label class="sci-field">
-				<span class="sci-field-label">Date</span>
-				<Input bind:value={dateLoyer} required type="date" />
-			</label>
-			<label class="sci-field">
-				<span class="sci-field-label">Montant (€)</span>
-				<Input bind:value={montant} required type="number" min="0" step="10" placeholder="1250" />
-			</label>
-			<label class="sci-field">
-				<span class="sci-field-label">Statut</span>
-				<select bind:value={statut} class="sci-select">
-					<option value="paye">Payé</option>
-					<option value="en_attente">En attente</option>
-					<option value="en_retard">En retard</option>
-				</select>
-			</label>
+						</span>
+					{/if}
+				</label>
+				<label class="sci-field" for="loyer-reference-locataire">
+					<span class="sci-field-label">Référence locataire</span>
+					<Input id="loyer-reference-locataire" name="loyer-reference-locataire" bind:value={idLocataire} placeholder="Appartement Martin" />
+				</label>
+				<label class="sci-field" for="loyer-date">
+					<span class="sci-field-label">Date</span>
+					<Input id="loyer-date" name="loyer-date" bind:value={dateLoyer} required type="date" />
+				</label>
+				<label class="sci-field" for="loyer-montant">
+					<span class="sci-field-label">Montant (€)</span>
+					<Input id="loyer-montant" name="loyer-montant" bind:value={montant} required type="number" min="0" step="10" placeholder="1250" />
+				</label>
+				<label class="sci-field" for="loyer-statut">
+					<span class="sci-field-label">Statut</span>
+					<select id="loyer-statut" name="loyer-statut" bind:value={statut} class="sci-select">
+						<option value="paye">Payé</option>
+						<option value="en_attente">En attente</option>
+						<option value="en_retard">En retard</option>
+					</select>
+				</label>
 			<div class="md:col-span-5 flex justify-end">
 				<Button type="submit" disabled={submitting || biens.length === 0} class="min-w-[11rem]">
 					{submitting ? 'Enregistrement...' : 'Ajouter le loyer'}

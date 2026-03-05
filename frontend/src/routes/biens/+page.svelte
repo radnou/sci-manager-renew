@@ -1,17 +1,29 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createBien, fetchBiens, type Bien, type BienCreatePayload } from '$lib/api';
+	import { createBien, fetchBiens, fetchScis, type Bien, type BienCreatePayload, type SCIOverview } from '$lib/api';
 	import BienForm from '$lib/components/BienForm.svelte';
 	import BienTable from '$lib/components/BienTable.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import { calculateBienMetrics } from '$lib/high-value/biens';
+	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
+	let scis: SCIOverview[] = [];
+	let activeSciId = '';
 	let loading = true;
 	let submitting = false;
 	let errorMessage = '';
 
-	$: metrics = calculateBienMetrics(biens);
+	$: resolvedActiveSciId =
+		activeSciId && scis.some((sci) => String(sci.id) === activeSciId) ? activeSciId : String(scis[0]?.id || '');
+	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
+	$: if (resolvedActiveSciId) {
+		setStoredActiveSciId(resolvedActiveSciId);
+	}
+	$: scopedBiens = activeSci
+		? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id))
+		: biens;
+	$: metrics = calculateBienMetrics(scopedBiens);
 
 	onMount(loadBiens);
 
@@ -19,8 +31,13 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const data = await fetchBiens();
-			biens = Array.isArray(data) ? data : [];
+			const [nextBiens, nextScis] = await Promise.all([fetchBiens(), fetchScis()]);
+			biens = Array.isArray(nextBiens) ? nextBiens : [];
+			scis = Array.isArray(nextScis) ? nextScis : [];
+			const storedActiveSciId = getStoredActiveSciId();
+			activeSciId =
+				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				String(nextScis[0]?.id || '');
 		} catch (error) {
 			errorMessage = toErrorMessage(error, 'Impossible de charger les biens.');
 		} finally {
@@ -54,11 +71,10 @@
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">
-		<p class="sci-eyebrow">SCI Manager • Opérations</p>
+		<p class="sci-eyebrow">GererSCI • Opérations</p>
 		<h1 class="sci-page-title">Gestion des biens</h1>
 		<p class="sci-page-subtitle">
-			Centralise les actifs immobiliers, les loyers et les charges pour garder une vision financière claire du
-			parc SCI.
+			Centralise les actifs immobiliers de la SCI active sans exposer d’identifiants techniques dans les formulaires.
 		</p>
 	</header>
 
@@ -96,7 +112,13 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	<BienForm submitting={submitting} onSubmit={handleCreateBien} />
+	<BienForm
+		activeSciId={resolvedActiveSciId}
+		activeSciLabel={activeSci?.nom || 'SCI active'}
+		showSciField={!activeSci}
+		submitting={submitting}
+		onSubmit={handleCreateBien}
+	/>
 
-	<BienTable {biens} {loading} />
+	<BienTable biens={scopedBiens} {loading} />
 </section>

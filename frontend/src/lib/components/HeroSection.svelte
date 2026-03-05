@@ -35,8 +35,8 @@
 
 <section class="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
 	<!-- Background decoration -->
-	<div class="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]" />
-	<div class="absolute inset-0 bg-gradient-to-r from-slate-900/5 via-transparent to-slate-900/5 dark:from-slate-100/5 dark:to-slate-100/5" />
+	<div class="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]"></div>
+	<div class="absolute inset-0 bg-gradient-to-r from-slate-900/5 via-transparent to-slate-900/5 dark:from-slate-100/5 dark:to-slate-100/5"></div>
 
 	<div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
 		<div class="mx-auto max-w-2xl text-center">

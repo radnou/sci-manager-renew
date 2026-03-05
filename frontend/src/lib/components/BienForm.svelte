@@ -6,20 +6,25 @@
 	import { buildBienPayload } from '$lib/high-value/biens';
 
 	type BienFormSubmit = (payload: BienCreatePayload) => Promise<boolean | void> | boolean | void;
+	const defaultSciId = import.meta.env.VITE_DEFAULT_SCI_ID || 'sci-1';
 
 	let {
 		title = 'Nouveau bien',
 		description = 'Crée un bien pour alimenter le portefeuille SCI.',
+		activeSciId = defaultSciId,
+		activeSciLabel = 'SCI active',
+		showSciField = false,
 		submitting = false,
 		onSubmit = () => true
 	}: {
 		title?: string;
 		description?: string;
+		activeSciId?: string;
+		activeSciLabel?: string;
+		showSciField?: boolean;
 		submitting?: boolean;
 		onSubmit?: BienFormSubmit;
 	} = $props();
-
-	const defaultSciId = import.meta.env.VITE_DEFAULT_SCI_ID || 'sci-1';
 
 	let idSci = $state(defaultSciId);
 	let adresse = $state('');
@@ -42,6 +47,10 @@
 		}
 		return '';
 	}
+
+	$effect(() => {
+		idSci = activeSciId || defaultSciId;
+	});
 
 	$effect(() => {
 		codePostalError = validateCodePostal(codePostal);
@@ -85,15 +94,24 @@
 		<CardTitle class="text-lg">{title}</CardTitle>
 		<CardDescription>{description}</CardDescription>
 	</CardHeader>
-	<CardContent>
-		<form class="grid gap-3 md:grid-cols-4" onsubmit={handleSubmit} aria-label="Formulaire d'ajout de bien immobilier">
-			<label for="bien-id-sci" class="sci-field">
-				<span class="sci-field-label">ID SCI</span>
-				<Input id="bien-id-sci" bind:value={idSci} required placeholder="sci-1" aria-required="true" />
-			</label>
-			<label for="bien-adresse" class="sci-field md:col-span-2">
-				<span class="sci-field-label">Adresse</span>
-				<Input id="bien-adresse" bind:value={adresse} required placeholder="14 rue Saint-Honoré" aria-required="true" />
+		<CardContent>
+			<form class="grid gap-3 md:grid-cols-4" onsubmit={handleSubmit} aria-label="Formulaire d'ajout de bien immobilier">
+				{#if showSciField}
+					<label for="bien-id-sci" class="sci-field">
+						<span class="sci-field-label">SCI</span>
+						<Input id="bien-id-sci" bind:value={idSci} required placeholder="SCI principale" aria-required="true" />
+					</label>
+				{:else}
+					<div class="sci-field">
+						<span class="sci-field-label">SCI rattachée</span>
+						<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+							{activeSciLabel}
+						</div>
+					</div>
+				{/if}
+				<label for="bien-adresse" class="sci-field md:col-span-2">
+					<span class="sci-field-label">Adresse</span>
+					<Input id="bien-adresse" bind:value={adresse} required placeholder="14 rue Saint-Honoré" aria-required="true" />
 			</label>
 			<label for="bien-ville" class="sci-field">
 				<span class="sci-field-label">Ville</span>
@@ -102,13 +120,13 @@
 			<label for="bien-code-postal" class="sci-field">
 				<span class="sci-field-label">Code postal</span>
 				<Input
-					id="bien-code-postal"
-					bind:value={codePostal}
-					required
-					pattern="\\d{5}"
-					placeholder="75001"
-					aria-required="true"
-					aria-describedby={codePostalError ? 'code-postal-error' : undefined}
+						id="bien-code-postal"
+						bind:value={codePostal}
+						required
+						pattern="[0-9]{5}"
+						placeholder="75001"
+						aria-required="true"
+						aria-describedby={codePostalError ? 'code-postal-error' : undefined}
 					aria-invalid={!!codePostalError}
 				/>
 				{#if codePostalError}
