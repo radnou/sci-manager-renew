@@ -1,26 +1,34 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { theme } from '$lib/stores/theme';
 	import { Button } from '$lib/components/ui/button';
 	import { Moon, Sun } from 'lucide-svelte';
 
-	let currentTheme = $state('dark');
-
-	// Subscribe to theme changes
-	theme.subscribe(value => {
+	let currentTheme: 'light' | 'dark' = 'dark';
+	const unsubscribe = theme.subscribe(value => {
 		currentTheme = value;
 	});
+
+	onDestroy(unsubscribe);
+
+	function handleToggle() {
+		theme.toggle();
+	}
 </script>
 
 <Button
-	variant="ghost"
+	variant="outline"
 	size="sm"
-	onclick={theme.toggle}
-	class="group relative h-9 w-9 rounded-full border border-slate-200 bg-white/50 p-0 shadow-sm transition-all duration-300 hover:bg-slate-50 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 dark:hover:bg-slate-700"
-	aria-label="Basculer le thème"
+	onclick={handleToggle}
+	class="group relative h-9 w-9 rounded-full border-slate-300 bg-white p-0 text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
+	aria-label={currentTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+	aria-pressed={currentTheme === 'dark'}
+	title={currentTheme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
 >
-	<div class="relative h-4 w-4">
-		<Sun class="absolute inset-0 h-4 w-4 rotate-0 scale-100 transition-all duration-300 group-hover:text-amber-500 dark:-rotate-90 dark:scale-0" />
-		<Moon class="absolute inset-0 h-4 w-4 rotate-90 scale-0 transition-all duration-300 group-hover:text-blue-400 dark:rotate-0 dark:scale-100" />
-	</div>
+	{#if currentTheme === 'dark'}
+		<Sun class="h-4 w-4 text-amber-400" />
+	{:else}
+		<Moon class="h-4 w-4 text-slate-700 dark:text-slate-200" />
+	{/if}
 	<span class="sr-only">Basculer entre thème clair et sombre</span>
 </Button>

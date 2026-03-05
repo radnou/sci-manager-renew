@@ -3,7 +3,8 @@ import signal
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import Callable, Awaitable
+from urllib.parse import urlparse
+from typing import Awaitable, Callable
 
 import structlog
 from fastapi import FastAPI, Request, Response, status
@@ -17,7 +18,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, stripe
-from app.core.config import settings
+from app.core.config import Environment, settings
 from app.core.exceptions import SCIManagerException
 from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
@@ -253,9 +254,31 @@ app.add_middleware(
     allowed_hosts=["localhost", "127.0.0.1", "*.scimanager.fr", "testserver"]
 )
 
+
+def _resolved_cors_origins() -> list[str]:
+    origins: list[str] = []
+    for origin in settings.cors_origins:
+        normalized = origin.strip().rstrip("/")
+        if normalized:
+            origins.append(normalized)
+
+    parsed_frontend = urlparse(settings.frontend_url.strip())
+    if parsed_frontend.scheme and parsed_frontend.netloc:
+        origins.append(f"{parsed_frontend.scheme}://{parsed_frontend.netloc}")
+
+    # Keep order stable while removing duplicates.
+    return list(dict.fromkeys(origins))
+
+
+local_dev_origin_regex = None
+if settings.app_env != Environment.PRODUCTION:
+    # Allow localhost/127.0.0.1 with any port for local frontend variants (Vite, Nginx, Storybook, etc.).
+    local_dev_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=_resolved_cors_origins(),
+    allow_origin_regex=local_dev_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
