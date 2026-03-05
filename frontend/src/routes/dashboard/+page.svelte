@@ -83,11 +83,24 @@
 	$: loyerMetrics = activeSnapshot?.loyerMetrics ?? emptyLoyerMetrics;
 	$: portfolioMetrics = calculatePortfolioMetrics(scis, biens, loyers);
 	$: collectionRate = loyerMetrics.collectionRate;
+	$: monthlyPropertyCharges = scopedBiens.reduce((sum, bien) => sum + (bien.charges ?? 0), 0);
 	$: avgAssociateShare =
 		activeSciProfile && activeSciProfile.associes_count && activeSciProfile.associes_count > 0
 			? 100 / activeSciProfile.associes_count
 			: 0;
 	$: associateSummary = activeSciDetail?.associes ?? activeSci?.associes ?? [];
+	$: recentLoyerFeed = [
+		...(activeSciDetail?.recent_loyers?.length ? activeSciDetail.recent_loyers : scopedLoyers)
+	].sort((left, right) => toTimestamp(right.date_loyer) - toTimestamp(left.date_loyer));
+	$: latestLoyer = recentLoyerFeed[0] ?? null;
+	$: recentChargeFeed = [...(activeSciDetail?.recent_charges ?? [])].sort(
+		(left, right) => toTimestamp(right.date_paiement) - toTimestamp(left.date_paiement)
+	);
+	$: latestCharge = recentChargeFeed[0] ?? null;
+	$: fiscalTimeline = [...(activeSciDetail?.fiscalite ?? [])].sort(
+		(left, right) => (right.annee ?? 0) - (left.annee ?? 0)
+	);
+	$: latestFiscalYear = fiscalTimeline[0] ?? null;
 	$: priorities = [
 		{
 			title:
@@ -125,6 +138,49 @@
 					? `${associateSummary.length} associés sont impliqués. Prépare un point de gouvernance avant les arbitrages.`
 					: 'La SCI est portée par un seul associé référent. Les validations sont fluides.',
 			tone: 'accent'
+		}
+	];
+	$: commandTracks = [
+		{
+			id: 'dashboard-governance',
+			label: 'Gouvernance',
+			summary:
+				associateSummary.length > 0
+					? `${associateSummary.length} associé(s) documenté(s)`
+					: 'Associés à documenter',
+			detail: activeSciProfile?.user_role
+				? `${mapAssociateRoleLabel(activeSciProfile.user_role)} connecté`
+				: 'Rôle utilisateur à confirmer'
+		},
+		{
+			id: 'dashboard-patrimoine',
+			label: 'Patrimoine',
+			summary: `${activeSciDetail?.biens_count ?? scopedBiens.length} bien(s) actifs`,
+			detail: `Loyer cible ${formatEur(
+				activeSciDetail?.total_monthly_rent ?? bienMetrics.totalMonthlyRent
+			)}`
+		},
+		{
+			id: 'dashboard-execution',
+			label: 'Encaissements',
+			summary: `Recouvrement ${formatPercent(collectionRate, '0%')}`,
+			detail:
+				loyerMetrics.lateCount > 0
+					? `${loyerMetrics.lateCount} retard(s) à traiter`
+					: loyerMetrics.totalOutstanding > 0
+						? `${loyerMetrics.totalOutstandingLabel} à sécuriser`
+						: 'Aucun retard détecté'
+		},
+		{
+			id: 'dashboard-documents',
+			label: 'Documents',
+			summary: latestFiscalYear
+				? `Exercice ${latestFiscalYear.annee} consolidé`
+				: 'Clôture fiscale à préparer',
+			detail:
+				scopedLoyers.length > 0
+					? `${scopedLoyers.length} loyer(s) saisi(s), quittances générables`
+					: 'Aucun loyer saisi pour produire une quittance'
 		}
 	];
 
@@ -187,6 +243,12 @@
 
 	function activeSciStatus(status: SCIOverview['statut'] | null | undefined) {
 		return statusClass(status ?? activeSciProfile?.statut ?? null);
+	}
+
+	function toTimestamp(value: string | null | undefined) {
+		if (!value) return 0;
+		const parsed = Date.parse(value);
+		return Number.isNaN(parsed) ? 0 : parsed;
 	}
 
 	onMount(loadOverview);
@@ -394,7 +456,7 @@
 			</CardContent>
 		</Card>
 
-		<Card class="sci-section-card">
+		<Card id="dashboard-governance" class="sci-section-card scroll-mt-28">
 			<CardHeader>
 				<CardTitle class="text-lg">Vue portefeuille</CardTitle>
 				<CardDescription>
@@ -467,11 +529,11 @@
 				<div>
 					<p class="sci-eyebrow">SCI active • Dashboard spécifique</p>
 					<h2 class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-						{activeSciProfile?.nom || 'SCI active à détailler'}
+						Cockpit d’exécution par cas d’usage
 					</h2>
 					<p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-						Une fois la SCI sélectionnée, le cockpit descend au niveau entité: identité,
-						gouvernance, charges, fiscalité et exécution locative.
+						Le portefeuille reste en haut. Ici, la SCI active est organisée pour un usage opérateur
+						desktop: gouvernance, patrimoine, encaissements et documents.
 					</p>
 				</div>
 			</div>
@@ -601,10 +663,48 @@
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<TriangleAlert class="h-4 w-4" />
 							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
-								Actions prioritaires
+								Postes de pilotage
 							</p>
 						</div>
+						<p class="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+							Le dashboard spécifique s’organise par cas d’usage. Chaque bloc ci-dessous renvoie
+							vers une zone claire du cockpit.
+						</p>
 						<div class="mt-4 space-y-3">
+							{#each commandTracks as track}
+								<a
+									href={`#${track.id}`}
+									class="group block rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-slate-600"
+								>
+									<div class="flex items-start justify-between gap-3">
+										<div>
+											<p
+												class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+											>
+												{track.label}
+											</p>
+											<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+												{track.summary}
+											</p>
+											<p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+												{track.detail}
+											</p>
+										</div>
+										<span
+											class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors group-hover:bg-slate-900 group-hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:group-hover:bg-slate-100 dark:group-hover:text-slate-950"
+										>
+											Voir
+										</span>
+									</div>
+								</a>
+							{/each}
+						</div>
+						<div class="mt-5">
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								À traiter maintenant
+							</p>
+						</div>
+						<div class="mt-3 space-y-3">
 							{#each priorities as item}
 								<div
 									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
@@ -796,8 +896,8 @@
 					</div>
 
 					<div class="space-y-3">
-						{#if activeSciDetail?.recent_charges?.length}
-							{#each activeSciDetail.recent_charges.slice(0, 2) as charge (String(charge.id || `${charge.id_bien}-${charge.date_paiement}`))}
+						{#if recentChargeFeed.length}
+							{#each recentChargeFeed.slice(0, 2) as charge (String(charge.id || `${charge.id_bien}-${charge.date_paiement}`))}
 								<div
 									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
 								>
@@ -829,13 +929,13 @@
 						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 							Dernier exercice fiscal
 						</p>
-						{#if activeSciDetail?.fiscalite?.length}
+						{#if latestFiscalYear}
 							<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-								Exercice {activeSciDetail.fiscalite[0].annee}
+								Exercice {latestFiscalYear.annee}
 							</p>
 							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-								Résultat {formatEur(activeSciDetail.fiscalite[0].resultat_fiscal, 'N/A')} • revenus {formatEur(
-									activeSciDetail.fiscalite[0].total_revenus,
+								Résultat {formatEur(latestFiscalYear.resultat_fiscal, 'N/A')} • revenus {formatEur(
+									latestFiscalYear.total_revenus,
 									'N/A'
 								)}
 							</p>
@@ -903,14 +1003,16 @@
 
 	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
 		<div class="space-y-6">
-			<BienTable
-				biens={scopedBiens.slice(0, 6)}
-				{loading}
-				title="Patrimoine piloté"
-				description="Vue consolidée des biens de la SCI active, utile pour les arbitrages et la revue mensuelle."
-			/>
+			<div id="dashboard-patrimoine" class="scroll-mt-28">
+				<BienTable
+					biens={scopedBiens.slice(0, 6)}
+					{loading}
+					title="Patrimoine piloté"
+					description="Vue consolidée des biens de la SCI active, utile pour les arbitrages et la revue mensuelle."
+				/>
+			</div>
 
-			<Card class="sci-section-card">
+			<Card id="dashboard-execution" class="sci-section-card scroll-mt-28">
 				<CardHeader>
 					<CardTitle class="flex items-center gap-2 text-lg">
 						<HandCoins class="h-5 w-5 text-emerald-600" />
@@ -933,51 +1035,43 @@
 		</div>
 
 		<div class="space-y-6">
-			<QuitusGenerator loyers={scopedLoyers} biens={scopedBiens} />
+			<div id="dashboard-documents" class="scroll-mt-28">
+				<QuitusGenerator loyers={scopedLoyers} biens={scopedBiens} />
+			</div>
 
 			<Card class="sci-section-card">
 				<CardHeader>
 					<CardTitle class="flex items-center gap-2 text-lg">
 						<FileText class="h-5 w-5 text-sky-600" />
-						Repères opérationnels
+						Rituels opérateur
 					</CardTitle>
-					<CardDescription>Résumé métier pour la revue hebdomadaire de la SCI.</CardDescription>
+					<CardDescription>
+						Les repères desktop pour la revue hebdomadaire, la quittance et la clôture.
+					</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
 					<div
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-							Statut dominant
+							Dernier flux locatif
 						</p>
 						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-							{scopedLoyers.length > 0
-								? mapLoyerStatusLabel(scopedLoyers[0].statut)
+							{latestLoyer
+								? `${formatFrDate(latestLoyer.date_loyer)} • ${formatEur(latestLoyer.montant)}`
 								: 'Aucun flux saisi'}
 						</p>
-					</div>
-					<div
-						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
-					>
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-							Patrimoine
-						</p>
-						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-							{scopedBiens.length > 0
-								? `${scopedBiens.length} bien(s) à jour`
-								: 'Patrimoine à documenter'}
-						</p>
 						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Charges mensuelles {formatEur(
-								scopedBiens.reduce((sum, bien) => sum + (bien.charges ?? 0), 0)
-							)}
+							{latestLoyer
+								? mapLoyerStatusLabel(latestLoyer.statut)
+								: 'Le journal locatif s’activera ici dès la première saisie.'}
 						</p>
 					</div>
 					<div
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-							Conformité documentaire
+							Cadence documentaire
 						</p>
 						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
 							{scopedLoyers.length > 0
@@ -985,7 +1079,37 @@
 								: 'Aucune quittance à produire'}
 						</p>
 						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Le module PDF est centré sur les loyers réellement saisis.
+							{scopedLoyers.length > 0
+								? `${scopedLoyers.length} loyer(s) saisi(s) sur la SCI active.`
+								: 'Le module PDF attend au moins un loyer enregistré.'}
+						</p>
+					</div>
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Charges récurrentes
+						</p>
+						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+							{formatEur(monthlyPropertyCharges)}
+						</p>
+						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+							charges mensuelles renseignées sur les biens de la SCI active.
+						</p>
+					</div>
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Clôture fiscale
+						</p>
+						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+							{latestFiscalYear ? `Exercice ${latestFiscalYear.annee}` : 'Aucun exercice consolidé'}
+						</p>
+						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+							{latestCharge
+								? `${mapChargeTypeLabel(latestCharge.type_charge)} • payée le ${formatFrDate(latestCharge.date_paiement)}`
+								: 'Aucune charge récente documentée.'}
 						</p>
 					</div>
 				</CardContent>
