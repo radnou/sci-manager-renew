@@ -156,38 +156,86 @@
 		</div>
 	</section>
 
-	<!-- Big4 Insights Section -->
+	<!-- Market Data Section -->
 	<section class="py-24 bg-slate-50 dark:bg-slate-950">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center mb-16">
-				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Expertise Big4</Badge>
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Données du secteur</Badge>
 				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
-					Conseils stratégiques de consultants seniors
+					Chiffres clés de la gestion immobilière en France
 				</h2>
 				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-					Insights exclusifs issus de plus de 500 missions SCI auprès de cabinets Big4
+					Sources officielles et études récentes (2024-2025)
 				</p>
 			</div>
 
 			<div class="grid gap-8 md:grid-cols-3 mb-16">
 				<FeatureCard
-					icon={Shield}
-					title="La trésorerie est le nerf de la guerre"
-					description="Dans 85% des SCI en difficulté, le problème racine est une visibilité insuffisante sur les flux de trésorerie. Les gérants passent trop de temps à collecter les données plutôt qu'à les analyser."
-					badge="Insight #1"
+					icon={TrendingUp}
+					title="Taux d'impayés moyen: 3,50%"
+					description="En 2025, les impayés de loyer s'élèvent à 3,50% au niveau national, avec des disparités régionales (3,43% Île-de-France, >4% zones rurales). La gestion professionnelle réduit ce taux à 1,97% contre 5,33% pour les particuliers."
+					badge="Source: Lamy Immobilier, FNPR 2025"
 				/>
 				<FeatureCard
 					icon={Calculator}
-					title="La digitalisation n'est pas une option"
-					description="Les SCI qui ont digitalisé leur suivi opérationnel voient leur temps de décision réduit de 60%. Le ROI moyen sur 3 ans est de 280% pour les outils de gestion patrimoniale."
-					badge="Insight #2"
+					title="50% du temps libérable"
+					description="Selon McKinsey, jusqu'à 50% du temps des gestionnaires est consacré à des tâches répétitives. L'automation permet de réorienter ce temps vers des activités à haute valeur ajoutée."
+					badge="Source: McKinsey, Euodia 2024"
 				/>
 				<FeatureCard
-					icon={FileText}
-					title="La compliance réglementaire évolue"
-					description="Avec la loi ELAN et les nouvelles normes comptables, 70% des SCI devront adapter leurs process d'ici 2025. Les outils modernes intègrent nativement ces évolutions."
-					badge="Insight #3"
+					icon={Shield}
+					title="72% constatent une amélioration"
+					description="Une enquête Deloitte 2024 révèle que 72% des directions immobilières ayant adopté une solution intégrée constatent une amélioration significative de productivité dans les 12 mois."
+					badge="Source: Deloitte, Septeo 2024"
 				/>
+			</div>
+
+			<!-- KPI Section -->
+			<div class="bg-white dark:bg-slate-900 rounded-lg p-8 mb-16">
+				<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-8 text-center">
+					KPI critiques à suivre (standards sectoriels)
+				</h3>
+				<div class="grid gap-6 md:grid-cols-3">
+					<div class="text-center">
+						<div class="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">>98%</div>
+						<div class="text-slate-600 dark:text-slate-400">Taux de recouvrement optimal</div>
+						<div class="text-sm text-slate-500 dark:text-slate-500 mt-1">Source: Lockimmo</div>
+					</div>
+					<div class="text-center">
+						<div class="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">5%</div>
+						<div class="text-slate-600 dark:text-slate-400">Taux de vacance cible</div>
+						<div class="text-sm text-slate-500 dark:text-slate-500 mt-1">Source: CAFPI</div>
+					</div>
+					<div class="text-center">
+						<div class="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">30j</div>
+						<div class="text-slate-600 dark:text-slate-400">Délai de paiement légal</div>
+						<div class="text-sm text-slate-500 dark:text-slate-500 mt-1">Source: Manda</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Regulatory Context -->
+			<div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-900 rounded-lg p-8 mb-16">
+				<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+					Cadre réglementaire: Loi ELAN
+				</h3>
+				<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+					<li class="flex items-start">
+						<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />
+						<span><strong>Sanctions encadrement loyers:</strong> Jusqu'à 15000€ pour les SCI (personnes morales) ne respectant pas l'encadrement</span>
+					</li>
+					<li class="flex items-start">
+						<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />
+						<span><strong>Performance énergétique:</strong> Logements classés G interdits à la location depuis 2025</span>
+					</li>
+					<li class="flex items-start">
+						<div class="mr-3 mt-1 h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />
+						<span><strong>Obligations décence:</strong> Sanctions renforcées pour non-respect des obligations de salubrité</span>
+					</li>
+				</ul>
+				<p class="text-sm text-slate-500 dark:text-slate-500 mt-4">
+					Sources: Crédit Agricole e-immobilier, SGL, Empruntis
+				</p>
 			</div>
 
 			<!-- Testimonials -->
@@ -223,104 +271,117 @@
 		</div>
 	</section>
 
-	<!-- Insights Section -->
-	<section class="py-16 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-		<div class="max-w-6xl mx-auto px-4">
-			<h2 class="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-12">
-				Insights Big4 pour SCI modernes
-			</h2>
-			<div class="grid gap-6 md:grid-cols-3">
-				<article class="expertise-card">
-					<div class="expertise-header">
-						<span class="expertise-badge">Insight #2</span>
-						<h3>La digitalisation n'est pas une option</h3>
-					</div>
-					<p>Les SCI qui ont digitalisé leur suivi opérationnel voient leur temps de décision réduit de 60%. Le ROI moyen sur 3 ans est de 280% pour les outils de gestion patrimoniale.</p>
+	<!-- FAQ Section -->
+	<section class="py-24 bg-white dark:bg-slate-900">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center mb-16">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Questions fréquentes</Badge>
+				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
+					Décider rapidement si SCI Manager est fait pour vous
+				</h2>
+				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+					Réponses aux questions les plus posées par les gérants de SCI
+				</p>
+			</div>
+
+			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+				<!-- Général -->
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Le produit est-il adapté à une petite SCI familiale ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Absolument. L'interface est pensée pour démarrer simple avec 1-2 biens, puis monter en sophistication sans refonte. Le plan Standard est gratuit jusqu'à 5 biens.
+					</p>
 				</article>
 
-				<article class="expertise-card">
-				<div class="expertise-header">
-					<span class="expertise-badge">Insight #3</span>
-					<h3>La compliance réglementaire évolue</h3>
-				</div>
-				<p>Avec la loi ELAN et les nouvelles normes comptables, 70% des SCI devront adapter leurs process d'ici 2025. Les outils modernes intègrent nativement ces évolutions.</p>
-			</article>
-			</div>
-		</div>
-	</section>
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Puis-je l'utiliser avec mon expert-comptable actuel ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Oui. Les données sont structurées pour faciliter les échanges (exports Excel/CSV). Vous gardez votre comptable, vous gagnez du temps sur la collecte et la transmission.
+					</p>
+				</article>
 
-	<!-- Tips and KPI Section -->
-	<section class="py-16">
-		<div class="max-w-6xl mx-auto px-4">
-			<div class="tips-grid">
-			<div class="tips-section">
-				<h3>5 conseils opérationnels Big4</h3>
-				<ul>
-					<li><strong>Automatisez les relances locataires</strong> : Réduisez les impayés de 40% avec des workflows automatisés</li>
-					<li><strong>Standardisez vos CERFA</strong> : Gagnez 2h/semaine avec des templates pré-remplis</li>
-					<li><strong>Surveillez vos ratios clés</strong> : LTV > 70% et cash-flow négatif sont des signaux d'alerte</li>
-					<li><strong>Archivez numériquement</strong> : Conformité RGPD et accès instantané aux justificatifs</li>
-					<li><strong>Intégrez votre comptable</strong> : Exports automatisés réduisent les allers-retours de 80%</li>
-				</ul>
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Quelle promesse principale en 30 jours ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Reprendre le contrôle sur les flux de loyers, identifier les retards avant impact trésorerie, et gagner 2-3h par semaine sur l'administratif.
+					</p>
+				</article>
+
+				<!-- Sécurité & Données -->
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Mes données sont-elles sécurisées (RGPD) ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Oui. Hébergement en France (Supabase), chiffrement bout-en-bout, isolation stricte par SCI. Conformité RGPD native avec possibilité d'export et suppression complète à tout moment.
+					</p>
+				</article>
+
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Comment migrer depuis Excel ou autre outil ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Import CSV/Excel guidé pour biens, locataires et historique de loyers. Durée moyenne: 15-30 minutes pour une SCI de 5 biens. Assistance gratuite pendant l'onboarding.
+					</p>
+				</article>
+
+				<!-- Pricing & Support -->
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Y a-t-il un essai gratuit ou une démo ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Le plan Standard est gratuit jusqu'à 5 biens (aucune carte bancaire requise). Pour les portefeuilles plus importants, démo personnalisée sur demande.
+					</p>
+				</article>
+
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Quel support technique est disponible ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Email support inclus (réponse sous 24h). Chat en direct pour les plans Pro et Lifetime. Documentation complète et tutoriels vidéo disponibles 24/7.
+					</p>
+				</article>
+
+				<!-- Conformité & Fiscalité -->
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						L'outil gère-t-il la conformité fiscale (2044, 2072) ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Oui. Génération automatique des données pré-remplies pour déclarations 2044 (revenus fonciers) et 2072 (SCI à l'IR). Export compatible avec votre comptable ou logiciel fiscal.
+					</p>
+				</article>
+
+				<article class="bg-slate-50 dark:bg-slate-800 rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">
+						Que se passe-t-il si je veux arrêter ?
+					</h3>
+					<p class="text-slate-600 dark:text-slate-400">
+						Aucun engagement. Résiliation instantanée depuis votre compte. Export complet de vos données en CSV/PDF. Suppression définitive sur demande (RGPD).
+					</p>
+				</article>
 			</div>
 
-			<div class="kpis-section">
-				<h3>KPI critiques à suivre</h3>
-				<div class="kpi-metrics">
-					<div class="kpi-item">
-						<div class="kpi-value">94%</div>
-						<div class="kpi-label">Taux de recouvrement loyers</div>
-					</div>
-					<div class="kpi-item">
-						<div class="kpi-value">2.8%</div>
-						<div class="kpi-label">Taux de vacance cible</div>
-					</div>
-					<div class="kpi-item">
-						<div class="kpi-value">15j</div>
-						<div class="kpi-label">Délai règlement quittances</div>
-					</div>
-				</div>
+			<!-- CTA supplémentaire -->
+			<div class="mt-16 text-center">
+				<p class="text-slate-600 dark:text-slate-400 mb-6">
+					Vous avez d'autres questions ?
+				</p>
+				<a href="/login">
+					<Button variant="outline" size="lg">
+						Demander un accès prioritaire
+					</Button>
+				</a>
 			</div>
-		</div>
-	</section>
-
-	<!-- Case Studies Section -->
-	<section class="py-16 bg-slate-50 dark:bg-slate-800">
-		<div class="max-w-6xl mx-auto px-4">
-			<div class="case-studies">
-			<h3>Cas clients Big4</h3>
-			<div class="case-grid">
-				<div class="case-card">
-					<h4>SCI familiale 12 lots</h4>
-					<p><strong>Résultat :</strong> +€45k trésorerie grâce à l'identification précoce d'impayés chroniques. Temps de gestion ÷3.</p>
-				</div>
-				<div class="case-card">
-					<h4>Portefeuille institutionnel</h4>
-					<p><strong>Résultat :</strong> Réduction de 60% du temps de reporting trimestriel. ROI de 320% sur 2 ans.</p>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- FAQ Section -->
-	<section class="faq-block reveal">
-		<header class="section-header">
-			<p class="sci-eyebrow">Questions fréquentes</p>
-			<h2>Décider rapidement si SCI Manager est fait pour vous</h2>
-		</header>
-		<div class="faq-grid">
-			<article>
-				<h3>Le produit est-il adapté à une petite SCI familiale ?</h3>
-				<p>Oui. L'interface est pensée pour démarrer simple puis monter en sophistication sans refonte.</p>
-			</article>
-			<article>
-				<h3>Puis-je l'utiliser avec mon expert-comptable actuel ?</h3>
-				<p>Oui. Les données sont structurées pour faciliter les échanges et réduire les allers-retours.</p>
-			</article>
-			<article>
-				<h3>Quelle promesse principale en 30 jours ?</h3>
-				<p>Reprendre le contrôle sur les flux de loyers et gagner du temps de décision chaque semaine.</p>
-			</article>
 		</div>
 	</section>
 </main>

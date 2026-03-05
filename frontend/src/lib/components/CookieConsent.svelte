@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { writable } from 'svelte/store';
 	import { Button } from '$lib/components/ui/button';
 	import { Card } from '$lib/components/ui/card';
 
-	let showBanner = $state(false);
-	let consentGiven = $state(false);
+	const showBanner = writable(false);
+	const consentGiven = writable(false);
 
 	const CONSENT_KEY = 'sci_manager_cookie_consent';
 
@@ -12,13 +13,13 @@
 		// Vérifier si le consentement a déjà été donné
 		const savedConsent = localStorage.getItem(CONSENT_KEY);
 		if (savedConsent) {
-			consentGiven = true;
-			showBanner = false;
+			consentGiven.set(true);
+			showBanner.set(false);
 		} else {
 			// Afficher le banner après un court délai pour meilleure UX
 			setTimeout(() => {
-				showBanner = true;
-			}, 1000);
+				showBanner.set(true);
+			}, 500);
 		}
 	});
 
@@ -31,8 +32,8 @@
 		};
 
 		localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
-		consentGiven = true;
-		showBanner = false;
+		consentGiven.set(true);
+		showBanner.set(false);
 	}
 
 	function acceptNecessary() {
@@ -44,14 +45,24 @@
 		};
 
 		localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
-		consentGiven = true;
-		showBanner = false;
+		consentGiven.set(true);
+		showBanner.set(false);
+	}
+
+	// Pour debug en dev: permet de réinitialiser le consentement
+	if (typeof window !== 'undefined' && import.meta.env.DEV) {
+		(window as any).resetCookieConsent = () => {
+			localStorage.removeItem(CONSENT_KEY);
+			consentGiven.set(false);
+			showBanner.set(true);
+			console.log('✅ Cookie consent réinitialisé. Rechargez la page.');
+		};
 	}
 </script>
 
-{#if showBanner && !consentGiven}
+{#if $showBanner && !$consentGiven}
 	<div
-		class="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 animate-in slide-in-from-bottom duration-300"
+		class="fixed bottom-0 left-0 right-0 z-[9999] p-4 sm:p-6 animate-in slide-in-from-bottom duration-300"
 		role="dialog"
 		aria-live="polite"
 		aria-label="Cookie consent banner"
