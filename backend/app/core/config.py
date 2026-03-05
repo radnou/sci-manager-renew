@@ -1,6 +1,6 @@
 import json
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     resend_from_email: str = "noreply@scimanager.fr"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     frontend_url: str = "http://localhost:5173"
+
+    # Logging
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    log_format: Literal["json", "console"] = "json"
+    app_name: str = "sci-manager"
+    app_env: str = "development"
 
     model_config = SettingsConfigDict(
         env_file=".env",
