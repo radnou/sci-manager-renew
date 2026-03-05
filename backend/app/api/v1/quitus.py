@@ -9,7 +9,7 @@ from app.models.quitus import QuitusRequest, QuitusResponse
 from app.services.quitus_service import QuitusService
 from app.services.storage_service import storage_service
 
-router = APIRouter(prefix="/api/v1/quitus", tags=["quitus"])
+router = APIRouter(prefix="/quitus", tags=["quitus"])
 
 
 def _validate_filename(filename: str) -> str:

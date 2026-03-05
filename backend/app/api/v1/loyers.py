@@ -13,7 +13,7 @@ from app.models.loyers import LoyerCreate, LoyerResponse, LoyerUpdate
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/loyers", tags=["loyers"])
+router = APIRouter(prefix="/loyers", tags=["loyers"])
 
 
 def _get_client():

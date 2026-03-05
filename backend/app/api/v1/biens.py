@@ -12,7 +12,7 @@ from app.services.sci_service import SCIService
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/biens", tags=["biens"])
+router = APIRouter(prefix="/biens", tags=["biens"])
 
 
 def _get_client():

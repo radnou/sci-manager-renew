@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     # Frontend
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    allowed_hosts: list[str] = ["localhost", "127.0.0.1", "testserver", "*.gerersci.fr"]
     frontend_url: str = "http://localhost:5173"
 
     # Logging
@@ -89,6 +90,24 @@ class Settings(BaseSettings):
                     return [str(item) for item in parsed]
             return [item.strip() for item in text.split(",") if item.strip()]
         raise TypeError("cors_origins must be a list or comma-separated string")
+
+    @field_validator("allowed_hosts", mode="before")
+    @classmethod
+    def parse_allowed_hosts(cls, value: Any) -> list[str]:
+        if value is None:
+            return ["localhost", "127.0.0.1", "testserver", "*.gerersci.fr"]
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            if text.startswith("["):
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    return [str(item).strip() for item in parsed if str(item).strip()]
+            return [item.strip() for item in text.split(",") if item.strip()]
+        raise TypeError("allowed_hosts must be a list or comma-separated string")
 
     @model_validator(mode="after")
     def validate_production_environment(self):

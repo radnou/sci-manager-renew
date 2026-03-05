@@ -89,6 +89,11 @@ async def liveness():
     return {"status": "alive"}
 
 
+@router.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @router.get("/health/ready")
 async def readiness():
     checks = {

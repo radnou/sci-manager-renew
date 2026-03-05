@@ -4,7 +4,7 @@
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { toast } from 'svelte-sonner';
+	import { addToast } from '$lib/components/ui/toast';
 
 	interface DataSummary {
 		user_id: string;
@@ -49,10 +49,10 @@
 			if (response.ok) {
 				dataSummary = await response.json();
 			} else {
-				toast.error('Erreur lors du chargement du résumé des données');
+				addToast({ title: 'Erreur lors du chargement du résumé des données', variant: 'error' });
 			}
 		} catch (error) {
-			toast.error('Erreur réseau');
+			addToast({ title: 'Erreur réseau', variant: 'error' });
 			console.error(error);
 		} finally {
 			loading = false;
@@ -76,15 +76,15 @@
 
 			if (response.ok) {
 				const data = await response.json();
-				toast.success('Export des données réussi ! Téléchargement en cours...');
+				addToast({ title: 'Export des données réussi ! Téléchargement en cours...', variant: 'success' });
 
 				// TODO: Download file from export_url when implemented
 				// For now, show success message
 			} else {
-				toast.error('Erreur lors de l\'export des données');
+				addToast({ title: 'Erreur lors de l\'export des données', variant: 'error' });
 			}
 		} catch (error) {
-			toast.error('Erreur réseau');
+			addToast({ title: 'Erreur réseau', variant: 'error' });
 			console.error(error);
 		} finally {
 			exportLoading = false;
@@ -93,7 +93,7 @@
 
 	async function deleteAccount() {
 		if (deleteConfirmText !== 'SUPPRIMER') {
-			toast.error('Veuillez taper "SUPPRIMER" pour confirmer');
+			addToast({ title: 'Veuillez taper "SUPPRIMER" pour confirmer', variant: 'error' });
 			return;
 		}
 
@@ -113,14 +113,14 @@
 			});
 
 			if (response.ok) {
-				toast.success('Compte supprimé avec succès. Redirection...');
+				addToast({ title: 'Compte supprimé avec succès. Redirection...', variant: 'success' });
 				await supabase.auth.signOut();
 				setTimeout(() => goto('/'), 2000);
 			} else {
-				toast.error('Erreur lors de la suppression du compte');
+				addToast({ title: 'Erreur lors de la suppression du compte', variant: 'error' });
 			}
 		} catch (error) {
-			toast.error('Erreur réseau');
+			addToast({ title: 'Erreur réseau', variant: 'error' });
 			console.error(error);
 		} finally {
 			deleteLoading = false;
