@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -24,6 +25,11 @@ def _validate_filename(filename: str) -> str:
     return filename
 
 
+def _build_inline_filename(periode: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", periode.lower()).strip("-")
+    return f"quittance-{slug or 'periode'}.pdf"
+
+
 @router.post("/generate", response_model=QuitusResponse)
 async def generate_quitus(payload: QuitusRequest, user_id: str = Depends(get_current_user)):
     pdf_bytes = QuitusService.generate_quitus_pdf(payload)
@@ -42,6 +48,23 @@ async def generate_quitus(payload: QuitusRequest, user_id: str = Depends(get_cur
         "pdf_url": f"/api/v1/quitus/files/{filename}",
         "size_bytes": len(pdf_bytes),
     }
+
+
+@router.post("/render")
+async def render_quitus(payload: QuitusRequest, user_id: str = Depends(get_current_user)):
+    del user_id
+
+    pdf_bytes = QuitusService.generate_quitus_pdf(payload)
+    filename = _build_inline_filename(payload.periode)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get("/files/{filename}")

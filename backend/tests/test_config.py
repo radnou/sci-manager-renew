@@ -90,3 +90,17 @@ def test_staging_environment_allows_test_secrets(monkeypatch):
 
     settings = Settings()
     assert settings.stripe_secret_key == "sk_test_staging_key"
+
+
+def test_local_env_file_overrides_base_env(tmp_path, monkeypatch):
+    """Test que .env.local surcharge .env en developpement local"""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SUPABASE_JWT_SECRET", raising=False)
+
+    (tmp_path / ".env").write_text("SUPABASE_JWT_SECRET=base-secret\n", encoding="utf-8")
+    (tmp_path / ".env.local").write_text("SUPABASE_JWT_SECRET=local-secret\n", encoding="utf-8")
+
+    from app.core.config import Settings
+
+    settings = Settings()
+    assert settings.supabase_jwt_secret == "local-secret"

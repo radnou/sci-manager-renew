@@ -276,24 +276,11 @@ async function installCoreApiMocks(page: Page) {
 			return;
 		}
 
-		if (method === 'POST' && path === '/api/v1/quitus/generate') {
-			await route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					filename: 'quitus-e2e.pdf',
-					pdf_url: '/api/v1/quitus/files/quitus-e2e.pdf',
-					size_bytes: 256
-				})
-			});
-			return;
-		}
-
-		if (method === 'GET' && path.startsWith('/api/v1/quitus/files/')) {
+		if (method === 'POST' && path === '/api/v1/quitus/render') {
 			await route.fulfill({
 				status: 200,
 				contentType: 'application/pdf',
-				body: '%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF'
+				body: '%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT\n/F1 18 Tf\n72 72 Td\n(Quittance E2E) Tj\nET\nendstream\nendobj\n5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF'
 			});
 			return;
 		}

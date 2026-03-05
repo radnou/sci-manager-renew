@@ -1036,7 +1036,11 @@
 
 		<div class="space-y-6">
 			<div id="dashboard-documents" class="scroll-mt-28">
-				<QuitusGenerator loyers={scopedLoyers} biens={scopedBiens} />
+				<QuitusGenerator
+					loyers={scopedLoyers}
+					biens={scopedBiens}
+					sciName={activeSciProfile?.nom || activeSci?.nom || ''}
+				/>
 			</div>
 
 			<Card class="sci-section-card">

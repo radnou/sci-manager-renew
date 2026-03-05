@@ -18,6 +18,7 @@ import {
 	fetchLoyers,
 	fetchSciDetail,
 	fetchScis,
+	renderQuitus,
 	updateBien,
 	updateLoyer
 } from './api';
@@ -194,6 +195,36 @@ describe('api helpers', () => {
 		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/loyers/loyer-1`);
 		expect(options.method).toBe('DELETE');
+	});
+
+	it('renderQuitus posts JSON and returns a blob', async () => {
+		const pdfResponse = new Response('pdf-binary', {
+			status: 200,
+			headers: { 'Content-Type': 'application/pdf' }
+		});
+		const fetchMock = vi.fn().mockResolvedValue(pdfResponse);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const payload = {
+			id_loyer: 'loyer-1',
+			id_bien: 'bien-1',
+			nom_locataire: 'Jean Dupont',
+			periode: 'Mars 2026',
+			montant: 1200,
+			nom_sci: 'SCI Mosa Belleville',
+			adresse_bien: '1 rue Seed',
+			ville_bien: 'Paris'
+		};
+
+		const blob = await renderQuitus(payload);
+		expect(blob.type).toBe('application/pdf');
+
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/quitus/render`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+		const headers = new Headers(options.headers);
+		expect(headers.get('Content-Type')).toBe('application/json');
 	});
 
 	it('adds authorization header when a supabase session is available', async () => {

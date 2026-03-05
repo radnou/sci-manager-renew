@@ -140,6 +140,9 @@ export type QuitusRequestPayload = {
 	nom_locataire: string;
 	periode: string;
 	montant: number;
+	nom_sci?: string;
+	adresse_bien?: string;
+	ville_bien?: string;
 };
 
 export type QuitusResponsePayload = {
@@ -203,6 +206,9 @@ export async function apiFetchBlob(endpoint: string, options?: RequestInit): Pro
 	}
 
 	const headers = new Headers(options?.headers);
+	if (options?.body && !headers.has('Content-Type')) {
+		headers.set('Content-Type', 'application/json');
+	}
 	if (accessToken) {
 		headers.set('Authorization', `Bearer ${accessToken}`);
 	}
@@ -278,6 +284,13 @@ export function deleteLoyer(loyerId: EntityId) {
 
 export function generateQuitus(payload: QuitusRequestPayload) {
 	return apiFetch<QuitusResponsePayload>('/api/v1/quitus/generate', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function renderQuitus(payload: QuitusRequestPayload) {
+	return apiFetchBlob('/api/v1/quitus/render', {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});

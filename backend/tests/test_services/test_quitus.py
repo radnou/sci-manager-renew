@@ -12,3 +12,5 @@ def test_generate_quitus_pdf_backward_compat():
     )
     pdf = QuitusService.generate_quitus_pdf(payload)
     assert pdf.startswith(b"%PDF")
+    assert b"legacy-loyer" not in pdf
+    assert b"legacy-bien" not in pdf

@@ -10,7 +10,7 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
-	import { downloadQuitus, generateQuitus as generateQuitusApi } from '$lib/api';
+	import { renderQuitus as renderQuitusApi } from '$lib/api';
 	import { mapBienTypeLabel } from '$lib/high-value/biens';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
@@ -23,6 +23,7 @@
 		buttonLabel = 'Générer le PDF',
 		loyers = [],
 		biens = [],
+		sciName = '',
 		generateQuitus = undefined
 	}: {
 		title?: string;
@@ -30,6 +31,7 @@
 		buttonLabel?: string;
 		loyers?: Loyer[];
 		biens?: Bien[];
+		sciName?: string;
 		generateQuitus?: GenerateQuitusFn;
 	} = $props();
 
@@ -61,6 +63,17 @@
 		return `${formatFrDate(loyer.date_loyer)} • ${bienLabel} • ${formatEur(loyer.montant)}`;
 	}
 
+	function buildPdfFilename(loyer: Loyer, bien: Bien | null) {
+		const periodLabel = loyer.date_loyer || 'periode';
+		const cityLabel = bien?.ville?.trim() || 'bien';
+		const safeLabel = `${cityLabel}-${periodLabel}`
+			.toLowerCase()
+			.replace(/[^a-z0-9-]+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '');
+		return `quittance-${safeLabel || 'document'}.pdf`;
+	}
+
 	$effect(() => {
 		if (!selectedLoyerId && loyers.length > 0) {
 			selectedLoyerId = String(loyers[0].id || '');
@@ -74,7 +87,7 @@
 
 		periode = formatFrDate(selectedLoyer.date_loyer, 'Période à confirmer');
 		montant = String(selectedLoyer.montant ?? 0);
-		pdfDownloadName = `quittance-${String(selectedLoyer.id || 'document')}.pdf`;
+		pdfDownloadName = buildPdfFilename(selectedLoyer, selectedBien);
 	});
 
 	async function defaultGenerateQuitus() {
@@ -82,15 +95,16 @@
 			throw new Error('Sélectionne un loyer rattaché à un bien avant de générer la quittance.');
 		}
 
-		const generated = await generateQuitusApi({
+		return renderQuitusApi({
 			id_loyer: String(selectedLoyer.id || ''),
 			id_bien: String(selectedBien.id || ''),
 			nom_locataire: nomLocataire,
 			periode,
-			montant: Number.parseFloat(montant)
+			montant: Number.parseFloat(montant),
+			nom_sci: sciName || undefined,
+			adresse_bien: selectedBien.adresse,
+			ville_bien: selectedBien.ville || undefined
 		});
-
-		return downloadQuitus(generated.pdf_url);
 	}
 
 	async function handleGenerate() {
