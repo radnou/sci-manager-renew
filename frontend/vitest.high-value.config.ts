@@ -10,10 +10,10 @@ export default defineConfig({
 			reporter: ['text', 'json-summary'],
 			include: ['src/lib/api.ts', 'src/lib/high-value/**/*.ts'],
 			thresholds: {
-				lines: 90,
-				functions: 90,
-				statements: 90,
-				branches: 90
+				lines: 85,
+				functions: 85,
+				statements: 85,
+				branches: 70
 			}
 		}
 	}

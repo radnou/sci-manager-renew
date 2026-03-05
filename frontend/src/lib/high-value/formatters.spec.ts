@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatEur, formatFrDate } from './formatters';
+import { formatCompactNumber, formatEur, formatFrDate, formatPercent } from './formatters';
 
 describe('high-value formatters', () => {
 	it('formats euro values in fr-FR style', () => {
@@ -16,5 +16,12 @@ describe('high-value formatters', () => {
 		expect(formatFrDate('2026-03-01')).toMatch(/2026/);
 		expect(formatFrDate('invalid-date')).toBe('invalid-date');
 		expect(formatFrDate('', 'Aucune date')).toBe('Aucune date');
+	});
+
+	it('formats percentages and compact numbers with fr-FR conventions', () => {
+		expect(formatPercent(12.34)).toContain('%');
+		expect(formatPercent(undefined, 'N/A')).toBe('N/A');
+		expect(formatCompactNumber(2500)).not.toBe('2500');
+		expect(formatCompactNumber(Number.NaN, '0')).toBe('0');
 	});
 });

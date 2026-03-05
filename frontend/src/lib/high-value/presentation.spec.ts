@@ -16,6 +16,12 @@ describe('high-value presentation helpers', () => {
 		expect(
 			formatApiErrorMessage(new Error('Le montant est obligatoire.'), 'Fallback technique')
 		).toBe('Le montant est obligatoire.');
+		expect(
+			formatApiErrorMessage(new Error('{"message":"Message structuré"}'), 'Fallback technique')
+		).toBe('Message structuré');
+		expect(
+			formatApiErrorMessage(new Error('"Message JSON string"'), 'Fallback technique')
+		).toBe('Message JSON string');
 
 		expect(formatApiErrorMessage(new Error(''), 'Fallback technique')).toBe('Fallback technique');
 		expect(formatApiErrorMessage('erreur', 'Fallback technique')).toBe('Fallback technique');
@@ -25,6 +31,7 @@ describe('high-value presentation helpers', () => {
 		expect(mapAssociateRoleLabel('gerant')).toBe('Gérant');
 		expect(mapAssociateRoleLabel('associe')).toBe('Associé');
 		expect(mapAssociateRoleLabel('co_gerant')).toBe('Gérant');
+		expect(mapAssociateRoleLabel('president_du_conseil')).toBe('President Du Conseil');
 		expect(mapAssociateRoleLabel(undefined)).toBe('Associé');
 		expect(mapChargeTypeLabel('taxe_fonciere')).toBe('Taxe Fonciere');
 		expect(mapChargeTypeLabel('travaux')).toBe('Travaux');

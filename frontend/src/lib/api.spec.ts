@@ -10,14 +10,17 @@ vi.mock('$lib/auth/session', () => ({
 
 import {
 	API_URL,
+	createCheckoutSession,
 	createBien,
 	createLoyer,
 	deleteBien,
 	deleteLoyer,
+	downloadQuitus,
 	fetchBiens,
 	fetchLoyers,
 	fetchSciDetail,
 	fetchScis,
+	generateQuitus,
 	renderQuitus,
 	updateBien,
 	updateLoyer
@@ -227,6 +230,62 @@ describe('api helpers', () => {
 		expect(headers.get('Content-Type')).toBe('application/json');
 	});
 
+	it('generateQuitus posts JSON payload', async () => {
+		const payload = {
+			id_loyer: 'loyer-1',
+			id_bien: 'bien-1',
+			nom_locataire: 'Jean Dupont',
+			periode: 'Mars 2026',
+			montant: 1200
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(
+				new Response(JSON.stringify({ filename: 'q.pdf', pdf_url: '/api/v1/quitus/files/q.pdf', size_bytes: 42 }), { status: 200 })
+			);
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(generateQuitus(payload)).resolves.toEqual({
+			filename: 'q.pdf',
+			pdf_url: '/api/v1/quitus/files/q.pdf',
+			size_bytes: 42
+		});
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/quitus/generate`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('downloadQuitus fetches a PDF blob', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(
+			new Response('pdf-binary', {
+				status: 200,
+				headers: { 'Content-Type': 'application/pdf' }
+			})
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const blob = await downloadQuitus('/api/v1/quitus/files/q.pdf');
+		expect(blob.type).toBe('application/pdf');
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/quitus/files/q.pdf`);
+		expect(options.method).toBeUndefined();
+	});
+
+	it('createCheckoutSession posts JSON payload', async () => {
+		const payload = { price_id: 'price_123', mode: 'subscription' as const };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createCheckoutSession(payload)).resolves.toEqual({ url: 'https://checkout.test' });
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/stripe/create-checkout-session`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
 	it('adds authorization header when a supabase session is available', async () => {
 		const payload = [{ adresse: '10 rue Victor Hugo' }];
 		getCurrentSessionMock.mockResolvedValue({ access_token: 'token-test' });
@@ -258,6 +317,28 @@ describe('api helpers', () => {
 
 		await expect(fetchBiens()).rejects.toThrowError(/API error: 500/);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('api blob helpers propagate API status fallback errors', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(downloadQuitus('/api/v1/quitus/files/missing.pdf')).rejects.toThrowError(
+			/API error: 404/
+		);
+	});
+
+	it('continues without auth header when session lookup throws', async () => {
+		getCurrentSessionMock.mockRejectedValue(new Error('session unavailable'));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBiens()).resolves.toEqual([]);
+		const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const headers = new Headers(options.headers);
+		expect(headers.get('Authorization')).toBeNull();
 	});
 
 	it('returns undefined for 204 responses', async () => {

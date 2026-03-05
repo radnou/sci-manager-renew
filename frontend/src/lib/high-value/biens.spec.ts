@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildBienPayload, calculateBienMetrics, mapBienTypeClass, mapBienTypeLabel } from './biens';
+import {
+	buildBienPayload,
+	buildBienUpdatePayload,
+	calculateBienMetrics,
+	mapBienTypeClass,
+	mapBienTypeLabel
+} from './biens';
 
 describe('high-value biens helpers', () => {
 	it('builds payload with normalized fields and parsed values', () => {
@@ -51,10 +57,39 @@ describe('high-value biens helpers', () => {
 		expect(mapBienTypeLabel('nu')).toBe('Nu');
 		expect(mapBienTypeLabel('meuble')).toBe('Meublé');
 		expect(mapBienTypeLabel('mixte')).toBe('Mixte');
+		expect(mapBienTypeLabel('saisonnier')).toBe('saisonnier');
 		expect(mapBienTypeLabel(undefined)).toBe('Non défini');
 		expect(mapBienTypeClass('nu')).toBe('bg-emerald-100 text-emerald-800');
 		expect(mapBienTypeClass('meuble')).toBe('bg-cyan-100 text-cyan-800');
 		expect(mapBienTypeClass('mixte')).toBe('bg-amber-100 text-amber-800');
+		expect(mapBienTypeClass('inconnu')).toBe('bg-slate-100 text-slate-700');
+	});
+
+	it('builds bien update payload with nullables', () => {
+		const payload = buildBienUpdatePayload({
+			idSci: 'sci-1',
+			adresse: '10 rue Victor Hugo',
+			ville: 'Nantes',
+			codePostal: '44000',
+			typeLocatif: 'mixte',
+			loyerCC: '',
+			charges: '',
+			tmi: '',
+			acquisitionDate: '',
+			prixAcquisition: ''
+		});
+
+		expect(payload).toEqual({
+			adresse: '10 rue Victor Hugo',
+			ville: 'Nantes',
+			code_postal: '44000',
+			type_locatif: 'mixte',
+			loyer_cc: 0,
+			charges: 0,
+			tmi: 0,
+			acquisition_date: null,
+			prix_acquisition: null
+		});
 	});
 
 	it('calculates portfolio metrics', () => {
