@@ -28,6 +28,7 @@ class LoyerUpdate(BaseModel):
 
 class LoyerResponse(LoyerBase):
     id: str
+    id_sci: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

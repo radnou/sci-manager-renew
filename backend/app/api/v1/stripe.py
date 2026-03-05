@@ -4,7 +4,7 @@ from typing import Any
 
 import stripe
 import structlog
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError, ValidationError
@@ -169,10 +169,9 @@ async def stripe_webhook(request: Request) -> StripeWebhookResponse:
         raise ValidationError(f"Invalid Stripe payload: {str(exc)}")
     except stripe.error.SignatureVerificationError as exc:
         logger.error("stripe_webhook_invalid_signature", error=str(exc))
-        raise ValidationError(f"Invalid Stripe signature: {str(exc)}")
+        raise HTTPException(status_code=400, detail="Invalid Stripe signature") from exc
 
     logger.info("stripe_webhook_processing", event_type=event.get("type") if hasattr(event, "get") else None)
     _handle_event(event)
     logger.info("stripe_webhook_processed_successfully")
     return StripeWebhookResponse(status="success")
-

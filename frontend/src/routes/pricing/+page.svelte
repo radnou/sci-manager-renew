@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { addToast } from '$lib/components/ui/toast';
 	import { createCheckoutSession } from '$lib/api';
-	import { Check, Star, Users, Shield, Zap } from 'lucide-svelte';
+	import { Check, Users, Shield, Zap } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -31,8 +31,13 @@
 			name: 'Starter',
 			price: '19€',
 			billing: '/mois',
-			description: 'Pour les SCI en phase de croissance.',
-			features: ['Jusqu\'à 5 biens', 'Compta basique', 'Quitus PDF', 'Support email'],
+			description: 'Pour démarrer avec un portefeuille compact.',
+			features: [
+				"Jusqu'à 5 biens",
+				'Dashboard KPI (biens + loyers)',
+				'Génération de quittance PDF',
+				'Suivi des loyers avec statuts'
+			],
 			priceId: stripeStarterPriceId,
 			mode: 'subscription'
 		},
@@ -40,8 +45,13 @@
 			name: 'Pro',
 			price: '49€',
 			billing: '/mois',
-			description: 'Pour opérateurs multi-actifs et partenaires.',
-			features: ['Biens illimités', 'Cerfa 2044 auto', 'Simulateur IR/IS', 'Support prioritaire', 'API access', 'Reporting avancé'],
+			description: 'Pour les SCI actives avec plusieurs actifs.',
+			features: [
+				'Biens illimités',
+				'Contexte multi-SCI',
+				'Filtres loyers (date + statut)',
+				'Accès prioritaire aux évolutions produit'
+			],
 			priceId: stripeProPriceId,
 			mode: 'subscription',
 			highlight: true,
@@ -51,8 +61,8 @@
 			name: 'Lifetime',
 			price: '299€',
 			billing: 'paiement unique',
-			description: 'Accès à vie pour une acquisition définitive.',
-			features: ['Tout le plan Pro', 'Accès à vie', 'Mises à jour incluses', 'Support VIP', 'Formation personnalisée'],
+			description: 'Paiement unique pour un accès durable.',
+			features: ['Tout le plan Pro', 'Accès à vie', 'Mises à jour incluses', 'Support prioritaire'],
 			priceId: stripeLifetimePriceId,
 			mode: 'payment'
 		}
@@ -85,14 +95,14 @@
 	<HeroSection
 		title="Tarifs transparents"
 		subtitle="pour une croissance durable"
-		description="Des prix justes pour des fonctionnalités premium. Choisissez l'offre qui correspond à votre portefeuille immobilier et évoluez quand vous voulez."
+		description="Choisissez une offre alignée sur votre volume de biens et activez-la immédiatement via Stripe."
 		primaryCta={{ text: "Commencer l'essai gratuit", href: "/register" }}
 		secondaryCta={{ text: "Voir les fonctionnalités", href: "#features" }}
-		badges={["14 jours gratuit", "Sans engagement"]}
+		badges={['Activation immédiate', 'Sans engagement']}
 		kpis={[
-			{ value: "ROI 280%", label: "en moyenne sur 3 ans" },
-			{ value: "85%", label: "des clients renouvellent" },
-			{ value: "5 min", label: "pour onboarder un bien" }
+			{ value: '3', label: 'modules coeur: biens, loyers, quittances' },
+			{ value: '1', label: 'checkout unifié Stripe' },
+			{ value: '24/7', label: 'accès plateforme' }
 		]}
 	/>
 
@@ -189,28 +199,28 @@
 					Pourquoi choisir SCI Manager ?
 				</h2>
 				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-					Des fonctionnalités pensées pour les professionnels de l'immobilier, validées par des experts Big4.
+					Une base opérationnelle claire pour piloter votre SCI sans Excel dispersé.
 				</p>
 			</div>
 
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
 				<FeatureCard
 					icon={Zap}
-					title="Automatisation intelligente"
-					description="Relances automatiques, génération de CERFA 2044, et workflows personnalisables pour gagner du temps."
+					title="Exécution rapide"
+					description="Saisie structurée des biens et loyers, avec indicateurs mis à jour en continu."
 					badge="Temps gagné"
 				/>
 				<FeatureCard
 					icon={Shield}
-					title="Conformité garantie"
-					description="Mises à jour automatiques des normes comptables et réglementaires. Jamais de retard sur la compliance."
+					title="Sécurité opérationnelle"
+					description="Authentification Supabase, séparation des données par SCI et journalisation backend."
 					badge="Sécurité"
 				/>
 				<FeatureCard
 					icon={Users}
-					title="Écosystème intégré"
-					description="Connexions natives avec votre comptable, notaire et partenaires. Un écosystème complet."
-					badge="Intégration"
+					title="Multi-SCI en pratique"
+					description="Passez d'une SCI à l'autre depuis le cockpit et conservez une vue claire des flux."
+					badge="Pilotage"
 				/>
 			</div>
 		</div>
@@ -230,21 +240,21 @@
 
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
 				<TestimonialCard
-					quote="Le plan Pro a transformé notre gestion. Nous avons réduit nos impayés de 60% et gagné 8h par semaine."
+					quote="La prise en main est rapide et la vue loyers évite les oublis mensuels."
 					author="Thomas Moreau"
 					role="Gérant de portefeuille"
 					company="Immobilier Plus"
 					rating={5}
 				/>
 				<TestimonialCard
-					quote="Enfin un outil qui comprend les spécificités des SCI familiales. L'interface est intuitive et les fonctionnalités complètes."
+					quote="Le passage de nos tableaux Excel vers un cockpit unique nous simplifie la routine."
 					author="Claire Bernard"
 					role="Directrice patrimoniale"
 					company="Bernard Finance"
 					rating={5}
 				/>
 				<TestimonialCard
-					quote="Le lifetime était le meilleur investissement. Payé une fois, utilisé tous les jours. ROI exceptionnel."
+					quote="Le checkout est simple et l'équipe produit publie des améliorations régulières."
 					author="Marc Dubois"
 					role="Opérateur immobilier"
 					company="Dubois Patrimoine"

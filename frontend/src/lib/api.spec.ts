@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const getSessionMock = vi.fn();
-
-vi.mock('$lib/supabase', () => ({
-	supabase: {
-		auth: {
-			getSession: getSessionMock
-		}
-	}
+const { getCurrentSessionMock } = vi.hoisted(() => ({
+	getCurrentSessionMock: vi.fn()
 }));
+
+vi.mock(
+	'$lib/auth/session',
+	() => ({
+		getCurrentSession: getCurrentSessionMock
+	}),
+	{ virtual: true }
+);
 
 import { API_URL, createBien, createLoyer, fetchBiens, fetchLoyers } from './api';
 
@@ -18,8 +20,8 @@ describe('api helpers', () => {
 	});
 
 	beforeEach(() => {
-		getSessionMock.mockReset();
-		getSessionMock.mockResolvedValue({ data: { session: null } });
+		getCurrentSessionMock.mockReset();
+		getCurrentSessionMock.mockResolvedValue(null);
 	});
 
 	it('fetchBiens returns parsed payload', async () => {
@@ -96,11 +98,7 @@ describe('api helpers', () => {
 
 	it('adds authorization header when a supabase session is available', async () => {
 		const payload = [{ adresse: '10 rue Victor Hugo' }];
-		getSessionMock.mockResolvedValue({
-			data: {
-				session: { access_token: 'token-test' }
-			}
-		});
+		getCurrentSessionMock.mockResolvedValue({ access_token: 'token-test' });
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 

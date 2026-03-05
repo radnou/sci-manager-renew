@@ -128,31 +128,38 @@ def test_create_bien_logs_creation():
     from fastapi.testclient import TestClient
     from app.main import app
     from app.core.security import get_current_user
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     # Override dependency
     app.dependency_overrides[get_current_user] = lambda: "user123"
 
     try:
-        with patch('app.api.v1.biens.logger') as mock_logger, \
-             patch('app.api.v1.biens._get_client') as mock_client:
+        with (
+            patch("app.api.v1.biens.logger") as mock_logger,
+            patch("app.api.v1.biens._get_client") as mock_get_client,
+            patch("app.api.v1.biens._get_user_sci_ids", return_value=["sci123"]),
+        ):
 
             # Mock Supabase response
             mock_result = MagicMock()
             mock_result.error = None
-            mock_result.data = [{
-                "id": "bien123",
-                "owner_id": "user123",
-                "id_sci": "sci123",
-                "adresse": "123 rue Test",
-                "ville": "Paris",
-                "code_postal": "75001",
-                "type_locatif": "nu",
-                "loyer_cc": 1000.0,
-                "charges": 100.0,
-                "tmi": 30.0,
-            }]
-            mock_client.return_value.table.return_value.insert.return_value.execute.return_value = mock_result
+            mock_result.data = [
+                {
+                    "id": "bien123",
+                    "id_sci": "sci123",
+                    "adresse": "123 rue Test",
+                    "ville": "Paris",
+                    "code_postal": "75001",
+                    "type_locatif": "nu",
+                    "loyer_cc": 1000.0,
+                    "charges": 100.0,
+                    "tmi": 30.0,
+                }
+            ]
+
+            mock_client = MagicMock()
+            mock_client.table.return_value.insert.return_value.execute.return_value = mock_result
+            mock_get_client.return_value = mock_client
 
             client = TestClient(app)
             response = client.post(
@@ -190,33 +197,42 @@ def test_create_loyer_logs_creation():
     from fastapi.testclient import TestClient
     from app.main import app
     from app.core.security import get_current_user
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     # Override dependency
     app.dependency_overrides[get_current_user] = lambda: "user123"
 
     try:
-        with patch('app.api.v1.loyers.logger') as mock_logger, \
-             patch('app.api.v1.loyers._get_client') as mock_client:
+        with (
+            patch("app.api.v1.loyers.logger") as mock_logger,
+            patch("app.api.v1.loyers._get_client") as mock_get_client,
+            patch("app.api.v1.loyers._get_user_sci_ids", return_value=["sci123"]),
+            patch("app.api.v1.loyers._fetch_bien", return_value={"id": "bien123", "id_sci": "sci123"}),
+        ):
 
             # Mock Supabase response
             mock_result = MagicMock()
             mock_result.error = None
-            mock_result.data = [{
-                "id": "loyer123",
-                "owner_id": "user123",
-                "id_bien": "bien123",
-                "id_locataire": None,
-                "montant": 1000.0,
-                "date_loyer": "2024-01-01",
-                "statut": "en_attente",
-                "quitus_genere": False,
-            }]
-            mock_client.return_value.table.return_value.insert.return_value.execute.return_value = mock_result
+            mock_result.data = [
+                {
+                    "id": "loyer123",
+                    "id_sci": "sci123",
+                    "id_bien": "bien123",
+                    "id_locataire": None,
+                    "montant": 1000.0,
+                    "date_loyer": "2024-01-01",
+                    "statut": "en_attente",
+                    "quitus_genere": False,
+                }
+            ]
+
+            mock_client = MagicMock()
+            mock_client.table.return_value.insert.return_value.execute.return_value = mock_result
+            mock_get_client.return_value = mock_client
 
             client = TestClient(app)
             response = client.post(
-                "/api/v1/loyers/",
+                "/api/v1/loyers/?id_sci=sci123",
                 json={
                     "id_bien": "bien123",
                     "montant": 1000.0,
@@ -276,31 +292,60 @@ def test_update_bien_logs_operation():
     from fastapi.testclient import TestClient
     from app.main import app
     from app.core.security import get_current_user
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     # Override dependency
     app.dependency_overrides[get_current_user] = lambda: "user123"
 
     try:
-        with patch('app.api.v1.biens.logger') as mock_logger, \
-             patch('app.api.v1.biens._get_client') as mock_client:
+        with (
+            patch("app.api.v1.biens.logger") as mock_logger,
+            patch("app.api.v1.biens._get_client") as mock_get_client,
+            patch("app.api.v1.biens._get_user_sci_ids", return_value=["sci123"]),
+        ):
 
-            # Mock Supabase response
-            mock_result = MagicMock()
-            mock_result.error = None
-            mock_result.data = [{
-                "id": "bien123",
-                "owner_id": "user123",
-                "id_sci": "sci123",
-                "adresse": "123 rue Updated",
-                "ville": "Paris",
-                "code_postal": "75002",
-                "type_locatif": "nu",
-                "loyer_cc": 1100.0,
-                "charges": 100.0,
-                "tmi": 30.0,
-            }]
-            mock_client.return_value.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = mock_result
+            existing_result = MagicMock()
+            existing_result.error = None
+            existing_result.data = [
+                {
+                    "id": "bien123",
+                    "id_sci": "sci123",
+                    "adresse": "123 rue Initiale",
+                    "ville": "Paris",
+                    "code_postal": "75001",
+                    "type_locatif": "nu",
+                    "loyer_cc": 1000.0,
+                    "charges": 100.0,
+                    "tmi": 30.0,
+                }
+            ]
+
+            updated_result = MagicMock()
+            updated_result.error = None
+            updated_result.data = [
+                {
+                    "id": "bien123",
+                    "id_sci": "sci123",
+                    "adresse": "123 rue Updated",
+                    "ville": "Paris",
+                    "code_postal": "75001",
+                    "type_locatif": "nu",
+                    "loyer_cc": 1100.0,
+                    "charges": 100.0,
+                    "tmi": 30.0,
+                    "rentabilite_brute": 0,
+                    "rentabilite_nette": 0,
+                    "cashflow_annuel": 12000,
+                }
+            ]
+
+            mock_query = MagicMock()
+            mock_query.select.return_value.eq.return_value.execute.return_value = existing_result
+            mock_query.update.return_value.eq.return_value.execute.return_value = updated_result
+
+            mock_client = MagicMock()
+            mock_client.table.return_value = mock_query
+            mock_get_client.return_value = mock_client
 
             client = TestClient(app)
             response = client.patch(
@@ -328,20 +373,34 @@ def test_delete_loyer_logs_operation():
     from fastapi.testclient import TestClient
     from app.main import app
     from app.core.security import get_current_user
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     # Override dependency
     app.dependency_overrides[get_current_user] = lambda: "user123"
 
     try:
-        with patch('app.api.v1.loyers.logger') as mock_logger, \
-             patch('app.api.v1.loyers._get_client') as mock_client:
+        with (
+            patch("app.api.v1.loyers.logger") as mock_logger,
+            patch("app.api.v1.loyers._get_client") as mock_get_client,
+            patch("app.api.v1.loyers._get_user_sci_ids", return_value=["sci123"]),
+            patch("app.api.v1.loyers._resolve_loyer_sci_id", return_value="sci123"),
+        ):
 
-            # Mock Supabase response
-            mock_result = MagicMock()
-            mock_result.error = None
-            mock_result.data = [{"id": "loyer123"}]
-            mock_client.return_value.table.return_value.delete.return_value.eq.return_value.eq.return_value.execute.return_value = mock_result
+            select_result = MagicMock()
+            select_result.error = None
+            select_result.data = [{"id": "loyer123", "id_sci": "sci123", "id_bien": "bien123"}]
+
+            delete_result = MagicMock()
+            delete_result.error = None
+            delete_result.data = [{"id": "loyer123"}]
+
+            mock_query = MagicMock()
+            mock_query.select.return_value.eq.return_value.execute.return_value = select_result
+            mock_query.delete.return_value.eq.return_value.execute.return_value = delete_result
+
+            mock_client = MagicMock()
+            mock_client.table.return_value = mock_query
+            mock_get_client.return_value = mock_client
 
             client = TestClient(app)
             response = client.delete("/api/v1/loyers/loyer123")

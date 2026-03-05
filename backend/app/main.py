@@ -1,5 +1,6 @@
 import asyncio
 import signal
+import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -63,11 +64,19 @@ async def lifespan(app: FastAPI):
         logger.info("shutdown_signal_received", signal=signal_name)
         shutdown_event.set()
 
-    # Enregistrer les handlers
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(sig, lambda s=sig: handle_shutdown_signal(s))
-
-    logger.info("signal_handlers_configured", signals=["SIGTERM", "SIGINT"])
+    # Enregistrer les handlers uniquement sur le thread principal.
+    if threading.current_thread() is threading.main_thread():
+        configured_signals: list[str] = []
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            try:
+                loop.add_signal_handler(sig, lambda s=sig: handle_shutdown_signal(s))
+                configured_signals.append(signal.Signals(sig).name)
+            except (NotImplementedError, RuntimeError, ValueError):
+                logger.warning("signal_handler_unavailable", signal=signal.Signals(sig).name)
+        if configured_signals:
+            logger.info("signal_handlers_configured", signals=configured_signals)
+    else:
+        logger.info("signal_handlers_skipped", reason="not_main_thread")
     logger.info("application_started")
 
     yield
@@ -251,7 +260,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.scimanager.fr", "testserver"]
+    allowed_hosts=settings.allowed_hosts
 )
 
 

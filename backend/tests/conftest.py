@@ -13,13 +13,14 @@ from app.main import app
 # Override settings for tests
 settings.cors_origins = ["http://testserver"]
 
+
 @pytest.fixture
-def client():
+def client() -> TestClient:
     # Temporarily allow testserver host
-    original_allowed = settings.allowed_hosts if hasattr(settings, 'allowed_hosts') else None
-    settings.allowed_hosts = ["testserver", "localhost", "*.scimanager.fr"]
-    with TestClient(app, base_url="http://testserver") as client:
-        yield client
+    original_allowed = settings.allowed_hosts if hasattr(settings, "allowed_hosts") else None
+    settings.allowed_hosts = ["testserver", "localhost", "*.gerersci.fr"]
+    with TestClient(app, base_url="http://testserver") as test_client:
+        yield test_client
     if original_allowed:
         settings.allowed_hosts = original_allowed
 
@@ -35,6 +36,7 @@ class FakeQuery:
         self._store = store
         self._table_name = table_name
         self._filters: list[tuple[str, str]] = []
+        self._in_filters: list[tuple[str, set[str]]] = []
         self._gte_filters: list[tuple[str, str]] = []
         self._lte_filters: list[tuple[str, str]] = []
         self._operation = "select"
@@ -66,6 +68,10 @@ class FakeQuery:
         self._filters.append((key, str(value)))
         return self
 
+    def in_(self, key: str, values: list[object]) -> "FakeQuery":
+        self._in_filters.append((key, {str(value) for value in values}))
+        return self
+
     def gte(self, key: str, value: object) -> "FakeQuery":
         self._gte_filters.append((key, str(value)))
         return self
@@ -77,6 +83,9 @@ class FakeQuery:
     def _matches(self, row: dict) -> bool:
         for key, value in self._filters:
             if str(row.get(key)) != value:
+                return False
+        for key, values in self._in_filters:
+            if str(row.get(key)) not in values:
                 return False
         for key, value in self._gte_filters:
             candidate = row.get(key)
@@ -130,6 +139,22 @@ class FakeSupabaseClient:
         self.store: dict[str, list[dict]] = {
             "biens": [],
             "loyers": [],
+            "associes": [
+                {
+                    "id": "associe-1",
+                    "id_sci": "sci-1",
+                    "user_id": "user-123",
+                    "nom": "Test User",
+                    "part": 100,
+                },
+                {
+                    "id": "associe-2",
+                    "id_sci": "sci-2",
+                    "user_id": "user-123",
+                    "nom": "Test User",
+                    "part": 100,
+                },
+            ],
         }
 
     def table(self, name: str) -> FakeQuery:
@@ -137,9 +162,25 @@ class FakeSupabaseClient:
 
 
 @pytest.fixture
-def client() -> TestClient:
-    with TestClient(app) as test_client:
-        yield test_client
+def fake_storage():
+    class FakeStorageService:
+        def __init__(self):
+            self.files: dict[str, bytes] = {}
+
+        async def create_bucket_if_not_exists(self) -> bool:
+            return True
+
+        async def upload_file(self, file_path: str, file_content: bytes, content_type: str = "application/pdf") -> str:
+            self.files[file_path] = bytes(file_content)
+            return f"https://storage.local/{file_path}"
+
+        async def download_file(self, file_path: str) -> bytes:
+            content = self.files.get(file_path)
+            if content is None:
+                raise Exception("file not found")
+            return content
+
+    return FakeStorageService()
 
 
 @pytest.fixture
@@ -148,8 +189,8 @@ def fake_supabase() -> FakeSupabaseClient:
 
 
 @pytest.fixture(autouse=True)
-def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient):
-    from app.api.v1 import biens, loyers
+def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
+    from app.api.v1 import biens, loyers, quitus
 
     monkeypatch.setattr(
         biens,
@@ -161,6 +202,7 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
         "create_client",
         lambda *_args, **_kwargs: fake_supabase,
     )
+    monkeypatch.setattr(quitus, "storage_service", fake_storage)
 
 
 @pytest.fixture
