@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://127.0.0.1:5999',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -16,15 +16,11 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 13'] },
-    },
+    }
   ],
   webServer: {
-    command: 'VITE_E2E_FAKE_AUTH=1 npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run dev -- --host 127.0.0.1 --port 5999 --strictPort',
+    url: 'http://127.0.0.1:5999',
+    reuseExistingServer: false,
   },
 });

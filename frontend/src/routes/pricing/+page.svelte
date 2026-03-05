@@ -62,7 +62,7 @@
 			price: '299€',
 			billing: 'paiement unique',
 			description: 'Paiement unique pour un accès durable.',
-			features: ['Tout le plan Pro', 'Accès à vie', 'Mises à jour incluses', 'Support prioritaire'],
+			features: ['Tout le plan Pro', 'Accès à vie', 'Mises à jour incluses', 'Support email prioritaire'],
 			priceId: stripeLifetimePriceId,
 			mode: 'payment'
 		}
@@ -179,12 +179,12 @@
 				{/each}
 			</div>
 
-			<!-- Money-back guarantee -->
+			<!-- Beta support -->
 			<div class="text-center mt-12">
 				<div class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-200 dark:border-emerald-800">
 					<Shield class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 					<span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-						Garantie satisfait ou remboursé • 30 jours
+						Phase beta: onboarding guide et support email
 					</span>
 				</div>
 			</div>
@@ -279,7 +279,7 @@
 						Puis-je changer de plan à tout moment ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Les changements sont effectifs immédiatement.
+						Oui. En phase beta, le changement de plan est traite rapidement via le support, puis applique sur votre abonnement Stripe.
 					</p>
 				</div>
 
@@ -297,7 +297,7 @@
 						Les données sont-elles sécurisées ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Absolument. Nous utilisons le chiffrement de bout en bout et respectons le RGPD. Vos données financières sont en sécurité.
+						Les flux passent en HTTPS, les paiements sont traites par Stripe et les donnees applicatives sont hebergees sur Supabase avec controles d'acces.
 					</p>
 				</div>
 			</div>

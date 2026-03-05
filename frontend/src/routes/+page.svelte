@@ -434,9 +434,8 @@
 						Mes données sont-elles sécurisées (RGPD) ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Oui. Hébergement en France (Supabase), chiffrement bout-en-bout, isolation stricte par
-						SCI. Conformité RGPD native avec possibilité d'export et suppression complète à tout
-						moment.
+						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité
+						dédié (résumé des données, export JSON, suppression de compte).
 					</p>
 				</article>
 

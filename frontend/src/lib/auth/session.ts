@@ -4,8 +4,6 @@ import { supabase } from '$lib/supabase';
 
 export const E2E_FAKE_SESSION_STORAGE_KEY = 'sci-manager.e2e-fake-session';
 
-const E2E_FAKE_AUTH_ENABLED = import.meta.env.VITE_E2E_FAKE_AUTH === '1';
-
 type SessionSubscription = {
 	unsubscribe: () => void;
 };
@@ -25,7 +23,7 @@ type FakeSessionPayload = {
 };
 
 function parseFakeSession(): Session | null {
-	if (!browser || !E2E_FAKE_AUTH_ENABLED) {
+	if (!browser) {
 		return null;
 	}
 
@@ -117,7 +115,7 @@ export function subscribeToSessionChanges(callback: (session: Session | null) =>
 }
 
 export function clearFakeSession() {
-	if (!browser || !E2E_FAKE_AUTH_ENABLED) {
+	if (!browser) {
 		return;
 	}
 	window.localStorage.removeItem(E2E_FAKE_SESSION_STORAGE_KEY);

@@ -1,21 +1,24 @@
 <script lang="ts">
-	import type { LoyerCreatePayload, LoyerStatus } from '$lib/api';
+	import type { Bien, LoyerCreatePayload, LoyerStatus } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { buildLoyerPayload } from '$lib/high-value/loyers';
 
 	type LoyerFormSubmit = (payload: LoyerCreatePayload) => Promise<boolean | void> | boolean | void;
+	type BienOption = Pick<Bien, 'id' | 'adresse' | 'ville'>;
 
 	let {
 		title = 'Nouveau loyer',
 		description = 'Enregistre un paiement mensuel pour un bien.',
 		submitting = false,
+		biens = [],
 		onSubmit = () => true
 	}: {
 		title?: string;
 		description?: string;
 		submitting?: boolean;
+		biens?: BienOption[];
 		onSubmit?: LoyerFormSubmit;
 	} = $props();
 
@@ -24,9 +27,22 @@
 	let dateLoyer = $state(new Date().toISOString().slice(0, 10));
 	let montant = $state('');
 	let statut = $state<LoyerStatus>('paye');
+	let selectedBien = $derived(
+		biens.find((bien) => String(bien.id || '') === idBien)
+	);
+
+	$effect(() => {
+		if (!idBien && biens.length > 0) {
+			idBien = String(biens[0].id || '');
+		}
+	});
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
+		if (!idBien) {
+			return;
+		}
+
 		const payload = buildLoyerPayload({
 			idBien,
 			idLocataire,
@@ -57,8 +73,23 @@
 	<CardContent>
 		<form class="grid gap-3 md:grid-cols-5" onsubmit={handleSubmit}>
 			<label class="sci-field">
-				<span class="sci-field-label">ID Bien</span>
-				<Input bind:value={idBien} required placeholder="bien-001" />
+				<span class="sci-field-label">Bien</span>
+				<select bind:value={idBien} class="sci-select" required disabled={biens.length === 0}>
+					{#if biens.length === 0}
+						<option value="">Aucun bien disponible</option>
+					{:else}
+						{#each biens as bien (bien.id)}
+							<option value={String(bien.id || '')}>
+								{bien.adresse} {bien.ville ? `- ${bien.ville}` : ''}
+							</option>
+						{/each}
+					{/if}
+				</select>
+				{#if selectedBien}
+					<span class="text-xs text-slate-500 dark:text-slate-400">
+						Loyer rattache au bien selectionne.
+					</span>
+				{/if}
 			</label>
 			<label class="sci-field">
 				<span class="sci-field-label">ID Locataire</span>
@@ -81,7 +112,7 @@
 				</select>
 			</label>
 			<div class="md:col-span-5 flex justify-end">
-				<Button type="submit" disabled={submitting} class="min-w-[11rem]">
+				<Button type="submit" disabled={submitting || biens.length === 0} class="min-w-[11rem]">
 					{submitting ? 'Enregistrement...' : 'Ajouter le loyer'}
 				</Button>
 			</div>

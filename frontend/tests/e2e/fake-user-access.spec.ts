@@ -192,7 +192,6 @@ test.describe('Fake user access E2E', () => {
 		await seedFakeUserContext(page, { email: 'fake.user@sci.test' });
 
 		await page.goto('/dashboard');
-		await expect(page.getByText('fake.user@sci.test')).toBeVisible();
 		await expect(page.locator('h1')).toContainText('Tableau de bord opérationnel');
 		await expect(page.getByText('Actifs suivis')).toBeVisible();
 

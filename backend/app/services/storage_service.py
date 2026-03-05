@@ -88,6 +88,43 @@ class StorageService:
         """Get public URL for a file"""
         return self.client.storage.from_(self.bucket_name).get_public_url(file_path)
 
+    async def create_signed_url(self, file_path: str, expires_in: int = 300) -> str:
+        """Create a temporary signed URL for a private object.
+
+        Raises:
+            ExternalServiceError: Si la génération d'URL signée échoue
+        """
+        logger.info("creating_signed_url", path=file_path, expires_in=expires_in)
+
+        try:
+            payload = self.client.storage.from_(self.bucket_name).create_signed_url(
+                file_path,
+                expires_in,
+            )
+        except Exception as e:
+            logger.error("signed_url_creation_failed", path=file_path, error=str(e), exc_info=True)
+            raise ExternalServiceError("Supabase Storage", f"Signed URL creation failed: {str(e)}")
+
+        url: str | None = None
+        if isinstance(payload, dict):
+            url = (
+                payload.get("signedURL")
+                or payload.get("signedUrl")
+                or payload.get("signed_url")
+            )
+        elif isinstance(payload, str):
+            url = payload
+
+        if not url:
+            raise ExternalServiceError("Supabase Storage", "Signed URL creation failed: empty URL")
+
+        # Supabase may return an absolute URL or a relative /storage path.
+        if url.startswith("http://") or url.startswith("https://"):
+            return url
+        if url.startswith("/"):
+            return f"{settings.supabase_url.rstrip('/')}/storage/v1{url}"
+        return f"{settings.supabase_url.rstrip('/')}/storage/v1/{url.lstrip('/')}"
+
     async def create_bucket_if_not_exists(self) -> bool:
         """Create documents bucket if it doesn't exist
 
@@ -95,22 +132,27 @@ class StorageService:
             ExternalServiceError: Si la création du bucket échoue
         """
         try:
-            # Try to list bucket
-            self.client.storage.list_buckets()
-            return True
-        except Exception:
-            # Create bucket
-            try:
-                logger.info("creating_bucket", bucket=self.bucket_name)
-                self.client.storage.create_bucket(
-                    bucket_id=self.bucket_name,
-                    options={"public": False},
-                )
-                logger.info("bucket_created", bucket=self.bucket_name)
+            buckets = self.client.storage.list_buckets() or []
+        except Exception as e:
+            logger.error("bucket_listing_failed", bucket=self.bucket_name, error=str(e), exc_info=True)
+            raise ExternalServiceError("Supabase Storage", f"Bucket listing failed: {str(e)}")
+
+        for bucket in buckets:
+            bucket_id = bucket.get("id") if isinstance(bucket, dict) else getattr(bucket, "id", None)
+            if bucket_id == self.bucket_name:
                 return True
-            except Exception as e:
-                logger.error("bucket_creation_failed", bucket=self.bucket_name, error=str(e), exc_info=True)
-                raise ExternalServiceError("Supabase Storage", f"Bucket creation failed: {str(e)}")
+
+        try:
+            logger.info("creating_bucket", bucket=self.bucket_name)
+            self.client.storage.create_bucket(
+                bucket_id=self.bucket_name,
+                options={"public": False},
+            )
+            logger.info("bucket_created", bucket=self.bucket_name)
+            return True
+        except Exception as e:
+            logger.error("bucket_creation_failed", bucket=self.bucket_name, error=str(e), exc_info=True)
+            raise ExternalServiceError("Supabase Storage", f"Bucket creation failed: {str(e)}")
 
     async def list_files(self, folder: str = "") -> list[dict]:
         """List files in a folder

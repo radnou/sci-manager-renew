@@ -26,9 +26,10 @@ def client() -> TestClient:
 
 
 class FakeResult:
-    def __init__(self, data: list[dict], error: str | None = None):
+    def __init__(self, data: list[dict], error: str | None = None, count: int | None = None):
         self.data = data
         self.error = error
+        self.count = len(data) if count is None else count
 
 
 class FakeQuery:
@@ -179,6 +180,15 @@ def fake_storage():
             if content is None:
                 raise Exception("file not found")
             return content
+
+        async def delete_file(self, file_path: str) -> bool:
+            self.files.pop(file_path, None)
+            return True
+
+        async def create_signed_url(self, file_path: str, expires_in: int = 300) -> str:
+            if file_path not in self.files:
+                raise Exception("file not found")
+            return f"https://storage.local/signed/{file_path}?expires_in={expires_in}"
 
     return FakeStorageService()
 

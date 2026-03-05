@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createLoyer, fetchLoyers, type Loyer, type LoyerCreatePayload } from '$lib/api';
+	import { createLoyer, fetchBiens, fetchLoyers, type Bien, type Loyer, type LoyerCreatePayload } from '$lib/api';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import { calculateLoyerMetrics } from '$lib/high-value/loyers';
 
+	let biens: Bien[] = [];
 	let loyers: Loyer[] = [];
 	let loading = true;
 	let submitting = false;
@@ -19,8 +20,9 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const data = await fetchLoyers();
-			loyers = Array.isArray(data) ? data : [];
+			const [nextBiens, nextLoyers] = await Promise.all([fetchBiens(), fetchLoyers()]);
+			biens = Array.isArray(nextBiens) ? nextBiens : [];
+			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
 		} catch (error) {
 			errorMessage = toErrorMessage(error, 'Impossible de charger les loyers.');
 		} finally {
@@ -95,7 +97,13 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	<LoyerForm submitting={submitting} onSubmit={handleCreateLoyer} />
+	{#if !loading && biens.length === 0}
+		<p class="sci-inline-alert">
+			Ajoute d'abord un bien dans le module Biens avant de saisir un loyer.
+		</p>
+	{/if}
+
+	<LoyerForm {biens} submitting={submitting} onSubmit={handleCreateLoyer} />
 
 	<LoyerTable {loyers} {loading} />
 </section>

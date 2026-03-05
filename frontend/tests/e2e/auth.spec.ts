@@ -1,27 +1,26 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-test.describe('Authentication Flow', () => {
-  test('complete registration and login', async ({ page }) => {
-    // Register
-    await page.goto('/register');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'SecurePass123');
-    await page.click('button:has-text("Register")');
+test.describe('Authentication pages', () => {
+	test('login page exposes magic-link flow', async ({ page }) => {
+		await page.goto('/login');
 
-    // Should redirect to dashboard
-    await expect(page).toHaveURL(/dashboard/);
-    await expect(page.locator('h1')).toContainText('Dashboard');
-  });
+		await expect(page.getByText('Connexion par lien magique')).toBeVisible();
 
-  test('logout', async ({ page }) => {
-    // Login first
-    await page.goto('/login');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'SecurePass123');
-    await page.click('button:has-text("Se connecter")');
+		const emailInput = page.getByPlaceholder('vous@sci.fr');
+		await expect(emailInput).toBeVisible();
 
-    // Logout
-    await page.click('button:has-text("Logout")');
-    await expect(page).toHaveURL('/');
-  });
+		const submitButton = page.getByRole('button', { name: 'Recevoir le lien de connexion' });
+		await expect(submitButton).toBeDisabled();
+
+		await emailInput.fill('test@example.com');
+		await expect(submitButton).toBeEnabled();
+	});
+
+	test('register page exposes account-creation flow', async ({ page }) => {
+		await page.goto('/register');
+
+		await expect(page.getByText('Créer un compte')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Recevoir le lien de création' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Vous avez déjà un compte?' })).toBeVisible();
+	});
 });

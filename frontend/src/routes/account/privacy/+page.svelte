@@ -75,11 +75,13 @@
 			});
 
 			if (response.ok) {
-				const data = await response.json();
-				addToast({ title: 'Export des données réussi ! Téléchargement en cours...', variant: 'success' });
-
-				// TODO: Download file from export_url when implemented
-				// For now, show success message
+				const data = (await response.json()) as { export_url?: string; expires_at?: string };
+				if (data.export_url) {
+					window.open(data.export_url, '_blank', 'noopener,noreferrer');
+					addToast({ title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.', variant: 'success' });
+				} else {
+					addToast({ title: "Export cree, mais aucun lien de telechargement n'a ete retourne.", variant: 'error' });
+				}
 			} else {
 				addToast({ title: 'Erreur lors de l\'export des données', variant: 'error' });
 			}

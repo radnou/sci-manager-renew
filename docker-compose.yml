@@ -76,7 +76,7 @@ services:
     container_name: sci_manager_frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "4173:4173"
     environment:
       VITE_API_URL: ${VITE_API_URL}
       VITE_SUPABASE_URL: ${SUPABASE_URL}
@@ -89,6 +89,11 @@ services:
       - backend
     networks:
       - frontend
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4173/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   # Nginx Reverse Proxy
   nginx:
