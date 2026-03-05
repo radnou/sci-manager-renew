@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     supabase_anon_key: str = "anon-key-placeholder"
     supabase_service_role_key: str = "service-role-key-placeholder"
     supabase_jwt_secret: str = "test-jwt-secret"
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/postgres"
+    database_url: str | None = None
 
     # Stripe
     stripe_secret_key: str = "sk_test_placeholder"
