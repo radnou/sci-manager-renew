@@ -1,4 +1,4 @@
-import type { Loyer, LoyerCreatePayload, LoyerStatus } from '../api';
+import type { Loyer, LoyerCreatePayload, LoyerStatus, LoyerUpdatePayload } from '../api';
 import { formatEur } from './formatters';
 
 export type LoyerFormInput = {
@@ -30,6 +30,20 @@ export function buildLoyerPayload(input: LoyerFormInput): LoyerCreatePayload | n
 	}
 
 	return payload;
+}
+
+export function buildLoyerUpdatePayload(input: LoyerFormInput): LoyerUpdatePayload | null {
+	const numericAmount = Number.parseFloat(input.montant);
+
+	if (!input.dateLoyer || !Number.isFinite(numericAmount)) {
+		return null;
+	}
+
+	return {
+		date_loyer: input.dateLoyer,
+		montant: numericAmount,
+		statut: input.statut
+	};
 }
 
 export function mapLoyerStatusLabel(status: string | null | undefined) {

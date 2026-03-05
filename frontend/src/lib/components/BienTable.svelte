@@ -1,21 +1,39 @@
 <script lang="ts">
 	import type { Bien } from '$lib/api';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { mapBienTypeClass, mapBienTypeLabel } from '$lib/high-value/biens';
 	import * as Table from '$lib/components/ui/table';
+
+	type BienAction = (bien: Bien) => void;
 
 	let {
 		biens = [],
 		loading = false,
 		title = 'Portefeuille immobilier',
-		description = 'Vision opérationnelle des biens, villes et loyers mensuels.'
+		description = 'Vision opérationnelle des biens, villes et loyers mensuels.',
+		onEdit = undefined,
+		onDelete = undefined,
+		busyRowId = '',
+		actionDisabled = false
 	}: {
 		biens?: Bien[];
 		loading?: boolean;
 		title?: string;
 		description?: string;
+		onEdit?: BienAction | undefined;
+		onDelete?: BienAction | undefined;
+		busyRowId?: string;
+		actionDisabled?: boolean;
 	} = $props();
+	let showActions = $derived(Boolean(onEdit || onDelete));
 </script>
 
 <Card class="sci-section-card">
@@ -24,7 +42,9 @@
 			<CardTitle class="text-lg">{title}</CardTitle>
 			<CardDescription>{description}</CardDescription>
 		</div>
-		<p class="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">{biens.length} enregistrements</p>
+		<p class="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+			{biens.length} enregistrements
+		</p>
 	</CardHeader>
 	<CardContent class="pt-0">
 		{#if loading}
@@ -36,7 +56,9 @@
 		{:else if biens.length === 0}
 			<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
 				<p class="text-sm font-medium text-slate-700">Aucun bien enregistré pour le moment.</p>
-				<p class="mt-1 text-sm text-slate-500">Ajoute une première adresse pour démarrer le suivi SCI.</p>
+				<p class="mt-1 text-sm text-slate-500">
+					Ajoute une première adresse pour démarrer le suivi SCI.
+				</p>
 			</div>
 		{:else}
 			<div class="overflow-x-auto">
@@ -48,6 +70,9 @@
 							<Table.Head class="px-3">Type</Table.Head>
 							<Table.Head class="px-3 text-right">Loyer CC</Table.Head>
 							<Table.Head class="px-3 text-right">Charges</Table.Head>
+							{#if showActions}
+								<Table.Head class="px-3 text-right">Actions</Table.Head>
+							{/if}
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
@@ -68,6 +93,36 @@
 								<Table.Cell class="px-3 py-3 text-right font-medium text-slate-900">
 									{formatEur(bien.charges, '—')}
 								</Table.Cell>
+								{#if showActions}
+									<Table.Cell class="px-3 py-3">
+										<div class="flex justify-end gap-2">
+											{#if onEdit}
+												<Button
+													type="button"
+													size="sm"
+													variant="outline"
+													disabled={actionDisabled || busyRowId === String(bien.id || '')}
+													aria-label={`Modifier ${bien.adresse}`}
+													onclick={() => onEdit(bien)}
+												>
+													Modifier
+												</Button>
+											{/if}
+											{#if onDelete}
+												<Button
+													type="button"
+													size="sm"
+													variant="destructive"
+													disabled={actionDisabled || busyRowId === String(bien.id || '')}
+													aria-label={`Supprimer ${bien.adresse}`}
+													onclick={() => onDelete(bien)}
+												>
+													Supprimer
+												</Button>
+											{/if}
+										</div>
+									</Table.Cell>
+								{/if}
 							</Table.Row>
 						{/each}
 					</Table.Body>

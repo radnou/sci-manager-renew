@@ -1,4 +1,4 @@
-import type { Bien, BienCreatePayload, BienType } from '../api';
+import type { Bien, BienCreatePayload, BienType, BienUpdatePayload } from '../api';
 import { formatEur } from './formatters';
 
 export type BienFormInput = {
@@ -50,6 +50,28 @@ export function buildBienPayload(input: BienFormInput): BienCreatePayload | null
 	return payload;
 }
 
+export function buildBienUpdatePayload(input: BienFormInput): BienUpdatePayload | null {
+	const adresse = input.adresse.trim();
+	const ville = input.ville.trim();
+	const codePostal = input.codePostal.trim();
+
+	if (!adresse || !ville || !/^\d{5}$/.test(codePostal)) {
+		return null;
+	}
+
+	return {
+		adresse,
+		ville,
+		code_postal: codePostal,
+		type_locatif: input.typeLocatif,
+		loyer_cc: toNumberOrFallback(input.loyerCC, 0),
+		charges: toNumberOrFallback(input.charges, 0),
+		tmi: toNumberOrFallback(input.tmi, 0),
+		acquisition_date: input.acquisitionDate.trim() || null,
+		prix_acquisition: toNumberOrNull(input.prixAcquisition)
+	};
+}
+
 export function mapBienTypeLabel(type: string | null | undefined) {
 	if (!type) return 'Non défini';
 	if (type.toLowerCase() === 'nu') return 'Nu';
@@ -89,4 +111,9 @@ function toNumberOrFallback(value: string, fallback: number): number {
 function toNumberOrUndefined(value: string): number | undefined {
 	const parsed = Number.parseFloat(value);
 	return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toNumberOrNull(value: string): number | null {
+	const parsed = Number.parseFloat(value);
+	return Number.isFinite(parsed) ? parsed : null;
 }

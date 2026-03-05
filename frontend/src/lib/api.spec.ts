@@ -4,14 +4,23 @@ const { getCurrentSessionMock } = vi.hoisted(() => ({
 	getCurrentSessionMock: vi.fn()
 }));
 
-vi.mock(
-	'$lib/auth/session',
-	() => ({
-		getCurrentSession: getCurrentSessionMock
-	})
-);
+vi.mock('$lib/auth/session', () => ({
+	getCurrentSession: getCurrentSessionMock
+}));
 
-import { API_URL, createBien, createLoyer, fetchBiens, fetchLoyers, fetchSciDetail, fetchScis } from './api';
+import {
+	API_URL,
+	createBien,
+	createLoyer,
+	deleteBien,
+	deleteLoyer,
+	fetchBiens,
+	fetchLoyers,
+	fetchSciDetail,
+	fetchScis,
+	updateBien,
+	updateLoyer
+} from './api';
 
 describe('api helpers', () => {
 	afterEach(() => {
@@ -25,7 +34,9 @@ describe('api helpers', () => {
 
 	it('fetchBiens returns parsed payload', async () => {
 		const payload = [{ id_sci: 'sci-1', adresse: '14 rue Saint-Honore', ville: 'Paris' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBiens()).resolves.toEqual(payload);
@@ -39,8 +50,12 @@ describe('api helpers', () => {
 	});
 
 	it('fetchLoyers returns parsed payload', async () => {
-		const payload = [{ id_bien: 'BIEN-001', date_loyer: '2026-03-01', montant: 1200, statut: 'paye' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = [
+			{ id_bien: 'BIEN-001', date_loyer: '2026-03-01', montant: 1200, statut: 'paye' }
+		];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchLoyers()).resolves.toEqual(payload);
@@ -51,7 +66,9 @@ describe('api helpers', () => {
 
 	it('fetchScis returns parsed payload', async () => {
 		const payload = [{ id: 'sci-1', nom: 'SCI Mosa Belleville', regime_fiscal: 'IR' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchScis()).resolves.toEqual(payload);
@@ -62,7 +79,9 @@ describe('api helpers', () => {
 
 	it('fetchSciDetail targets the selected SCI detail endpoint', async () => {
 		const payload = { id: 'sci-1', nom: 'SCI Mosa Belleville', biens_count: 2 };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchSciDetail('sci-1')).resolves.toEqual(payload);
@@ -83,7 +102,9 @@ describe('api helpers', () => {
 			tmi: 30
 		};
 		const created = { id: 'bien-1', ...payload };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createBien(payload)).resolves.toEqual(created);
@@ -104,7 +125,9 @@ describe('api helpers', () => {
 			statut: 'paye' as const
 		};
 		const created = { id: 'loyer-8', ...payload };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createLoyer(payload)).resolves.toEqual(created);
@@ -117,10 +140,68 @@ describe('api helpers', () => {
 		expect(headers.get('Content-Type')).toBe('application/json');
 	});
 
+	it('updateBien patches JSON body', async () => {
+		const payload = {
+			ville: 'Bordeaux',
+			charges: 180
+		};
+		const updated = { id: 'bien-1', adresse: '8 avenue des Tilleuls', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateBien('bien-1', payload)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/biens/bien-1`);
+		expect(options.method).toBe('PATCH');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('deleteBien sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteBien('bien-1')).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/biens/bien-1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	it('updateLoyer patches JSON body', async () => {
+		const payload = {
+			statut: 'paye' as const,
+			montant: 1450
+		};
+		const updated = { id: 'loyer-1', id_bien: 'bien-1', date_loyer: '2026-03-01', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateLoyer('loyer-1', payload)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/loyers/loyer-1`);
+		expect(options.method).toBe('PATCH');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('deleteLoyer sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteLoyer('loyer-1')).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/loyers/loyer-1`);
+		expect(options.method).toBe('DELETE');
+	});
+
 	it('adds authorization header when a supabase session is available', async () => {
 		const payload = [{ adresse: '10 rue Victor Hugo' }];
 		getCurrentSessionMock.mockResolvedValue({ access_token: 'token-test' });
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBiens()).resolves.toEqual(payload);
@@ -131,7 +212,9 @@ describe('api helpers', () => {
 	});
 
 	it('throws response text when backend returns an error', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(new Response('Erreur fonctionnelle', { status: 422 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response('Erreur fonctionnelle', { status: 422 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBiens()).rejects.toThrowError('Erreur fonctionnelle');

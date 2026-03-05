@@ -42,7 +42,7 @@ async function installCoreApiMocks(page: Page) {
 		}
 	];
 
-	const biens = [
+	let biens = [
 		{
 			id: 'bien-seed',
 			id_sci: 'sci-1',
@@ -78,7 +78,7 @@ async function installCoreApiMocks(page: Page) {
 		}
 	];
 
-	const loyers = [
+	let loyers = [
 		{
 			id: 'loyer-seed',
 			id_bien: 'bien-seed',
@@ -202,12 +202,76 @@ async function installCoreApiMocks(page: Page) {
 			return;
 		}
 
+		if (method === 'PATCH' && path.startsWith('/api/v1/biens/')) {
+			const bienId = path.replace(/\/+$/, '').split('/').pop() || '';
+			const payload = JSON.parse(request.postData() || '{}');
+			const current = biens.find((bien) => String(bien.id) === bienId);
+			if (!current) {
+				await route.fulfill({
+					status: 404,
+					contentType: 'application/json',
+					body: JSON.stringify({ detail: 'Not mocked' })
+				});
+				return;
+			}
+
+			const updated = { ...current, ...payload };
+			biens = biens.map((bien) => (String(bien.id) === bienId ? updated : bien));
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(updated)
+			});
+			return;
+		}
+
+		if (method === 'DELETE' && path.startsWith('/api/v1/biens/')) {
+			const bienId = path.replace(/\/+$/, '').split('/').pop() || '';
+			biens = biens.filter((bien) => String(bien.id) !== bienId);
+			await route.fulfill({
+				status: 204
+			});
+			return;
+		}
+
 		if (method === 'GET' && (path === '/api/v1/loyers' || path === '/api/v1/loyers/')) {
 			const filtered = idSci ? loyers.filter((loyer) => String(loyer.id_sci) === idSci) : loyers;
 			await route.fulfill({
 				status: 200,
 				contentType: 'application/json',
 				body: JSON.stringify(filtered)
+			});
+			return;
+		}
+
+		if (method === 'PATCH' && path.startsWith('/api/v1/loyers/')) {
+			const loyerId = path.replace(/\/+$/, '').split('/').pop() || '';
+			const payload = JSON.parse(request.postData() || '{}');
+			const current = loyers.find((loyer) => String(loyer.id) === loyerId);
+			if (!current) {
+				await route.fulfill({
+					status: 404,
+					contentType: 'application/json',
+					body: JSON.stringify({ detail: 'Not mocked' })
+				});
+				return;
+			}
+
+			const updated = { ...current, ...payload };
+			loyers = loyers.map((loyer) => (String(loyer.id) === loyerId ? updated : loyer));
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(updated)
+			});
+			return;
+		}
+
+		if (method === 'DELETE' && path.startsWith('/api/v1/loyers/')) {
+			const loyerId = path.replace(/\/+$/, '').split('/').pop() || '';
+			loyers = loyers.filter((loyer) => String(loyer.id) !== loyerId);
+			await route.fulfill({
+				status: 204
 			});
 			return;
 		}
@@ -298,5 +362,33 @@ test.describe('Fake user access E2E', () => {
 		await page.getByRole('button', { name: 'Générer le PDF' }).click();
 		await expect(page.getByText('Document généré')).toBeVisible();
 		await expect(page.getByRole('link', { name: 'Télécharger', exact: true })).toBeVisible();
+
+		await page.goto('/biens');
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Gestion des biens');
+		await page.getByRole('button', { name: 'Modifier 1 rue Seed' }).click();
+		await page.getByRole('dialog').locator('#bien-edit-ville').fill('Bordeaux');
+		await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
+		await expect(page.getByText('Bordeaux')).toBeVisible();
+
+		await page.goto('/loyers');
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Suivi des loyers');
+		await page
+			.getByRole('button', { name: /Modifier le loyer du/i })
+			.first()
+			.click();
+		await page.getByRole('dialog').locator('#loyer-edit-statut').selectOption('en_retard');
+		await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
+		await expect(page.getByRole('table').getByText('En retard')).toBeVisible();
+		await page
+			.getByRole('button', { name: /Supprimer le loyer du/i })
+			.last()
+			.click();
+		await page.getByRole('button', { name: 'Confirmer la suppression' }).click();
+		await expect(page.getByText('1 enregistrements')).toBeVisible();
+
+		await page.goto('/biens');
+		await page.getByRole('button', { name: 'Supprimer 42 avenue QA' }).click();
+		await page.getByRole('button', { name: 'Confirmer la suppression' }).click();
+		await expect(page.getByText('1 enregistrements')).toBeVisible();
 	});
 });

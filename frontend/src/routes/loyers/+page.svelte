@@ -2,18 +2,25 @@
 	import { onMount } from 'svelte';
 	import {
 		createLoyer,
+		deleteLoyer,
 		fetchBiens,
 		fetchLoyers,
 		fetchScis,
+		updateLoyer,
 		type Bien,
 		type Loyer,
 		type LoyerCreatePayload,
+		type LoyerStatus,
+		type LoyerUpdatePayload,
 		type SCIOverview
 	} from '$lib/api';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
-	import { calculateLoyerMetrics } from '$lib/high-value/loyers';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { buildLoyerUpdatePayload, calculateLoyerMetrics } from '$lib/high-value/loyers';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
@@ -23,7 +30,25 @@
 	let activeSciId = '';
 	let loading = true;
 	let submitting = false;
+	let deleting = false;
 	let errorMessage = '';
+	let editingLoyer: Loyer | null = null;
+	let loyerPendingDelete: Loyer | null = null;
+	let editDialogOpen = false;
+	let deleteDialogOpen = false;
+	let editLoyerDraft: {
+		idBien: string;
+		idLocataire: string;
+		dateLoyer: string;
+		montant: string;
+		statut: LoyerStatus;
+	} = {
+		idBien: '',
+		idLocataire: '',
+		dateLoyer: '',
+		montant: '',
+		statut: 'paye'
+	};
 
 	$: resolvedActiveSciId =
 		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
@@ -47,8 +72,28 @@
 			})
 		: loyers;
 	$: metrics = calculateLoyerMetrics(scopedLoyers);
+	$: busyLoyerId = deleting
+		? String(loyerPendingDelete?.id || '')
+		: submitting && editingLoyer
+			? String(editingLoyer.id || '')
+			: '';
+	$: if (!editDialogOpen) {
+		editingLoyer = null;
+	}
+	$: if (!deleteDialogOpen) {
+		loyerPendingDelete = null;
+	}
 
 	onMount(loadLoyers);
+
+	function resolveBienLabel(idBien: Loyer['id_bien']) {
+		const bien = biens.find((entry) => String(entry.id || '') === String(idBien || ''));
+		if (!bien) {
+			return 'Bien non identifié';
+		}
+
+		return bien.ville ? `${bien.adresse} - ${bien.ville}` : bien.adresse;
+	}
 
 	async function loadLoyers() {
 		loading = true;
@@ -75,12 +120,14 @@
 		}
 	}
 
-	async function handleCreateLoyer(payload: LoyerCreatePayload): Promise<boolean> {
+	async function handleCreateLoyer(
+		payload: LoyerCreatePayload | LoyerUpdatePayload
+	): Promise<boolean> {
 		submitting = true;
 		errorMessage = '';
 
 		try {
-			const created = await createLoyer(payload);
+			const created = await createLoyer(payload as LoyerCreatePayload);
 			loyers = [created, ...loyers];
 			return true;
 		} catch (error) {
@@ -91,6 +138,83 @@
 			return false;
 		} finally {
 			submitting = false;
+		}
+	}
+
+	function openEditLoyer(loyer: Loyer) {
+		editingLoyer = loyer;
+		editLoyerDraft = {
+			idBien: String(loyer.id_bien || ''),
+			idLocataire: String(loyer.id_locataire || ''),
+			dateLoyer: loyer.date_loyer || '',
+			montant: loyer.montant != null ? String(loyer.montant) : '',
+			statut: (loyer.statut as 'paye' | 'en_attente' | 'en_retard') || 'paye'
+		};
+		editDialogOpen = true;
+		errorMessage = '';
+	}
+
+	function closeEditLoyer() {
+		editDialogOpen = false;
+	}
+
+	function openDeleteLoyer(loyer: Loyer) {
+		loyerPendingDelete = loyer;
+		deleteDialogOpen = true;
+		errorMessage = '';
+	}
+
+	function closeDeleteLoyer() {
+		deleteDialogOpen = false;
+	}
+
+	async function handleUpdateLoyer(): Promise<boolean> {
+		if (!editingLoyer?.id) {
+			return false;
+		}
+
+		const payload = buildLoyerUpdatePayload(editLoyerDraft);
+		if (!payload) {
+			errorMessage = 'Complète les champs requis avant d’enregistrer les modifications.';
+			return false;
+		}
+
+		submitting = true;
+		errorMessage = '';
+
+		try {
+			const updated = await updateLoyer(editingLoyer.id, payload as LoyerUpdatePayload);
+			loyers = loyers.map((loyer) =>
+				String(loyer.id || '') === String(updated.id || '') ? updated : loyer
+			);
+			closeEditLoyer();
+			return true;
+		} catch (error) {
+			errorMessage = formatApiErrorMessage(error, 'Impossible de modifier le loyer sélectionné.');
+			return false;
+		} finally {
+			submitting = false;
+		}
+	}
+
+	async function handleDeleteLoyer() {
+		if (!loyerPendingDelete?.id) {
+			return;
+		}
+
+		deleting = true;
+		errorMessage = '';
+
+		try {
+			await deleteLoyer(loyerPendingDelete.id);
+			loyers = loyers.filter(
+				(loyer) => String(loyer.id || '') !== String(loyerPendingDelete?.id || '')
+			);
+			closeDeleteLoyer();
+		} catch (error) {
+			errorMessage = formatApiErrorMessage(error, 'Impossible de supprimer le loyer sélectionné.');
+		} finally {
+			deleting = false;
 		}
 	}
 </script>
@@ -147,5 +271,82 @@
 
 	<LoyerForm biens={scopedBiens} {submitting} onSubmit={handleCreateLoyer} />
 
-	<LoyerTable loyers={scopedLoyers} biens={scopedBiens} {loading} />
+	<LoyerTable
+		loyers={scopedLoyers}
+		biens={scopedBiens}
+		{loading}
+		onEdit={openEditLoyer}
+		onDelete={openDeleteLoyer}
+		busyRowId={busyLoyerId}
+		actionDisabled={deleting}
+	/>
+
+	<Dialog.Dialog bind:open={editDialogOpen}>
+		<Dialog.DialogContent class="sm:max-w-3xl">
+			<Dialog.DialogHeader>
+				<Dialog.DialogTitle>Modifier le loyer</Dialog.DialogTitle>
+				<Dialog.DialogDescription>
+					Ajuste la date, le montant ou le statut du flux sélectionné.
+				</Dialog.DialogDescription>
+			</Dialog.DialogHeader>
+			{#if editingLoyer}
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="sci-field md:col-span-2">
+						<span class="sci-field-label">Bien concerné</span>
+						<div
+							class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+						>
+							{resolveBienLabel(editingLoyer.id_bien)}
+						</div>
+					</div>
+					<label class="sci-field">
+						<span class="sci-field-label">Date</span>
+						<Input id="loyer-edit-date" bind:value={editLoyerDraft.dateLoyer} type="date" />
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Montant (€)</span>
+						<Input bind:value={editLoyerDraft.montant} type="number" min="0" step="10" />
+					</label>
+					<label class="sci-field md:col-span-2">
+						<span class="sci-field-label">Statut</span>
+						<select id="loyer-edit-statut" bind:value={editLoyerDraft.statut} class="sci-select">
+							<option value="paye">Payé</option>
+							<option value="en_attente">En attente</option>
+							<option value="en_retard">En retard</option>
+						</select>
+					</label>
+				</div>
+				<Dialog.DialogFooter>
+					<Button type="button" variant="outline" onclick={closeEditLoyer}>Annuler</Button>
+					<Button type="button" disabled={submitting} onclick={handleUpdateLoyer}>
+						{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
+					</Button>
+				</Dialog.DialogFooter>
+			{/if}
+		</Dialog.DialogContent>
+	</Dialog.Dialog>
+
+	<Dialog.Dialog bind:open={deleteDialogOpen}>
+		<Dialog.DialogContent class="sm:max-w-md">
+			<Dialog.DialogHeader>
+				<Dialog.DialogTitle>Supprimer le loyer</Dialog.DialogTitle>
+				<Dialog.DialogDescription>
+					Cette action retire définitivement la ligne du journal des loyers.
+				</Dialog.DialogDescription>
+			</Dialog.DialogHeader>
+			<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+				{#if loyerPendingDelete}
+					Confirme la suppression du flux du <strong>{loyerPendingDelete.date_loyer}</strong>.
+				{:else}
+					Confirme la suppression du loyer sélectionné.
+				{/if}
+			</p>
+			<Dialog.DialogFooter>
+				<Button type="button" variant="outline" onclick={closeDeleteLoyer}>Annuler</Button>
+				<Button type="button" variant="destructive" disabled={deleting} onclick={handleDeleteLoyer}>
+					{deleting ? 'Suppression...' : 'Confirmer la suppression'}
+				</Button>
+			</Dialog.DialogFooter>
+		</Dialog.DialogContent>
+	</Dialog.Dialog>
 </section>
