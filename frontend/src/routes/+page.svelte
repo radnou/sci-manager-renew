@@ -222,20 +222,37 @@
 			</div>
 		</div>
 	</section>
-</main>
-				<p>Les SCI qui ont digitalisé leur suivi opérationnel voient leur temps de décision réduit de 60%. Le ROI moyen sur 3 ans est de 280% pour les outils de gestion patrimoniale.</p>
-			</article>
 
-			<article class="expertise-card">
+	<!-- Insights Section -->
+	<section class="py-16 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+		<div class="max-w-6xl mx-auto px-4">
+			<h2 class="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-12">
+				Insights Big4 pour SCI modernes
+			</h2>
+			<div class="grid gap-6 md:grid-cols-3">
+				<article class="expertise-card">
+					<div class="expertise-header">
+						<span class="expertise-badge">Insight #2</span>
+						<h3>La digitalisation n'est pas une option</h3>
+					</div>
+					<p>Les SCI qui ont digitalisé leur suivi opérationnel voient leur temps de décision réduit de 60%. Le ROI moyen sur 3 ans est de 280% pour les outils de gestion patrimoniale.</p>
+				</article>
+
+				<article class="expertise-card">
 				<div class="expertise-header">
 					<span class="expertise-badge">Insight #3</span>
 					<h3>La compliance réglementaire évolue</h3>
 				</div>
 				<p>Avec la loi ELAN et les nouvelles normes comptables, 70% des SCI devront adapter leurs process d'ici 2025. Les outils modernes intègrent nativement ces évolutions.</p>
 			</article>
+			</div>
 		</div>
+	</section>
 
-		<div class="tips-grid">
+	<!-- Tips and KPI Section -->
+	<section class="py-16">
+		<div class="max-w-6xl mx-auto px-4">
+			<div class="tips-grid">
 			<div class="tips-section">
 				<h3>5 conseils opérationnels Big4</h3>
 				<ul>
@@ -265,8 +282,12 @@
 				</div>
 			</div>
 		</div>
+	</section>
 
-		<div class="case-studies">
+	<!-- Case Studies Section -->
+	<section class="py-16 bg-slate-50 dark:bg-slate-800">
+		<div class="max-w-6xl mx-auto px-4">
+			<div class="case-studies">
 			<h3>Cas clients Big4</h3>
 			<div class="case-grid">
 				<div class="case-card">
@@ -281,6 +302,7 @@
 		</div>
 	</section>
 
+	<!-- FAQ Section -->
 	<section class="faq-block reveal">
 		<header class="section-header">
 			<p class="sci-eyebrow">Questions fréquentes</p>
