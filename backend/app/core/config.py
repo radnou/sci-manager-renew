@@ -1,26 +1,55 @@
 import json
+from enum import Enum
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class Environment(str, Enum):
+    """Environnements supportés"""
+
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
 class Settings(BaseSettings):
+    # Environment
+    app_name: str = "sci-manager"
+    app_env: Environment = Environment.DEVELOPMENT
+    debug: bool = False
+
+    # Supabase
     supabase_url: str = "http://localhost:54321"
     supabase_anon_key: str = "anon-key-placeholder"
     supabase_service_role_key: str = "service-role-key-placeholder"
     supabase_jwt_secret: str = "test-jwt-secret"
     database_url: str = "postgresql://postgres:postgres@localhost:5432/postgres"
+
+    # Stripe
     stripe_secret_key: str = "sk_test_placeholder"
     stripe_webhook_secret: str = "whsec_placeholder"
     stripe_starter_price_id: str = "price_1T7MW5BCxd3SKdGJP2xjawrj"
     stripe_pro_price_id: str = "price_1T7MW6BCxd3SKdGJKzcNqdkJ"
     stripe_lifetime_price_id: str = "price_1T7MW7BCxd3SKdGJVrHWprJ8"
+
+    # Email
     resend_api_key: str = "re_placeholder"
     resend_from_email: str = "noreply@scimanager.fr"
+
+    # Frontend
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     frontend_url: str = "http://localhost:5173"
+
+    # Logging
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    log_format: Literal["json", "console"] = "json"
+
+    # Feature Flags
+    feature_cerfa_generation: bool = True
+    feature_stripe_payments: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -28,6 +57,20 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug(cls, value: Any) -> bool:
+        """Parse debug value from string to bool"""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            value_lower = value.lower().strip()
+            if value_lower in ("true", "1", "yes", "on"):
+                return True
+            if value_lower in ("false", "0", "no", "off", "release", ""):
+                return False
+        return False  # Default to False for safety
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -46,6 +89,36 @@ class Settings(BaseSettings):
                     return [str(item) for item in parsed]
             return [item.strip() for item in text.split(",") if item.strip()]
         raise TypeError("cors_origins must be a list or comma-separated string")
+
+    @model_validator(mode="after")
+    def validate_production_environment(self):
+        """Valide que la configuration production est sécurisée"""
+        if self.app_env == Environment.PRODUCTION:
+            # 1. Debug doit être désactivé en production
+            if self.debug:
+                raise ValueError("Debug mode must be disabled in production")
+
+            # 2. CORS ne doit pas contenir localhost en production
+            for origin in self.cors_origins:
+                if "localhost" in origin or "127.0.0.1" in origin:
+                    raise ValueError("Production CORS must not include localhost or 127.0.0.1")
+
+            # 3. Secrets ne doivent pas être des placeholders en production
+            placeholder_keywords = ["placeholder", "test", "example", "demo"]
+            secrets_to_check = {
+                "STRIPE_SECRET_KEY": self.stripe_secret_key,
+                "STRIPE_WEBHOOK_SECRET": self.stripe_webhook_secret,
+                "RESEND_API_KEY": self.resend_api_key,
+                "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+            }
+
+            for secret_name, secret_value in secrets_to_check.items():
+                if any(keyword in secret_value.lower() for keyword in placeholder_keywords):
+                    raise ValueError(
+                        f"Production secrets must be real values, not placeholders ({secret_name})"
+                    )
+
+        return self
 
 
 @lru_cache

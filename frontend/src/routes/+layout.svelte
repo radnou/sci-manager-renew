@@ -8,6 +8,7 @@
 	import { Toaster } from '$lib/components/ui/toast';
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import CookieConsent from '$lib/components/CookieConsent.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -177,6 +178,7 @@
 	</footer>
 
 	<Toaster />
+	<CookieConsent />
 </div>
 
 <div style="display:none">

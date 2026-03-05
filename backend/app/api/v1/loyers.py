@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from supabase import create_client
 
@@ -9,6 +10,7 @@ from app.core.security import get_current_user
 from app.models.loyers import LoyerCreate, LoyerResponse, LoyerUpdate
 
 router = APIRouter(prefix="/loyers", tags=["loyers"])
+logger = structlog.get_logger(__name__)
 
 
 def _get_client() -> Any:
@@ -66,16 +68,26 @@ async def create_loyer(
     loyer: LoyerCreate,
     user_id: str = Depends(get_current_user),
 ) -> LoyerResponse:
+    logger.info(
+        "creating_loyer",
+        user_id=user_id,
+        bien_id=loyer.id_bien,
+        montant=float(loyer.montant),
+        date_loyer=str(loyer.date_loyer),
+    )
     client = _get_client()
     payload = loyer.model_dump()
     payload["owner_id"] = user_id
     result = client.table("loyers").insert(payload).execute()
     rows = _extract_rows(result)
     if not rows:
+        logger.error("loyer_creation_failed", user_id=user_id, bien_id=loyer.id_bien)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Loyer creation failed",
         )
+    loyer_id = rows[0].get("id")
+    logger.info("loyer_created", user_id=user_id, loyer_id=loyer_id, bien_id=loyer.id_bien)
     return LoyerResponse.model_validate(rows[0])
 
 
@@ -92,6 +104,12 @@ async def update_loyer(
             detail="No update fields provided",
         )
 
+    logger.info(
+        "updating_loyer",
+        user_id=user_id,
+        loyer_id=loyer_id,
+        fields=list(payload.keys()),
+    )
     client = _get_client()
     result = (
         client.table("loyers")
@@ -102,12 +120,15 @@ async def update_loyer(
     )
     rows = _extract_rows(result)
     if not rows:
+        logger.warning("loyer_not_found_for_update", user_id=user_id, loyer_id=loyer_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loyer not found")
+    logger.info("loyer_updated", user_id=user_id, loyer_id=loyer_id)
     return LoyerResponse.model_validate(rows[0])
 
 
 @router.delete("/{loyer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)) -> None:
+    logger.info("deleting_loyer", user_id=user_id, loyer_id=loyer_id)
     client = _get_client()
     result = (
         client.table("loyers")
@@ -118,4 +139,6 @@ async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)) 
     )
     rows = _extract_rows(result)
     if not rows:
+        logger.warning("loyer_not_found_for_delete", user_id=user_id, loyer_id=loyer_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Loyer not found")
+    logger.info("loyer_deleted", user_id=user_id, loyer_id=loyer_id)
