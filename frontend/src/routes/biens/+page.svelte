@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createBien, fetchBiens, fetchScis, type Bien, type BienCreatePayload, type SCIOverview } from '$lib/api';
+	import {
+		createBien,
+		fetchBiens,
+		fetchScis,
+		type Bien,
+		type BienCreatePayload,
+		type SCIOverview
+	} from '$lib/api';
 	import BienForm from '$lib/components/BienForm.svelte';
 	import BienTable from '$lib/components/BienTable.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import { calculateBienMetrics } from '$lib/high-value/biens';
+	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
@@ -15,7 +23,9 @@
 	let errorMessage = '';
 
 	$: resolvedActiveSciId =
-		activeSciId && scis.some((sci) => String(sci.id) === activeSciId) ? activeSciId : String(scis[0]?.id || '');
+		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
+			? activeSciId
+			: String(scis[0]?.id || '');
 	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
 	$: if (resolvedActiveSciId) {
 		setStoredActiveSciId(resolvedActiveSciId);
@@ -36,10 +46,12 @@
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			const storedActiveSciId = getStoredActiveSciId();
 			activeSciId =
-				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				(storedActiveSciId &&
+					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
+					storedActiveSciId) ||
 				String(nextScis[0]?.id || '');
 		} catch (error) {
-			errorMessage = toErrorMessage(error, 'Impossible de charger les biens.');
+			errorMessage = formatApiErrorMessage(error, 'Impossible de charger les biens.');
 		} finally {
 			loading = false;
 		}
@@ -54,18 +66,14 @@
 			biens = [created, ...biens];
 			return true;
 		} catch (error) {
-			errorMessage = toErrorMessage(error, 'Impossible d’ajouter le bien. Vérifie les champs requis.');
+			errorMessage = formatApiErrorMessage(
+				error,
+				'Impossible d’ajouter le bien. Vérifie les champs requis.'
+			);
 			return false;
 		} finally {
 			submitting = false;
 		}
-	}
-
-	function toErrorMessage(error: unknown, fallback: string) {
-		if (error instanceof Error && error.message.trim().length > 0) {
-			return error.message;
-		}
-		return fallback;
 	}
 </script>
 
@@ -74,7 +82,8 @@
 		<p class="sci-eyebrow">GererSCI • Opérations</p>
 		<h1 class="sci-page-title">Gestion des biens</h1>
 		<p class="sci-page-subtitle">
-			Centralise les actifs immobiliers de la SCI active sans exposer d’identifiants techniques dans les formulaires.
+			Centralise les actifs immobiliers de la SCI active sans exposer d’identifiants techniques dans
+			les formulaires.
 		</p>
 	</header>
 
@@ -116,7 +125,7 @@
 		activeSciId={resolvedActiveSciId}
 		activeSciLabel={activeSci?.nom || 'SCI active'}
 		showSciField={!activeSci}
-		submitting={submitting}
+		{submitting}
 		onSubmit={handleCreateBien}
 	/>
 

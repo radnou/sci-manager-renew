@@ -71,24 +71,48 @@ describe('high-value loyers helpers', () => {
 
 	it('calculates revenue metrics and late count', () => {
 		const metrics = calculateLoyerMetrics([
-			{ id_bien: 'A', date_loyer: '2026-03-01', montant: 1000, statut: 'paye', quitus_genere: false },
-			{ id_bien: 'B', date_loyer: '2026-03-01', montant: 800, statut: 'en_retard', quitus_genere: false },
-			{ id_bien: 'C', date_loyer: '2026-03-01', montant: 1200, statut: 'en_attente', quitus_genere: false }
+			{
+				id_bien: 'A',
+				date_loyer: '2026-03-01',
+				montant: 1000,
+				statut: 'paye',
+				quitus_genere: false
+			},
+			{
+				id_bien: 'B',
+				date_loyer: '2026-03-01',
+				montant: 800,
+				statut: 'en_retard',
+				quitus_genere: false
+			},
+			{
+				id_bien: 'C',
+				date_loyer: '2026-03-01',
+				montant: 1200,
+				statut: 'en_attente',
+				quitus_genere: false
+			}
 		]);
 
 		expect(metrics.count).toBe(3);
-		expect(metrics.totalCollected).toBe(3000);
-		expect(metrics.totalCollectedLabel).toContain('€');
-		expect(metrics.averageCollectedLabel).toContain('€');
+		expect(metrics.paidCount).toBe(1);
+		expect(metrics.totalRecorded).toBe(3000);
+		expect(metrics.totalPaid).toBe(1000);
+		expect(metrics.totalOutstanding).toBe(2000);
+		expect(metrics.totalPaidLabel).toContain('€');
+		expect(metrics.averageRecordedLabel).toContain('€');
 		expect(metrics.lateCount).toBe(1);
+		expect(metrics.collectionRate).toBeCloseTo(33.33, 1);
 	});
 
 	it('returns safe defaults for empty dataset', () => {
 		const metrics = calculateLoyerMetrics([]);
 
 		expect(metrics.count).toBe(0);
-		expect(metrics.totalCollected).toBe(0);
-		expect(metrics.averageCollectedLabel).toBe('—');
+		expect(metrics.totalRecorded).toBe(0);
+		expect(metrics.totalPaid).toBe(0);
+		expect(metrics.averageRecordedLabel).toBe('—');
 		expect(metrics.lateCount).toBe(0);
+		expect(metrics.collectionRateLabel).toBe('0%');
 	});
 });

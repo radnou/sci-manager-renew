@@ -1,11 +1,29 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Building2, FileText, HandCoins, Landmark, Settings2, ShieldCheck, Users, Wallet } from 'lucide-svelte';
+	import { Building2, FileText, HandCoins, Landmark, ShieldCheck, Users } from 'lucide-svelte';
 	import { fetchSciDetail, fetchScis, type SCIDetail, type SCIOverview } from '$lib/api';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { formatCompactNumber, formatEur, formatFrDate, formatPercent } from '$lib/high-value/formatters';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
+	import { mapBienTypeLabel } from '$lib/high-value/biens';
+	import {
+		formatCompactNumber,
+		formatEur,
+		formatFrDate,
+		formatPercent
+	} from '$lib/high-value/formatters';
+	import { mapLoyerStatusLabel } from '$lib/high-value/loyers';
+	import {
+		formatApiErrorMessage,
+		mapAssociateRoleLabel,
+		mapChargeTypeLabel
+	} from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let scis = $state<SCIOverview[]>([]);
@@ -17,7 +35,9 @@
 	let detailLoadedFor = $state('');
 
 	const resolvedActiveSciId = $derived(
-		activeSciId && scis.some((sci) => String(sci.id) === activeSciId) ? activeSciId : String(scis[0]?.id || '')
+		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
+			? activeSciId
+			: String(scis[0]?.id || '')
 	);
 	const activeSci = $derived(scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null);
 	const collectionRate = $derived.by(() => {
@@ -55,13 +75,15 @@
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			const storedActiveSciId = getStoredActiveSciId();
 			activeSciId =
-				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				(storedActiveSciId &&
+					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
+					storedActiveSciId) ||
 				String(nextScis[0]?.id || '');
 			if (!nextScis.length) {
 				detail = null;
 			}
 		} catch (error) {
-			errorMessage = toErrorMessage(error, 'Impossible de charger le portefeuille SCI.');
+			errorMessage = formatApiErrorMessage(error, 'Impossible de charger le portefeuille SCI.');
 		} finally {
 			loading = false;
 		}
@@ -74,17 +96,13 @@
 			detail = await fetchSciDetail(sciId);
 		} catch (error) {
 			detail = null;
-			errorMessage = toErrorMessage(error, 'Impossible de charger la fiche détaillée de la SCI.');
+			errorMessage = formatApiErrorMessage(
+				error,
+				'Impossible de charger la fiche détaillée de la SCI.'
+			);
 		} finally {
 			detailLoading = false;
 		}
-	}
-
-	function toErrorMessage(error: unknown, fallback: string) {
-		if (error instanceof Error && error.message.trim().length > 0) {
-			return error.message;
-		}
-		return fallback;
 	}
 
 	function statusLabel(status: SCIOverview['statut']) {
@@ -120,8 +138,8 @@
 		<p class="sci-eyebrow">Portefeuille SCI • Consolidation multi-entités</p>
 		<h1 class="sci-page-title">Pilotage des SCI</h1>
 		<p class="sci-page-subtitle">
-			Une vue structurée de toutes les SCI accessibles par le compte, avec identité, gouvernance, patrimoine,
-			charges et flux récents.
+			Une vue structurée de toutes les SCI accessibles par le compte, avec identité, gouvernance,
+			patrimoine, charges et flux récents.
 		</p>
 	</header>
 
@@ -134,7 +152,9 @@
 			<CardHeader>
 				<div>
 					<CardTitle class="text-lg">SCI du portefeuille</CardTitle>
-					<CardDescription>Sélectionne une entité pour afficher sa fiche d’identité complète.</CardDescription>
+					<CardDescription
+						>Sélectionne une entité pour afficher sa fiche d’identité complète.</CardDescription
+					>
 				</div>
 			</CardHeader>
 			<CardContent class="space-y-3 pt-0">
@@ -145,8 +165,11 @@
 						{/each}
 					</div>
 				{:else if scis.length === 0}
-					<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-						Aucune SCI accessible. Le portefeuille se remplira ici dès qu’une société sera liée au compte.
+					<div
+						class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+					>
+						Aucune SCI accessible. Le portefeuille se remplira ici dès qu’une société sera liée au
+						compte.
 					</div>
 				{:else}
 					<div class="space-y-3">
@@ -169,7 +192,9 @@
 										<p class="text-sm font-semibold">{sci.nom}</p>
 										<p class="mt-1 text-xs opacity-75">SIREN {sci.siren || 'À compléter'}</p>
 									</div>
-									<span class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(sci.statut)}`}>
+									<span
+										class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(sci.statut)}`}
+									>
 										{statusLabel(sci.statut)}
 									</span>
 								</div>
@@ -202,10 +227,14 @@
 						<div class="space-y-5">
 							<div class="space-y-3">
 								<div class="flex flex-wrap items-center gap-2">
-									<span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(detail?.statut)}`}>
+									<span
+										class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(detail?.statut)}`}
+									>
 										{statusLabel(detail?.statut)}
 									</span>
-									<span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+									<span
+										class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+									>
 										Régime {detail?.regime_fiscal || 'IR'}
 									</span>
 								</div>
@@ -213,12 +242,15 @@
 									{detail?.nom || activeSci?.nom || 'SCI en cours de chargement'}
 								</h2>
 								<p class="max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-									Fiche d’identité consolidée pour piloter la société, ses associés, ses actifs, les charges documentées et les mouvements de trésorerie.
+									Fiche d’identité consolidée pour piloter la société, ses associés, ses actifs, les
+									charges documentées et les mouvements de trésorerie.
 								</p>
 							</div>
 
 							<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+								>
 									<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 										<Landmark class="h-4 w-4" />
 										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Société</p>
@@ -231,23 +263,33 @@
 									</p>
 								</div>
 
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+								>
 									<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 										<Users class="h-4 w-4" />
-										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Gouvernance</p>
+										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+											Gouvernance
+										</p>
 									</div>
 									<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-										{detail?.user_role || 'Rôle à confirmer'}
+										{detail?.user_role
+											? mapAssociateRoleLabel(detail.user_role)
+											: 'Rôle à confirmer'}
 									</p>
 									<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 										Part détenue {formatPercent(detail?.user_part, 'N/A')}
 									</p>
 								</div>
 
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+								>
 									<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 										<Building2 class="h-4 w-4" />
-										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Patrimoine</p>
+										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+											Patrimoine
+										</p>
 									</div>
 									<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
 										{detail?.biens_count || 0} bien(s)
@@ -257,7 +299,9 @@
 									</p>
 								</div>
 
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+								>
 									<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 										<HandCoins class="h-4 w-4" />
 										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Charges</p>
@@ -272,24 +316,43 @@
 							</div>
 						</div>
 
-						<div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Actions recommandées</p>
+						<div
+							class="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950"
+						>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Actions recommandées
+							</p>
 							<div class="mt-4 grid gap-2">
-								<Button href="/dashboard" variant="outline" class="justify-start">Ouvrir le cockpit</Button>
-								<Button href="/biens" variant="outline" class="justify-start">Gérer les biens</Button>
-								<Button href="/loyers" variant="outline" class="justify-start">Suivre les loyers</Button>
-								<Button href="/settings" variant="outline" class="justify-start">Paramètres de l'application</Button>
+								<Button href="/dashboard" variant="outline" class="justify-start"
+									>Ouvrir le cockpit</Button
+								>
+								<Button href="/biens" variant="outline" class="justify-start"
+									>Gérer les biens</Button
+								>
+								<Button href="/loyers" variant="outline" class="justify-start"
+									>Suivre les loyers</Button
+								>
+								<Button href="/settings" variant="outline" class="justify-start"
+									>Paramètres de l'application</Button
+								>
 							</div>
-							<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+							<div
+								class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+							>
 								<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 									<ShieldCheck class="h-4 w-4" />
-									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Recouvrement</p>
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+										Recouvrement
+									</p>
 								</div>
 								<p class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 									{formatPercent(collectionRate, '0%')}
 								</p>
 								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-									Flux encaissés {formatEur(detail?.paid_loyers_total, 'N/A')} • en attente {formatEur(detail?.pending_loyers_total, 'N/A')}
+									Flux encaissés {formatEur(detail?.paid_loyers_total, 'N/A')} • en attente {formatEur(
+										detail?.pending_loyers_total,
+										'N/A'
+									)}
 								</p>
 							</div>
 						</div>
@@ -305,7 +368,7 @@
 					trend="up"
 					trendValue="multi-SCI"
 					tone="accent"
-					loading={loading}
+					{loading}
 				/>
 				<KpiCard
 					label="Loyers encaissés"
@@ -341,7 +404,9 @@
 					<CardHeader>
 						<div>
 							<CardTitle class="text-lg">Associés et gouvernance</CardTitle>
-							<CardDescription>Répartition du capital, rôles et personnes impliquées dans la SCI sélectionnée.</CardDescription>
+							<CardDescription
+								>Répartition du capital, rôles et personnes impliquées dans la SCI sélectionnée.</CardDescription
+							>
 						</div>
 					</CardHeader>
 					<CardContent class="grid gap-3 pt-0 md:grid-cols-2">
@@ -351,24 +416,38 @@
 							{/each}
 						{:else if detail?.associes?.length}
 							{#each detail.associes as associe (String(associe.id))}
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+								>
 									<div class="flex items-start justify-between gap-3">
 										<div>
-											<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{associe.nom}</p>
-											<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{associe.email || 'Email non renseigné'}</p>
+											<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+												{associe.nom}
+											</p>
+											<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+												{associe.email || 'Email non renseigné'}
+											</p>
 										</div>
-										<span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
-											{associe.role || 'Associé'}
+										<span
+											class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950"
+										>
+											{mapAssociateRoleLabel(associe.role)}
 										</span>
 									</div>
-									<p class="mt-4 text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Part détenue</p>
+									<p
+										class="mt-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									>
+										Part détenue
+									</p>
 									<p class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
 										{formatPercent(associe.part, 'N/A')}
 									</p>
 								</div>
 							{/each}
 						{:else}
-							<p class="text-sm text-slate-500 dark:text-slate-400">Aucun associé détaillé n’est disponible pour cette SCI.</p>
+							<p class="text-sm text-slate-500 dark:text-slate-400">
+								Aucun associé détaillé n’est disponible pour cette SCI.
+							</p>
 						{/if}
 					</CardContent>
 				</Card>
@@ -377,29 +456,46 @@
 					<CardHeader>
 						<div>
 							<CardTitle class="text-lg">Fiscalité et repères</CardTitle>
-							<CardDescription>Dernières années consolidées et niveau de documentation disponible.</CardDescription>
+							<CardDescription
+								>Dernières années consolidées et niveau de documentation disponible.</CardDescription
+							>
 						</div>
 					</CardHeader>
 					<CardContent class="space-y-3 pt-0">
-						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
 							<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 								<FileText class="h-4 w-4" />
-								<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Fiche fiscale</p>
+								<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+									Fiche fiscale
+								</p>
 							</div>
 							<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-								{detail?.fiscalite?.length ? `${detail.fiscalite.length} exercice(s) consolidé(s)` : 'Aucun exercice consolidé'}
+								{detail?.fiscalite?.length
+									? `${detail.fiscalite.length} exercice(s) consolidé(s)`
+									: 'Aucun exercice consolidé'}
 							</p>
 						</div>
 
 						{#if detail?.fiscalite?.length}
 							{#each detail.fiscalite as exercice (String(exercice.id || exercice.annee))}
-								<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+								<div
+									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+								>
 									<div class="flex items-center justify-between gap-3">
-										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Exercice {exercice.annee}</p>
-										<span class="text-xs text-slate-500 dark:text-slate-400">{formatEur(exercice.resultat_fiscal, 'N/A')}</span>
+										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+											Exercice {exercice.annee}
+										</p>
+										<span class="text-xs text-slate-500 dark:text-slate-400"
+											>{formatEur(exercice.resultat_fiscal, 'N/A')}</span
+										>
 									</div>
 									<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-										Revenus {formatEur(exercice.total_revenus, 'N/A')} • charges {formatEur(exercice.total_charges, 'N/A')}
+										Revenus {formatEur(exercice.total_revenus, 'N/A')} • charges {formatEur(
+											exercice.total_charges,
+											'N/A'
+										)}
 									</p>
 								</div>
 							{/each}
@@ -417,7 +513,9 @@
 					<CardHeader>
 						<div>
 							<CardTitle class="text-lg">Patrimoine rattaché</CardTitle>
-							<CardDescription>Les biens de la SCI active, avec exposition locative et charges récurrentes.</CardDescription>
+							<CardDescription
+								>Les biens de la SCI active, avec exposition locative et charges récurrentes.</CardDescription
+							>
 						</div>
 					</CardHeader>
 					<CardContent class="space-y-3 pt-0">
@@ -426,29 +524,43 @@
 						{:else if detail?.biens?.length}
 							<div class="grid gap-3 md:grid-cols-2">
 								{#each detail.biens as bien (String(bien.id || `${bien.adresse}-${bien.ville}`))}
-									<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+									<div
+										class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+									>
 										<div class="flex items-start justify-between gap-3">
 											<div>
-												<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{bien.adresse}</p>
-												<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{bien.ville || 'Ville à compléter'} • {bien.type_locatif || 'Type à confirmer'}</p>
+												<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+													{bien.adresse}
+												</p>
+												<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+													{bien.ville || 'Ville à compléter'} • {mapBienTypeLabel(
+														bien.type_locatif
+													)}
+												</p>
 											</div>
 											<Building2 class="mt-0.5 h-4 w-4 text-slate-400" />
 										</div>
 										<div class="mt-4 grid grid-cols-2 gap-3 text-sm">
 											<div>
 												<p class="text-slate-500 dark:text-slate-400">Loyer CC</p>
-												<p class="font-semibold text-slate-900 dark:text-slate-100">{formatEur(bien.loyer_cc, 'N/A')}</p>
+												<p class="font-semibold text-slate-900 dark:text-slate-100">
+													{formatEur(bien.loyer_cc, 'N/A')}
+												</p>
 											</div>
 											<div>
 												<p class="text-slate-500 dark:text-slate-400">Charges</p>
-												<p class="font-semibold text-slate-900 dark:text-slate-100">{formatEur(bien.charges, 'N/A')}</p>
+												<p class="font-semibold text-slate-900 dark:text-slate-100">
+													{formatEur(bien.charges, 'N/A')}
+												</p>
 											</div>
 										</div>
 									</div>
 								{/each}
 							</div>
 						{:else}
-							<p class="text-sm text-slate-500 dark:text-slate-400">Aucun bien n’est encore rattaché à cette SCI.</p>
+							<p class="text-sm text-slate-500 dark:text-slate-400">
+								Aucun bien n’est encore rattaché à cette SCI.
+							</p>
 						{/if}
 					</CardContent>
 				</Card>
@@ -457,7 +569,9 @@
 					<CardHeader>
 						<div>
 							<CardTitle class="text-lg">Charges récentes</CardTitle>
-							<CardDescription>Dernières sorties documentées sur les biens de la SCI.</CardDescription>
+							<CardDescription
+								>Dernières sorties documentées sur les biens de la SCI.</CardDescription
+							>
 						</div>
 					</CardHeader>
 					<CardContent class="space-y-3 pt-0">
@@ -465,12 +579,20 @@
 							<div class="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
 						{:else if detail?.recent_charges?.length}
 							{#each detail.recent_charges as charge (String(charge.id || `${charge.id_bien}-${charge.date_paiement}`))}
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+								>
 									<div class="flex items-center justify-between gap-3">
-										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{charge.type_charge}</p>
-										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatEur(charge.montant, 'N/A')}</p>
+										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+											{mapChargeTypeLabel(charge.type_charge)}
+										</p>
+										<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+											{formatEur(charge.montant, 'N/A')}
+										</p>
 									</div>
-									<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Payée le {formatFrDate(charge.date_paiement)}</p>
+									<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+										Payée le {formatFrDate(charge.date_paiement)}
+									</p>
 								</div>
 							{/each}
 						{:else}
@@ -486,7 +608,10 @@
 				<CardHeader>
 					<div>
 						<CardTitle class="text-lg">Activité locative récente</CardTitle>
-						<CardDescription>Historique synthétique des derniers loyers saisis, lisible sans identifiants techniques.</CardDescription>
+						<CardDescription
+							>Historique synthétique des derniers loyers saisis, lisible sans identifiants
+							techniques.</CardDescription
+						>
 					</div>
 				</CardHeader>
 				<CardContent class="grid gap-3 pt-0 md:grid-cols-2 xl:grid-cols-4">
@@ -496,19 +621,31 @@
 						{/each}
 					{:else if detail?.recent_loyers?.length}
 						{#each detail.recent_loyers as loyer (String(loyer.id || `${loyer.id_bien}-${loyer.date_loyer}`))}
-							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<div
+								class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+							>
 								<div class="flex items-center justify-between gap-3">
-									<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatFrDate(loyer.date_loyer)}</p>
-									<span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
-										{loyer.statut || 'À qualifier'}
+									<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+										{formatFrDate(loyer.date_loyer)}
+									</p>
+									<span
+										class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950"
+									>
+										{mapLoyerStatusLabel(loyer.statut)}
 									</span>
 								</div>
-								<p class="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">{formatEur(loyer.montant, 'N/A')}</p>
-								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{bienLabel(loyer.id_bien)}</p>
+								<p class="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+									{formatEur(loyer.montant, 'N/A')}
+								</p>
+								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+									{bienLabel(loyer.id_bien)}
+								</p>
 							</div>
 						{/each}
 					{:else}
-						<p class="text-sm text-slate-500 dark:text-slate-400">Aucun loyer documenté sur la période récente.</p>
+						<p class="text-sm text-slate-500 dark:text-slate-400">
+							Aucun loyer documenté sur la période récente.
+						</p>
 					{/if}
 				</CardContent>
 			</Card>

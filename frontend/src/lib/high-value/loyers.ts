@@ -49,16 +49,28 @@ export function mapLoyerStatusClass(status: string | null | undefined) {
 }
 
 export function calculateLoyerMetrics(loyers: Loyer[]) {
-	const totalCollected = loyers.reduce((sum, loyer) => sum + (loyer.montant ?? 0), 0);
 	const count = loyers.length;
-	const lateCount = loyers.filter((loyer) => normalizeLoyerStatus(loyer.statut) === 'en_retard').length;
+	const paidLoyers = loyers.filter((loyer) => normalizeLoyerStatus(loyer.statut) === 'paye');
+	const lateLoyers = loyers.filter((loyer) => normalizeLoyerStatus(loyer.statut) === 'en_retard');
+	const outstandingLoyers = loyers.filter((loyer) => normalizeLoyerStatus(loyer.statut) !== 'paye');
+	const totalRecorded = loyers.reduce((sum, loyer) => sum + (loyer.montant ?? 0), 0);
+	const totalPaid = paidLoyers.reduce((sum, loyer) => sum + (loyer.montant ?? 0), 0);
+	const totalOutstanding = outstandingLoyers.reduce((sum, loyer) => sum + (loyer.montant ?? 0), 0);
+	const collectionRate = totalRecorded > 0 ? (totalPaid / totalRecorded) * 100 : 0;
 
 	return {
 		count,
-		totalCollected,
-		totalCollectedLabel: formatEur(totalCollected),
-		averageCollectedLabel: count > 0 ? formatEur(totalCollected / count) : '—',
-		lateCount
+		paidCount: paidLoyers.length,
+		lateCount: lateLoyers.length,
+		totalRecorded,
+		totalRecordedLabel: formatEur(totalRecorded),
+		totalPaid,
+		totalPaidLabel: formatEur(totalPaid),
+		totalOutstanding,
+		totalOutstandingLabel: formatEur(totalOutstanding),
+		averageRecordedLabel: count > 0 ? formatEur(totalRecorded / count) : '—',
+		collectionRate,
+		collectionRateLabel: count > 0 ? `${Math.round(collectionRate)}%` : '0%'
 	};
 }
 

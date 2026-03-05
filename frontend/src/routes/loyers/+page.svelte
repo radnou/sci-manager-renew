@@ -1,10 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createLoyer, fetchBiens, fetchLoyers, fetchScis, type Bien, type Loyer, type LoyerCreatePayload, type SCIOverview } from '$lib/api';
+	import {
+		createLoyer,
+		fetchBiens,
+		fetchLoyers,
+		fetchScis,
+		type Bien,
+		type Loyer,
+		type LoyerCreatePayload,
+		type SCIOverview
+	} from '$lib/api';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import { calculateLoyerMetrics } from '$lib/high-value/loyers';
+	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
@@ -16,7 +26,9 @@
 	let errorMessage = '';
 
 	$: resolvedActiveSciId =
-		activeSciId && scis.some((sci) => String(sci.id) === activeSciId) ? activeSciId : String(scis[0]?.id || '');
+		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
+			? activeSciId
+			: String(scis[0]?.id || '');
 	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
 	$: if (resolvedActiveSciId) {
 		setStoredActiveSciId(resolvedActiveSciId);
@@ -42,16 +54,22 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const [nextBiens, nextLoyers, nextScis] = await Promise.all([fetchBiens(), fetchLoyers(), fetchScis()]);
+			const [nextBiens, nextLoyers, nextScis] = await Promise.all([
+				fetchBiens(),
+				fetchLoyers(),
+				fetchScis()
+			]);
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			const storedActiveSciId = getStoredActiveSciId();
 			activeSciId =
-				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				(storedActiveSciId &&
+					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
+					storedActiveSciId) ||
 				String(nextScis[0]?.id || '');
 		} catch (error) {
-			errorMessage = toErrorMessage(error, 'Impossible de charger les loyers.');
+			errorMessage = formatApiErrorMessage(error, 'Impossible de charger les loyers.');
 		} finally {
 			loading = false;
 		}
@@ -66,18 +84,14 @@
 			loyers = [created, ...loyers];
 			return true;
 		} catch (error) {
-			errorMessage = toErrorMessage(error, 'Impossible d’ajouter le loyer. Vérifie les données du formulaire.');
+			errorMessage = formatApiErrorMessage(
+				error,
+				'Impossible d’ajouter le loyer. Vérifie les données du formulaire.'
+			);
 			return false;
 		} finally {
 			submitting = false;
 		}
-	}
-
-	function toErrorMessage(error: unknown, fallback: string) {
-		if (error instanceof Error && error.message.trim().length > 0) {
-			return error.message;
-		}
-		return fallback;
 	}
 </script>
 
@@ -86,23 +100,24 @@
 		<p class="sci-eyebrow">GererSCI • Revenus</p>
 		<h1 class="sci-page-title">Suivi des loyers</h1>
 		<p class="sci-page-subtitle">
-			Pilote les encaissements mensuels de la SCI active avec des libellés métier, pas des identifiants bruts.
+			Pilote les encaissements mensuels de la SCI active avec des libellés métier, pas des
+			identifiants bruts.
 		</p>
 	</header>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
-			label="Encaissements"
-			value={metrics.totalCollectedLabel}
-			caption="sur la période affichée"
-			trend="up"
-			trendValue="+4.8%"
-			tone="success"
+			label="Flux encaissés"
+			value={metrics.totalPaidLabel}
+			caption="loyers réellement au statut payé"
+			trend={metrics.totalOutstanding > 0 ? 'neutral' : 'up'}
+			trendValue={metrics.totalOutstanding > 0 ? 'à suivre' : 'sécurisé'}
+			tone={metrics.totalOutstanding > 0 ? 'accent' : 'success'}
 			{loading}
 		/>
 		<KpiCard
 			label="Ticket moyen"
-			value={metrics.averageCollectedLabel}
+			value={metrics.averageRecordedLabel}
 			caption="montant moyen par ligne"
 			trend="neutral"
 			trendValue="stable"
@@ -130,7 +145,7 @@
 		</p>
 	{/if}
 
-	<LoyerForm biens={scopedBiens} submitting={submitting} onSubmit={handleCreateLoyer} />
+	<LoyerForm biens={scopedBiens} {submitting} onSubmit={handleCreateLoyer} />
 
 	<LoyerTable loyers={scopedLoyers} biens={scopedBiens} {loading} />
 </section>

@@ -1,10 +1,16 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { addToast } from '$lib/components/ui/toast';
+	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 
 	let email = $state('');
 	let isLoading = $state(false);
@@ -24,10 +30,10 @@
 		});
 
 		if (error) {
-			errorMessage = error.message;
+			errorMessage = formatApiErrorMessage(error, 'Impossible d’envoyer le lien de création.');
 			addToast({
 				title: 'Erreur',
-				description: error.message,
+				description: errorMessage,
 				variant: 'error'
 			});
 		} else {
@@ -53,10 +59,11 @@
 			</CardHeader>
 			<CardContent>
 				{#if showCheckEmail}
-					<div class="rounded-lg bg-emerald-950 p-4 text-emerald-100 mb-6">
+					<div class="mb-6 rounded-lg bg-emerald-950 p-4 text-emerald-100">
 						<p class="font-semibold">✓ Email envoyé!</p>
 						<p class="mt-2 text-sm">
-							Consultez votre boîte mail à <strong>{email}</strong> et cliquez sur le lien pour créer votre compte.
+							Consultez votre boîte mail à <strong>{email}</strong> et cliquez sur le lien pour créer
+							votre compte.
 						</p>
 					</div>
 
@@ -65,10 +72,10 @@
 					<form class="space-y-4" onsubmit={handleRegister}>
 						<label class="sci-field">
 							<span class="sci-field-label">Email</span>
-							<Input 
-								type="email" 
-								bind:value={email} 
-								required 
+							<Input
+								type="email"
+								bind:value={email}
+								required
 								placeholder="vous@sci.fr"
 								disabled={isLoading}
 							/>
@@ -92,7 +99,7 @@
 						</div>
 					</div>
 
-					<Button href="/login" variant="outline" class="w-full mt-6">
+					<Button href="/login" variant="outline" class="mt-6 w-full">
 						Vous avez déjà un compte?
 					</Button>
 				{/if}

@@ -4,11 +4,19 @@
 	import { Check, Users, Shield, Zap } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardFooter,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import HeroSection from '$lib/components/HeroSection.svelte';
 	import FeatureCard from '$lib/components/FeatureCard.svelte';
 	import TestimonialCard from '$lib/components/TestimonialCard.svelte';
+	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 
 	type Plan = {
 		name: string;
@@ -22,9 +30,11 @@
 		popular?: boolean;
 	};
 
-	const stripeStarterPriceId = import.meta.env.VITE_STRIPE_STARTER_PRICE_ID || 'price_starter_placeholder';
+	const stripeStarterPriceId =
+		import.meta.env.VITE_STRIPE_STARTER_PRICE_ID || 'price_starter_placeholder';
 	const stripeProPriceId = import.meta.env.VITE_STRIPE_PRO_PRICE_ID || 'price_pro_placeholder';
-	const stripeLifetimePriceId = import.meta.env.VITE_STRIPE_LIFETIME_PRICE_ID || 'price_lifetime_placeholder';
+	const stripeLifetimePriceId =
+		import.meta.env.VITE_STRIPE_LIFETIME_PRICE_ID || 'price_lifetime_placeholder';
 
 	const plans: Plan[] = [
 		{
@@ -62,7 +72,12 @@
 			price: '299€',
 			billing: 'paiement unique',
 			description: 'Paiement unique pour un accès durable.',
-			features: ['Tout le plan Pro', 'Accès à vie', 'Mises à jour incluses', 'Support email prioritaire'],
+			features: [
+				'Tout le plan Pro',
+				'Accès à vie',
+				'Mises à jour incluses',
+				'Support email prioritaire'
+			],
 			priceId: stripeLifetimePriceId,
 			mode: 'payment'
 		}
@@ -79,7 +94,7 @@
 			});
 			window.location.href = url;
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Impossible de démarrer le checkout Stripe.';
+			const message = formatApiErrorMessage(error, 'Impossible de démarrer le checkout Stripe.');
 			addToast({
 				title: 'Paiement indisponible',
 				description: message,
@@ -96,8 +111,8 @@
 		title="Tarifs transparents"
 		subtitle="pour une croissance durable"
 		description="Choisissez une offre alignée sur votre volume de biens et activez-la immédiatement via Stripe."
-		primaryCta={{ text: "Commencer l'essai gratuit", href: "/register" }}
-		secondaryCta={{ text: "Voir les fonctionnalités", href: "#features" }}
+		primaryCta={{ text: "Commencer l'essai gratuit", href: '/register' }}
+		secondaryCta={{ text: 'Voir les fonctionnalités', href: '#features' }}
 		badges={['Activation immédiate', 'Sans engagement']}
 		kpis={[
 			{ value: '3', label: 'modules coeur: biens, loyers, quittances' },
@@ -107,32 +122,39 @@
 	/>
 
 	<!-- Pricing Section -->
-	<section class="py-24 bg-white dark:bg-slate-900">
+	<section class="bg-white py-24 dark:bg-slate-900">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center mb-16">
-				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Stratégie tarifaire</Badge>
-				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
+			<div class="mb-16 text-center">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
+					>Stratégie tarifaire</Badge
+				>
+				<h2 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
 					Trois offres pour tous les profils
 				</h2>
-				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-					Du solopreneur avec quelques biens à l'opérateur multi-actifs, trouvez l'offre qui accélère votre croissance.
+				<p class="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-400">
+					Du solopreneur avec quelques biens à l'opérateur multi-actifs, trouvez l'offre qui
+					accélère votre croissance.
 				</p>
 			</div>
 
-			<div class="grid gap-8 lg:grid-cols-3 max-w-5xl mx-auto">
+			<div class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-3">
 				{#each plans as plan (plan.priceId)}
-					<Card class={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
-						plan.highlight ? 'ring-2 ring-blue-500 shadow-lg scale-105' : 'hover:shadow-lg'
-					} ${plan.popular ? 'border-blue-200 dark:border-blue-800' : ''}`}>
+					<Card
+						class={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+							plan.highlight ? 'scale-105 shadow-lg ring-2 ring-blue-500' : 'hover:shadow-lg'
+						} ${plan.popular ? 'border-blue-200 dark:border-blue-800' : ''}`}
+					>
 						{#if plan.popular}
-							<div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-								<Badge class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-1 text-xs font-semibold">
+							<div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 transform">
+								<Badge
+									class="bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-1 text-xs font-semibold text-white"
+								>
 									LE PLUS POPULAIRE
 								</Badge>
 							</div>
 						{/if}
 
-						<CardHeader class="text-center pb-4">
+						<CardHeader class="pb-4 text-center">
 							<CardTitle class="text-2xl font-bold text-slate-900 dark:text-slate-100">
 								{plan.name}
 							</CardTitle>
@@ -143,7 +165,7 @@
 								<span class="text-4xl font-bold text-slate-900 dark:text-slate-100">
 									{plan.price}
 								</span>
-								<span class="text-lg text-slate-500 dark:text-slate-400 ml-1">
+								<span class="ml-1 text-lg text-slate-500 dark:text-slate-400">
 									{plan.billing}
 								</span>
 							</div>
@@ -153,8 +175,8 @@
 							<ul class="space-y-3">
 								{#each plan.features as feature (feature)}
 									<li class="flex items-start gap-3">
-										<Check class="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-										<span class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+										<Check class="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
+										<span class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
 											{feature}
 										</span>
 									</li>
@@ -164,15 +186,17 @@
 
 						<CardFooter class="pt-6">
 							<Button
-								class={`w-full h-12 text-base font-semibold transition-all duration-300 ${
+								class={`h-12 w-full text-base font-semibold transition-all duration-300 ${
 									plan.highlight
-										? 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl'
-										: 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400'
+										? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg hover:from-blue-600 hover:to-cyan-600 hover:shadow-xl'
+										: 'border-2 border-slate-200 bg-white hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-400'
 								}`}
 								disabled={activeCheckout === plan.priceId}
 								onclick={() => handleCheckout(plan)}
 							>
-								{activeCheckout === plan.priceId ? 'Redirection en cours...' : `Choisir ${plan.name}`}
+								{activeCheckout === plan.priceId
+									? 'Redirection en cours...'
+									: `Choisir ${plan.name}`}
 							</Button>
 						</CardFooter>
 					</Card>
@@ -180,8 +204,10 @@
 			</div>
 
 			<!-- Beta support -->
-			<div class="text-center mt-12">
-				<div class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-200 dark:border-emerald-800">
+			<div class="mt-12 text-center">
+				<div
+					class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 dark:border-emerald-800 dark:bg-emerald-900/20"
+				>
 					<Shield class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 					<span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
 						Phase beta: onboarding guide et support email
@@ -192,13 +218,13 @@
 	</section>
 
 	<!-- Features Comparison -->
-	<section id="features" class="py-24 bg-slate-50 dark:bg-slate-950">
+	<section id="features" class="bg-slate-50 py-24 dark:bg-slate-950">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center mb-16">
-				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
+			<div class="mb-16 text-center">
+				<h2 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
 					Pourquoi choisir GererSCI ?
 				</h2>
-				<p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+				<p class="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-400">
 					Une base opérationnelle claire pour piloter votre SCI sans Excel dispersé.
 				</p>
 			</div>
@@ -227,10 +253,10 @@
 	</section>
 
 	<!-- Testimonials -->
-	<section class="py-24 bg-white dark:bg-slate-900">
+	<section class="bg-white py-24 dark:bg-slate-900">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center mb-16">
-				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
+			<div class="mb-16 text-center">
+				<h2 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
 					Ils nous font confiance
 				</h2>
 				<p class="text-lg text-slate-600 dark:text-slate-400">
@@ -265,26 +291,27 @@
 	</section>
 
 	<!-- FAQ Section -->
-	<section class="py-24 bg-slate-50 dark:bg-slate-950">
+	<section class="bg-slate-50 py-24 dark:bg-slate-950">
 		<div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center mb-16">
-				<h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100 sm:text-4xl mb-4">
+			<div class="mb-16 text-center">
+				<h2 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
 					Questions fréquentes
 				</h2>
 			</div>
 
 			<div class="space-y-6">
-				<div class="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm">
-					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+				<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-slate-800">
+					<h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
 						Puis-je changer de plan à tout moment ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Oui. En phase beta, le changement de plan est traite rapidement via le support, puis applique sur votre abonnement Stripe.
+						Oui. En phase beta, le changement de plan est traite rapidement via le support, puis
+						applique sur votre abonnement Stripe.
 					</p>
 				</div>
 
-				<div class="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm">
-					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+				<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-slate-800">
+					<h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
 						Y a-t-il un engagement minimum ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
@@ -292,12 +319,13 @@
 					</p>
 				</div>
 
-				<div class="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm">
-					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+				<div class="rounded-lg bg-white p-6 shadow-sm dark:bg-slate-800">
+					<h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
 						Les données sont-elles sécurisées ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Les flux passent en HTTPS, les paiements sont traites par Stripe et les donnees applicatives sont hebergees sur Supabase avec controles d'acces.
+						Les flux passent en HTTPS, les paiements sont traites par Stripe et les donnees
+						applicatives sont hebergees sur Supabase avec controles d'acces.
 					</p>
 				</div>
 			</div>

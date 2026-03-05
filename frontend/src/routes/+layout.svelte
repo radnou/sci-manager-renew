@@ -4,7 +4,11 @@
 	import { page } from '$app/state';
 	import { Menu, X } from 'lucide-svelte';
 	import { supabase } from '$lib/supabase';
-	import { clearFakeSession, getCurrentSession, subscribeToSessionChanges } from '$lib/auth/session';
+	import {
+		clearFakeSession,
+		getCurrentSession,
+		subscribeToSessionChanges
+	} from '$lib/auth/session';
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
 	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
@@ -17,7 +21,9 @@
 	let { children } = $props();
 	let user = $state<User | null>(null);
 	let mobileMenuOpen = $state(false);
+	let accountMenuOpen = $state(false);
 	let previousPath = page.url.pathname;
+	let accountMenuContainer = $state<HTMLDivElement | null>(null);
 
 	const authenticatedNavItems = [
 		{ href: '/dashboard', label: 'Cockpit' },
@@ -39,6 +45,11 @@
 
 	onMount(() => {
 		let mounted = true;
+		const handleDocumentClick = (event: MouseEvent) => {
+			if (accountMenuContainer && !accountMenuContainer.contains(event.target as Node)) {
+				accountMenuOpen = false;
+			}
+		};
 
 		// Initialize theme
 		theme.initialize();
@@ -55,9 +66,12 @@
 			}
 		});
 
+		document.addEventListener('mousedown', handleDocumentClick);
+
 		return () => {
 			mounted = false;
 			subscription.unsubscribe();
+			document.removeEventListener('mousedown', handleDocumentClick);
 		};
 	});
 
@@ -65,12 +79,15 @@
 		await supabase.auth.signOut();
 		clearFakeSession();
 		user = null;
+		accountMenuOpen = false;
+		mobileMenuOpen = false;
 	}
 
 	$effect(() => {
 		const currentPath = page.url.pathname;
 		if (currentPath !== previousPath) {
 			mobileMenuOpen = false;
+			accountMenuOpen = false;
 			previousPath = currentPath;
 		}
 	});
@@ -93,7 +110,9 @@
 					GererSCI
 				</a>
 				{#if user}
-					<span class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-slate-600 uppercase lg:inline-flex dark:bg-slate-800 dark:text-slate-300">
+					<span
+						class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-slate-600 uppercase lg:inline-flex dark:bg-slate-800 dark:text-slate-300"
+					>
 						Espace de pilotage
 					</span>
 				{/if}
@@ -117,27 +136,84 @@
 						{/each}
 					</div>
 
-					<div class="hidden items-center gap-2 xl:flex">
-						{#each authenticatedUtilityItems as item (item.href)}
-							<a
-								href={item.href}
-								aria-current={isActivePath(item.href) ? 'page' : undefined}
-								class={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${
-									isActivePath(item.href)
-										? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
-										: 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
-								}`}
+					<div class="relative hidden md:block" bind:this={accountMenuContainer}>
+						<button
+							type="button"
+							class="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 text-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+							aria-haspopup="menu"
+							aria-expanded={accountMenuOpen}
+							aria-controls="desktop-account-menu"
+							onkeydown={(event) => {
+								if (event.key === 'Escape') {
+									accountMenuOpen = false;
+								}
+							}}
+							onclick={() => {
+								accountMenuOpen = !accountMenuOpen;
+							}}
+						>
+							<span
+								class="hidden max-w-[12rem] truncate text-slate-600 lg:block dark:text-slate-300"
+								>{user.email}</span
 							>
-								{item.label}
-							</a>
-						{/each}
-					</div>
+							<span
+								class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950"
+							>
+								Compte
+							</span>
+						</button>
 
-					<div class="hidden items-center gap-3 sm:flex">
-						<span class="max-w-[14rem] truncate text-sm text-slate-600 dark:text-slate-400">
-							{user.email}
-						</span>
-						<Button variant="outline" size="sm" onclick={handleLogout}>Déconnexion</Button>
+						{#if accountMenuOpen}
+							<div
+								id="desktop-account-menu"
+								role="menu"
+								aria-label="Menu du compte"
+								tabindex="-1"
+								class="absolute top-full right-0 mt-3 w-72 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-950"
+								onkeydown={(event) => {
+									if (event.key === 'Escape') {
+										accountMenuOpen = false;
+									}
+								}}
+							>
+								<div
+									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
+								>
+									<p
+										class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									>
+										Compte connecté
+									</p>
+									<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+										{user.email}
+									</p>
+								</div>
+
+								<div class="mt-3 grid gap-2">
+									{#each authenticatedUtilityItems as item (item.href)}
+										<a
+											href={item.href}
+											role="menuitem"
+											aria-current={isActivePath(item.href) ? 'page' : undefined}
+											class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
+												isActivePath(item.href)
+													? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950'
+													: 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+											}`}
+											onclick={() => {
+												accountMenuOpen = false;
+											}}
+										>
+											{item.label}
+										</a>
+									{/each}
+								</div>
+
+								<Button variant="outline" size="sm" class="mt-3 w-full" onclick={handleLogout}
+									>Déconnexion</Button
+								>
+							</div>
+						{/if}
 					</div>
 
 					<Button
@@ -191,15 +267,21 @@
 				id="mobile-navigation"
 				class="border-t border-slate-200 bg-white px-4 py-4 md:hidden dark:border-slate-800 dark:bg-slate-950"
 			>
-				<div class="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+				<div
+					class="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
+				>
 					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 						Session active
 					</p>
-					<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">{user.email}</p>
+					<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+						{user.email}
+					</p>
 				</div>
 
 				<div class="grid gap-2">
-					<p class="mt-1 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Pilotage</p>
+					<p class="mt-1 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Pilotage
+					</p>
 					{#each authenticatedNavItems as item (item.href)}
 						<a
 							href={item.href}
@@ -214,7 +296,9 @@
 						</a>
 					{/each}
 
-					<p class="mt-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Compte</p>
+					<p class="mt-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Compte
+					</p>
 					{#each authenticatedUtilityItems as item (item.href)}
 						<a
 							href={item.href}
@@ -228,7 +312,9 @@
 							{item.label}
 						</a>
 					{/each}
-					<Button variant="outline" size="sm" class="mt-2" onclick={handleLogout}>Déconnexion</Button>
+					<Button variant="outline" size="sm" class="mt-2" onclick={handleLogout}
+						>Déconnexion</Button
+					>
 				</div>
 			</div>
 		{/if}
@@ -254,65 +340,117 @@
 				<div class="space-y-4">
 					<h4 class="font-medium text-slate-900 dark:text-slate-100">Produit</h4>
 					<ul class="space-y-2 text-sm">
-						<li>
-							<a
-								href="/pricing"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Tarifs</a
-							>
-						</li>
-						<li>
-							<a
-								href="/#features"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Fonctionnalités</a
-							>
-						</li>
-						<li>
-							<a
-								href="/#studies"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Études & sources</a
-							>
-						</li>
+						{#if user}
+							<li>
+								<a
+									href="/pricing"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Tarifs</a
+								>
+							</li>
+							<li>
+								<a
+									href="/dashboard"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Cockpit</a
+								>
+							</li>
+							<li>
+								<a
+									href="/scis"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Portefeuille SCI</a
+								>
+							</li>
+						{:else}
+							<li>
+								<a
+									href="/pricing"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Tarifs</a
+								>
+							</li>
+							<li>
+								<a
+									href="/#features"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Fonctionnalités</a
+								>
+							</li>
+							<li>
+								<a
+									href="/#studies"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Études & sources</a
+								>
+							</li>
+						{/if}
 					</ul>
 				</div>
 
 				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">Support</h4>
+					<h4 class="font-medium text-slate-900 dark:text-slate-100">
+						{user ? 'Compte' : 'Support'}
+					</h4>
 					<ul class="space-y-2 text-sm">
-						<li>
-							<a
-								href="/login"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Connexion</a
-							>
-						</li>
-						<li>
-							<a
-								href="/register"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Inscription</a
-							>
-						</li>
-						<li>
-							<a
-								href="/privacy"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Confidentialité</a
-							>
-						</li>
+						{#if user}
+							<li>
+								<a
+									href="/account"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Compte</a
+								>
+							</li>
+							<li>
+								<a
+									href="/settings"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Paramètres</a
+								>
+							</li>
+							<li>
+								<a
+									href="/account/privacy"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Confidentialité</a
+								>
+							</li>
+						{:else}
+							<li>
+								<a
+									href="/login"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Connexion</a
+								>
+							</li>
+							<li>
+								<a
+									href="/register"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Inscription</a
+								>
+							</li>
+							<li>
+								<a
+									href="/privacy"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Confidentialité</a
+								>
+							</li>
+						{/if}
 					</ul>
 				</div>
 
 				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">Entreprise</h4>
+					<h4 class="font-medium text-slate-900 dark:text-slate-100">
+						{user ? 'Pilotage' : 'Entreprise'}
+					</h4>
 					<ul class="space-y-2 text-sm">
 						<li>
 							<a
 								href="/dashboard"
 								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Tableau de bord</a
+								>{user ? 'Cockpit' : 'Tableau de bord'}</a
 							>
 						</li>
 						<li>

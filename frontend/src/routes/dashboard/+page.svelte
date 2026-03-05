@@ -1,16 +1,38 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Building2, FileText, HandCoins, Landmark, ShieldCheck, TriangleAlert, Users } from 'lucide-svelte';
-	import { fetchBiens, fetchLoyers, fetchScis, type Bien, type Loyer, type SCIOverview } from '$lib/api';
+	import {
+		Building2,
+		FileText,
+		HandCoins,
+		Landmark,
+		ShieldCheck,
+		TriangleAlert,
+		Users
+	} from 'lucide-svelte';
+	import {
+		fetchBiens,
+		fetchLoyers,
+		fetchScis,
+		type Bien,
+		type Loyer,
+		type SCIOverview
+	} from '$lib/api';
 	import BienTable from '$lib/components/BienTable.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import QuitusGenerator from '$lib/components/QuitusGenerator.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { calculateBienMetrics } from '$lib/high-value/biens';
 	import { calculateLoyerMetrics, mapLoyerStatusLabel } from '$lib/high-value/loyers';
-	import { formatCompactNumber, formatEur, formatPercent } from '$lib/high-value/formatters';
+	import { formatEur, formatPercent } from '$lib/high-value/formatters';
+	import { formatApiErrorMessage, mapAssociateRoleLabel } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
@@ -21,7 +43,9 @@
 	let errorMessage = '';
 
 	$: resolvedActiveSciId =
-		activeSciId && scis.some((sci) => String(sci.id) === activeSciId) ? activeSciId : String(scis[0]?.id || '');
+		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
+			? activeSciId
+			: String(scis[0]?.id || '');
 	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
 	$: if (resolvedActiveSciId) {
 		setStoredActiveSciId(resolvedActiveSciId);
@@ -46,8 +70,7 @@
 	$: scopedLoyers = activeSci ? loyers.filter(loyerBelongsToActiveSci) : loyers;
 	$: bienMetrics = calculateBienMetrics(scopedBiens);
 	$: loyerMetrics = calculateLoyerMetrics(scopedLoyers);
-	$: paidCount = scopedLoyers.filter((loyer) => String(loyer.statut || '').toLowerCase() === 'paye').length;
-	$: collectionRate = scopedLoyers.length > 0 ? (paidCount / scopedLoyers.length) * 100 : 0;
+	$: collectionRate = loyerMetrics.collectionRate;
 	$: avgAssociateShare =
 		activeSci && activeSci.associes_count && activeSci.associes_count > 0
 			? 100 / activeSci.associes_count
@@ -55,7 +78,8 @@
 	$: associateSummary = activeSci?.associes ?? [];
 	$: priorities = [
 		{
-			title: scopedBiens.length === 0 ? 'Structurer le patrimoine' : 'Mettre à jour le portefeuille',
+			title:
+				scopedBiens.length === 0 ? 'Structurer le patrimoine' : 'Mettre à jour le portefeuille',
 			description:
 				scopedBiens.length === 0
 					? 'Aucun bien n’est encore rattaché à la SCI active. Commence par documenter le premier actif.'
@@ -63,12 +87,24 @@
 			tone: scopedBiens.length === 0 ? 'warning' : 'default'
 		},
 		{
-			title: loyerMetrics.lateCount > 0 ? 'Traiter les retards' : 'Suivi des encaissements sous contrôle',
+			title:
+				loyerMetrics.lateCount > 0
+					? 'Traiter les retards'
+					: loyerMetrics.totalOutstanding > 0
+						? 'Encaissements à sécuriser'
+						: 'Suivi des encaissements sous contrôle',
 			description:
 				loyerMetrics.lateCount > 0
 					? `${loyerMetrics.lateCount} loyer(s) en retard nécessitent une relance ou un arbitrage.`
-					: 'Aucun retard détecté. Tu peux préparer les quittances et la revue mensuelle.',
-			tone: loyerMetrics.lateCount > 0 ? 'danger' : 'success'
+					: loyerMetrics.totalOutstanding > 0
+						? `${loyerMetrics.totalOutstandingLabel} restent en attente d’encaissement sur la SCI active.`
+						: 'Tous les flux saisis sont encaissés. Tu peux préparer les quittances et la revue mensuelle.',
+			tone:
+				loyerMetrics.lateCount > 0
+					? 'danger'
+					: loyerMetrics.totalOutstanding > 0
+						? 'warning'
+						: 'success'
 		},
 		{
 			title: associateSummary.length > 1 ? 'Coordonner les associés' : 'Gouvernance simple',
@@ -91,14 +127,9 @@
 		if (!status || status === 'configuration') {
 			return 'bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200';
 		}
-		if (status === 'mise_en_service') return 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/40 dark:text-cyan-200';
+		if (status === 'mise_en_service')
+			return 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/40 dark:text-cyan-200';
 		return 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200';
-	}
-
-	function associateRoleLabel(role: string | null | undefined) {
-		if (!role) return 'Associé';
-		if (role.toLowerCase().includes('ger')) return 'Gérant';
-		return role.charAt(0).toUpperCase() + role.slice(1);
 	}
 
 	onMount(loadOverview);
@@ -108,7 +139,11 @@
 		errorMessage = '';
 
 		try {
-			const [nextScis, nextBiens, nextLoyers] = await Promise.all([fetchScis(), fetchBiens(), fetchLoyers()]);
+			const [nextScis, nextBiens, nextLoyers] = await Promise.all([
+				fetchScis(),
+				fetchBiens(),
+				fetchLoyers()
+			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
@@ -116,10 +151,12 @@
 			const storedActiveSciId = getStoredActiveSciId();
 			const fallbackSci = nextScis[0];
 			activeSciId =
-				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				(storedActiveSciId &&
+					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
+					storedActiveSciId) ||
 				String(fallbackSci?.id || '');
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Impossible de charger le cockpit SCI.';
+			errorMessage = formatApiErrorMessage(error, 'Impossible de charger le cockpit SCI.');
 		} finally {
 			loading = false;
 		}
@@ -131,8 +168,8 @@
 		<p class="sci-eyebrow">Pilotage SCI • Cockpit exécutif</p>
 		<h1 class="sci-page-title">Dashboard de portefeuille</h1>
 		<p class="sci-page-subtitle">
-			Un cockpit centré sur la SCI active, la gouvernance, les encaissements et les documents à produire, sans
-			exposer les identifiants techniques.
+			Un cockpit centré sur la SCI active, la gouvernance, les encaissements et les documents à
+			produire, sans exposer les identifiants techniques.
 		</p>
 	</header>
 
@@ -143,16 +180,22 @@
 	<div class="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
 		<Card class="sci-section-card overflow-hidden">
 			<CardContent class="relative p-0">
-				<div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-500"></div>
+				<div
+					class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-500"
+				></div>
 				<div class="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr]">
 					<div class="space-y-5">
 						<div class="flex flex-wrap items-start justify-between gap-4">
 							<div class="space-y-3">
 								<div class="flex flex-wrap items-center gap-2">
-									<span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(activeSci?.statut)}`}>
+									<span
+										class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(activeSci?.statut)}`}
+									>
 										{statusLabel(activeSci?.statut)}
 									</span>
-									<span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+									<span
+										class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+									>
 										Régime {activeSci?.regime_fiscal || 'IR'}
 									</span>
 								</div>
@@ -161,9 +204,11 @@
 								</h2>
 								<p class="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 									{#if activeSci}
-										Vision synthétique de la société civile immobilière active, de ses associés et des flux à sécuriser cette semaine.
+										Vision synthétique de la société civile immobilière active, de ses associés et
+										des flux à sécuriser cette semaine.
 									{:else}
-										Le cockpit affichera ici la SCI active dès qu’une entité sera accessible depuis ton compte.
+										Le cockpit affichera ici la SCI active dès qu’une entité sera accessible depuis
+										ton compte.
 									{/if}
 								</p>
 							</div>
@@ -171,7 +216,13 @@
 							{#if scis.length > 1}
 								<label class="sci-field min-w-[16rem]">
 									<span class="sci-field-label">SCI active</span>
-									<select id="dashboard-active-sci" name="dashboard-active-sci" class="sci-select" bind:value={activeSciId} aria-label="SCI active">
+									<select
+										id="dashboard-active-sci"
+										name="dashboard-active-sci"
+										class="sci-select"
+										bind:value={activeSciId}
+										aria-label="SCI active"
+									>
 										{#each scis as sci (String(sci.id))}
 											<option value={String(sci.id)}>{sci.nom}</option>
 										{/each}
@@ -181,7 +232,9 @@
 						</div>
 
 						<div class="grid gap-3 sm:grid-cols-3">
-							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<div
+								class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+							>
 								<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 									<Landmark class="h-4 w-4" />
 									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Identité</p>
@@ -190,14 +243,20 @@
 									SIREN {activeSci?.siren || 'À compléter'}
 								</p>
 								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-									{activeSci?.user_role ? `${associateRoleLabel(activeSci.user_role)} connecté` : 'Rôle utilisateur à confirmer'}
+									{activeSci?.user_role
+										? `${mapAssociateRoleLabel(activeSci.user_role)} connecté`
+										: 'Rôle utilisateur à confirmer'}
 								</p>
 							</div>
 
-							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<div
+								class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+							>
 								<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 									<Users class="h-4 w-4" />
-									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Gouvernance</p>
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+										Gouvernance
+									</p>
 								</div>
 								<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
 									{activeSci?.associes_count || 0} associé(s)
@@ -207,31 +266,47 @@
 								</p>
 							</div>
 
-							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<div
+								class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+							>
 								<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 									<ShieldCheck class="h-4 w-4" />
-									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Santé portefeuille</p>
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+										Santé portefeuille
+									</p>
 								</div>
 								<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
 									Recouvrement {formatPercent(collectionRate, '0%')}
 								</p>
 								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-									{loyerMetrics.lateCount > 0 ? `${loyerMetrics.lateCount} ligne(s) à traiter` : 'Aucun retard détecté'}
+									{loyerMetrics.lateCount > 0
+										? `${loyerMetrics.lateCount} ligne(s) à traiter`
+										: 'Aucun retard détecté'}
 								</p>
 							</div>
 						</div>
 					</div>
 
-					<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-700 dark:bg-slate-900">
+					<div
+						class="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-700 dark:bg-slate-900"
+					>
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<TriangleAlert class="h-4 w-4" />
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Actions prioritaires</p>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+								Actions prioritaires
+							</p>
 						</div>
 						<div class="mt-4 space-y-3">
 							{#each priorities as item}
-								<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950">
-									<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
-									<p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{item.description}</p>
+								<div
+									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+								>
+									<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+										{item.title}
+									</p>
+									<p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+										{item.description}
+									</p>
 								</div>
 							{/each}
 						</div>
@@ -257,27 +332,39 @@
 					<Users class="h-5 w-5 text-cyan-600" />
 					Associés et gouvernance
 				</CardTitle>
-				<CardDescription>Répartition du capital et rôle opérationnel sur la SCI active.</CardDescription>
+				<CardDescription
+					>Répartition du capital et rôle opérationnel sur la SCI active.</CardDescription
+				>
 			</CardHeader>
 			<CardContent class="space-y-3">
 				{#if associateSummary.length === 0}
-					<p class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+					<p
+						class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+					>
 						Aucun associé disponible sur la SCI active.
 					</p>
 				{:else}
 					{#each associateSummary as associe (String(associe.id))}
-						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
 							<div class="flex items-start justify-between gap-3">
 								<div>
-									<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{associe.nom}</p>
-									<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{associe.email || 'Email non renseigné'}</p>
+									<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+										{associe.nom}
+									</p>
+									<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+										{associe.email || 'Email non renseigné'}
+									</p>
 								</div>
-								<span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+								<span
+									class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950"
+								>
 									{associe.part ? formatPercent(associe.part) : 'Part N/A'}
 								</span>
 							</div>
 							<p class="mt-3 text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
-								{associateRoleLabel(associe.role)}
+								{mapAssociateRoleLabel(associe.role)}
 							</p>
 						</div>
 					{/each}
@@ -307,20 +394,32 @@
 		/>
 		<KpiCard
 			label="Flux encaissés"
-			value={loyerMetrics.totalCollectedLabel}
-			caption="encaissements saisis"
+			value={loyerMetrics.totalPaidLabel}
+			caption="encaissements réellement payés"
 			trend="neutral"
-			trendValue={formatCompactNumber(scopedLoyers.length)}
+			trendValue={loyerMetrics.totalOutstanding > 0 ? 'à suivre' : 'sécurisé'}
 			tone="default"
 			{loading}
 		/>
 		<KpiCard
 			label="Recouvrement"
 			value={formatPercent(collectionRate, '0%')}
-			caption={`${paidCount} ligne(s) payée(s) sur ${scopedLoyers.length}`}
-			trend={loyerMetrics.lateCount > 0 ? 'down' : 'up'}
-			trendValue={loyerMetrics.lateCount > 0 ? 'vigilance' : 'conforme'}
-			tone={loyerMetrics.lateCount > 0 ? 'warning' : 'accent'}
+			caption={`${loyerMetrics.totalPaidLabel} encaissés sur ${loyerMetrics.totalRecordedLabel}`}
+			trend={loyerMetrics.lateCount > 0
+				? 'down'
+				: loyerMetrics.totalOutstanding > 0
+					? 'neutral'
+					: 'up'}
+			trendValue={loyerMetrics.lateCount > 0
+				? 'vigilance'
+				: loyerMetrics.totalOutstanding > 0
+					? 'à compléter'
+					: 'conforme'}
+			tone={loyerMetrics.lateCount > 0
+				? 'warning'
+				: loyerMetrics.totalOutstanding > 0
+					? 'default'
+					: 'accent'}
 			{loading}
 		/>
 	</div>
@@ -340,7 +439,9 @@
 						<HandCoins class="h-5 w-5 text-emerald-600" />
 						Mouvements et alertes
 					</CardTitle>
-					<CardDescription>Les dernières lignes utiles pour la trésorerie et la production des quittances.</CardDescription>
+					<CardDescription
+						>Les dernières lignes utiles pour la trésorerie et la production des quittances.</CardDescription
+					>
 				</CardHeader>
 				<CardContent>
 					<LoyerTable
@@ -366,25 +467,45 @@
 					<CardDescription>Résumé métier pour la revue hebdomadaire de la SCI.</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Statut dominant</p>
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Statut dominant
+						</p>
 						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-							{scopedLoyers.length > 0 ? mapLoyerStatusLabel(scopedLoyers[0].statut) : 'Aucun flux saisi'}
+							{scopedLoyers.length > 0
+								? mapLoyerStatusLabel(scopedLoyers[0].statut)
+								: 'Aucun flux saisi'}
 						</p>
 					</div>
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Patrimoine</p>
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Patrimoine
+						</p>
 						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-							{scopedBiens.length > 0 ? `${scopedBiens.length} bien(s) à jour` : 'Patrimoine à documenter'}
+							{scopedBiens.length > 0
+								? `${scopedBiens.length} bien(s) à jour`
+								: 'Patrimoine à documenter'}
 						</p>
 						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Charges mensuelles {formatEur(scopedBiens.reduce((sum, bien) => sum + (bien.charges ?? 0), 0))}
+							Charges mensuelles {formatEur(
+								scopedBiens.reduce((sum, bien) => sum + (bien.charges ?? 0), 0)
+							)}
 						</p>
 					</div>
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Conformité documentaire</p>
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Conformité documentaire
+						</p>
 						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-							{scopedLoyers.length > 0 ? 'Quittances générables immédiatement' : 'Aucune quittance à produire'}
+							{scopedLoyers.length > 0
+								? 'Quittances générables immédiatement'
+								: 'Aucune quittance à produire'}
 						</p>
 						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 							Le module PDF est centré sur les loyers réellement saisis.
