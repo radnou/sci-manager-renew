@@ -275,8 +275,8 @@ uvicorn app.main:app --reload --port 8001
 
 # 4. Lancer le frontend
 cd ../frontend
-pnpm install
-pnpm run dev -- --port 5173
+npm install
+npm run dev -- --port 5173
 ```
 
 - API: `http://localhost:8001`
@@ -288,12 +288,26 @@ pnpm run dev -- --port 5173
 
 ```bash
 cd frontend
-pnpm run check
-pnpm run build
-pnpm run test:high-value
+npm run check
+npm run build
+npm run test:high-value -- --coverage
 ```
 
-`test:high-value` applique un seuil de couverture >= 90% (lignes/fonctions/statements/branches) sur les modules métier critiques.
+`test:high-value` applique une couverture sur les modules métier critiques avec les seuils suivants:
+- lignes >= 85%
+- fonctions >= 85%
+- statements >= 85%
+- branches >= 70%
+
+### Gate global backend + frontend
+
+```bash
+bash scripts/quality-gate.sh
+```
+
+Ce script enchaîne:
+- backend: `pytest --cov=backend/app --cov-fail-under=85`
+- frontend: `npm --prefix frontend run test:high-value -- --coverage`
 
 ## 10) Documentation
 
