@@ -2,6 +2,7 @@ const PROTECTED_ROUTE_PREFIXES = [
 	'/dashboard',
 	'/scis',
 	'/biens',
+	'/locataires',
 	'/loyers',
 	'/account',
 	'/settings',

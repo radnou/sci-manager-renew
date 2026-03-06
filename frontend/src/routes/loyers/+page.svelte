@@ -4,10 +4,12 @@
 		createLoyer,
 		deleteLoyer,
 		fetchBiens,
+		fetchLocataires,
 		fetchLoyers,
 		fetchScis,
 		updateLoyer,
 		type Bien,
+		type Locataire,
 		type Loyer,
 		type LoyerCreatePayload,
 		type LoyerStatus,
@@ -33,6 +35,7 @@
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
+	let locataires: Locataire[] = [];
 	let loyers: Loyer[] = [];
 	let scis: SCIOverview[] = [];
 	let activeSciId = '';
@@ -69,6 +72,9 @@
 	$: scopedBiens = activeSci
 		? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id))
 		: biens;
+	$: scopedLocataires = activeSci
+		? locataires.filter((locataire) => String(locataire.id_sci || '') === String(activeSci.id))
+		: locataires;
 	$: scopedLoyers = activeSci
 		? loyers.filter((loyer) => {
 				if (loyer.id_sci) {
@@ -107,12 +113,14 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const [nextBiens, nextLoyers, nextScis] = await Promise.all([
+			const [nextBiens, nextLocataires, nextLoyers, nextScis] = await Promise.all([
 				fetchBiens(),
+				fetchLocataires(),
 				fetchLoyers(),
 				fetchScis()
 			]);
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
+			locataires = Array.isArray(nextLocataires) ? nextLocataires : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			const storedActiveSciId = getStoredActiveSciId();
@@ -303,8 +311,11 @@
 						Bien, locataire, date, montant, statut
 					</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le locataire est saisi ici comme nom ou référence de suivi, avant la quittance.
+						Le loyer doit maintenant s’appuyer sur un locataire déjà documenté dans son module dédié.
 					</p>
+					<div class="mt-4">
+						<a href="/locataires"><Button size="sm" variant="outline">Ouvrir Locataires</Button></a>
+					</div>
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
@@ -322,9 +333,18 @@
 			<p class="sci-inline-alert">
 				Ajoute d'abord un bien dans le module Biens avant de saisir un loyer.
 			</p>
+		{:else if scopedLocataires.length === 0}
+			<p class="sci-inline-alert">
+				Ajoute d'abord un locataire dans le module Locataires avant de saisir un loyer.
+			</p>
 		{/if}
 
-		<LoyerForm biens={scopedBiens} {submitting} onSubmit={handleCreateLoyer} />
+		<LoyerForm
+			biens={scopedBiens}
+			locataires={scopedLocataires}
+			{submitting}
+			onSubmit={handleCreateLoyer}
+		/>
 
 		<LoyerTable
 			loyers={scopedLoyers}

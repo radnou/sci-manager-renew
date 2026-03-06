@@ -312,11 +312,15 @@
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
 					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{metrics.count > 0 ? 'Contrôler le portefeuille et corriger' : 'Créer le premier bien'}
+						{metrics.count > 0 ? 'Passer au référentiel locataire' : 'Créer le premier bien'}
 					</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Une fois le bien créé, passe à `Loyers` pour saisir le locataire et le premier flux.
+						Une fois le bien créé, passe à `Locataires` pour documenter l’occupant avant la saisie
+						des loyers.
 					</p>
+					<div class="mt-4">
+						<a href="/locataires"><Button size="sm" variant="outline">Ouvrir Locataires</Button></a>
+					</div>
 				</div>
 			</CardContent>
 		</Card>

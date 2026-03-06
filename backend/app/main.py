@@ -1,4 +1,5 @@
 import asyncio
+import json
 import signal
 import threading
 import time
@@ -18,7 +19,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, scis, stripe
+from app.api.v1 import auth, biens, cerfa, files, gdpr, health, locataires, loyers, quitus, scis, stripe
 from app.core.config import Environment, settings
 from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
@@ -34,6 +35,21 @@ logger = structlog.get_logger(__name__)
 
 # Shutdown event pour coordonner le shutdown gracieux
 shutdown_event = asyncio.Event()
+
+
+def _json_safe(value):
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+
+    try:
+        json.dumps(value)
+        return value
+    except TypeError:
+        return str(value)
 
 
 @asynccontextmanager
@@ -172,7 +188,7 @@ async def request_validation_exception_handler(
     request_id = getattr(request.state, "request_id", "unknown")
 
     # Extraire les erreurs de validation
-    errors = exc.errors()
+    errors = _json_safe(exc.errors())
 
     logger.warning(
         "request_validation_error",
@@ -202,7 +218,7 @@ async def pydantic_validation_exception_handler(
 
     logger.warning(
         "pydantic_validation_error",
-        validation_errors=exc.errors(),
+        validation_errors=_json_safe(exc.errors()),
         path=request.url.path
     )
 
@@ -211,7 +227,7 @@ async def pydantic_validation_exception_handler(
         content={
             "error": "Validation error",
             "code": "validation_error",
-            "details": exc.errors(),
+            "details": _json_safe(exc.errors()),
             "request_id": request_id
         }
     )
@@ -417,6 +433,7 @@ app.include_router(health.router)
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(scis.router, prefix="/api/v1")
 app.include_router(biens.router, prefix="/api/v1")
+app.include_router(locataires.router, prefix="/api/v1")
 app.include_router(loyers.router, prefix="/api/v1")
 app.include_router(quitus.router, prefix="/api/v1")
 app.include_router(files.router, prefix="/api/v1")

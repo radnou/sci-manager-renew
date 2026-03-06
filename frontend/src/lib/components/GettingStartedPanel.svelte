@@ -19,7 +19,7 @@
 	export let sciCount = 0;
 	export let bienCount = 0;
 	export let loyerCount = 0;
-	export let hasLocataireReference = false;
+	export let locataireCount = 0;
 	export let activeSciLabel = '';
 	export let onDismiss: (() => void) | undefined = undefined;
 
@@ -48,15 +48,16 @@
 		},
 		{
 			key: 'locataire',
-			title: hasLocataireReference
+			title: locataireCount > 0
 				? 'Locataire de référence renseigné'
 				: 'Renseigner le premier locataire',
-			description: hasLocataireReference
-				? 'Le flux locatif contient déjà une référence locataire exploitable pour le suivi et la quittance.'
-				: 'Passe dans Loyers pour saisir le nom ou la référence locataire du premier contrat.',
-			href: '/loyers',
-			actionLabel: hasLocataireReference ? 'Voir les loyers' : 'Renseigner le locataire',
-			done: hasLocataireReference
+			description:
+				locataireCount > 0
+					? `${locataireCount} locataire(s) sont déjà documentés avec leur bien et leur période d’occupation.`
+					: 'Passe dans Locataires pour rattacher la première personne au bon bien avec ses dates d’occupation.',
+			href: '/locataires',
+			actionLabel: locataireCount > 0 ? 'Voir les locataires' : 'Ajouter mon premier locataire',
+			done: locataireCount > 0
 		},
 		{
 			key: 'loyer',

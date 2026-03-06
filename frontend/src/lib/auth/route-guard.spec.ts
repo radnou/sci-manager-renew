@@ -7,6 +7,7 @@ describe('route guard helpers', () => {
 		expect(isProtectedRoute('/dashboard')).toBe(true);
 		expect(isProtectedRoute('/scis')).toBe(true);
 		expect(isProtectedRoute('/biens/123')).toBe(true);
+		expect(isProtectedRoute('/locataires')).toBe(true);
 		expect(isProtectedRoute('/loyers')).toBe(true);
 		expect(isProtectedRoute('/account/privacy')).toBe(true);
 		expect(isProtectedRoute('/settings')).toBe(true);

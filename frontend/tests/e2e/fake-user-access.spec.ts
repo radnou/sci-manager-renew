@@ -78,11 +78,42 @@ async function installCoreApiMocks(page: Page) {
 		}
 	];
 
-	let loyers = [
+	let locataires = [
+		{
+			id: 'loc-seed',
+			id_bien: 'bien-seed',
+			id_sci: 'sci-1',
+			nom: 'Jean Martin',
+			email: 'jean.martin@sci.local',
+			date_debut: '2025-01-15',
+			date_fin: null
+		},
+		{
+			id: 'loc-qa',
+			id_bien: 'bien-qa',
+			id_sci: 'sci-1',
+			nom: 'Claire Dupont',
+			email: 'claire.dupont@sci.local',
+			date_debut: '2025-09-01',
+			date_fin: null
+		}
+	];
+
+	let loyers: Array<{
+		id: string;
+		id_bien: string;
+		id_sci: string;
+		id_locataire: string | null;
+		date_loyer: string;
+		montant: number;
+		statut: string;
+		quitus_genere: boolean;
+	}> = [
 		{
 			id: 'loyer-seed',
 			id_bien: 'bien-seed',
 			id_sci: 'sci-1',
+			id_locataire: 'loc-seed',
 			date_loyer: '2026-03-01',
 			montant: 1200,
 			statut: 'paye',
@@ -92,6 +123,7 @@ async function installCoreApiMocks(page: Page) {
 			id: 'loyer-qa',
 			id_bien: 'bien-qa',
 			id_sci: 'sci-1',
+			id_locataire: 'loc-qa',
 			date_loyer: '2026-03-05',
 			montant: 1650,
 			statut: 'en_attente',
@@ -260,6 +292,75 @@ async function installCoreApiMocks(page: Page) {
 			return;
 		}
 
+		if (method === 'GET' && (path === '/api/v1/locataires' || path === '/api/v1/locataires/')) {
+			const filtered = idSci
+				? locataires.filter((locataire) => String(locataire.id_sci) === idSci)
+				: locataires;
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(filtered)
+			});
+			return;
+		}
+
+		if (method === 'POST' && (path === '/api/v1/locataires' || path === '/api/v1/locataires/')) {
+			const payload = JSON.parse(request.postData() || '{}');
+			const created = {
+				id: `loc-${locataires.length + 1}`,
+				id_bien: payload.id_bien,
+				id_sci: biens.find((bien) => String(bien.id) === String(payload.id_bien))?.id_sci || 'sci-1',
+				nom: payload.nom,
+				email: payload.email || null,
+				date_debut: payload.date_debut,
+				date_fin: payload.date_fin || null
+			};
+			locataires = [created, ...locataires];
+			await route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify(created)
+			});
+			return;
+		}
+
+		if (method === 'PATCH' && path.startsWith('/api/v1/locataires/')) {
+			const locataireId = path.replace(/\/+$/, '').split('/').pop() || '';
+			const payload = JSON.parse(request.postData() || '{}');
+			const current = locataires.find((locataire) => String(locataire.id) === locataireId);
+			if (!current) {
+				await route.fulfill({
+					status: 404,
+					contentType: 'application/json',
+					body: JSON.stringify({ detail: 'Not mocked' })
+				});
+				return;
+			}
+
+			const updated = { ...current, ...payload };
+			locataires = locataires.map((locataire) =>
+				String(locataire.id) === locataireId ? updated : locataire
+			);
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(updated)
+			});
+			return;
+		}
+
+		if (method === 'DELETE' && path.startsWith('/api/v1/locataires/')) {
+			const locataireId = path.replace(/\/+$/, '').split('/').pop() || '';
+			locataires = locataires.filter((locataire) => String(locataire.id) !== locataireId);
+			loyers = loyers.map((loyer) =>
+				String(loyer.id_locataire || '') === locataireId ? { ...loyer, id_locataire: null } : loyer
+			);
+			await route.fulfill({
+				status: 204
+			});
+			return;
+		}
+
 		if (method === 'PATCH' && path.startsWith('/api/v1/biens/')) {
 			const bienId = path.replace(/\/+$/, '').split('/').pop() || '';
 			const payload = JSON.parse(request.postData() || '{}');
@@ -419,6 +520,7 @@ test.describe('Fake user access E2E', () => {
 
 		await page.goto('/loyers');
 		await expect(page.getByRole('heading', { level: 1 })).toContainText('Suivi des loyers');
+		await expect(page.getByLabel('Locataire')).toBeVisible();
 		await page
 			.getByRole('button', { name: /Modifier le loyer du/i })
 			.first()
@@ -437,5 +539,16 @@ test.describe('Fake user access E2E', () => {
 		await page.getByRole('button', { name: 'Supprimer 42 avenue QA' }).click();
 		await page.getByRole('button', { name: 'Confirmer la suppression' }).click();
 		await expect(page.getByText('1 enregistrements')).toBeVisible();
+
+		await page.goto('/locataires');
+		await expect(page.getByRole('heading', { level: 1 })).toContainText(
+			'Référentiel des locataires'
+		);
+		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
+		await expect(page.getByText('Jean Martin')).toBeVisible();
+		await page.getByRole('button', { name: 'Modifier' }).first().click();
+		await page.getByRole('dialog').getByLabel('Nom').fill('Jean Martin QA');
+		await page.getByRole('button', { name: 'Enregistrer les modifications' }).click();
+		await expect(page.getByText('Jean Martin QA')).toBeVisible();
 	});
 });

@@ -1,5 +1,12 @@
 <script lang="ts">
-	import type { Bien, Loyer, LoyerCreatePayload, LoyerStatus, LoyerUpdatePayload } from '$lib/api';
+	import type {
+		Bien,
+		Locataire,
+		Loyer,
+		LoyerCreatePayload,
+		LoyerStatus,
+		LoyerUpdatePayload
+	} from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -16,6 +23,7 @@
 		payload: LoyerCreatePayload | LoyerUpdatePayload
 	) => Promise<boolean | void> | boolean | void;
 	type BienOption = Pick<Bien, 'id' | 'adresse' | 'ville'>;
+	type LocataireOption = Pick<Locataire, 'id' | 'id_bien' | 'nom' | 'email'>;
 
 	let {
 		title = 'Nouveau loyer',
@@ -25,6 +33,7 @@
 		cancelLabel = 'Annuler',
 		submitting = false,
 		biens = [],
+		locataires = [],
 		initialValues = null,
 		showBienField = true,
 		showLocataireField = true,
@@ -39,6 +48,7 @@
 		cancelLabel?: string;
 		submitting?: boolean;
 		biens?: BienOption[];
+		locataires?: LocataireOption[];
 		initialValues?: Loyer | null;
 		showBienField?: boolean;
 		showLocataireField?: boolean;
@@ -54,6 +64,15 @@
 	let statut = $state<LoyerStatus>('paye');
 	let formElement: HTMLFormElement | null = null;
 	let selectedBien = $derived(biens.find((bien) => String(bien.id || '') === idBien));
+	let availableLocataires = $derived(
+		locataires.filter((locataire) => {
+			if (!idBien) {
+				return true;
+			}
+
+			return String(locataire.id_bien || '') === idBien;
+		})
+	);
 	let lastAppliedLoyerKey = $state('');
 
 	function resetFormFields() {
@@ -83,6 +102,21 @@
 	});
 
 	$effect(() => {
+		if (!showLocataireField) {
+			return;
+		}
+
+		if (availableLocataires.length === 0) {
+			idLocataire = '';
+			return;
+		}
+
+		if (!availableLocataires.some((locataire) => String(locataire.id || '') === idLocataire)) {
+			idLocataire = String(availableLocataires[0].id || '');
+		}
+	});
+
+	$effect(() => {
 		if (mode !== 'edit' || !initialValues) {
 			lastAppliedLoyerKey = '';
 			return;
@@ -102,6 +136,10 @@
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (mode === 'create' && !idBien) {
+			return;
+		}
+
+		if (showLocataireField && !idLocataire) {
 			return;
 		}
 
@@ -176,16 +214,35 @@
 			{/if}
 			{#if showLocataireField}
 				<label class="sci-field" for="loyer-reference-locataire">
-					<span class="sci-field-label">Locataire (nom ou référence)</span>
-					<Input
+					<span class="sci-field-label">Locataire</span>
+					<select
 						id="loyer-reference-locataire"
 						name="loyer-reference-locataire"
 						bind:value={idLocataire}
-						placeholder="Jean Martin"
-					/>
-					<span class="text-xs text-slate-500 dark:text-slate-400">
-						Renseigne la personne ou la référence locataire utilisée pour le suivi et la quittance.
-					</span>
+						class="sci-select"
+						required
+						disabled={availableLocataires.length === 0}
+					>
+						{#if availableLocataires.length === 0}
+							<option value="">Aucun locataire disponible</option>
+						{:else}
+							{#each availableLocataires as locataire (locataire.id)}
+								<option value={String(locataire.id || '')}>
+									{locataire.nom}
+									{locataire.email ? ` - ${locataire.email}` : ''}
+								</option>
+							{/each}
+						{/if}
+					</select>
+					{#if availableLocataires.length === 0}
+						<span class="text-xs text-slate-500 dark:text-slate-400">
+							Ajoute d’abord le locataire dans le module `Locataires`.
+						</span>
+					{:else}
+						<span class="text-xs text-slate-500 dark:text-slate-400">
+							Le flux sera rattaché au locataire référencé pour le suivi et la quittance.
+						</span>
+					{/if}
 				</label>
 			{/if}
 			<label class="sci-field" for="loyer-date">

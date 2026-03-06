@@ -153,6 +153,7 @@ class FakeSupabaseClient:
                 },
             ],
             "biens": [],
+            "locataires": [],
             "loyers": [],
             "charges": [],
             "fiscalite": [],
@@ -229,7 +230,7 @@ def fake_supabase() -> FakeSupabaseClient:
 
 @pytest.fixture(autouse=True)
 def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
-    from app.api.v1 import biens, loyers, quitus, scis
+    from app.api.v1 import biens, locataires, loyers, quitus, scis
     from app import main
     from app.api.v1 import gdpr, stripe
     from app.services import subscription_service
@@ -241,6 +242,11 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     )
     monkeypatch.setattr(
         loyers,
+        "create_client",
+        lambda *_args, **_kwargs: fake_supabase,
+    )
+    monkeypatch.setattr(
+        locataires,
         "create_client",
         lambda *_args, **_kwargs: fake_supabase,
     )

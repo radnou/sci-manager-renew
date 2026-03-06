@@ -11,9 +11,11 @@
 	import {
 		fetchSciDetail,
 		fetchBiens,
+		fetchLocataires,
 		fetchLoyers,
 		fetchScis,
 		type Bien,
+		type Locataire,
 		type Loyer,
 		type SCIDetail,
 		type SCIOverview
@@ -51,6 +53,7 @@
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
+	let locataires: Locataire[] = [];
 	let loyers: Loyer[] = [];
 	let scis: SCIOverview[] = [];
 	let activeSciDetail: SCIDetail | null = null;
@@ -108,13 +111,13 @@
 		(left, right) => (right.annee ?? 0) - (left.annee ?? 0)
 	);
 	$: latestFiscalYear = fiscalTimeline[0] ?? null;
-	$: hasLocataireReference = recentLoyerFeed.some(
-		(loyer) => String(loyer.id_locataire || '').trim().length > 0
-	);
+	$: scopedLocataires = activeSci
+		? locataires.filter((locataire) => String(locataire.id_sci || '') === String(activeSci.id))
+		: locataires;
 	$: shouldShowGettingStarted =
 		onboardingReady &&
 		onboardingVisible &&
-		(scis.length === 0 || scopedBiens.length === 0 || !hasLocataireReference || scopedLoyers.length === 0);
+		(scis.length === 0 || scopedBiens.length === 0 || scopedLocataires.length === 0 || scopedLoyers.length === 0);
 	$: priorities = [
 		{
 			title:
@@ -328,13 +331,15 @@
 		errorMessage = '';
 
 		try {
-			const [nextScis, nextBiens, nextLoyers] = await Promise.all([
+			const [nextScis, nextBiens, nextLocataires, nextLoyers] = await Promise.all([
 				fetchScis(),
 				fetchBiens(),
+				fetchLocataires(),
 				fetchLoyers()
 			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
+			locataires = Array.isArray(nextLocataires) ? nextLocataires : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
 
 			const storedActiveSciId = getStoredActiveSciId();
@@ -442,7 +447,7 @@
 					sciCount={scis.length}
 					bienCount={scopedBiens.length}
 					loyerCount={scopedLoyers.length}
-					{hasLocataireReference}
+					locataireCount={scopedLocataires.length}
 					activeSciLabel={activeSciProfile?.nom || activeSci?.nom || ''}
 					onDismiss={hideGettingStarted}
 				/>
@@ -1145,6 +1150,7 @@
 				<QuitusGenerator
 					loyers={scopedLoyers}
 					biens={scopedBiens}
+					locataires={scopedLocataires}
 					sciName={activeSciProfile?.nom || activeSci?.nom || ''}
 				/>
 			</div>

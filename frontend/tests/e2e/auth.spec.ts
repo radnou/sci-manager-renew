@@ -7,6 +7,7 @@ test.describe('Authentication pages', () => {
 			'/dashboard',
 			'/scis',
 			'/biens',
+			'/locataires',
 			'/loyers',
 			'/account',
 			'/account/privacy',
@@ -56,6 +57,15 @@ test.describe('Authentication pages', () => {
 			}
 
 			if (path === '/api/v1/biens' || path === '/api/v1/biens/') {
+				await route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify([])
+				});
+				return;
+			}
+
+			if (path === '/api/v1/locataires' || path === '/api/v1/locataires/') {
 				await route.fulfill({
 					status: 200,
 					contentType: 'application/json',

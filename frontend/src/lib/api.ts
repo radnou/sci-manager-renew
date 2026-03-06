@@ -74,6 +74,18 @@ export type Bien = {
 	updated_at?: string;
 };
 
+export type Locataire = {
+	id?: EntityId;
+	id_bien: EntityId;
+	id_sci?: EntityId | null;
+	nom: string;
+	email?: string | null;
+	date_debut: string;
+	date_fin?: string | null;
+	created_at?: string;
+	updated_at?: string;
+};
+
 export type Loyer = {
 	id?: EntityId;
 	id_bien: EntityId;
@@ -123,6 +135,21 @@ export type BienUpdatePayload = {
 	tmi?: number;
 	acquisition_date?: string | null;
 	prix_acquisition?: number | null;
+};
+
+export type LocataireCreatePayload = {
+	id_bien: EntityId;
+	nom: string;
+	email?: string | null;
+	date_debut: string;
+	date_fin?: string | null;
+};
+
+export type LocataireUpdatePayload = {
+	nom?: string;
+	email?: string | null;
+	date_debut?: string;
+	date_fin?: string | null;
 };
 
 export type LoyerCreatePayload = {
@@ -288,10 +315,21 @@ export function fetchLoyers() {
 	return apiFetch<Loyer[]>('/api/v1/loyers/');
 }
 
+export function fetchLocataires() {
+	return apiFetch<Locataire[]>('/api/v1/locataires/');
+}
+
 export function createLoyer(loyer: LoyerCreatePayload) {
 	return apiFetch<Loyer>('/api/v1/loyers/', {
 		method: 'POST',
 		body: JSON.stringify(loyer)
+	});
+}
+
+export function createLocataire(locataire: LocataireCreatePayload) {
+	return apiFetch<Locataire>('/api/v1/locataires/', {
+		method: 'POST',
+		body: JSON.stringify(locataire)
 	});
 }
 
@@ -315,8 +353,21 @@ export function updateLoyer(loyerId: EntityId, payload: LoyerUpdatePayload) {
 	});
 }
 
+export function updateLocataire(locataireId: EntityId, payload: LocataireUpdatePayload) {
+	return apiFetch<Locataire>(`/api/v1/locataires/${locataireId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
 export function deleteLoyer(loyerId: EntityId) {
 	return apiFetch<void>(`/api/v1/loyers/${loyerId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteLocataire(locataireId: EntityId) {
+	return apiFetch<void>(`/api/v1/locataires/${locataireId}`, {
 		method: 'DELETE'
 	});
 }

@@ -1,3 +1,3 @@
-from . import biens, cerfa, loyers, quitus, scis, stripe
+from . import biens, cerfa, locataires, loyers, quitus, scis, stripe
 
-__all__ = ["biens", "loyers", "quitus", "cerfa", "scis", "stripe"]
+__all__ = ["biens", "locataires", "loyers", "quitus", "cerfa", "scis", "stripe"]
