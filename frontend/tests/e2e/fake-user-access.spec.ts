@@ -366,11 +366,11 @@ test.describe('Fake user access E2E', () => {
 			'Dashboard de portefeuille'
 		);
 		await expect(page.getByText('Portefeuille multi-SCI')).toBeVisible();
-		await expect(page.getByText('Vue portefeuille', { exact: true })).toBeVisible();
-		await expect(page.getByText('Postes de pilotage')).toBeVisible();
+		await expect(page.getByText('Arbitrages du portefeuille', { exact: true })).toBeVisible();
+		await expect(page.getByText("Plan d’action", { exact: true })).toBeVisible();
 		await expect(page.getByText('Fiche d’identité SCI active')).toBeVisible();
 		await expect(page.getByText('Charges et fiscalité')).toBeVisible();
-		await expect(page.getByText('Rituels opérateur')).toBeVisible();
+		await expect(page.getByText('Cadence opérateur')).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
 		await expect(page.getByRole('link', { name: 'SCI', exact: true })).toBeVisible();
 		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
@@ -378,7 +378,8 @@ test.describe('Fake user access E2E', () => {
 		await expect(page.getByText('Aucun exercice consolidé pour la SCI active.')).toBeVisible();
 		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
 		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
-		await expect(page.getByText('Exercice 2025 consolidé')).toBeVisible();
+		await expect(page.getByText('Dernier exercice fiscal')).toBeVisible();
+		await expect(page.getByText('Exercice 2025').first()).toBeVisible();
 
 		await page.getByRole('link', { name: 'SCI', exact: true }).click();
 		await expect(page.getByRole('heading', { level: 1 })).toContainText('Pilotage des SCI');

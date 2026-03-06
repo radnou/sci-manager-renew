@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
-		Building2,
 		FileText,
 		HandCoins,
 		Landmark,
@@ -142,47 +141,86 @@
 			tone: 'accent'
 		}
 	];
-	$: commandTracks = [
+	$: portfolioArbitrages = [
+		{
+			label: 'Capacité active',
+			value: `${portfolioMetrics.sciCount} SCI suivie(s)`,
+			detail:
+				portfolioMetrics.setupSciCount > 0
+					? `${portfolioMetrics.setupSciCount} société(s) restent à structurer.`
+					: 'Le portefeuille est structuré côté sociétés.'
+		},
+		{
+			label: 'Trésorerie',
+			value: portfolioMetrics.loyerMetrics.totalOutstandingLabel,
+			detail: `Reste à encaisser sur ${portfolioMetrics.loyerMetrics.totalRecordedLabel} saisis.`
+		},
+		{
+			label: 'Vigilance',
+			value: `${portfolioMetrics.attentionSciCount} point(s)`,
+			detail: `${portfolioMetrics.loyerMetrics.lateCount} retard(s) identifiés à l’échelle du portefeuille.`
+		}
+	];
+	$: operatorAnchors = [
 		{
 			id: 'dashboard-governance',
 			label: 'Gouvernance',
-			summary:
+			detail:
 				associateSummary.length > 0
 					? `${associateSummary.length} associé(s) documenté(s)`
-					: 'Associés à documenter',
-			detail: activeSciProfile?.user_role
-				? `${mapAssociateRoleLabel(activeSciProfile.user_role)} connecté`
-				: 'Rôle utilisateur à confirmer'
+					: 'Associés à compléter'
 		},
 		{
 			id: 'dashboard-patrimoine',
 			label: 'Patrimoine',
-			summary: `${activeSciDetail?.biens_count ?? scopedBiens.length} bien(s) actifs`,
-			detail: `Loyer cible ${formatEur(
-				activeSciDetail?.total_monthly_rent ?? bienMetrics.totalMonthlyRent
-			)}`
+			detail: `${activeSciDetail?.biens_count ?? scopedBiens.length} bien(s) suivis`
 		},
 		{
 			id: 'dashboard-execution',
 			label: 'Encaissements',
-			summary: `Recouvrement ${formatPercent(collectionRate, '0%')}`,
-			detail:
-				loyerMetrics.lateCount > 0
-					? `${loyerMetrics.lateCount} retard(s) à traiter`
-					: loyerMetrics.totalOutstanding > 0
-						? `${loyerMetrics.totalOutstandingLabel} à sécuriser`
-						: 'Aucun retard détecté'
+			detail: `Recouvrement ${formatPercent(collectionRate, '0%')}`
 		},
 		{
 			id: 'dashboard-documents',
 			label: 'Documents',
-			summary: latestFiscalYear
-				? `Exercice ${latestFiscalYear.annee} consolidé`
-				: 'Clôture fiscale à préparer',
+			detail: latestFiscalYear ? `Exercice ${latestFiscalYear.annee}` : 'À préparer'
+		}
+	];
+	$: operatorCadence = [
+		{
+			label: 'Maintenant',
+			value:
+				loyerMetrics.lateCount > 0
+					? 'Traiter les retards'
+					: scopedBiens.length === 0
+						? 'Rattacher le premier bien'
+						: 'Revue mensuelle de la SCI active',
+			detail:
+				loyerMetrics.lateCount > 0
+					? `${loyerMetrics.lateCount} ligne(s) en retard demandent une relance.`
+					: scopedBiens.length === 0
+						? 'La SCI active n’a pas encore de patrimoine saisi.'
+						: 'Les fondamentaux sont présents, tu peux passer en lecture d’exécution.'
+		},
+		{
+			label: 'Cette semaine',
+			value:
+				scopedLoyers.length > 0
+					? 'Préparer les quittances'
+					: 'Documenter les premiers flux',
 			detail:
 				scopedLoyers.length > 0
-					? `${scopedLoyers.length} loyer(s) saisi(s), quittances générables`
-					: 'Aucun loyer saisi pour produire une quittance'
+					? `${scopedLoyers.length} loyer(s) sont disponibles pour la production PDF.`
+					: 'Le journal locatif reste vide tant qu’aucun flux n’est saisi.'
+		},
+		{
+			label: 'Vision',
+			value:
+				associateSummary.length > 1 ? 'Coordonner les associés' : 'Gouvernance simple',
+			detail:
+				associateSummary.length > 1
+					? 'Prépare un arbitrage partagé avant les prochaines décisions.'
+					: 'Le pilotage reste centralisé autour d’un seul référent.'
 		}
 	];
 
@@ -484,56 +522,30 @@
 			</CardContent>
 		</Card>
 
-		<Card id="dashboard-governance" class="sci-section-card scroll-mt-28">
+		<Card class="sci-section-card">
 			<CardHeader>
-				<CardTitle class="text-lg">Vue portefeuille</CardTitle>
+				<CardTitle class="text-lg">Arbitrages du portefeuille</CardTitle>
 				<CardDescription>
-					Le cockpit global pour arbitrer entre structuration, trésorerie et priorité d’exécution.
+					Les trois signaux à lire avant de descendre sur une SCI active.
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="space-y-4 pt-0">
-				<div
-					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
-				>
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-						SCI opérationnelles
-					</p>
-					<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-						{portfolioMetrics.operationalSciCount}/{portfolioMetrics.sciCount}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						{portfolioMetrics.setupSciCount > 0
-							? `${portfolioMetrics.setupSciCount} société(s) restent à structurer.`
-							: 'Toutes les SCI du portefeuille sont mises en service ou en exploitation.'}
-					</p>
-				</div>
-
-				<div
-					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
-				>
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-						Trésorerie consolidée
-					</p>
-					<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-						{portfolioMetrics.loyerMetrics.totalOutstandingLabel}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						restent à encaisser sur {portfolioMetrics.loyerMetrics.totalRecordedLabel} saisis.
-					</p>
-				</div>
-
-				<div
-					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
-				>
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-						Points de vigilance
-					</p>
-					<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-						{portfolioMetrics.attentionSciCount}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						SCI demandent une action, avec {portfolioMetrics.loyerMetrics.lateCount} retard(s) identifié(s).
-					</p>
+				<div class="grid gap-3">
+					{#each portfolioArbitrages as item (item.label)}
+						<div
+							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+						>
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								{item.label}
+							</p>
+							<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+								{item.value}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								{item.detail}
+							</p>
+						</div>
+					{/each}
 				</div>
 
 				<div class="flex flex-wrap gap-2">
@@ -557,11 +569,11 @@
 				<div>
 					<p class="sci-eyebrow">SCI active • Dashboard spécifique</p>
 					<h2 class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-						Cockpit d’exécution par cas d’usage
+						SCI active et plan d’action
 					</h2>
 					<p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-						Le portefeuille reste en haut. Ici, la SCI active est organisée pour un usage opérateur
-						desktop: gouvernance, patrimoine, encaissements et documents.
+						Le portefeuille reste en haut. Ici, la SCI active passe en lecture opérateur claire:
+						qui décide, quoi contrôler, quoi produire ensuite.
 					</p>
 				</div>
 			</div>
@@ -691,49 +703,57 @@
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<TriangleAlert class="h-4 w-4" />
 							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
-								Postes de pilotage
+								Plan d’action
 							</p>
 						</div>
 						<p class="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-							Le dashboard spécifique s’organise par cas d’usage. Chaque bloc ci-dessous renvoie
-							vers une zone claire du cockpit.
+							Commence par la prochaine action utile, puis utilise les ancres pour ouvrir le bon
+							bloc du cockpit sans rebalayer toute la page.
 						</p>
 						<div class="mt-4 space-y-3">
-							{#each commandTracks as track}
+							{#each operatorCadence as item (item.label)}
+								<div
+									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+								>
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+										{item.label}
+									</p>
+									<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+										{item.value}
+									</p>
+									<p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+										{item.detail}
+									</p>
+								</div>
+							{/each}
+						</div>
+						<div class="mt-5">
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Parcours
+							</p>
+						</div>
+						<div class="mt-3 grid gap-2 sm:grid-cols-2">
+							{#each operatorAnchors as track (track.id)}
 								<a
 									href={`#${track.id}`}
-									class="group block rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-slate-600"
+									class="group rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-slate-600"
 								>
-									<div class="flex items-start justify-between gap-3">
-										<div>
-											<p
-												class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-											>
-												{track.label}
-											</p>
-											<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-												{track.summary}
-											</p>
-											<p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-												{track.detail}
-											</p>
-										</div>
-										<span
-											class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors group-hover:bg-slate-900 group-hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:group-hover:bg-slate-100 dark:group-hover:text-slate-950"
-										>
-											Voir
-										</span>
-									</div>
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+										{track.label}
+									</p>
+									<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+										{track.detail}
+									</p>
 								</a>
 							{/each}
 						</div>
 						<div class="mt-5">
 							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-								À traiter maintenant
+								Priorité métier
 							</p>
 						</div>
 						<div class="mt-3 space-y-3">
-							{#each priorities as item}
+							{#each priorities.slice(0, 2) as item (item.title)}
 								<div
 									class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
 								>
@@ -762,7 +782,7 @@
 			</CardContent>
 		</Card>
 
-		<Card class="sci-section-card">
+		<Card id="dashboard-governance" class="sci-section-card scroll-mt-28">
 			<CardHeader>
 				<CardTitle class="flex items-center gap-2 text-lg">
 					<Users class="h-5 w-5 text-cyan-600" />
@@ -1075,7 +1095,7 @@
 				<CardHeader>
 					<CardTitle class="flex items-center gap-2 text-lg">
 						<FileText class="h-5 w-5 text-sky-600" />
-						Rituels opérateur
+						Cadence opérateur
 					</CardTitle>
 					<CardDescription>
 						Les repères desktop pour la revue hebdomadaire, la quittance et la clôture.
