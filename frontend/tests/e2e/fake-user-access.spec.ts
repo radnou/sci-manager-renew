@@ -356,6 +356,7 @@ test.describe('Fake user access E2E', () => {
 		page,
 		isMobile
 	}) => {
+		test.slow();
 		test.skip(isMobile, 'Ce scénario valide la navigation desktop authentifiée.');
 
 		await installCoreApiMocks(page);

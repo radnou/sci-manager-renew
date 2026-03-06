@@ -176,13 +176,16 @@
 			{/if}
 			{#if showLocataireField}
 				<label class="sci-field" for="loyer-reference-locataire">
-					<span class="sci-field-label">Référence locataire</span>
+					<span class="sci-field-label">Locataire (nom ou référence)</span>
 					<Input
 						id="loyer-reference-locataire"
 						name="loyer-reference-locataire"
 						bind:value={idLocataire}
-						placeholder="Appartement Martin"
+						placeholder="Jean Martin"
 					/>
+					<span class="text-xs text-slate-500 dark:text-slate-400">
+						Renseigne la personne ou la référence locataire utilisée pour le suivi et la quittance.
+					</span>
 				</label>
 			{/if}
 			<label class="sci-field" for="loyer-date">

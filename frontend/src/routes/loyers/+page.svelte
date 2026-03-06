@@ -17,7 +17,15 @@
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
+	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { buildLoyerUpdatePayload, calculateLoyerMetrics } from '$lib/high-value/loyers';
@@ -263,23 +271,71 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	{#if !loading && scopedBiens.length === 0}
-		<p class="sci-inline-alert">
-			Ajoute d'abord un bien dans le module Biens avant de saisir un loyer.
-		</p>
+	{#if loading}
+		<OperatorWorkspaceSkeleton
+			eyebrow="Chargement revenus"
+			title="Préparation du module Loyers"
+			description="On aligne la SCI active, les biens rattachés et le journal locatif."
+			showRail={true}
+		/>
+	{:else}
+		<Card class="sci-section-card">
+			<CardHeader>
+				<CardTitle class="text-lg">Parcours opérateur</CardTitle>
+				<CardDescription>
+					Le flux locatif suit une séquence stricte: bien rattaché, locataire identifié, montant,
+					statut, puis quittance.
+				</CardDescription>
+			</CardHeader>
+			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						{activeSci?.nom || 'Aucune SCI sélectionnée'}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Les loyers affichés et saisis sont filtrés sur cette SCI.
+					</p>
+				</div>
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Entités à renseigner</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						Bien, locataire, date, montant, statut
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Le locataire est saisi ici comme nom ou référence de suivi, avant la quittance.
+					</p>
+				</div>
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						{scopedLoyers.length > 0 ? 'Contrôler le journal et générer la quittance' : 'Saisir le premier flux'}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Le module PDF s’active dès qu’un loyer exploitable existe.
+					</p>
+				</div>
+			</CardContent>
+		</Card>
+
+		{#if scopedBiens.length === 0}
+			<p class="sci-inline-alert">
+				Ajoute d'abord un bien dans le module Biens avant de saisir un loyer.
+			</p>
+		{/if}
+
+		<LoyerForm biens={scopedBiens} {submitting} onSubmit={handleCreateLoyer} />
+
+		<LoyerTable
+			loyers={scopedLoyers}
+			biens={scopedBiens}
+			{loading}
+			onEdit={openEditLoyer}
+			onDelete={openDeleteLoyer}
+			busyRowId={busyLoyerId}
+			actionDisabled={deleting}
+		/>
 	{/if}
-
-	<LoyerForm biens={scopedBiens} {submitting} onSubmit={handleCreateLoyer} />
-
-	<LoyerTable
-		loyers={scopedLoyers}
-		biens={scopedBiens}
-		{loading}
-		onEdit={openEditLoyer}
-		onDelete={openDeleteLoyer}
-		busyRowId={busyLoyerId}
-		actionDisabled={deleting}
-	/>
 
 	<Dialog.Dialog bind:open={editDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-3xl">

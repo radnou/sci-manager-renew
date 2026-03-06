@@ -17,7 +17,15 @@
 	import BienForm from '$lib/components/BienForm.svelte';
 	import BienTable from '$lib/components/BienTable.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
+	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { buildBienUpdatePayload, calculateBienMetrics } from '$lib/high-value/biens';
@@ -267,38 +275,85 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	{#if activeSci}
-		<BienForm
-			activeSciId={resolvedActiveSciId}
-			activeSciLabel={activeSci.nom}
-			showSciField={false}
-			{submitting}
-			disabled={bienCreationDisabled}
-			disabledMessage={bienCreationDisabledMessage}
-			onSubmit={handleCreateBien}
+	{#if loading}
+		<OperatorWorkspaceSkeleton
+			eyebrow="Chargement patrimoine"
+			title="Préparation du module Biens"
+			description="On récupère la SCI active, les capacités d’offre et le portefeuille immobilier."
 		/>
 	{:else}
-		<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
-			<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne d’abord une SCI active</h2>
-			<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-				Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible.
-			</p>
-			<div class="mt-5 flex flex-wrap gap-3">
-				<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
-				<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
-			</div>
-		</div>
-	{/if}
+		<Card class="sci-section-card">
+			<CardHeader>
+				<CardTitle class="text-lg">Parcours opérateur</CardTitle>
+				<CardDescription>
+					Ici, tu rattaches un actif à la SCI active, puis tu contrôles immédiatement le portefeuille
+					affiché plus bas.
+				</CardDescription>
+			</CardHeader>
+			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						{activeSci?.nom || 'Aucune SCI sélectionnée'}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Un bien est toujours créé dans le contexte d’une SCI métier.
+					</p>
+				</div>
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Caractéristiques du bien</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						Adresse, type locatif, loyer CC, charges, TMI, acquisition
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Le formulaire attend une fiche complète, pas juste une adresse.
+					</p>
+				</div>
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						{metrics.count > 0 ? 'Contrôler le portefeuille et corriger' : 'Créer le premier bien'}
+					</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Une fois le bien créé, passe à `Loyers` pour saisir le locataire et le premier flux.
+					</p>
+				</div>
+			</CardContent>
+		</Card>
 
-	<BienTable
-		biens={scopedBiens}
-		{loading}
-		onEdit={openEditBien}
-		onDelete={openDeleteBien}
-		busyRowId={busyBienId}
-		actionDisabled={deleting}
-	/>
+		{#if activeSci}
+			<BienForm
+				activeSciId={resolvedActiveSciId}
+				activeSciLabel={activeSci.nom}
+				showSciField={false}
+				{submitting}
+				disabled={bienCreationDisabled}
+				disabledMessage={bienCreationDisabledMessage}
+				onSubmit={handleCreateBien}
+			/>
+		{:else}
+			<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
+				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
+				<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne d’abord une SCI active</h2>
+				<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+					Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible.
+				</p>
+				<div class="mt-5 flex flex-wrap gap-3">
+					<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
+					<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
+				</div>
+			</div>
+		{/if}
+
+		<BienTable
+			biens={scopedBiens}
+			{loading}
+			onEdit={openEditBien}
+			onDelete={openDeleteBien}
+			busyRowId={busyBienId}
+			actionDisabled={deleting}
+		/>
+	{/if}
 
 	<Dialog.Dialog bind:open={editDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-4xl">
