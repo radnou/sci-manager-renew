@@ -76,9 +76,37 @@ if [[ ! -f "$ENV_FILE" ]]; then
 	exit 1
 fi
 
-set -a
-source "$ENV_FILE"
-set +a
+load_env_file() {
+	local env_file="$1"
+	local line=""
+	local key=""
+	local value=""
+
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		line="${line%$'\r'}"
+
+		if [[ -z "${line//[[:space:]]/}" || "$line" =~ ^[[:space:]]*# ]]; then
+			continue
+		fi
+
+		line="${line#export }"
+		if [[ "$line" != *=* ]]; then
+			continue
+		fi
+
+		key="${line%%=*}"
+		value="${line#*=}"
+
+		key="$(printf '%s' "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+		if [[ ! "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+			continue
+		fi
+
+		export "$key=$value"
+	done < "$env_file"
+}
+
+load_env_file "$ENV_FILE"
 
 if [[ -z "${SUPABASE_INTERNAL_URL:-}" ]]; then
 	SUPABASE_INTERNAL_URL="${SUPABASE_URL}"
