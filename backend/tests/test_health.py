@@ -24,6 +24,7 @@ def test_readiness_probe_checks_all_services():
     data = response.json()
     assert "status" in data
     assert "checks" in data
+    assert "summary" in data
     assert "timestamp" in data
 
     # Vérifier que tous les services sont vérifiés
@@ -37,6 +38,10 @@ def test_readiness_probe_checks_all_services():
     for service_name, check_result in checks.items():
         assert "healthy" in check_result
         assert isinstance(check_result["healthy"], bool)
+
+    summary = data["summary"]
+    assert "critical_services" in summary
+    assert "ready_for_traffic" in summary
 
 
 def test_readiness_returns_503_when_service_down():
@@ -54,6 +59,32 @@ def test_readiness_returns_503_when_service_down():
         assert response.status_code == 503
         assert response.json()["status"] == "not_ready"
         assert response.json()["checks"]["database"]["healthy"] is False
+        assert "database" in response.json()["summary"]["critical_unhealthy"]
+
+
+def test_readiness_returns_200_when_only_non_critical_service_is_unhealthy():
+    from unittest.mock import patch, AsyncMock
+
+    client = TestClient(app)
+
+    with (
+        patch("app.api.v1.health._check_database", new_callable=AsyncMock) as mock_db,
+        patch("app.api.v1.health._check_supabase_storage", new_callable=AsyncMock) as mock_storage,
+        patch("app.api.v1.health._check_stripe", new_callable=AsyncMock) as mock_stripe,
+        patch("app.api.v1.health._check_resend", new_callable=AsyncMock) as mock_resend,
+    ):
+        mock_db.return_value = {"healthy": True}
+        mock_storage.return_value = {"healthy": True}
+        mock_stripe.return_value = {"healthy": True}
+        mock_resend.return_value = {"healthy": False, "error": "invalid resend key format"}
+
+        response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "degraded"
+    assert payload["summary"]["ready_for_traffic"] is True
+    assert payload["summary"]["unhealthy_services"] == ["resend"]
 
 
 @pytest.mark.asyncio
