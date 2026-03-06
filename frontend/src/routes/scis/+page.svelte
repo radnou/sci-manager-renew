@@ -48,6 +48,7 @@
 	let sciFormSiren = $state('');
 	let sciFormRegime = $state<'IR' | 'IS'>('IR');
 	let creatingSci = $state(false);
+	let showCreateSciForm = $state(false);
 	const multiSciDashboardV2Enabled = featureFlags.multiSciDashboardV2;
 
 	const resolvedActiveSciId = $derived(
@@ -99,6 +100,7 @@
 				fetchSubscriptionEntitlements()
 			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
+			showCreateSciForm = nextScis.length === 0;
 			subscription = nextSubscription;
 			const storedActiveSciId = getStoredActiveSciId();
 			activeSciId =
@@ -134,6 +136,7 @@
 			activeSciId = String(created.id);
 			sciFormNom = '';
 			sciFormSiren = '';
+			showCreateSciForm = false;
 			subscription = await fetchSubscriptionEntitlements();
 		} catch (error) {
 			errorMessage = formatApiErrorMessage(error, 'Impossible de créer la SCI.');
@@ -219,13 +222,13 @@
 			<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 		{/if}
 
-		<div class="grid gap-6 xl:grid-cols-[22rem_1fr]">
+		<div class="grid gap-6 xl:grid-cols-[21rem_1fr]">
 			<Card class="sci-section-card h-fit">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">SCI du portefeuille</CardTitle>
+					<CardTitle class="text-lg">Portefeuille SCI</CardTitle>
 					<CardDescription
-						>Sélectionne une entité pour afficher sa fiche d’identité complète.</CardDescription
+						>Sélectionne une entité pour basculer le cockpit sur sa fiche d’identité et ses actions.</CardDescription
 					>
 				</div>
 			</CardHeader>
@@ -240,9 +243,21 @@
 							{subscription.max_biens == null ? 'Biens illimités' : `${subscription.current_biens}/${subscription.max_biens} biens`}
 						</p>
 					</div>
-					<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-						<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Ajouter une SCI</p>
-						<div class="mt-3 space-y-3">
+				{/if}
+				<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+					<div class="flex flex-wrap items-center justify-between gap-3">
+						<div>
+							<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Créer une nouvelle SCI</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								Active cette zone uniquement quand tu ajoutes une nouvelle société au portefeuille.
+							</p>
+						</div>
+						<Button variant={showCreateSciForm ? 'outline' : 'default'} onclick={() => (showCreateSciForm = !showCreateSciForm)}>
+							{showCreateSciForm ? 'Masquer le formulaire' : 'Nouvelle SCI'}
+						</Button>
+					</div>
+					{#if showCreateSciForm}
+						<div class="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
 							<label class="sci-field">
 								<span class="sci-field-label">Nom</span>
 								<Input bind:value={sciFormNom} placeholder="SCI Patrimoine Belleville" />
@@ -262,8 +277,8 @@
 								{creatingSci ? 'Création en cours...' : 'Créer la SCI'}
 							</Button>
 						</div>
-					</div>
-				{/if}
+					{/if}
+				</div>
 				{#if loading}
 					<div class="space-y-3">
 						{#each Array.from({ length: 3 }) as _}
@@ -325,11 +340,11 @@
 			</CardContent>
 		</Card>
 
-		<div class="space-y-6">
-			<Card class="sci-section-card overflow-hidden">
-				<CardContent class="p-0">
-					<div class="h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-500"></div>
-					<div class="grid gap-6 p-6 lg:grid-cols-[1.45fr_1fr]">
+			<div class="space-y-6">
+				<Card class="sci-section-card overflow-hidden">
+					<CardContent class="p-0">
+						<div class="h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-500"></div>
+						<div class="grid gap-6 p-6 lg:grid-cols-[1.45fr_1fr]">
 						<div class="space-y-5">
 							<div class="space-y-3">
 								<div class="flex flex-wrap items-center gap-2">
@@ -350,6 +365,9 @@
 								<p class="max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 									Fiche d’identité consolidée pour piloter la société, ses associés, ses actifs, les
 									charges documentées et les mouvements de trésorerie.
+								</p>
+								<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase dark:text-slate-400">
+									1. Choisir la SCI dans le portefeuille. 2. Contrôler la fiche active. 3. Lancer une action opérateur.
 								</p>
 							</div>
 
@@ -426,21 +444,15 @@
 							class="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950"
 						>
 							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-								Actions recommandées
+								Actions opérateur
+							</p>
+							<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+								Lance ici les prochaines actions utiles sur la SCI active, sans repasser par des zones produit secondaires.
 							</p>
 							<div class="mt-4 grid gap-2">
-								<Button href="/dashboard" variant="outline" class="justify-start"
-									>Ouvrir le cockpit</Button
-								>
-								<Button href="/biens" variant="outline" class="justify-start"
-									>Gérer les biens</Button
-								>
-								<Button href="/loyers" variant="outline" class="justify-start"
-									>Suivre les loyers</Button
-								>
-								<Button href="/settings" variant="outline" class="justify-start"
-									>Paramètres de l'application</Button
-								>
+								<Button href="/biens" class="justify-start">Gérer les biens</Button>
+								<Button href="/loyers" variant="outline" class="justify-start">Suivre les loyers</Button>
+								<Button href="/dashboard" variant="outline" class="justify-start">Revenir au cockpit</Button>
 							</div>
 							<div
 								class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
@@ -465,6 +477,17 @@
 					</div>
 				</CardContent>
 			</Card>
+
+			<div class="flex items-center justify-between gap-3">
+				<div>
+					<p class="sci-eyebrow">SCI active • Lecture opérationnelle</p>
+					<h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-50">Pilotage détaillé</h2>
+				</div>
+				<div class="hidden items-center gap-2 lg:flex">
+					<Button href="/biens" variant="outline">Biens</Button>
+					<Button href="/loyers" variant="outline">Loyers</Button>
+				</div>
+			</div>
 
 			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				<KpiCard

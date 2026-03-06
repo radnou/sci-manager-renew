@@ -24,6 +24,10 @@
 	let subscription: SubscriptionEntitlements | null = null;
 	let subscriptionError = '';
 
+	$: landingRouteLabel =
+		landingRouteOptions.find((option) => option.value === preferences.defaultLandingRoute)?.label ??
+		'Cockpit';
+
 	onMount(async () => {
 		preferences = readApplicationPreferences();
 		try {
@@ -125,11 +129,39 @@
 		<Card class="sci-section-card">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">Raccourcis utiles</CardTitle>
-					<CardDescription>Accès rapide aux zones structurantes du compte connecté.</CardDescription>
+					<CardTitle class="text-lg">Impact des réglages</CardTitle>
+					<CardDescription>Lecture immédiate de la configuration active sur ce navigateur, sans mélanger cela avec les actions de compte.</CardDescription>
 				</div>
 			</CardHeader>
-			<CardContent class="grid gap-2 pt-0">
+			<CardContent class="grid gap-3 pt-0">
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Point d’entrée</p>
+					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{landingRouteLabel}</p>
+					<p class="mt-1 text-slate-500 dark:text-slate-400">La première page ouverte après connexion sur ce navigateur.</p>
+				</div>
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Densité d’affichage</p>
+					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{preferences.density === 'compact' ? 'Compacte' : 'Confortable'}</p>
+					<p class="mt-1 text-slate-500 dark:text-slate-400">
+						{preferences.density === 'compact'
+							? 'Priorise la densité d’information pour les revues opérateur.'
+							: 'Laisse davantage d’air entre les blocs pour un pilotage confortable.'}
+					</p>
+				</div>
+				<div class="grid gap-3 md:grid-cols-2">
+					<div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+						<p class="font-semibold text-slate-900 dark:text-slate-100">PDF</p>
+						<p class="mt-1 text-slate-500 dark:text-slate-400">
+							{preferences.showPdfPreview ? 'Prévisualisation intégrée active.' : 'Téléchargement sans preview priorisé.'}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+						<p class="font-semibold text-slate-900 dark:text-slate-100">Alertes</p>
+						<p class="mt-1 text-slate-500 dark:text-slate-400">
+							{preferences.riskAlertsEnabled ? 'Les signaux de risque sont mis en avant.' : 'Les vues restent neutres sans priorisation des risques.'}
+						</p>
+					</div>
+				</div>
 				{#if subscription}
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
 						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Capacité active</p>
@@ -143,11 +175,10 @@
 				{:else if subscriptionError}
 					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
 				{/if}
-				<Button href="/scis" variant="outline" class="justify-start">Ouvrir le portefeuille SCI</Button>
-				<Button href="/account" variant="outline" class="justify-start">Paramètres du compte</Button>
-				<Button href="/pricing" variant="outline" class="justify-start">Comparer les offres Stripe</Button>
-				<Button href="/account/privacy" variant="outline" class="justify-start">Confidentialité et données</Button>
-				<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+				<div class="grid gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+					<Button href="/account" variant="outline" class="justify-start">Aller au compte</Button>
+					<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+				</div>
 			</CardContent>
 		</Card>
 	</div>

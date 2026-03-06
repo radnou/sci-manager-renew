@@ -139,6 +139,13 @@ body {
 			linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.98));
 	}
 
+	.dark body {
+		background-image:
+			radial-gradient(circle at 12% -5%, rgba(34, 211, 238, 0.12), transparent 34%),
+			radial-gradient(circle at 85% 0%, rgba(16, 185, 129, 0.08), transparent 28%),
+			linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(3, 10, 28, 0.99));
+	}
+
 	h1,
 	h2,
 	h3,
@@ -149,7 +156,7 @@ body {
 
 @layer components {
 	.sci-page-shell {
-		@apply mx-auto w-full max-w-6xl px-4 py-8 md:px-8 md:py-10;
+		@apply mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-10;
 	}
 
 	.sci-page-header {
@@ -157,27 +164,27 @@ body {
 	}
 
 	.sci-eyebrow {
-		@apply text-[0.67rem] font-semibold tracking-[0.22em] text-slate-600 uppercase;
+		@apply text-[0.67rem] font-semibold tracking-[0.22em] text-slate-600 uppercase dark:text-slate-400;
 	}
 
 	.sci-page-title {
-		@apply text-balance text-3xl leading-tight font-semibold text-slate-900 md:text-4xl;
+		@apply text-balance text-3xl leading-tight font-semibold text-slate-900 md:text-4xl dark:text-slate-50;
 	}
 
 	.sci-page-subtitle {
-		@apply max-w-3xl text-pretty text-sm leading-relaxed text-slate-600 md:text-base;
+		@apply max-w-3xl text-pretty text-sm leading-relaxed text-slate-600 md:text-base dark:text-slate-300;
 	}
 
 	.sci-section-card {
-		@apply border-slate-200/80 bg-white/92 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] backdrop-blur-sm;
+		@apply border-slate-200/80 bg-white/92 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] backdrop-blur-sm dark:border-slate-800/90 dark:bg-slate-900/84 dark:shadow-[0_24px_65px_-42px_rgba(2,8,23,0.82)];
 	}
 
 	.sci-inline-alert {
-		@apply mt-4 rounded-xl border px-3 py-2 text-sm font-medium;
+		@apply mt-4 rounded-xl border px-3 py-2 text-sm font-medium dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200;
 	}
 
 	.sci-inline-alert-error {
-		@apply border-rose-200 bg-rose-50 text-rose-700;
+		@apply border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-200;
 	}
 
 	.sci-field {

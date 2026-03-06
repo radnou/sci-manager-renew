@@ -15,6 +15,9 @@
 	let subscription: SubscriptionEntitlements | null = null;
 	let subscriptionError = '';
 
+	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
+	$: activeSciDetail = activeSciId ? 'Le cockpit reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
+
 	onMount(async () => {
 		const session = await getCurrentSession();
 		email = session?.user?.email || 'Compte non connecté';
@@ -41,12 +44,12 @@
 		</p>
 	</header>
 
-	<div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+	<div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
 		<Card class="sci-section-card">
 			<CardHeader>
 				<div>
 					<CardTitle class="text-lg">Identité du compte</CardTitle>
-					<CardDescription>Référence d’accès, contexte SCI actif et point d’entrée préféré.</CardDescription>
+					<CardDescription>Référence d’accès, posture d’authentification et contexte de travail retenu.</CardDescription>
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
@@ -60,44 +63,61 @@
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{activeSciId ? 'Une SCI active est mémorisée pour ce navigateur' : 'Aucune SCI active mémorisée'}
-					</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{activeSciStatus}</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{activeSciDetail}</p>
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Page d’ouverture</p>
 					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{defaultLandingRoute}</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Point d’entrée fonctionnel appliqué au navigateur courant.
+					</p>
 				</div>
 			</CardContent>
 		</Card>
 
-		<Card class="sci-section-card">
+		<div class="grid gap-6">
+			<Card class="sci-section-card">
+				<CardHeader>
+					<div>
+						<CardTitle class="text-lg">Abonnement et facturation</CardTitle>
+						<CardDescription>Capacité active, quotas et accès aux options d’évolution de l’offre.</CardDescription>
+					</div>
+				</CardHeader>
+				<CardContent class="grid gap-3 pt-0">
+					{#if subscription}
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Offre active</p>
+							<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
+							<p class="mt-1 text-slate-500 dark:text-slate-400">
+								{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.current_scis}/${subscription.max_scis} SCI`}
+								•
+								{subscription.max_biens == null ? 'Biens illimités' : `${subscription.current_biens}/${subscription.max_biens} biens`}
+							</p>
+						</div>
+						<div class="grid gap-2 sm:grid-cols-2">
+							<Button href="/pricing" class="justify-start">Voir les offres et upgrader</Button>
+							<Button href="/scis" variant="outline" class="justify-start">Ouvrir le portefeuille SCI</Button>
+						</div>
+					{:else if subscriptionError}
+						<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
+					{/if}
+				</CardContent>
+			</Card>
+
+			<Card class="sci-section-card">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">Actions de compte</CardTitle>
-					<CardDescription>Les raccourcis critiques pour gérer la sécurité, les données et la configuration.</CardDescription>
+					<CardTitle class="text-lg">Sécurité et données</CardTitle>
+					<CardDescription>Raccourcis vers les réglages d’interface, la confidentialité et les zones de contrôle du compte.</CardDescription>
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-2 pt-0">
-				{#if subscription}
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Offre active</p>
-						<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.current_scis}/${subscription.max_scis} SCI`}
-							•
-							{subscription.max_biens == null ? 'Biens illimités' : `${subscription.current_biens}/${subscription.max_biens} biens`}
-						</p>
-					</div>
-				{:else if subscriptionError}
-					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
-				{/if}
-				<Button href="/settings" variant="outline" class="justify-start">Paramètres de l'application</Button>
+				<Button href="/settings" variant="outline" class="justify-start">Préférences d’interface</Button>
 				<Button href="/account/privacy" variant="outline" class="justify-start">Mes données et confidentialité</Button>
-				<Button href="/pricing" variant="outline" class="justify-start">Voir les offres et upgrader</Button>
-				<Button href="/scis" variant="outline" class="justify-start">Revenir au portefeuille SCI</Button>
 				<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
 			</CardContent>
 		</Card>
+		</div>
 	</div>
 </section>

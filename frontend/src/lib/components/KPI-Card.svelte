@@ -14,17 +14,22 @@
 	export let loading = false;
 
 	const toneClasses: Record<Tone, string> = {
-		default: 'border-slate-200/80 from-slate-50/70 to-white',
-		success: 'border-emerald-200/80 from-emerald-50/80 to-white',
-		warning: 'border-amber-200/80 from-amber-50/80 to-white',
-		danger: 'border-rose-200/80 from-rose-50/80 to-white',
-		accent: 'border-cyan-200/80 from-cyan-50/80 to-white'
+		default:
+			'border-slate-200/80 from-slate-50/70 to-white dark:border-slate-800 dark:from-slate-900/95 dark:to-slate-950',
+		success:
+			'border-emerald-200/80 from-emerald-50/80 to-white dark:border-emerald-900/70 dark:from-emerald-950/35 dark:to-slate-950',
+		warning:
+			'border-amber-200/80 from-amber-50/80 to-white dark:border-amber-900/70 dark:from-amber-950/25 dark:to-slate-950',
+		danger:
+			'border-rose-200/80 from-rose-50/80 to-white dark:border-rose-900/70 dark:from-rose-950/25 dark:to-slate-950',
+		accent:
+			'border-cyan-200/80 from-cyan-50/80 to-white dark:border-cyan-900/70 dark:from-cyan-950/25 dark:to-slate-950'
 	};
 
 	const trendBadgeClasses: Record<Trend, string> = {
-		up: 'bg-emerald-100 text-emerald-800',
-		down: 'bg-rose-100 text-rose-800',
-		neutral: 'bg-slate-100 text-slate-700'
+		up: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/55 dark:text-emerald-200',
+		down: 'bg-rose-100 text-rose-800 dark:bg-rose-950/55 dark:text-rose-200',
+		neutral: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
 	};
 
 	const trendIcons: Record<Trend, string> = {
@@ -43,10 +48,10 @@
 >
 	<div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500/70 via-sky-400/80 to-emerald-500/70"></div>
 	<CardHeader class="pb-2">
-		<CardDescription class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">{label}</CardDescription>
-		<CardTitle class="text-2xl font-semibold tracking-tight">
+		<CardDescription class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400">{label}</CardDescription>
+		<CardTitle class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
 			{#if loading}
-				<span class="inline-flex h-8 w-28 animate-pulse rounded-md bg-slate-200"></span>
+				<span class="inline-flex h-8 w-28 animate-pulse rounded-md bg-slate-200 dark:bg-slate-800"></span>
 			{:else}
 				{value}
 			{/if}
@@ -55,7 +60,7 @@
 	<CardContent class="pt-0">
 		<div class="flex items-center justify-between gap-3">
 			{#if caption}
-				<p class="text-xs text-slate-600">{caption}</p>
+				<p class="text-xs text-slate-600 dark:text-slate-300">{caption}</p>
 			{/if}
 			{#if trendValue}
 				<span

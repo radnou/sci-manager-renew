@@ -33,12 +33,12 @@
 		{ href: '/dashboard', label: 'Cockpit' },
 		featureFlags.multiSciDashboardV2 ? { href: '/scis', label: 'SCI' } : null,
 		{ href: '/biens', label: 'Biens' },
-		{ href: '/loyers', label: 'Loyers' },
-		{ href: '/pricing', label: 'Tarifs' }
+		{ href: '/loyers', label: 'Loyers' }
 	].filter(Boolean) as { href: string; label: string }[];
 
 	const authenticatedUtilityItems = [
 		{ href: '/account', label: 'Compte' },
+		{ href: '/pricing', label: 'Offre et facturation' },
 		{ href: '/settings', label: 'Paramètres' },
 		{ href: '/account/privacy', label: 'Confidentialité' }
 	];
@@ -370,162 +370,102 @@
 
 	<!-- Footer -->
 	<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-		<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-			<div class="grid gap-8 md:grid-cols-4">
-				<div class="space-y-4">
-					<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
-					<p class="text-sm text-slate-600 dark:text-slate-400">
-						Pilotez votre SCI comme un opérateur avec des outils professionnels.
-					</p>
+		{#if user}
+			<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+				<div class="grid gap-8 lg:grid-cols-[1.2fr_1fr_1fr]">
+					<div class="space-y-3">
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">Espace connecté</h3>
+						<p class="max-w-md text-sm text-slate-600 dark:text-slate-400">
+							Cockpit opérateur pour piloter SCI, biens, loyers, conformité et facturation sans repasser par les écrans marketing.
+						</p>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Pilotage</h4>
+						<ul class="space-y-2 text-sm">
+							<li><a href="/dashboard" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Cockpit</a></li>
+							<li><a href="/scis" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Portefeuille SCI</a></li>
+							<li><a href="/biens" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Biens</a></li>
+							<li><a href="/loyers" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Loyers</a></li>
+						</ul>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Compte</h4>
+						<ul class="space-y-2 text-sm">
+							<li><a href="/account" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Compte</a></li>
+							<li><a href="/pricing" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Offre et facturation</a></li>
+							<li><a href="/settings" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Paramètres</a></li>
+							<li><a href="/account/privacy" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Confidentialité</a></li>
+						</ul>
+					</div>
 				</div>
 
-				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">Produit</h4>
-					<ul class="space-y-2 text-sm">
-						{#if user}
-							<li>
-								<a
-									href="/pricing"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Tarifs</a
-								>
-							</li>
-							<li>
-								<a
-									href="/dashboard"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Cockpit</a
-								>
-							</li>
-							<li>
-								<a
-									href="/scis"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Portefeuille SCI</a
-								>
-							</li>
-						{:else}
-							<li>
-								<a
-									href="/pricing"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Tarifs</a
-								>
-							</li>
-							<li>
-								<a
-									href="/#features"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Fonctionnalités</a
-								>
-							</li>
-							<li>
-								<a
-									href="/#studies"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Études & sources</a
-								>
-							</li>
-						{/if}
-					</ul>
-				</div>
-
-				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">
-						{user ? 'Compte' : 'Support'}
-					</h4>
-					<ul class="space-y-2 text-sm">
-						{#if user}
-							<li>
-								<a
-									href="/account"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Compte</a
-								>
-							</li>
-							<li>
-								<a
-									href="/settings"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Paramètres</a
-								>
-							</li>
-							<li>
-								<a
-									href="/account/privacy"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Confidentialité</a
-								>
-							</li>
-						{:else}
-							<li>
-								<a
-									href="/login"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Connexion</a
-								>
-							</li>
-							<li>
-								<a
-									href="/register"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Inscription</a
-								>
-							</li>
-							<li>
-								<a
-									href="/privacy"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Confidentialité</a
-								>
-							</li>
-						{/if}
-					</ul>
-				</div>
-
-				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">
-						{user ? 'Pilotage' : 'Entreprise'}
-					</h4>
-					<ul class="space-y-2 text-sm">
-						<li>
-							<a
-								href="/dashboard"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>{user ? 'Cockpit' : 'Tableau de bord'}</a
-							>
-						</li>
-						<li>
-							<a
-								href="/biens"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Gestion des biens</a
-							>
-						</li>
-						<li>
-							<a
-								href="/loyers"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Suivi des loyers</a
-							>
-						</li>
-					</ul>
-				</div>
-			</div>
-
-			<div class="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
-				<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-					<p class="text-sm text-slate-600 dark:text-slate-400">
-						© 2026 GererSCI. Tous droits réservés.
-					</p>
-					<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-						<span>🇫🇷 Fait en France</span>
-						<span>•</span>
-						<span>Conforme RGPD</span>
+				<div class="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
+					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							© 2026 GererSCI. Tous droits réservés.
+						</p>
+						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+							<span>🇫🇷 Fait en France</span>
+							<span>•</span>
+							<span>Conforme RGPD</span>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+		{:else}
+			<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+				<div class="grid gap-8 md:grid-cols-4">
+					<div class="space-y-4">
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							Pilotez votre SCI comme un opérateur avec des outils professionnels.
+						</p>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Produit</h4>
+						<ul class="space-y-2 text-sm">
+							<li><a href="/pricing" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Tarifs</a></li>
+							<li><a href="/#features" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Fonctionnalités</a></li>
+							<li><a href="/#studies" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Études & sources</a></li>
+						</ul>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Support</h4>
+						<ul class="space-y-2 text-sm">
+							<li><a href="/login" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Connexion</a></li>
+							<li><a href="/register" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Inscription</a></li>
+							<li><a href="/privacy" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Confidentialité</a></li>
+						</ul>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Entreprise</h4>
+						<ul class="space-y-2 text-sm">
+							<li><a href="/dashboard" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Tableau de bord</a></li>
+							<li><a href="/biens" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Gestion des biens</a></li>
+							<li><a href="/loyers" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Suivi des loyers</a></li>
+						</ul>
+					</div>
+				</div>
+
+				<div class="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
+					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							© 2026 GererSCI. Tous droits réservés.
+						</p>
+						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+							<span>🇫🇷 Fait en France</span>
+							<span>•</span>
+							<span>Conforme RGPD</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</footer>
 
 	<Toaster />

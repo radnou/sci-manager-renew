@@ -267,15 +267,29 @@
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	<BienForm
-		activeSciId={resolvedActiveSciId}
-		activeSciLabel={activeSci?.nom || 'SCI active'}
-		showSciField={!activeSci}
-		{submitting}
-		disabled={bienCreationDisabled}
-		disabledMessage={bienCreationDisabledMessage}
-		onSubmit={handleCreateBien}
-	/>
+	{#if activeSci}
+		<BienForm
+			activeSciId={resolvedActiveSciId}
+			activeSciLabel={activeSci.nom}
+			showSciField={false}
+			{submitting}
+			disabled={bienCreationDisabled}
+			disabledMessage={bienCreationDisabledMessage}
+			onSubmit={handleCreateBien}
+		/>
+	{:else}
+		<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
+			<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne d’abord une SCI active</h2>
+			<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+				Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible.
+			</p>
+			<div class="mt-5 flex flex-wrap gap-3">
+				<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
+				<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
+			</div>
+		</div>
+	{/if}
 
 	<BienTable
 		biens={scopedBiens}
