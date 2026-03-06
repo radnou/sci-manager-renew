@@ -49,7 +49,7 @@ chmod +x deploy.sh
 
 ```bash
 # Copiez le template de production
-cp .env.production .env
+cp .env.production.example .env
 
 # Éditez le fichier .env avec vos vraies valeurs
 nano .env
@@ -65,6 +65,8 @@ STRIPE_SECRET_KEY=sk_live_your_key
 STRIPE_STARTER_PRICE_ID=price_live_starter
 STRIPE_PRO_PRICE_ID=price_live_pro
 STRIPE_LIFETIME_PRICE_ID=price_live_lifetime
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_your_key
+PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 # ... toutes les autres variables
 ```
 
@@ -336,6 +338,11 @@ Les flags de rollout utiles:
 - `FEATURE_NEW_CHECKOUT_CATALOG=true|false`
 - `FEATURE_PDF_RENDER_DIRECT=true|false`
 - `FEATURE_MULTI_SCI_DASHBOARD_V2=true|false`
+- `PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true|false`
+
+Notes d'environnement:
+- le frontend de checkout n'utilise plus de `price_id` Stripe en env; il envoie un `plan_key` au backend.
+- le frontend n'a besoin que de `VITE_STRIPE_PUBLISHABLE_KEY` pour initialiser Stripe.js.
 
 ## 12) Documentation
 

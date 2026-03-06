@@ -20,6 +20,7 @@
   - `STRIPE_WEBHOOK_SECRET`
   - `RESEND_API_KEY`
 - [ ] Les templates `.env.development.example`, `.env.staging.example`, `.env.production.example` sont alignés avec la config effective
+- [ ] Le flag frontend `PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2` est aligné avec la stratégie de rollout retenue
 
 ## 3. Stripe & Entitlements
 - [ ] Les produits Stripe portent les metadata structurées:
@@ -58,6 +59,7 @@
   - `FEATURE_NEW_CHECKOUT_CATALOG`
   - `FEATURE_PDF_RENDER_DIRECT`
   - `FEATURE_MULTI_SCI_DASHBOARD_V2`
+  - `PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2`
 
 ## 6. Health & Readiness
 - [ ] `/health/live` retourne `200`

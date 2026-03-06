@@ -141,6 +141,7 @@ Minimum attendu:
 - `VITE_SUPABASE_URL=<value>`
 - `VITE_SUPABASE_ANON_KEY=<value>`
 - `VITE_STRIPE_PUBLISHABLE_KEY=<pk_live_...>`
+- `PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true`
 
 ## 7) Security baseline (minimum viable hardening)
 
