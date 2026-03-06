@@ -1,10 +1,10 @@
 import json
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Environment(str, Enum):
@@ -40,8 +40,16 @@ class Settings(BaseSettings):
     resend_from_email: str = "noreply@email.radnoumane.com"
 
     # Frontend
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
-    allowed_hosts: list[str] = ["localhost", "127.0.0.1", "testserver", "*.gerersci.fr"]
+    cors_origins: Annotated[list[str], NoDecode] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+    allowed_hosts: Annotated[list[str], NoDecode] = [
+        "localhost",
+        "127.0.0.1",
+        "testserver",
+        "*.gerersci.fr",
+    ]
     frontend_url: str = "http://localhost:5173"
 
     # Logging
