@@ -24,7 +24,7 @@ def _check_database_socket(database_url: str) -> dict:
 
     start = perf_counter()
     try:
-        with socket.create_connection((host, port), timeout=2):
+        with socket.create_connection((host, port), timeout=settings.database_socket_timeout_seconds):
             latency = int((perf_counter() - start) * 1000)
             return {"healthy": True, "latency_ms": latency, "mode": "postgres_socket"}
     except OSError as exc:
@@ -103,13 +103,25 @@ async def readiness():
         "resend": await _check_resend(),
     }
 
-    all_healthy = all(check.get("healthy") is True for check in checks.values())
-    status_code = 200 if all_healthy else 503
+    critical_services = ("database", "supabase_storage", "stripe")
+    critical_healthy = all(checks[name].get("healthy") is True for name in critical_services)
+    any_unhealthy = any(check.get("healthy") is not True for check in checks.values())
+    any_degraded = any(check.get("degraded") is True for check in checks.values())
+
+    if not critical_healthy:
+        readiness_status = "not_ready"
+        status_code = 503
+    elif any_degraded or any_unhealthy:
+        readiness_status = "degraded"
+        status_code = 200
+    else:
+        readiness_status = "ready"
+        status_code = 200
 
     return JSONResponse(
         status_code=status_code,
         content={
-            "status": "ready" if all_healthy else "not_ready",
+            "status": readiness_status,
             "checks": checks,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         },

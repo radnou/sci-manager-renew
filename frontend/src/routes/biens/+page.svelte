@@ -5,12 +5,14 @@
 		deleteBien,
 		fetchBiens,
 		fetchScis,
+		fetchSubscriptionEntitlements,
 		updateBien,
 		type Bien,
 		type BienCreatePayload,
 		type BienType,
 		type BienUpdatePayload,
-		type SCIOverview
+		type SCIOverview,
+		type SubscriptionEntitlements
 	} from '$lib/api';
 	import BienForm from '$lib/components/BienForm.svelte';
 	import BienTable from '$lib/components/BienTable.svelte';
@@ -29,6 +31,7 @@
 	let submitting = false;
 	let deleting = false;
 	let errorMessage = '';
+	let subscription: SubscriptionEntitlements | null = null;
 	let editingBien: Bien | null = null;
 	let bienPendingDelete: Bien | null = null;
 	let editDialogOpen = false;
@@ -62,6 +65,13 @@
 			? activeSciId
 			: String(scis[0]?.id || '');
 	$: activeSci = scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null;
+	$: bienCreationDisabled =
+		Boolean(subscription) &&
+		subscription?.max_biens != null &&
+		subscription.current_biens >= subscription.max_biens;
+	$: bienCreationDisabledMessage = bienCreationDisabled
+		? "Le quota de biens de l'offre active est atteint. Passe à une offre supérieure pour continuer."
+		: '';
 	$: if (resolvedActiveSciId) {
 		setStoredActiveSciId(resolvedActiveSciId);
 	}
@@ -87,9 +97,14 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const [nextBiens, nextScis] = await Promise.all([fetchBiens(), fetchScis()]);
+			const [nextBiens, nextScis, nextSubscription] = await Promise.all([
+				fetchBiens(),
+				fetchScis(),
+				fetchSubscriptionEntitlements()
+			]);
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			scis = Array.isArray(nextScis) ? nextScis : [];
+			subscription = nextSubscription;
 			const storedActiveSciId = getStoredActiveSciId();
 			activeSciId =
 				(storedActiveSciId &&
@@ -257,6 +272,8 @@
 		activeSciLabel={activeSci?.nom || 'SCI active'}
 		showSciField={!activeSci}
 		{submitting}
+		disabled={bienCreationDisabled}
+		disabledMessage={bienCreationDisabledMessage}
 		onSubmit={handleCreateBien}
 	/>
 

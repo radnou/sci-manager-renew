@@ -3,6 +3,7 @@ import { getCurrentSession } from '$lib/auth/session';
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export type EntityId = number | string;
+export type PlanKey = 'free' | 'starter' | 'pro' | 'lifetime';
 
 export type BienType = 'nu' | 'meuble' | 'mixte';
 export type LoyerStatus = 'en_attente' | 'paye' | 'en_retard';
@@ -29,6 +30,12 @@ export type SCIOverview = {
 	user_role?: string | null;
 	user_part?: number | null;
 	associes?: Associe[];
+};
+
+export type SCICreatePayload = {
+	nom: string;
+	siren?: string | null;
+	regime_fiscal?: 'IR' | 'IS';
 };
 
 export type Charge = {
@@ -154,12 +161,37 @@ export type QuitusResponsePayload = {
 export type CheckoutMode = 'subscription' | 'payment';
 
 export type CheckoutSessionRequestPayload = {
-	price_id: string;
+	plan_key: PlanKey;
 	mode?: CheckoutMode;
 };
 
 export type CheckoutSessionResponsePayload = {
 	url: string;
+};
+
+export type SubscriptionEntitlements = {
+	plan_key: PlanKey;
+	plan_name: string;
+	status: string;
+	mode: CheckoutMode;
+	is_active: boolean;
+	stripe_price_id?: string | null;
+	entitlements_version: number;
+	max_scis?: number | null;
+	max_biens?: number | null;
+	current_scis: number;
+	current_biens: number;
+	remaining_scis?: number | null;
+	remaining_biens?: number | null;
+	over_limit: boolean;
+	features: Record<string, boolean>;
+};
+
+type ApiErrorPayload = {
+	error?: string;
+	code?: string;
+	details?: unknown;
+	request_id?: string;
 };
 
 export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -234,6 +266,13 @@ export function fetchScis() {
 	return apiFetch<SCIOverview[]>('/api/v1/scis/');
 }
 
+export function createSci(payload: SCICreatePayload) {
+	return apiFetch<SCIOverview>('/api/v1/scis/', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+}
+
 export function fetchSciDetail(sciId: EntityId) {
 	return apiFetch<SCIDetail>(`/api/v1/scis/${sciId}`);
 }
@@ -305,4 +344,8 @@ export function createCheckoutSession(payload: CheckoutSessionRequestPayload) {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});
+}
+
+export function fetchSubscriptionEntitlements() {
+	return apiFetch<SubscriptionEntitlements>('/api/v1/stripe/subscription');
 }

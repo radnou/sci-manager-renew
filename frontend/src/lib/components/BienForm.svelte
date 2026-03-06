@@ -28,6 +28,8 @@
 		showSciField = false,
 		initialValues = null,
 		submitting = false,
+		disabled = false,
+		disabledMessage = '',
 		onCancel = undefined,
 		onSubmit = () => true
 	}: {
@@ -41,6 +43,8 @@
 		showSciField?: boolean;
 		initialValues?: Bien | null;
 		submitting?: boolean;
+		disabled?: boolean;
+		disabledMessage?: string;
 		onCancel?: (() => void) | undefined;
 		onSubmit?: BienFormSubmit;
 	} = $props();
@@ -152,6 +156,9 @@
 		<CardDescription>{description}</CardDescription>
 	</CardHeader>
 	<CardContent>
+		{#if disabled && disabledMessage}
+			<p class="sci-inline-alert sci-inline-alert-error mb-4">{disabledMessage}</p>
+		{/if}
 		<form
 			bind:this={formElement}
 			class="grid gap-3 md:grid-cols-4"
@@ -164,6 +171,7 @@
 					<Input
 						id="bien-id-sci"
 						bind:value={idSci}
+						disabled={disabled}
 						required
 						placeholder="SCI principale"
 						aria-required="true"
@@ -184,6 +192,7 @@
 				<Input
 					id="bien-adresse"
 					bind:value={adresse}
+					disabled={disabled}
 					required
 					placeholder="14 rue Saint-Honoré"
 					aria-required="true"
@@ -194,6 +203,7 @@
 				<Input
 					id="bien-ville"
 					bind:value={ville}
+					disabled={disabled}
 					required
 					placeholder="Paris"
 					aria-required="true"
@@ -204,6 +214,7 @@
 				<Input
 					id="bien-code-postal"
 					bind:value={codePostal}
+					disabled={disabled}
 					required
 					pattern="[0-9]{5}"
 					placeholder="75001"
@@ -226,6 +237,7 @@
 				<select
 					id="bien-type-locatif"
 					bind:value={typeLocatif}
+					disabled={disabled}
 					class="sci-select"
 					aria-label="Type de location"
 				>
@@ -239,6 +251,7 @@
 				<Input
 					id="bien-loyer-cc"
 					bind:value={loyerCC}
+					disabled={disabled}
 					type="number"
 					min="0"
 					step="10"
@@ -250,6 +263,7 @@
 				<Input
 					id="bien-charges"
 					bind:value={charges}
+					disabled={disabled}
 					type="number"
 					min="0"
 					step="10"
@@ -261,6 +275,7 @@
 				<Input
 					id="bien-tmi"
 					bind:value={tmi}
+					disabled={disabled}
 					type="number"
 					min="0"
 					max="100"
@@ -273,6 +288,7 @@
 				<Input
 					id="bien-acquisition-date"
 					bind:value={acquisitionDate}
+					disabled={disabled}
 					type="date"
 					aria-label="Date d'acquisition du bien"
 				/>
@@ -282,6 +298,7 @@
 				<Input
 					id="bien-prix-acquisition"
 					bind:value={prixAcquisition}
+					disabled={disabled}
 					type="number"
 					min="0"
 					step="1000"
@@ -296,7 +313,7 @@
 				{/if}
 				<Button
 					type="button"
-					disabled={submitting}
+					disabled={submitting || disabled}
 					class="min-w-[11rem]"
 					aria-live="polite"
 					onclick={() => {

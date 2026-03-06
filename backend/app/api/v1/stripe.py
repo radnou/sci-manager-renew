@@ -6,6 +6,7 @@ import stripe
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app.core.entitlements import PlanKey, get_plan, resolve_plan_key_from_price_id, resolve_price_id_for_plan
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
@@ -14,8 +15,10 @@ from app.core.supabase_client import get_supabase_service_client
 from app.models.stripe import (
     CheckoutSessionCreateRequest,
     CheckoutSessionCreateResponse,
+    SubscriptionEntitlementsResponse,
     StripeWebhookResponse,
 )
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 logger = structlog.get_logger(__name__)
@@ -27,19 +30,29 @@ def _to_str(value: Any) -> str | None:
     return str(value)
 
 
-def _sync_subscription(session_data: dict[str, Any], status_value: str) -> None:
+def _sync_subscription(
+    session_data: dict[str, Any],
+    status_value: str,
+    *,
+    plan_key: str | None = None,
+    current_period_end: Any = None,
+) -> None:
     user_id = _to_str(session_data.get("client_reference_id"))
     if not user_id:
         return
 
-    payload: dict[str, Any] = {
-        "user_id": user_id,
-        "stripe_customer_id": _to_str(session_data.get("customer")),
-        "stripe_subscription_id": _to_str(session_data.get("subscription")),
-        "stripe_price_id": _to_str(session_data.get("price_id")),
-        "mode": _to_str(session_data.get("mode")),
-        "status": status_value,
-    }
+    payload = SubscriptionService.build_subscription_payload(
+        session_data={
+            "client_reference_id": user_id,
+            "customer": _to_str(session_data.get("customer")),
+            "subscription": _to_str(session_data.get("subscription")),
+            "price_id": _to_str(session_data.get("price_id")),
+            "mode": _to_str(session_data.get("mode")),
+        },
+        status_value=status_value,
+        plan_key=plan_key,
+        current_period_end=current_period_end,
+    )
 
     try:
         client = get_supabase_service_client()
@@ -56,7 +69,7 @@ def _sync_subscription_deleted(subscription_data: dict[str, Any]) -> None:
 
     try:
         client = get_supabase_service_client()
-        query = client.table("subscriptions").update({"status": "canceled"})
+        query = client.table("subscriptions").update({"status": "canceled", "is_active": False})
         if subscription_id:
             query = query.eq("stripe_subscription_id", subscription_id)
         elif customer_id:
@@ -76,7 +89,11 @@ def _handle_event(event: Any) -> None:
 
     if event_type == "checkout.session.completed":
         status_value = "active" if obj.get("payment_status") == "paid" else "pending"
-        _sync_subscription(obj, status_value)
+        _sync_subscription(
+            obj,
+            status_value,
+            plan_key=_to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None,
+        )
         return
 
     if event_type == "customer.subscription.deleted":
@@ -99,18 +116,50 @@ def _handle_event(event: Any) -> None:
             else None,
             "mode": "subscription",
         }
-        _sync_subscription(session_like, subscription_status)
+        _sync_subscription(
+            session_like,
+            subscription_status,
+            plan_key=_to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None,
+            current_period_end=obj.get("current_period_end"),
+        )
+
+
+@router.get("/subscription", response_model=SubscriptionEntitlementsResponse)
+async def get_subscription(user_id: str = Depends(get_current_user)) -> SubscriptionEntitlementsResponse:
+    logger.info("fetching_subscription_entitlements", user_id=user_id)
+    return SubscriptionEntitlementsResponse(**SubscriptionService.get_subscription_summary(user_id))
 
 
 @router.post(
     "/create-checkout-session",
     response_model=CheckoutSessionCreateResponse,
 )
+@limiter.limit("10/minute")
 async def create_checkout_session(
+    request: Request,
     payload: CheckoutSessionCreateRequest,
     user_id: str = Depends(get_current_user),
 ) -> CheckoutSessionCreateResponse:
-    logger.info("creating_checkout_session", user_id=user_id, price_id=payload.price_id, mode=payload.mode)
+    del request
+    resolved_plan = get_plan(payload.plan_key)
+    if payload.plan_key == PlanKey.FREE:
+        raise ValidationError("Le plan gratuit ne passe pas par Stripe.")
+
+    price_id = resolve_price_id_for_plan(payload.plan_key)
+    if not price_id:
+        raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
+
+    checkout_mode = payload.mode or resolved_plan.checkout_mode
+    if checkout_mode != resolved_plan.checkout_mode:
+        raise ValidationError("Checkout mode does not match the selected plan")
+
+    logger.info(
+        "creating_checkout_session",
+        user_id=user_id,
+        plan_key=payload.plan_key.value,
+        price_id=price_id,
+        mode=checkout_mode,
+    )
 
     stripe.api_key = settings.stripe_secret_key
 
@@ -119,17 +168,24 @@ async def create_checkout_session(
             payment_method_types=["card"],
             line_items=[
                 {
-                    "price": payload.price_id,
+                    "price": price_id,
                     "quantity": 1,
                 }
             ],
-            mode=payload.mode,
+            mode=checkout_mode,
             success_url=f"{settings.frontend_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{settings.frontend_url}/pricing",
             client_reference_id=user_id,
+            metadata={"user_id": user_id, "plan_key": payload.plan_key.value},
         )
     except stripe.error.StripeError as exc:
-        logger.error("stripe_checkout_session_failed", user_id=user_id, error=str(exc), exc_info=True)
+        logger.error(
+            "stripe_checkout_session_failed",
+            user_id=user_id,
+            plan_key=payload.plan_key.value,
+            error=str(exc),
+            exc_info=True,
+        )
         raise ExternalServiceError("Stripe", f"Checkout session creation failed: {str(exc)}")
 
     session_url = _to_str(getattr(session, "url", None))
@@ -140,7 +196,12 @@ async def create_checkout_session(
         logger.error("stripe_session_url_missing", user_id=user_id)
         raise ExternalServiceError("Stripe", "Checkout session URL unavailable")
 
-    logger.info("checkout_session_created", user_id=user_id, session_url=session_url)
+    logger.info(
+        "checkout_session_created",
+        user_id=user_id,
+        plan_key=payload.plan_key.value,
+        session_url=session_url,
+    )
     return CheckoutSessionCreateResponse(url=session_url)
 
 

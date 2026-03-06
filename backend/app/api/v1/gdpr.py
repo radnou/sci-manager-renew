@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.audit_log import AuditLogger
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
 from app.services.storage_service import storage_service
@@ -42,6 +43,7 @@ class AccountDeleteResponse(BaseModel):
 
 
 @router.get("/data-export", response_model=DataExportResponse)
+@limiter.limit("3/hour")
 async def export_user_data(
     request: Request,
     user_id: str = Depends(get_current_user),
@@ -164,6 +166,7 @@ async def export_user_data(
 
 
 @router.get("/data-summary", response_model=DataSummaryResponse)
+@limiter.limit("10/hour")
 async def get_data_summary(
     request: Request,
     user_id: str = Depends(get_current_user),
@@ -215,6 +218,7 @@ async def get_data_summary(
 
 
 @router.delete("/account", response_model=AccountDeleteResponse)
+@limiter.limit("2/day")
 async def delete_user_account(
     request: Request,
     user_id: str = Depends(get_current_user),

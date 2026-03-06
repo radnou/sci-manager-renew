@@ -230,6 +230,9 @@ def fake_supabase() -> FakeSupabaseClient:
 @pytest.fixture(autouse=True)
 def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
     from app.api.v1 import biens, loyers, quitus, scis
+    from app import main
+    from app.api.v1 import gdpr, stripe
+    from app.services import subscription_service
 
     monkeypatch.setattr(
         biens,
@@ -247,6 +250,10 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
         lambda *_args, **_kwargs: fake_supabase,
     )
     monkeypatch.setattr(quitus, "storage_service", fake_storage)
+    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_supabase)
+    monkeypatch.setattr(stripe, "get_supabase_service_client", lambda: fake_supabase)
+    monkeypatch.setattr(subscription_service, "get_supabase_service_client", lambda: fake_supabase)
+    monkeypatch.setattr(main, "shutdown_event", __import__("asyncio").Event())
 
 
 @pytest.fixture

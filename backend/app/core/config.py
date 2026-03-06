@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     # Stripe
     stripe_secret_key: str = "sk_test_placeholder"
     stripe_webhook_secret: str = "whsec_placeholder"
-    stripe_starter_price_id: str = "price_1T7MW5BCxd3SKdGJP2xjawrj"
-    stripe_pro_price_id: str = "price_1T7MW6BCxd3SKdGJKzcNqdkJ"
-    stripe_lifetime_price_id: str = "price_1T7MW7BCxd3SKdGJVrHWprJ8"
+    stripe_starter_price_id: str = "price_starter_placeholder"
+    stripe_pro_price_id: str = "price_pro_placeholder"
+    stripe_lifetime_price_id: str = "price_lifetime_placeholder"
 
     # Email
     resend_api_key: str = "re_placeholder"
@@ -51,6 +51,18 @@ class Settings(BaseSettings):
     # Feature Flags
     feature_cerfa_generation: bool = True
     feature_stripe_payments: bool = True
+    feature_plan_entitlements_enforcement: Literal["observe", "warn", "enforce"] = "enforce"
+    feature_new_checkout_catalog: bool = True
+    feature_pdf_render_direct: bool = True
+    feature_multi_sci_dashboard_v2: bool = True
+
+    # External service controls
+    external_retry_attempts: int = 3
+    external_retry_base_delay_ms: int = 200
+    stripe_request_timeout_seconds: float = 10.0
+    supabase_request_timeout_seconds: float = 10.0
+    resend_request_timeout_seconds: float = 10.0
+    database_socket_timeout_seconds: float = 2.0
 
     model_config = SettingsConfigDict(
         env_file=(".env", ".env.local"),

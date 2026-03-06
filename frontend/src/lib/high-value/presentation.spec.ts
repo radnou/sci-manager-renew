@@ -10,6 +10,15 @@ describe('high-value presentation helpers', () => {
 		expect(formatApiErrorMessage(new Error('Failed to fetch'), 'Fallback technique')).toBe(
 			'Le service est indisponible pour le moment. Vérifie que le backend local est démarré puis recharge la page.'
 		);
+
+		expect(
+			formatApiErrorMessage(
+				new Error('{"error":"Le quota biens est atteint.","code":"plan_limit_reached","details":{"resource":"biens"}}'),
+				'Fallback technique'
+			)
+		).toBe(
+			"Le quota de biens de ton offre est atteint. Passe à une offre supérieure pour continuer."
+		);
 	});
 
 	it('keeps readable API messages and falls back when needed', () => {

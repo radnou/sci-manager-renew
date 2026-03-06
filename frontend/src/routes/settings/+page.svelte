@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fetchSubscriptionEntitlements, type SubscriptionEntitlements } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import {
 		DEFAULT_APPLICATION_PREFERENCES,
 		readApplicationPreferences,
@@ -19,9 +21,19 @@
 	];
 
 	let preferences: ApplicationPreferences = { ...DEFAULT_APPLICATION_PREFERENCES };
+	let subscription: SubscriptionEntitlements | null = null;
+	let subscriptionError = '';
 
-	onMount(() => {
+	onMount(async () => {
 		preferences = readApplicationPreferences();
+		try {
+			subscription = await fetchSubscriptionEntitlements();
+		} catch (error) {
+			subscriptionError = formatApiErrorMessage(
+				error,
+				"Impossible de charger l'offre active."
+			);
+		}
 	});
 
 	function handleSave() {
@@ -118,8 +130,22 @@
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-2 pt-0">
+				{#if subscription}
+					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Capacité active</p>
+						<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
+						<p class="mt-1 text-slate-500 dark:text-slate-400">
+							{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.remaining_scis ?? 0} SCI restantes`}
+							•
+							{subscription.max_biens == null ? 'Biens illimités' : `${subscription.remaining_biens ?? 0} biens restants`}
+						</p>
+					</div>
+				{:else if subscriptionError}
+					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
+				{/if}
 				<Button href="/scis" variant="outline" class="justify-start">Ouvrir le portefeuille SCI</Button>
 				<Button href="/account" variant="outline" class="justify-start">Paramètres du compte</Button>
+				<Button href="/pricing" variant="outline" class="justify-start">Comparer les offres Stripe</Button>
 				<Button href="/account/privacy" variant="outline" class="justify-start">Confidentialité et données</Button>
 				<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
 			</CardContent>

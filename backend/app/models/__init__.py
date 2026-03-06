@@ -5,6 +5,7 @@ from .sci import AssocieCreate, SCICreate, SCIResponse, SCIUpdate
 from .stripe import (
     CheckoutSessionCreateRequest,
     CheckoutSessionCreateResponse,
+    SubscriptionEntitlementsResponse,
     StripeWebhookResponse,
 )
 
@@ -19,6 +20,7 @@ __all__ = [
     "QuitusResponse",
     "CheckoutSessionCreateRequest",
     "CheckoutSessionCreateResponse",
+    "SubscriptionEntitlementsResponse",
     "StripeWebhookResponse",
     "AssocieCreate",
     "SCICreate",

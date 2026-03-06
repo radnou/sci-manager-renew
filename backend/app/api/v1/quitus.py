@@ -3,8 +3,9 @@ from __future__ import annotations
 import re
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.quitus import QuitusRequest, QuitusResponse
 from app.services.quitus_service import QuitusService
@@ -31,7 +32,11 @@ def _build_inline_filename(periode: str) -> str:
 
 
 @router.post("/generate", response_model=QuitusResponse)
-async def generate_quitus(payload: QuitusRequest, user_id: str = Depends(get_current_user)):
+@limiter.limit("15/minute")
+async def generate_quitus(
+    request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)
+):
+    del request
     pdf_bytes = QuitusService.generate_quitus_pdf(payload)
     filename = f"quitus-{uuid4().hex}.pdf"
     storage_path = f"quitus/{user_id}/{filename}"
@@ -51,7 +56,9 @@ async def generate_quitus(payload: QuitusRequest, user_id: str = Depends(get_cur
 
 
 @router.post("/render")
-async def render_quitus(payload: QuitusRequest, user_id: str = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def render_quitus(request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)):
+    del request
     del user_id
 
     pdf_bytes = QuitusService.generate_quitus_pdf(payload)
@@ -68,7 +75,9 @@ async def render_quitus(payload: QuitusRequest, user_id: str = Depends(get_curre
 
 
 @router.get("/files/{filename}")
-async def download_quitus(filename: str, user_id: str = Depends(get_current_user)):
+@limiter.limit("30/minute")
+async def download_quitus(request: Request, filename: str, user_id: str = Depends(get_current_user)):
+    del request
     safe_filename = _validate_filename(filename)
     storage_path = f"quitus/{user_id}/{safe_filename}"
 

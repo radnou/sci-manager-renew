@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Building2, FileText, HandCoins, Landmark, ShieldCheck, Users } from 'lucide-svelte';
-	import { fetchSciDetail, fetchScis, type SCIDetail, type SCIOverview } from '$lib/api';
+	import {
+		createSci,
+		fetchSciDetail,
+		fetchScis,
+		fetchSubscriptionEntitlements,
+		type SCIDetail,
+		type SCIOverview,
+		type SubscriptionEntitlements
+	} from '$lib/api';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
@@ -11,6 +19,7 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
 	import { mapBienTypeLabel } from '$lib/high-value/biens';
 	import {
 		formatCompactNumber,
@@ -33,6 +42,11 @@
 	let detailLoading = $state(true);
 	let errorMessage = $state('');
 	let detailLoadedFor = $state('');
+	let subscription = $state<SubscriptionEntitlements | null>(null);
+	let sciFormNom = $state('');
+	let sciFormSiren = $state('');
+	let sciFormRegime = $state<'IR' | 'IS'>('IR');
+	let creatingSci = $state(false);
 
 	const resolvedActiveSciId = $derived(
 		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
@@ -71,8 +85,12 @@
 		errorMessage = '';
 
 		try {
-			const nextScis = await fetchScis();
+			const [nextScis, nextSubscription] = await Promise.all([
+				fetchScis(),
+				fetchSubscriptionEntitlements()
+			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
+			subscription = nextSubscription;
 			const storedActiveSciId = getStoredActiveSciId();
 			activeSciId =
 				(storedActiveSciId &&
@@ -86,6 +104,32 @@
 			errorMessage = formatApiErrorMessage(error, 'Impossible de charger le portefeuille SCI.');
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function handleCreateSci() {
+		if (!sciFormNom.trim()) {
+			errorMessage = 'Le nom de la SCI est requis.';
+			return;
+		}
+
+		creatingSci = true;
+		errorMessage = '';
+		try {
+			const created = await createSci({
+				nom: sciFormNom.trim(),
+				siren: sciFormSiren.trim() || null,
+				regime_fiscal: sciFormRegime
+			});
+			scis = [...scis, created].sort((left, right) => left.nom.localeCompare(right.nom, 'fr'));
+			activeSciId = String(created.id);
+			sciFormNom = '';
+			sciFormSiren = '';
+			subscription = await fetchSubscriptionEntitlements();
+		} catch (error) {
+			errorMessage = formatApiErrorMessage(error, 'Impossible de créer la SCI.');
+		} finally {
+			creatingSci = false;
 		}
 	}
 
@@ -148,7 +192,7 @@
 	{/if}
 
 	<div class="grid gap-6 xl:grid-cols-[22rem_1fr]">
-		<Card class="sci-section-card h-fit">
+			<Card class="sci-section-card h-fit">
 			<CardHeader>
 				<div>
 					<CardTitle class="text-lg">SCI du portefeuille</CardTitle>
@@ -157,7 +201,41 @@
 					>
 				</div>
 			</CardHeader>
-			<CardContent class="space-y-3 pt-0">
+			<CardContent class="space-y-4 pt-0">
+				{#if subscription}
+					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Capacité active</p>
+						<p class="mt-2 font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
+						<p class="mt-1 text-slate-500 dark:text-slate-400">
+							{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.current_scis}/${subscription.max_scis} SCI`}
+							•
+							{subscription.max_biens == null ? 'Biens illimités' : `${subscription.current_biens}/${subscription.max_biens} biens`}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+						<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Ajouter une SCI</p>
+						<div class="mt-3 space-y-3">
+							<label class="sci-field">
+								<span class="sci-field-label">Nom</span>
+								<Input bind:value={sciFormNom} placeholder="SCI Patrimoine Belleville" />
+							</label>
+							<label class="sci-field">
+								<span class="sci-field-label">SIREN</span>
+								<Input bind:value={sciFormSiren} placeholder="123456789" inputmode="numeric" />
+							</label>
+							<label class="sci-field">
+								<span class="sci-field-label">Régime fiscal</span>
+								<select bind:value={sciFormRegime} class="sci-select">
+									<option value="IR">IR</option>
+									<option value="IS">IS</option>
+								</select>
+							</label>
+							<Button disabled={creatingSci} onclick={handleCreateSci}>
+								{creatingSci ? 'Création en cours...' : 'Créer la SCI'}
+							</Button>
+						</div>
+					</div>
+				{/if}
 				{#if loading}
 					<div class="space-y-3">
 						{#each Array.from({ length: 3 }) as _}

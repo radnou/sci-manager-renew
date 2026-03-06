@@ -153,6 +153,29 @@ async function installCoreApiMocks(page: Page) {
 			fiscalite: []
 		}
 	};
+	const subscription = {
+		plan_key: 'pro',
+		plan_name: 'Pro',
+		status: 'active',
+		mode: 'subscription',
+		is_active: true,
+		entitlements_version: 1,
+		max_scis: 10,
+		max_biens: 20,
+		current_scis: 2,
+		current_biens: 3,
+		remaining_scis: 8,
+		remaining_biens: 17,
+		over_limit: false,
+		features: {
+			multi_sci_enabled: true,
+			charges_enabled: true,
+			fiscalite_enabled: true,
+			quitus_enabled: true,
+			cerfa_enabled: true,
+			priority_support: true
+		}
+	};
 
 	await page.route('**/api/v1/**', async (route) => {
 		const request = route.request();
@@ -178,6 +201,41 @@ async function installCoreApiMocks(page: Page) {
 				status: 200,
 				contentType: 'application/json',
 				body: JSON.stringify(scis)
+			});
+			return;
+		}
+
+		if (method === 'POST' && (path === '/api/v1/scis' || path === '/api/v1/scis/')) {
+			const payload = JSON.parse(request.postData() || '{}');
+			const created = {
+				id: `sci-${scis.length + 1}`,
+				nom: payload.nom || 'SCI créée',
+				siren: payload.siren || null,
+				regime_fiscal: payload.regime_fiscal || 'IR'
+			};
+			scis.push({
+				...created,
+				statut: 'configuration',
+				associes_count: 1,
+				biens_count: 0,
+				loyers_count: 0,
+				user_role: 'gerant',
+				user_part: 100,
+				associes: [{ id: 'associe-new', nom: 'Rad Noumane', email: 'rad@sci.local', part: 100, role: 'gerant' }]
+			});
+			await route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify(created)
+			});
+			return;
+		}
+
+		if (method === 'GET' && path === '/api/v1/stripe/subscription') {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(subscription)
 			});
 			return;
 		}
@@ -328,7 +386,7 @@ test.describe('Fake user access E2E', () => {
 		await expect(page.getByText('Charges récentes')).toBeVisible();
 
 		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
-		await expect(page.getByText('SCI Horizon Lyon')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' }).first()).toBeVisible();
 		await expect(page.getByText('Aucun loyer documenté sur la période récente.')).toBeVisible();
 
 		await page.getByRole('link', { name: 'Paramètres', exact: true }).click();

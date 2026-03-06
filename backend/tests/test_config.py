@@ -71,6 +71,7 @@ def test_feature_flags_are_configurable(monkeypatch):
     """Test que les feature flags sont configurables"""
     monkeypatch.setenv("FEATURE_CERFA_GENERATION", "false")
     monkeypatch.setenv("FEATURE_STRIPE_PAYMENTS", "true")
+    monkeypatch.setenv("FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT", "warn")
 
     from app.core.config import Settings
 
@@ -78,6 +79,7 @@ def test_feature_flags_are_configurable(monkeypatch):
 
     assert settings.feature_cerfa_generation is False
     assert settings.feature_stripe_payments is True
+    assert settings.feature_plan_entitlements_enforcement == "warn"
 
 
 def test_staging_environment_allows_test_secrets(monkeypatch):

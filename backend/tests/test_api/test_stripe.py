@@ -3,20 +3,24 @@ from types import SimpleNamespace
 import stripe
 
 from app.api.v1 import stripe as stripe_api
+from app.core.config import settings
 
 
 def test_create_checkout_session(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+
     def fake_create(**kwargs):
         assert kwargs["line_items"][0]["price"] == "price_test"
         assert kwargs["mode"] == "subscription"
         assert kwargs["client_reference_id"] == "user-123"
+        assert kwargs["metadata"]["plan_key"] == "starter"
         return SimpleNamespace(url="https://checkout.stripe.com/c/pay_test")
 
     monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
-        json={"price_id": "price_test"},
+        json={"plan_key": "starter"},
         headers=auth_headers,
     )
     assert response.status_code == 200
@@ -24,6 +28,7 @@ def test_create_checkout_session(client, auth_headers, monkeypatch):
 
 
 def test_create_checkout_session_without_url_fails(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
     monkeypatch.setattr(
         "app.api.v1.stripe.stripe.checkout.Session.create",
         lambda **_kwargs: SimpleNamespace(url=None),
@@ -31,7 +36,7 @@ def test_create_checkout_session_without_url_fails(client, auth_headers, monkeyp
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
-        json={"price_id": "price_test"},
+        json={"plan_key": "starter"},
         headers=auth_headers,
     )
     assert response.status_code == 503
@@ -39,6 +44,8 @@ def test_create_checkout_session_without_url_fails(client, auth_headers, monkeyp
 
 
 def test_create_checkout_session_stripe_error_fails(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+
     def fake_create(**_kwargs):
         raise stripe.error.StripeError("boom")
 
@@ -46,7 +53,7 @@ def test_create_checkout_session_stripe_error_fails(client, auth_headers, monkey
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
-        json={"price_id": "price_test"},
+        json={"plan_key": "starter"},
         headers=auth_headers,
     )
     assert response.status_code == 503
@@ -96,7 +103,7 @@ def test_webhook_invalid_payload(client, monkeypatch):
 def test_handle_event_checkout_completed_syncs_active(monkeypatch):
     captured = {}
 
-    def fake_sync(session_data, status_value):
+    def fake_sync(session_data, status_value, **_kwargs):
         captured["session_data"] = session_data
         captured["status_value"] = status_value
 
@@ -131,7 +138,7 @@ def test_handle_event_subscription_deleted(monkeypatch):
 def test_handle_event_subscription_updated(monkeypatch):
     captured = {}
 
-    def fake_sync(session_data, status_value):
+    def fake_sync(session_data, status_value, **_kwargs):
         captured["session_data"] = session_data
         captured["status_value"] = status_value
 
@@ -216,6 +223,15 @@ def test_sync_subscription_deleted_with_service_client(monkeypatch):
 
     stripe_api._sync_subscription_deleted({"id": "sub_7", "customer": "cus_7"})
     assert writes["table"] == "subscriptions"
-    assert writes["payload"] == {"status": "canceled"}
+    assert writes["payload"] == {"status": "canceled", "is_active": False}
     assert writes["eq"] == ("stripe_subscription_id", "sub_7")
     assert writes["executed"] is True
+
+
+def test_get_subscription_returns_free_fallback(client, auth_headers):
+    response = client.get("/api/v1/stripe/subscription", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["plan_key"] == "free"
+    assert payload["max_scis"] == 1
+    assert payload["max_biens"] == 1

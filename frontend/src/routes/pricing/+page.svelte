@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { addToast } from '$lib/components/ui/toast';
-	import { createCheckoutSession } from '$lib/api';
+	import { createCheckoutSession, type PlanKey } from '$lib/api';
 	import { Check, Users, Shield, Zap } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
@@ -19,77 +19,75 @@
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 
 	type Plan = {
+		planKey: PlanKey;
 		name: string;
 		price: string;
 		billing: string;
 		description: string;
 		features: string[];
-		priceId: string;
 		mode: 'subscription' | 'payment';
 		highlight?: boolean;
 		popular?: boolean;
 	};
 
-	const stripeStarterPriceId =
-		import.meta.env.VITE_STRIPE_STARTER_PRICE_ID || 'price_starter_placeholder';
-	const stripeProPriceId = import.meta.env.VITE_STRIPE_PRO_PRICE_ID || 'price_pro_placeholder';
-	const stripeLifetimePriceId =
-		import.meta.env.VITE_STRIPE_LIFETIME_PRICE_ID || 'price_lifetime_placeholder';
-
 	const plans: Plan[] = [
 		{
+			planKey: 'starter',
 			name: 'Starter',
 			price: '19€',
 			billing: '/mois',
 			description: 'Pour démarrer avec un portefeuille compact.',
 			features: [
+				'1 SCI maximum',
 				"Jusqu'à 5 biens",
 				'Dashboard KPI (biens + loyers)',
 				'Génération de quittance PDF',
 				'Suivi des loyers avec statuts'
 			],
-			priceId: stripeStarterPriceId,
 			mode: 'subscription'
 		},
 		{
+			planKey: 'pro',
 			name: 'Pro',
 			price: '49€',
 			billing: '/mois',
 			description: 'Pour les SCI actives avec plusieurs actifs.',
 			features: [
-				'Biens illimités',
+				'Jusqu’à 10 SCI',
+				'Jusqu’à 20 biens',
 				'Contexte multi-SCI',
 				'Filtres loyers (date + statut)',
 				'Accès prioritaire aux évolutions produit'
 			],
-			priceId: stripeProPriceId,
 			mode: 'subscription',
 			highlight: true,
 			popular: true
 		},
 		{
+			planKey: 'lifetime',
 			name: 'Lifetime',
 			price: '299€',
 			billing: 'paiement unique',
 			description: 'Paiement unique pour un accès durable.',
 			features: [
 				'Tout le plan Pro',
+				'SCI illimitées',
+				'Biens illimités',
 				'Accès à vie',
 				'Mises à jour incluses',
 				'Support email prioritaire'
 			],
-			priceId: stripeLifetimePriceId,
 			mode: 'payment'
 		}
 	];
 
-	let activeCheckout = $state<string | null>(null);
+	let activeCheckout = $state<PlanKey | null>(null);
 
 	async function handleCheckout(plan: Plan) {
-		activeCheckout = plan.priceId;
+		activeCheckout = plan.planKey;
 		try {
 			const { url } = await createCheckoutSession({
-				price_id: plan.priceId,
+				plan_key: plan.planKey,
 				mode: plan.mode
 			});
 			window.location.href = url;
@@ -137,8 +135,8 @@
 				</p>
 			</div>
 
-			<div class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-3">
-				{#each plans as plan (plan.priceId)}
+		<div class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-3">
+				{#each plans as plan (plan.planKey)}
 					<Card
 						class={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
 							plan.highlight ? 'scale-105 shadow-lg ring-2 ring-blue-500' : 'hover:shadow-lg'
@@ -191,10 +189,10 @@
 										? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg hover:from-blue-600 hover:to-cyan-600 hover:shadow-xl'
 										: 'border-2 border-slate-200 bg-white hover:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-400'
 								}`}
-								disabled={activeCheckout === plan.priceId}
+								disabled={activeCheckout === plan.planKey}
 								onclick={() => handleCheckout(plan)}
 							>
-								{activeCheckout === plan.priceId
+								{activeCheckout === plan.planKey
 									? 'Redirection en cours...'
 									: `Choisir ${plan.name}`}
 							</Button>
