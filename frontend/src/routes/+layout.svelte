@@ -111,6 +111,11 @@
 			return;
 		}
 
+		if (user && pathname === '/') {
+			goto('/dashboard', { replaceState: true, noScroll: true });
+			return;
+		}
+
 		if (user && isGuestOnlyRoute(pathname)) {
 			goto('/dashboard', { replaceState: true, noScroll: true });
 		}
@@ -348,7 +353,23 @@
 		<AppBreadcrumbs />
 	{/if}
 
-	{#if isProtectedRoute(page.url.pathname) && (!authResolved || !user)}
+	{#if authResolved && user && page.url.pathname === '/'}
+		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
+			<div
+				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
+			>
+				<p class="text-sm font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Espace connecté
+				</p>
+				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+					Ouverture du cockpit
+				</h1>
+				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+					Redirection vers votre dashboard opérateur.
+				</p>
+			</div>
+		</section>
+	{:else if isProtectedRoute(page.url.pathname) && (!authResolved || !user)}
 		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
 			<div
 				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"

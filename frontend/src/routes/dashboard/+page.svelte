@@ -19,6 +19,7 @@
 		type SCIOverview
 	} from '$lib/api';
 	import BienTable from '$lib/components/BienTable.svelte';
+	import GettingStartedPanel from '$lib/components/GettingStartedPanel.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import QuitusGenerator from '$lib/components/QuitusGenerator.svelte';
@@ -44,7 +45,9 @@
 		mapAssociateRoleLabel,
 		mapChargeTypeLabel
 	} from '$lib/high-value/presentation';
+	import { getCurrentSession } from '$lib/auth/session';
 	import { featureFlags } from '$lib/config/features';
+	import { dismissOnboarding, isOnboardingDismissed, reopenOnboarding } from '$lib/onboarding/experience';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
@@ -58,6 +61,9 @@
 	let detailErrorMessage = '';
 	let detailLoadedFor = '';
 	let detailRequestVersion = 0;
+	let onboardingVisible = true;
+	let onboardingReady = false;
+	let onboardingUserId = '';
 	const multiSciDashboardV2Enabled = featureFlags.multiSciDashboardV2;
 
 	const emptyBienMetrics = calculateBienMetrics([]);
@@ -102,6 +108,13 @@
 		(left, right) => (right.annee ?? 0) - (left.annee ?? 0)
 	);
 	$: latestFiscalYear = fiscalTimeline[0] ?? null;
+	$: hasLocataireReference = recentLoyerFeed.some(
+		(loyer) => String(loyer.id_locataire || '').trim().length > 0
+	);
+	$: shouldShowGettingStarted =
+		onboardingReady &&
+		onboardingVisible &&
+		(scis.length === 0 || scopedBiens.length === 0 || !hasLocataireReference || scopedLoyers.length === 0);
 	$: priorities = [
 		{
 			title:
@@ -297,8 +310,18 @@
 			detailLoading = false;
 			return;
 		}
-		await loadOverview();
+		await Promise.all([loadOverview(), hydrateOnboardingState()]);
 	});
+
+	async function hydrateOnboardingState() {
+		try {
+			const session = await getCurrentSession();
+			onboardingUserId = session?.user?.id || '';
+			onboardingVisible = onboardingUserId ? !isOnboardingDismissed(onboardingUserId) : true;
+		} finally {
+			onboardingReady = true;
+		}
+	}
 
 	async function loadOverview() {
 		loading = true;
@@ -356,6 +379,20 @@
 			detailLoading = false;
 		}
 	}
+
+	function hideGettingStarted() {
+		if (onboardingUserId) {
+			dismissOnboarding(onboardingUserId);
+		}
+		onboardingVisible = false;
+	}
+
+	function reopenGettingStarted() {
+		if (onboardingUserId) {
+			reopenOnboarding(onboardingUserId);
+		}
+		onboardingVisible = true;
+	}
 </script>
 
 <section class="sci-page-shell">
@@ -366,6 +403,13 @@
 			Une vue portefeuille de toutes les SCI accessibles par l’utilisateur. Sélectionne ensuite une
 			SCI active pour entrer dans la lecture opérationnelle, la gouvernance et les flux.
 		</p>
+		{#if onboardingReady && !shouldShowGettingStarted && onboardingUserId}
+			<div class="mt-4">
+				<Button variant="outline" size="sm" onclick={reopenGettingStarted}>
+					Réouvrir les premiers pas
+				</Button>
+			</div>
+		{/if}
 	</header>
 
 	{#if !multiSciDashboardV2Enabled}
@@ -389,6 +433,20 @@
 	{:else}
 		{#if errorMessage}
 			<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
+		{/if}
+
+		{#if shouldShowGettingStarted}
+			<div class="mb-6">
+				<GettingStartedPanel
+					loading={loading}
+					sciCount={scis.length}
+					bienCount={scopedBiens.length}
+					loyerCount={scopedLoyers.length}
+					{hasLocataireReference}
+					activeSciLabel={activeSciProfile?.nom || activeSci?.nom || ''}
+					onDismiss={hideGettingStarted}
+				/>
+			</div>
 		{/if}
 
 		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
