@@ -45,6 +45,7 @@
 		mapAssociateRoleLabel,
 		mapChargeTypeLabel
 	} from '$lib/high-value/presentation';
+	import { featureFlags } from '$lib/config/features';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let biens: Bien[] = [];
@@ -58,6 +59,7 @@
 	let detailErrorMessage = '';
 	let detailLoadedFor = '';
 	let detailRequestVersion = 0;
+	const multiSciDashboardV2Enabled = featureFlags.multiSciDashboardV2;
 
 	const emptyBienMetrics = calculateBienMetrics([]);
 	const emptyLoyerMetrics = calculateLoyerMetrics([]);
@@ -251,7 +253,14 @@
 		return Number.isNaN(parsed) ? 0 : parsed;
 	}
 
-	onMount(loadOverview);
+	onMount(async () => {
+		if (!multiSciDashboardV2Enabled) {
+			loading = false;
+			detailLoading = false;
+			return;
+		}
+		await loadOverview();
+	});
 
 	async function loadOverview() {
 		loading = true;
@@ -321,11 +330,30 @@
 		</p>
 	</header>
 
-	{#if errorMessage}
-		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
-	{/if}
+	{#if !multiSciDashboardV2Enabled}
+		<div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_25px_80px_-40px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950">
+			<p class="text-[0.72rem] font-semibold tracking-[0.2em] text-slate-500 uppercase">
+				Rollout contrôlé
+			</p>
+			<h2 class="mt-3 font-serif text-3xl text-slate-950 dark:text-slate-50">
+				Le dashboard portefeuille V2 est désactivé
+			</h2>
+			<p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+				L’environnement courant n’expose pas encore le cockpit multi-SCI. Utilise les modules biens,
+				loyers et paramètres pendant que ce rollout reste fermé.
+			</p>
+			<div class="mt-6 flex flex-wrap gap-3">
+				<a href="/biens"><Button>Gérer les biens</Button></a>
+				<a href="/loyers"><Button variant="outline">Suivre les loyers</Button></a>
+				<a href="/settings"><Button variant="outline">Paramètres</Button></a>
+			</div>
+		</div>
+	{:else}
+		{#if errorMessage}
+			<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
+		{/if}
 
-	<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 		<KpiCard
 			label="SCI suivies"
 			value={formatCompactNumber(portfolioMetrics.sciCount)}
@@ -1119,5 +1147,6 @@
 				</CardContent>
 			</Card>
 		</div>
-	</div>
+		</div>
+	{/if}
 </section>

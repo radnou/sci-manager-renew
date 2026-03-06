@@ -20,6 +20,7 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
+	import { featureFlags } from '$lib/config/features';
 	import { mapBienTypeLabel } from '$lib/high-value/biens';
 	import {
 		formatCompactNumber,
@@ -47,6 +48,7 @@
 	let sciFormSiren = $state('');
 	let sciFormRegime = $state<'IR' | 'IS'>('IR');
 	let creatingSci = $state(false);
+	const multiSciDashboardV2Enabled = featureFlags.multiSciDashboardV2;
 
 	const resolvedActiveSciId = $derived(
 		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
@@ -78,7 +80,14 @@
 		void loadSciDetail(resolvedActiveSciId);
 	});
 
-	onMount(loadScis);
+	onMount(async () => {
+		if (!multiSciDashboardV2Enabled) {
+			loading = false;
+			detailLoading = false;
+			return;
+		}
+		await loadScis();
+	});
 
 	async function loadScis() {
 		loading = true;
@@ -187,11 +196,30 @@
 		</p>
 	</header>
 
-	{#if errorMessage}
-		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
-	{/if}
+	{#if !multiSciDashboardV2Enabled}
+		<div class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_25px_80px_-40px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950">
+			<p class="text-[0.72rem] font-semibold tracking-[0.2em] text-slate-500 uppercase">
+				Rollout contrôlé
+			</p>
+			<h2 class="mt-3 font-serif text-3xl text-slate-950 dark:text-slate-50">
+				Le portefeuille multi-SCI V2 est désactivé
+			</h2>
+			<p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+				Ce workspace n’est pas exposé dans l’environnement courant. Continue le pilotage depuis
+				le cockpit, les biens et les loyers pendant que le rollout reste fermé.
+			</p>
+			<div class="mt-6 flex flex-wrap gap-3">
+				<a href="/dashboard"><Button>Ouvrir le cockpit</Button></a>
+				<a href="/biens"><Button variant="outline">Gérer les biens</Button></a>
+				<a href="/loyers"><Button variant="outline">Suivre les loyers</Button></a>
+			</div>
+		</div>
+	{:else}
+		{#if errorMessage}
+			<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
+		{/if}
 
-	<div class="grid gap-6 xl:grid-cols-[22rem_1fr]">
+		<div class="grid gap-6 xl:grid-cols-[22rem_1fr]">
 			<Card class="sci-section-card h-fit">
 			<CardHeader>
 				<div>
@@ -728,5 +756,6 @@
 				</CardContent>
 			</Card>
 		</div>
-	</div>
+		</div>
+	{/if}
 </section>

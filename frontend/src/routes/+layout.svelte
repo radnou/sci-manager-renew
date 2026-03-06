@@ -12,6 +12,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
 	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
+	import { featureFlags } from '$lib/config/features';
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
@@ -27,11 +28,11 @@
 
 	const authenticatedNavItems = [
 		{ href: '/dashboard', label: 'Cockpit' },
-		{ href: '/scis', label: 'SCI' },
+		featureFlags.multiSciDashboardV2 ? { href: '/scis', label: 'SCI' } : null,
 		{ href: '/biens', label: 'Biens' },
 		{ href: '/loyers', label: 'Loyers' },
 		{ href: '/pricing', label: 'Tarifs' }
-	];
+	].filter(Boolean) as { href: string; label: string }[];
 
 	const authenticatedUtilityItems = [
 		{ href: '/account', label: 'Compte' },
