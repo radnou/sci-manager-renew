@@ -57,12 +57,47 @@
 			: String(scis[0]?.id || '')
 	);
 	const activeSci = $derived(scis.find((sci) => String(sci.id) === resolvedActiveSciId) ?? null);
+	const setupSciCount = $derived(
+		scis.filter((sci) => !sci.statut || sci.statut === 'configuration').length
+	);
+	const operationalSciCount = $derived(
+		scis.filter((sci) => sci.statut === 'mise_en_service' || sci.statut === 'exploitation').length
+	);
+	const portfolioBiensCount = $derived(
+		scis.reduce((sum, sci) => sum + (sci.biens_count ?? 0), 0)
+	);
+	const portfolioLoyersCount = $derived(
+		scis.reduce((sum, sci) => sum + (sci.loyers_count ?? 0), 0)
+	);
 	const collectionRate = $derived.by(() => {
 		const paid = detail?.paid_loyers_total ?? 0;
 		const pending = detail?.pending_loyers_total ?? 0;
 		const total = paid + pending;
 		return total > 0 ? (paid / total) * 100 : 0;
 	});
+	const portfolioSignals = $derived([
+		{
+			label: 'Structure',
+			value: `${setupSciCount} à structurer`,
+			detail:
+				setupSciCount > 0
+					? 'Certaines sociétés demandent encore une mise en service.'
+					: 'Le portefeuille est structuré côté sociétés.'
+		},
+		{
+			label: 'Patrimoine',
+			value: `${portfolioBiensCount} bien(s)`,
+			detail: `${portfolioLoyersCount} loyer(s) référencés dans le portefeuille.`
+		},
+		{
+			label: 'Capacité',
+			value: subscription?.plan_name || 'Offre en cours',
+			detail:
+				subscription?.max_scis == null
+					? 'SCI illimitées'
+					: `${subscription?.current_scis ?? 0}/${subscription?.max_scis ?? 0} SCI consommées`
+		}
+	]);
 
 	$effect(() => {
 		if (!resolvedActiveSciId) {
@@ -223,124 +258,178 @@
 		{/if}
 
 		<div class="grid gap-6 xl:grid-cols-[21rem_1fr]">
-			<Card class="sci-section-card h-fit">
-			<CardHeader>
-				<div>
-					<CardTitle class="text-lg">Portefeuille SCI</CardTitle>
-					<CardDescription
-						>Sélectionne une entité pour basculer le cockpit sur sa fiche d’identité et ses actions.</CardDescription
-					>
-				</div>
-			</CardHeader>
-			<CardContent class="space-y-4 pt-0">
-				{#if subscription}
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Capacité active</p>
-						<p class="mt-2 font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.current_scis}/${subscription.max_scis} SCI`}
-							•
-							{subscription.max_biens == null ? 'Biens illimités' : `${subscription.current_biens}/${subscription.max_biens} biens`}
-						</p>
-					</div>
-				{/if}
-				<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-					<div class="flex flex-wrap items-center justify-between gap-3">
+			<div class="space-y-6">
+				<Card class="sci-section-card h-fit">
+					<CardHeader>
 						<div>
-							<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Créer une nouvelle SCI</p>
-							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-								Active cette zone uniquement quand tu ajoutes une nouvelle société au portefeuille.
-							</p>
+							<CardTitle class="text-lg">Vue portefeuille</CardTitle>
+							<CardDescription>
+								Choisis d’abord la SCI active. La création de société reste séparée pour éviter de
+								brouiller le pilotage.
+							</CardDescription>
 						</div>
-						<Button variant={showCreateSciForm ? 'outline' : 'default'} onclick={() => (showCreateSciForm = !showCreateSciForm)}>
-							{showCreateSciForm ? 'Masquer le formulaire' : 'Nouvelle SCI'}
-						</Button>
-					</div>
-					{#if showCreateSciForm}
-						<div class="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-							<label class="sci-field">
-								<span class="sci-field-label">Nom</span>
-								<Input bind:value={sciFormNom} placeholder="SCI Patrimoine Belleville" />
-							</label>
-							<label class="sci-field">
-								<span class="sci-field-label">SIREN</span>
-								<Input bind:value={sciFormSiren} placeholder="123456789" inputmode="numeric" />
-							</label>
-							<label class="sci-field">
-								<span class="sci-field-label">Régime fiscal</span>
-								<select bind:value={sciFormRegime} class="sci-select">
-									<option value="IR">IR</option>
-									<option value="IS">IS</option>
-								</select>
-							</label>
-							<Button disabled={creatingSci} onclick={handleCreateSci}>
-								{creatingSci ? 'Création en cours...' : 'Créer la SCI'}
+					</CardHeader>
+					<CardContent class="space-y-4 pt-0">
+						<div class="grid gap-3">
+							{#each portfolioSignals as item (item.label)}
+								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
+										{item.label}
+									</p>
+									<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{item.value}</p>
+									<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.detail}</p>
+								</div>
+							{/each}
+						</div>
+
+						{#if loading}
+							<div class="space-y-3">
+								{#each Array.from({ length: 3 }) as _}
+									<div class="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
+								{/each}
+							</div>
+						{:else if scis.length === 0}
+							<div
+								class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+							>
+								Aucune SCI accessible. Le portefeuille se remplira ici dès qu’une société sera liée au
+								compte.
+							</div>
+						{:else}
+							<div class="space-y-3">
+								{#each scis as sci (String(sci.id))}
+									<button
+										type="button"
+										class={`w-full rounded-2xl border p-4 text-left transition-colors ${
+											String(sci.id) === resolvedActiveSciId
+												? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950'
+												: 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
+										}`}
+										onclick={() => {
+											activeSciId = String(sci.id);
+											errorMessage = '';
+										}}
+										aria-pressed={String(sci.id) === resolvedActiveSciId}
+									>
+										<div class="flex items-start justify-between gap-3">
+											<div>
+												<p class="text-sm font-semibold">{sci.nom}</p>
+												<p class="mt-1 text-xs opacity-75">SIREN {sci.siren || 'À compléter'}</p>
+											</div>
+											<span
+												class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(sci.statut)}`}
+											>
+												{statusLabel(sci.statut)}
+											</span>
+										</div>
+										<div class="mt-4 grid grid-cols-3 gap-2 text-xs opacity-80">
+											<div>
+												<p class="font-semibold">{sci.associes_count || 0}</p>
+												<p>Associés</p>
+											</div>
+											<div>
+												<p class="font-semibold">{sci.biens_count || 0}</p>
+												<p>Biens</p>
+											</div>
+											<div>
+												<p class="font-semibold">{sci.loyers_count || 0}</p>
+												<p>Loyers</p>
+											</div>
+										</div>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
+
+				<Card class="sci-section-card h-fit">
+					<CardHeader>
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<div>
+								<CardTitle class="text-lg">Créer une SCI</CardTitle>
+								<CardDescription>
+									Utilise ce bloc seulement quand tu ajoutes une nouvelle société au portefeuille.
+								</CardDescription>
+							</div>
+							<Button variant={showCreateSciForm ? 'outline' : 'default'} onclick={() => (showCreateSciForm = !showCreateSciForm)}>
+								{showCreateSciForm ? 'Masquer' : 'Nouvelle SCI'}
 							</Button>
 						</div>
-					{/if}
-				</div>
-				{#if loading}
-					<div class="space-y-3">
-						{#each Array.from({ length: 3 }) as _}
-							<div class="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
-						{/each}
-					</div>
-				{:else if scis.length === 0}
-					<div
-						class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-					>
-						Aucune SCI accessible. Le portefeuille se remplira ici dès qu’une société sera liée au
-						compte.
-					</div>
-				{:else}
-					<div class="space-y-3">
-						{#each scis as sci (String(sci.id))}
-							<button
-								type="button"
-								class={`w-full rounded-2xl border p-4 text-left transition-colors ${
-									String(sci.id) === resolvedActiveSciId
-										? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950'
-										: 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
-								}`}
-								onclick={() => {
-									activeSciId = String(sci.id);
-									errorMessage = '';
-								}}
-								aria-pressed={String(sci.id) === resolvedActiveSciId}
-							>
-								<div class="flex items-start justify-between gap-3">
-									<div>
-										<p class="text-sm font-semibold">{sci.nom}</p>
-										<p class="mt-1 text-xs opacity-75">SIREN {sci.siren || 'À compléter'}</p>
-									</div>
-									<span
-										class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(sci.statut)}`}
-									>
-										{statusLabel(sci.statut)}
-									</span>
-								</div>
-								<div class="mt-4 grid grid-cols-3 gap-2 text-xs opacity-80">
-									<div>
-										<p class="font-semibold">{sci.associes_count || 0}</p>
-										<p>Associés</p>
-									</div>
-									<div>
-										<p class="font-semibold">{sci.biens_count || 0}</p>
-										<p>Biens</p>
-									</div>
-									<div>
-										<p class="font-semibold">{sci.loyers_count || 0}</p>
-										<p>Loyers</p>
-									</div>
-								</div>
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</CardContent>
-		</Card>
+					</CardHeader>
+					<CardContent class="pt-0">
+						{#if showCreateSciForm}
+							<div class="space-y-3">
+								<label class="sci-field">
+									<span class="sci-field-label">Nom</span>
+									<Input bind:value={sciFormNom} placeholder="SCI Patrimoine Belleville" />
+								</label>
+								<label class="sci-field">
+									<span class="sci-field-label">SIREN</span>
+									<Input bind:value={sciFormSiren} placeholder="123456789" inputmode="numeric" />
+								</label>
+								<label class="sci-field">
+									<span class="sci-field-label">Régime fiscal</span>
+									<select bind:value={sciFormRegime} class="sci-select">
+										<option value="IR">IR</option>
+										<option value="IS">IS</option>
+									</select>
+								</label>
+								<Button disabled={creatingSci} onclick={handleCreateSci}>
+									{creatingSci ? 'Création en cours...' : 'Créer la SCI'}
+								</Button>
+							</div>
+						{:else}
+							<p class="text-sm text-slate-500 dark:text-slate-400">
+								La création reste secondaire par rapport à la lecture et au pilotage de la SCI active.
+							</p>
+						{/if}
+					</CardContent>
+				</Card>
+			</div>
 
 			<div class="space-y-6">
+				<Card class="sci-section-card">
+					<CardHeader>
+						<CardTitle class="text-lg">Vision d’ensemble</CardTitle>
+						<CardDescription>
+							Le portefeuille reste à gauche. La colonne principale sert à lire la SCI active et à
+							ouvrir ensuite les preuves opérationnelles.
+						</CardDescription>
+					</CardHeader>
+					<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI opérationnelles</p>
+							<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+								{operationalSciCount}/{scis.length}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								sociétés mises en service ou en exploitation.
+							</p>
+						</div>
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
+							<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+								{detail?.nom || activeSci?.nom || 'À sélectionner'}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								{detail?.user_role ? mapAssociateRoleLabel(detail.user_role) : 'Rôle à confirmer'}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Action suivante</p>
+							<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+								{detail?.biens_count ? 'Contrôler le patrimoine' : 'Créer la première base'}
+							</p>
+							<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+								{detail?.biens_count
+									? 'Passe ensuite aux loyers et aux documents.'
+									: 'Commence par les associés, le SIREN et le premier bien.'}
+							</p>
+						</div>
+					</CardContent>
+				</Card>
+
 				<Card class="sci-section-card overflow-hidden">
 					<CardContent class="p-0">
 						<div class="h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-500"></div>
@@ -473,6 +562,17 @@
 									)}
 								</p>
 							</div>
+							<div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+								<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+									Ordre de lecture
+								</p>
+								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+									1. Gouvernance • 2. Patrimoine • 3. Loyers / Charges • 4. Fiscalité
+								</p>
+								<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+									Le bloc détaillé plus bas suit exactement ce parcours.
+								</p>
+							</div>
 						</div>
 					</div>
 				</CardContent>
@@ -480,8 +580,8 @@
 
 			<div class="flex items-center justify-between gap-3">
 				<div>
-					<p class="sci-eyebrow">SCI active • Lecture opérationnelle</p>
-					<h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-50">Pilotage détaillé</h2>
+					<p class="sci-eyebrow">SCI active • Preuves et contrôles</p>
+					<h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-50">Lecture détaillée</h2>
 				</div>
 				<div class="hidden items-center gap-2 lg:flex">
 					<Button href="/biens" variant="outline">Biens</Button>
