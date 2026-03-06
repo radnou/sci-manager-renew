@@ -4,6 +4,7 @@ from typing import Any
 
 import structlog
 
+from app.core.config import settings
 from app.core.entitlements import (
     PlanKey,
     build_plan_snapshot,
@@ -20,6 +21,32 @@ ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing", "paid"}
 
 
 class SubscriptionService:
+    @staticmethod
+    def _enforcement_mode() -> str:
+        return settings.feature_plan_entitlements_enforcement
+
+    @classmethod
+    def _guardrail_allows(cls) -> bool:
+        return cls._enforcement_mode() in {"observe", "warn"}
+
+    @classmethod
+    def _log_guardrail_bypass(
+        cls,
+        *,
+        reason: str,
+        user_id: str,
+        plan_key: str,
+        details: dict[str, Any],
+    ) -> None:
+        logger.warning(
+            "subscription_guardrail_bypassed",
+            enforcement_mode=cls._enforcement_mode(),
+            reason=reason,
+            user_id=user_id,
+            plan_key=plan_key,
+            **details,
+        )
+
     @staticmethod
     def _count_query(query: Any) -> int:
         result = query.execute()
@@ -117,8 +144,24 @@ class SubscriptionService:
         plan_key = str(summary["plan_key"])
         features = summary.get("features") or {}
         if plan_key != PlanKey.FREE.value and not summary.get("is_active", False):
+            if cls._guardrail_allows():
+                cls._log_guardrail_bypass(
+                    reason="inactive_subscription",
+                    user_id=user_id,
+                    plan_key=plan_key,
+                    details={"status": str(summary.get("status")), "feature_name": feature_name},
+                )
+                return summary
             raise SubscriptionInactiveError(plan_key=plan_key, status=str(summary.get("status")))
         if not features.get(feature_name, False):
+            if cls._guardrail_allows():
+                cls._log_guardrail_bypass(
+                    reason="feature_disabled",
+                    user_id=user_id,
+                    plan_key=plan_key,
+                    details={"feature_name": feature_name},
+                )
+                return summary
             raise UpgradeRequiredError(
                 "Le plan actif ne couvre pas cette fonctionnalité.",
                 plan_key=plan_key,
@@ -130,6 +173,14 @@ class SubscriptionService:
         summary = cls.get_subscription_summary(user_id)
         plan_key = str(summary["plan_key"])
         if plan_key != PlanKey.FREE.value and not summary.get("is_active", False):
+            if cls._guardrail_allows():
+                cls._log_guardrail_bypass(
+                    reason="inactive_subscription",
+                    user_id=user_id,
+                    plan_key=plan_key,
+                    details={"status": str(summary.get("status")), "resource": resource},
+                )
+                return summary
             raise SubscriptionInactiveError(plan_key=plan_key, status=str(summary.get("status")))
 
         limit_key = f"max_{resource}"
@@ -146,6 +197,14 @@ class SubscriptionService:
                 current=current_value,
                 limit=limit_value,
             )
+            if cls._guardrail_allows():
+                cls._log_guardrail_bypass(
+                    reason="limit_reached",
+                    user_id=user_id,
+                    plan_key=plan_key,
+                    details={"resource": resource, "current": current_value, "limit": limit_value},
+                )
+                return summary
             raise PlanLimitError(resource=resource, limit=limit_value, current=current_value, plan_key=plan_key)
 
         return summary
