@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { User } from '@supabase/supabase-js';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Menu, X } from 'lucide-svelte';
 	import { supabase } from '$lib/supabase';
@@ -9,6 +10,7 @@
 		getCurrentSession,
 		subscribeToSessionChanges
 	} from '$lib/auth/session';
+	import { buildLoginRedirect, isGuestOnlyRoute, isProtectedRoute } from '$lib/auth/route-guard';
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
 	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
@@ -21,6 +23,7 @@
 
 	let { children } = $props();
 	let user = $state<User | null>(null);
+	let authResolved = $state(false);
 	let mobileMenuOpen = $state(false);
 	let accountMenuOpen = $state(false);
 	let previousPath = page.url.pathname;
@@ -58,12 +61,14 @@
 		getCurrentSession().then((session) => {
 			if (mounted) {
 				user = session?.user || null;
+				authResolved = true;
 			}
 		});
 
 		const subscription = subscribeToSessionChanges((session) => {
 			if (mounted) {
 				user = session?.user || null;
+				authResolved = true;
 			}
 		});
 
@@ -90,6 +95,24 @@
 			mobileMenuOpen = false;
 			accountMenuOpen = false;
 			previousPath = currentPath;
+		}
+	});
+
+	$effect(() => {
+		if (!authResolved) {
+			return;
+		}
+
+		const pathname = page.url.pathname;
+		const search = page.url.search;
+
+		if (!user && isProtectedRoute(pathname)) {
+			goto(buildLoginRedirect(pathname, search), { replaceState: true, noScroll: true });
+			return;
+		}
+
+		if (user && isGuestOnlyRoute(pathname)) {
+			goto('/dashboard', { replaceState: true, noScroll: true });
 		}
 	});
 </script>
@@ -325,7 +348,25 @@
 		<AppBreadcrumbs />
 	{/if}
 
-	{@render children()}
+	{#if isProtectedRoute(page.url.pathname) && (!authResolved || !user)}
+		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
+			<div
+				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
+			>
+				<p class="text-sm font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Zone protégée
+				</p>
+				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+					Connexion requise
+				</h1>
+				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+					Redirection vers l’espace de connexion sécurisé.
+				</p>
+			</div>
+		</section>
+	{:else}
+		{@render children()}
+	{/if}
 
 	<!-- Footer -->
 	<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">

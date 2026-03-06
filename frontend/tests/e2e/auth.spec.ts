@@ -1,6 +1,23 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Authentication pages', () => {
+	test('protected routes redirect anonymous users to login', async ({ page }) => {
+		for (const pathname of [
+			'/dashboard',
+			'/scis',
+			'/biens',
+			'/loyers',
+			'/account',
+			'/account/privacy',
+			'/settings',
+			'/success'
+		]) {
+			await page.goto(pathname);
+			await page.waitForURL(/\/login(\?|$)/);
+			await expect(page).toHaveURL(new RegExp(`/login\\?next=`));
+		}
+	});
+
 	test('login page exposes magic-link flow', async ({ page }) => {
 		await page.goto('/login');
 
