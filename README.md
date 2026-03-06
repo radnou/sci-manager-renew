@@ -62,6 +62,9 @@ DATABASE_PASSWORD=your_secure_password
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_prod_anon_key
 STRIPE_SECRET_KEY=sk_live_your_key
+STRIPE_STARTER_PRICE_ID=price_live_starter
+STRIPE_PRO_PRICE_ID=price_live_pro
+STRIPE_LIFETIME_PRICE_ID=price_live_lifetime
 # ... toutes les autres variables
 ```
 
@@ -309,14 +312,40 @@ Ce script enchaîne:
 - backend: `pytest --cov=backend/app --cov-fail-under=85`
 - frontend: `npm --prefix frontend run test:high-value -- --coverage`
 
-## 10) Documentation
+## 10) Entitlements Stripe
+
+Le checkout frontend envoie désormais un `plan_key`, pas un `price_id`. Le backend reste l’autorité sur le mapping plan -> prix Stripe et persiste un snapshot d’entitlements dans `subscriptions`.
+
+Plans pris en charge:
+- `free`: 1 SCI, 1 bien
+- `starter`: 1 SCI, 5 biens
+- `pro`: 10 SCI, 20 biens
+- `lifetime`: SCI et biens illimités
+
+Le backend expose `GET /api/v1/stripe/subscription` pour afficher l’offre active, les usages et les quotas restants.
+
+## 11) Environnements
+
+Des templates séparés sont fournis pour préparer les environnements:
+- `.env.development.example`
+- `.env.staging.example`
+- `.env.production.example`
+
+Les flags de rollout utiles:
+- `FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT=observe|warn|enforce`
+- `FEATURE_NEW_CHECKOUT_CATALOG=true|false`
+- `FEATURE_PDF_RENDER_DIRECT=true|false`
+- `FEATURE_MULTI_SCI_DASHBOARD_V2=true|false`
+
+## 12) Documentation
 
 - Vision & positionnement: [`docs/BUSINESS_FUNCTIONAL_OVERVIEW.md`](docs/BUSINESS_FUNCTIONAL_OVERVIEW.md)
 - Parcours fonctionnels et exigences MVP: [`docs/FUNCTIONAL_REQUIREMENTS.md`](docs/FUNCTIONAL_REQUIREMENTS.md)
 - Go-to-market & métriques: [`docs/GTM_AND_METRICS.md`](docs/GTM_AND_METRICS.md)
 - Architecture technique: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 - Audit de maturité: [`AUDIT_BIG4_2026-03-04.md`](AUDIT_BIG4_2026-03-04.md)
+- Go-live blockers: [`docs/go-live-blockers-2026-03-06.md`](docs/go-live-blockers-2026-03-06.md)
 
-## 11) Skills et sub-agents projet
+## 13) Skills et sub-agents projet
 
 Le dossier [`skills/`](skills/) contient des skills internes pour standardiser les travaux orientés business/produit (documentation, backlog fonctionnel, stratégie go-to-market).

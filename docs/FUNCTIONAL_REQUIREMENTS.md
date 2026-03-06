@@ -138,9 +138,11 @@ Criteres d'acceptation:
 
 ## 5.7 Paiement Stripe
 
-- FR-PAY-001: creation de session checkout depuis un `price_id`.
+- FR-PAY-001: creation de session checkout depuis un `plan_key`, resolu cote backend vers le `price_id` Stripe actif.
 - FR-PAY-002: redirection vers page succes/annulation.
 - FR-PAY-003: endpoint webhook valide la signature Stripe.
+- FR-PAY-004: l'abonnement expose les entitlements de compte (SCI, biens, fonctionnalites activees).
+- FR-PAY-005: les creations SCI et biens refusent proprement les depassements de quota.
 
 Criteres d'acceptation:
 - webhook signature invalide -> HTTP 400,

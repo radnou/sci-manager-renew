@@ -1,96 +1,89 @@
 # Deployment Checklist - GererSCI
 
-## Pré-Déploiement
+## 1. Build Gate
+- [ ] `bash scripts/quality-gate.sh` passe en local ou CI
+- [ ] Backend coverage `>= 85%`
+- [ ] Frontend high-value coverage `>= 85%`
+- [ ] E2E critiques passent
+- [ ] `bandit -r backend/app` ne remonte aucun blocant
 
-### Code Quality
-- [ ] Tous les tests passent (`pytest --cov=app`)
-- [ ] Coverage ≥ 80% sur les modules critiques
-- [ ] Aucune alerte de sécurité (`bandit -r app`)
-- [ ] Linting passé (`ruff check app`)
-- [ ] Type checking passé (`mypy app`)
+## 2. Configuration & Secrets
+- [ ] `APP_ENV=staging` ou `APP_ENV=production`
+- [ ] `DEBUG=false`
+- [ ] `LOG_FORMAT=json`
+- [ ] `CORS_ORIGINS` ne contient aucun hôte local en production
+- [ ] `ALLOWED_HOSTS` borne le domaine cible
+- [ ] Tous les secrets proviennent d'une source dédiée et non d'un placeholder:
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `SUPABASE_JWT_SECRET`
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_WEBHOOK_SECRET`
+  - `RESEND_API_KEY`
+- [ ] Les templates `.env.development.example`, `.env.staging.example`, `.env.production.example` sont alignés avec la config effective
 
-### Configuration
-- [ ] Variables d'environnement validées (voir `app/core/config.py`)
-- [ ] APP_ENV défini correctement (staging ou production)
-- [ ] DEBUG=false en production
-- [ ] LOG_LEVEL=WARNING en production
-- [ ] LOG_FORMAT=json en production
-- [ ] CORS_ORIGINS ne contient pas localhost en production
-- [ ] Secrets récupérés depuis AWS Secrets Manager
+## 3. Stripe & Entitlements
+- [ ] Les produits Stripe portent les metadata structurées:
+  - `plan_key`
+  - `billing_period`
+  - `max_scis`
+  - `max_biens`
+  - `entitlements_version`
+- [ ] Les prix live sont renseignés:
+  - `STRIPE_STARTER_PRICE_ID`
+  - `STRIPE_PRO_PRICE_ID`
+  - `STRIPE_LIFETIME_PRICE_ID`
+- [ ] `GET /api/v1/stripe/subscription` retourne l'offre attendue sur un compte de test
+- [ ] Le checkout utilise `plan_key` côté frontend et le backend résout bien le `price_id`
+- [ ] Les webhooks `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted` sont testés en environnement cible
+- [ ] Les quotas sont cohérents avec la grille retenue:
+  - `free`: 1 SCI / 1 bien
+  - `starter`: 1 SCI / 5 biens
+  - `pro`: 10 SCI / 20 biens
+  - `lifetime`: illimité
 
-### Base de Données
-- [ ] Migrations Supabase appliquées
-- [ ] RLS policies activées sur toutes les tables
-- [ ] Backups automatiques configurés
-- [ ] Indexes créés pour les requêtes fréquentes
+## 4. Data & Migrations
+- [ ] Toutes les migrations Supabase sont appliquées, y compris `004_subscription_entitlements.sql`
+- [ ] Les colonnes `plan_key`, `max_scis`, `max_biens`, `features`, `is_active` existent sur `subscriptions`
+- [ ] Les policies RLS sont actives sur les tables métiers
+- [ ] Les sauvegardes de base et les exports de restauration sont validés
 
-### Services Externes
-- [ ] Stripe en mode live (sk_live_)
-- [ ] Webhooks Stripe configurés et testés
-- [ ] Resend configuré avec domaine vérifié
-- [ ] Supabase Storage buckets créés
-- [ ] Supabase Auth configuré
+## 5. Runtime Hardening
+- [ ] Les erreurs API retournent `error`, `code`, `request_id`
+- [ ] Les logs structurés incluent `request_id`, `path`, `status_code`, `duration_ms`
+- [ ] Les retries externes sont actifs sur les lectures idempotentes
+- [ ] Les rate limits sont actifs sur auth, checkout, GDPR, fichiers et PDF
+- [ ] Le graceful shutdown est testé avec `SIGTERM`
+- [ ] Les feature flags sont explicitement décidés avant release:
+  - `FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT`
+  - `FEATURE_NEW_CHECKOUT_CATALOG`
+  - `FEATURE_PDF_RENDER_DIRECT`
+  - `FEATURE_MULTI_SCI_DASHBOARD_V2`
 
-## Déploiement
+## 6. Health & Readiness
+- [ ] `/health/live` retourne `200`
+- [ ] `/health/ready` retourne `200` ou `503` selon l'état réel
+- [ ] Le statut `degraded` est interprété par l'observabilité et n'est pas ignoré
+- [ ] Les probes Docker/Kubernetes pointent vers `/health/live` et `/health/ready`
 
-### Infrastructure
-- [ ] Docker images buildées et taguées
-- [ ] Images pushées vers registry (AWS ECR)
-- [ ] Secrets chargés dans environnement
-- [ ] Reverse proxy (nginx) configuré
-- [ ] SSL/TLS certificates valides
-- [ ] Firewall rules configurées
+## 7. Smoke Tests Post-Deploy
+- [ ] Envoi de magic link
+- [ ] Consultation portefeuille SCI
+- [ ] Création d'une SCI sur un compte Pro
+- [ ] Blocage création SCI sur un compte Starter au-delà du quota
+- [ ] Création d'un bien puis blocage au quota
+- [ ] Génération et téléchargement PDF
+- [ ] Checkout Stripe de bout en bout en mode test/live selon l'environnement
 
-### Application
-- [ ] Backend déployé sur serveur
-- [ ] Frontend déployé (Vercel ou serveur)
-- [ ] Health checks fonctionnels (`/health/live`, `/health/ready`)
-- [ ] Docker health checks configurés
-- [ ] Graceful shutdown testé (SIGTERM)
+## 8. Rollback Readiness
+- [ ] Version précédente identifiée
+- [ ] Rollback documenté et testable sans migration destructrice
+- [ ] Feature flags permettent de repasser en `warn` ou `observe` si l'enforcement doit être desserré
 
-### Monitoring
-- [ ] Logs centralisés (CloudWatch ou similaire)
-- [ ] Métriques système configurées
-- [ ] Alertes configurées (erreurs 5xx, latence, downtime)
-- [ ] Status page configuré
-
-## Post-Déploiement
-
-### Validation Technique
-- [ ] `/health/live` retourne 200
-- [ ] `/health/ready` retourne 200
-- [ ] Tous les endpoints API testés manuellement
-- [ ] Tests E2E en staging passés
-- [ ] Performance tests (load testing) passés
-- [ ] Aucune erreur dans les logs
-
-### Validation Fonctionnelle
-- [ ] Magic link login fonctionne
-- [ ] Création de bien fonctionne
-- [ ] Création de loyer fonctionne
-- [ ] Génération de quittance fonctionne
-- [ ] Export CERFA 2044 fonctionne
-- [ ] Stripe checkout fonctionne
-- [ ] Webhooks Stripe fonctionnent
-
-### Sécurité
-- [ ] Headers de sécurité présents (HSTS, CSP, X-Frame-Options)
-- [ ] Rate limiting actif
-- [ ] CORS configuré correctement
-- [ ] Aucun secret exposé dans les logs
-- [ ] Scan de vulnérabilités passé
-
-## Rollback Plan
-
-### Si Problème Détecté
-1. **Immédiat**: Arrêter le traffic vers la nouvelle version
-2. **5 minutes**: Rollback vers version précédente
-3. **10 minutes**: Vérifier que le rollback fonctionne
-4. **Post-mortem**: Analyser la cause et documenter
-
-### Commandes Rollback
+## Commandes utiles
 ```bash
-# Docker Compose
+bash scripts/quality-gate.sh
+
+# Docker Compose rollback
 docker compose down
 git checkout <previous-commit>
 docker compose up -d
@@ -122,16 +115,16 @@ docker compose up -d
 ### Tests Smoke (Production)
 ```bash
 # Health checks
-curl https://api.gerersci.fr/health/live
-curl https://api.gerersci.fr/health/ready
+curl -f https://api.gerersci.fr/health/live
+curl -f https://api.gerersci.fr/health/ready | jq
+
+# Subscription check
+curl -H "Authorization: Bearer <token>" https://api.gerersci.fr/api/v1/stripe/subscription | jq
 
 # Login
 curl -X POST https://api.gerersci.fr/api/v1/auth/magic-link/send \
   -H "Content-Type: application/json" \
   -d '{"email": "test@gerersci.fr"}'
-
-# Metrics
-curl https://api.gerersci.fr/health/ready | jq '.checks'
 ```
 
 ### Monitoring Dashboard
