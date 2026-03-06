@@ -77,6 +77,18 @@ PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 ./deploy.sh
 ```
 
+### 4bis. Démarrage local pour tests réels email + Stripe
+
+```bash
+# Vérifier d'abord que .env contient de vraies valeurs
+bash scripts/start-real-stack.sh --check
+
+# Démarrer toute la stack en local et attendre les probes
+bash scripts/start-real-stack.sh
+```
+
+La commande valide les secrets critiques, démarre `docker compose`, attend `backend /health/live`, `backend /health/ready` et `frontend /`, puis affiche les URLs et le smoke test manuel à exécuter.
+
 Le script va :
 - ✅ Installer Docker et Docker Compose
 - ✅ Configurer le firewall (UFW)
