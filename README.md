@@ -88,14 +88,37 @@ bash scripts/start-real-stack.sh --check
 bash scripts/start-real-stack.sh
 ```
 
-La commande valide les secrets critiques, démarre `docker compose`, attend `backend /health/live`, `backend /health/ready` et `frontend /`, puis affiche les URLs et le smoke test manuel à exécuter.
+Le script valide les secrets critiques, dérive `SUPABASE_INTERNAL_URL` pour Docker si besoin, démarre automatiquement `supabase start` quand `SUPABASE_URL` pointe vers `localhost/127.0.0.1`, puis lance `docker compose up -d --build --force-recreate`.
 
-Le script va :
-- ✅ Installer Docker et Docker Compose
-- ✅ Configurer le firewall (UFW)
-- ✅ Créer les répertoires nécessaires
-- ✅ Construire et démarrer les services
-- ✅ Installer Certbot pour SSL
+Options utiles :
+
+```bash
+# Forcer le démarrage de Supabase local même si SUPABASE_URL est distant
+bash scripts/start-real-stack.sh --with-supabase
+
+# Ne pas démarrer Supabase local même si SUPABASE_URL est local
+bash scripts/start-real-stack.sh --without-supabase
+
+# Utiliser un autre fichier d'environnement
+bash scripts/start-real-stack.sh --env-file .env.staging
+```
+
+Le script attend ensuite :
+- `http://127.0.0.1:8000/health/live`
+- `http://127.0.0.1:8000/health/ready`
+- `http://127.0.0.1:4173/`
+- `http://127.0.0.1/`
+
+Si Supabase local est activé, il affiche aussi :
+- Mailpit : `http://127.0.0.1:54324`
+- Studio : `http://127.0.0.1:54323`
+
+Arrêt propre :
+
+```bash
+docker compose down
+supabase stop
+```
 
 ## 🔒 Configuration SSL (Let's Encrypt)
 
