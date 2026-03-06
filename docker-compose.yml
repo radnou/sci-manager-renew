@@ -35,7 +35,7 @@ services:
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql://${DATABASE_USER:-gerersci}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME:-gerersci}
-      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_URL: ${SUPABASE_INTERNAL_URL:-${SUPABASE_URL}}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
@@ -53,6 +53,8 @@ services:
         condition: service_healthy
     networks:
       - backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./logs:/app/logs
     # Health check configuration
@@ -86,10 +88,15 @@ services:
     networks:
       - frontend
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4173/"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider -q http://127.0.0.1:4173/ || exit 1",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 20s
 
   # Nginx Reverse Proxy
   nginx:

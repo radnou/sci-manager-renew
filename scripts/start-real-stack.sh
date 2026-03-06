@@ -68,6 +68,15 @@ set -a
 source "$ENV_FILE"
 set +a
 
+if [[ -z "${SUPABASE_INTERNAL_URL:-}" ]]; then
+	SUPABASE_INTERNAL_URL="${SUPABASE_URL}"
+	if [[ "${SUPABASE_INTERNAL_URL}" =~ ^http://(127\.0\.0\.1|localhost)(:.*)?$ ]]; then
+		SUPABASE_INTERNAL_URL="${SUPABASE_INTERNAL_URL/127.0.0.1/host.docker.internal}"
+		SUPABASE_INTERNAL_URL="${SUPABASE_INTERNAL_URL/localhost/host.docker.internal}"
+	fi
+	export SUPABASE_INTERNAL_URL
+fi
+
 required_vars=(
 	"APP_ENV"
 	"DATABASE_PASSWORD"
@@ -153,6 +162,8 @@ echo "[start-real-stack] Environment looks consistent"
 echo "  APP_ENV=${APP_ENV}"
 echo "  FRONTEND_URL=${FRONTEND_URL}"
 echo "  VITE_API_URL=${VITE_API_URL}"
+echo "  SUPABASE_URL=${SUPABASE_URL}"
+echo "  SUPABASE_INTERNAL_URL=${SUPABASE_INTERNAL_URL}"
 echo "  STRIPE mode=$( [[ "${STRIPE_SECRET_KEY}" == sk_live_* ]] && echo live || echo test )"
 echo "  RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}"
 echo "  MULTI_SCI_V2=${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}"
