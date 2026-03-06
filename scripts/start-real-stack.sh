@@ -126,6 +126,11 @@ if [[ ! "${RESEND_API_KEY}" =~ ^re_ ]]; then
 	exit 1
 fi
 
+if [[ ! "${RESEND_FROM_EMAIL}" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]; then
+	echo "[start-real-stack] RESEND_FROM_EMAIL must be a valid sender email address" >&2
+	exit 1
+fi
+
 if [[ ! "${SUPABASE_URL}" =~ ^https?:// ]]; then
 	echo "[start-real-stack] SUPABASE_URL must be a valid http(s) URL" >&2
 	exit 1
@@ -149,6 +154,7 @@ echo "  APP_ENV=${APP_ENV}"
 echo "  FRONTEND_URL=${FRONTEND_URL}"
 echo "  VITE_API_URL=${VITE_API_URL}"
 echo "  STRIPE mode=$( [[ "${STRIPE_SECRET_KEY}" == sk_live_* ]] && echo live || echo test )"
+echo "  RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}"
 echo "  MULTI_SCI_V2=${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}"
 
 if [[ "$CHECK_ONLY" == "true" ]]; then

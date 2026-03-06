@@ -67,6 +67,7 @@ STRIPE_PRO_PRICE_ID=price_live_pro
 STRIPE_LIFETIME_PRICE_ID=price_live_lifetime
 VITE_STRIPE_PUBLISHABLE_KEY=pk_live_your_key
 PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
+RESEND_FROM_EMAIL=noreply@email.radnoumane.com
 # ... toutes les autres variables
 ```
 

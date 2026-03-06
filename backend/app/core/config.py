@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # Email
     resend_api_key: str = "re_placeholder"
-    resend_from_email: str = "noreply@gerersci.fr"
+    resend_from_email: str = "noreply@email.radnoumane.com"
 
     # Frontend
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
