@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from app.core.config import settings
+from app.core.exceptions import FeatureDisabledError
 from app.core.security import get_current_user
 
 router = APIRouter(prefix="/cerfa", tags=["cerfa"])
@@ -18,6 +20,11 @@ async def generate_cerfa_2044(
     user_id: str = Depends(get_current_user),
 ) -> dict[str, float | int | str]:
     del user_id
+    if not settings.feature_cerfa_generation:
+        raise FeatureDisabledError(
+            "La génération Cerfa est désactivée.",
+            flag_name="feature_cerfa_generation",
+        )
     resultat_fiscal = round(payload.total_revenus - payload.total_charges, 2)
     return {
         "status": "generated",

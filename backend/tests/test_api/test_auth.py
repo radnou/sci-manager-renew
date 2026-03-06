@@ -22,7 +22,9 @@ def test_send_magic_link_business_failure(client, monkeypatch):
 
     response = client.post("/api/v1/auth/magic-link/send", json={"email": "blocked@example.com"})
     assert response.status_code == 400
-    assert response.json()["detail"] == "Email not allowed"
+    payload = response.json()
+    assert payload["code"] == "validation_error"
+    assert payload["error"] == "Email not allowed"
 
 
 def test_send_magic_link_internal_error(client, monkeypatch):
@@ -32,8 +34,10 @@ def test_send_magic_link_internal_error(client, monkeypatch):
     monkeypatch.setattr(auth.magic_link_service, "send_magic_link", fake_send_magic_link)
 
     response = client.post("/api/v1/auth/magic-link/send", json={"email": "user@example.com"})
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Failed to send magic link"
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["code"] == "external_service_error"
+    assert "Failed to send magic link" in payload["error"]
 
 
 def test_verify_magic_link_success(client, monkeypatch):
@@ -56,7 +60,9 @@ def test_verify_magic_link_invalid_token(client, monkeypatch):
 
     response = client.post("/api/v1/auth/magic-link/verify", params={"token": "invalid"})
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid token"
+    payload = response.json()
+    assert payload["code"] == "authentication_error"
+    assert payload["error"] == "Invalid token"
 
 
 def test_logout_success(client, monkeypatch):
@@ -79,4 +85,6 @@ def test_logout_failure(client, monkeypatch):
 
     response = client.post("/api/v1/auth/logout", params={"access_token": "token-123"})
     assert response.status_code == 400
-    assert response.json()["detail"] == "logout failed"
+    payload = response.json()
+    assert payload["code"] == "validation_error"
+    assert payload["error"] == "logout failed"

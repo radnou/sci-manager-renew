@@ -76,7 +76,9 @@ def test_webhook_signature_invalid(client, monkeypatch):
         headers={"stripe-signature": "invalid"},
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "Invalid Stripe signature"
+    payload = response.json()
+    assert payload["code"] == "validation_error"
+    assert payload["error"] == "Invalid Stripe signature"
 
 
 def test_webhook_missing_signature_header(client):
@@ -235,3 +237,29 @@ def test_get_subscription_returns_free_fallback(client, auth_headers):
     assert payload["plan_key"] == "free"
     assert payload["max_scis"] == 1
     assert payload["max_biens"] == 1
+
+
+def test_create_checkout_session_feature_disabled(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(settings, "feature_stripe_payments", False)
+
+    response = client.post(
+        "/api/v1/stripe/create-checkout-session",
+        json={"plan_key": "starter"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["code"] == "feature_disabled"
+    assert payload["details"]["flag"] == "feature_stripe_payments"
+
+
+def test_webhook_ignored_when_stripe_disabled(client, monkeypatch):
+    monkeypatch.setattr(settings, "feature_stripe_payments", False)
+
+    response = client.post(
+        "/api/v1/stripe/webhook",
+        data=b"{}",
+        headers={"stripe-signature": "ignored"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"status": "ignored"}

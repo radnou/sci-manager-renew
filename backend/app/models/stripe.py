@@ -15,7 +15,7 @@ class CheckoutSessionCreateResponse(BaseModel):
 
 
 class StripeWebhookResponse(BaseModel):
-    status: Literal["success"]
+    status: Literal["success", "ignored"]
 
 
 class SubscriptionEntitlementsResponse(BaseModel):

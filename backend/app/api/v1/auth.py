@@ -1,8 +1,9 @@
 """Authentication endpoints - Magic Link"""
 import structlog
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, EmailStr
 
+from app.core.exceptions import AuthenticationError, ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
 from app.services.auth_service import magic_link_service
 
@@ -32,23 +33,18 @@ async def send_magic_link(request: Request, payload: MagicLinkRequest) -> MagicL
 
         if not result["success"]:
             logger.warning("magic_link_send_failed", email=payload.email, reason=result["message"])
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
-            )
+            raise ValidationError(result["message"])
 
         logger.info("magic_link_sent", email=payload.email)
         return MagicLinkResponse(
             success=True,
             message=f"Magic link sent to {payload.email}. Check your email.",
         )
-    except HTTPException:
+    except (ValidationError, AuthenticationError, ExternalServiceError):
         raise
     except Exception as e:
         logger.error("magic_link_send_error", email=payload.email, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send magic link",
-        )
+        raise ExternalServiceError("Supabase Auth", "Failed to send magic link")
 
 
 @router.post("/magic-link/verify", response_model=MagicLinkResponse)
@@ -65,20 +61,15 @@ async def verify_magic_link(request: Request, token: str) -> MagicLinkResponse:
 
         if not result["success"]:
             logger.warning("magic_link_verification_failed", reason=result["message"])
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=result["message"]
-            )
+            raise AuthenticationError(result["message"])
 
         logger.info("magic_link_verified")
         return MagicLinkResponse(success=True, message="Magic link verified")
-    except HTTPException:
+    except (ValidationError, AuthenticationError, ExternalServiceError):
         raise
     except Exception as e:
         logger.error("magic_link_verification_error", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to verify magic link",
-        )
+        raise ExternalServiceError("Supabase Auth", "Failed to verify magic link")
 
 
 @router.post("/logout", response_model=MagicLinkResponse)
@@ -94,17 +85,12 @@ async def logout(request: Request, access_token: str) -> MagicLinkResponse:
 
         if not result["success"]:
             logger.warning("logout_failed", reason=result["message"])
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
-            )
+            raise ValidationError(result["message"])
 
         logger.info("user_logged_out")
         return MagicLinkResponse(success=True, message="Signed out successfully")
-    except HTTPException:
+    except (ValidationError, AuthenticationError, ExternalServiceError):
         raise
     except Exception as e:
         logger.error("logout_error", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to sign out",
-        )
+        raise ExternalServiceError("Supabase Auth", "Failed to sign out")

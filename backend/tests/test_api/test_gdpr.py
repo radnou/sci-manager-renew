@@ -142,3 +142,19 @@ def test_account_delete_cleans_user_data(client, auth_headers, monkeypatch, fake
     assert len(subscriptions) == 1
     assert subscriptions[0]["status"] == "deleted"
     assert subscriptions[0]["stripe_customer_id"] is None
+
+
+def test_data_export_failure_returns_structured_error(client, auth_headers, monkeypatch):
+    from app.api.v1 import gdpr
+
+    def fake_client():
+        raise RuntimeError("supabase unavailable")
+
+    monkeypatch.setattr(gdpr, "get_supabase_service_client", fake_client)
+
+    response = client.get("/api/v1/gdpr/data-export", headers=auth_headers)
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload["code"] == "gdpr_export_failed"
+    assert payload["error"] == "Échec de l'export des données."

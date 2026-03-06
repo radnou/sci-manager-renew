@@ -125,3 +125,15 @@ class SubscriptionInactiveError(SCIManagerException):
             code="subscription_inactive",
             details={"plan_key": plan_key, "status": status},
         )
+
+
+class FeatureDisabledError(SCIManagerException):
+    """Fonctionnalité désactivée via feature flag."""
+
+    def __init__(self, message: str, flag_name: str):
+        super().__init__(
+            message,
+            status_code=503,
+            code="feature_disabled",
+            details={"flag": flag_name},
+        )

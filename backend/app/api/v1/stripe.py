@@ -4,11 +4,11 @@ from typing import Any
 
 import stripe
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 
-from app.core.entitlements import PlanKey, get_plan, resolve_plan_key_from_price_id, resolve_price_id_for_plan
+from app.core.entitlements import PlanKey, get_plan, resolve_price_id_for_plan
 from app.core.config import settings
-from app.core.exceptions import ExternalServiceError, ValidationError
+from app.core.exceptions import ExternalServiceError, FeatureDisabledError, ValidationError
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
@@ -141,6 +141,16 @@ async def create_checkout_session(
     user_id: str = Depends(get_current_user),
 ) -> CheckoutSessionCreateResponse:
     del request
+    if not settings.feature_stripe_payments:
+        raise FeatureDisabledError(
+            "Les paiements Stripe sont désactivés.",
+            flag_name="feature_stripe_payments",
+        )
+    if not settings.feature_new_checkout_catalog:
+        raise FeatureDisabledError(
+            "Le catalogue Stripe est désactivé.",
+            flag_name="feature_new_checkout_catalog",
+        )
     resolved_plan = get_plan(payload.plan_key)
     if payload.plan_key == PlanKey.FREE:
         raise ValidationError("Le plan gratuit ne passe pas par Stripe.")
@@ -210,6 +220,10 @@ async def create_checkout_session(
 async def stripe_webhook(request: Request) -> StripeWebhookResponse:
     logger.info("stripe_webhook_received")
 
+    if not settings.feature_stripe_payments:
+        logger.warning("stripe_webhook_ignored", reason="feature_disabled")
+        return StripeWebhookResponse(status="ignored")
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
@@ -230,7 +244,7 @@ async def stripe_webhook(request: Request) -> StripeWebhookResponse:
         raise ValidationError(f"Invalid Stripe payload: {str(exc)}")
     except stripe.error.SignatureVerificationError as exc:
         logger.error("stripe_webhook_invalid_signature", error=str(exc))
-        raise HTTPException(status_code=400, detail="Invalid Stripe signature") from exc
+        raise ValidationError("Invalid Stripe signature") from exc
 
     logger.info("stripe_webhook_processing", event_type=event.get("type") if hasattr(event, "get") else None)
     _handle_event(event)
