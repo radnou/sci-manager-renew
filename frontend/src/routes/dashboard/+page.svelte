@@ -431,6 +431,8 @@
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<a href="/biens"><Button>Gérer les biens</Button></a>
+				<a href="/associes"><Button variant="outline">Ouvrir Associés</Button></a>
+				<a href="/charges"><Button variant="outline">Ouvrir Charges</Button></a>
 				<a href="/loyers"><Button variant="outline">Suivre les loyers</Button></a>
 				<a href="/settings"><Button variant="outline">Paramètres</Button></a>
 			</div>
@@ -615,11 +617,20 @@
 					<a href="/scis">
 						<Button variant="outline" size="sm">Voir les SCI</Button>
 					</a>
+					<a href="/associes">
+						<Button variant="outline" size="sm">Gouvernance</Button>
+					</a>
 					<a href="/biens">
 						<Button size="sm">Gérer les biens</Button>
 					</a>
+					<a href="/charges">
+						<Button variant="outline" size="sm">Charges</Button>
+					</a>
 					<a href="/loyers">
 						<Button variant="outline" size="sm">Suivre les loyers</Button>
+					</a>
+					<a href="/fiscalite">
+						<Button variant="outline" size="sm">Fiscalité</Button>
 					</a>
 				</div>
 			</CardContent>
@@ -833,11 +844,20 @@
 							<a href="/scis">
 								<Button variant="outline" size="sm">Voir les SCI</Button>
 							</a>
+							<a href="/associes">
+								<Button variant="outline" size="sm">Gouvernance</Button>
+							</a>
 							<a href="/biens">
 								<Button size="sm">Gérer les biens</Button>
 							</a>
+							<a href="/charges">
+								<Button variant="outline" size="sm">Charges</Button>
+							</a>
 							<a href="/loyers">
 								<Button variant="outline" size="sm">Suivre les loyers</Button>
+							</a>
+							<a href="/fiscalite">
+								<Button variant="outline" size="sm">Fiscalité</Button>
 							</a>
 						</div>
 					</div>
@@ -888,6 +908,9 @@
 						</div>
 					{/each}
 				{/if}
+				<div class="pt-2">
+					<a href="/associes"><Button variant="outline" size="sm">Ouvrir le workspace Associés</Button></a>
+				</div>
 			</CardContent>
 		</Card>
 	</div>
@@ -911,7 +934,7 @@
 							<div class="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
 						{/each}
 					</div>
-				{:else}
+					{:else}
 					<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 						<div
 							class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
@@ -1055,6 +1078,10 @@
 								Aucun exercice consolidé pour la SCI active.
 							</p>
 						{/if}
+					</div>
+					<div class="flex flex-wrap gap-2">
+						<a href="/charges"><Button size="sm">Ouvrir Charges</Button></a>
+						<a href="/fiscalite"><Button variant="outline" size="sm">Ouvrir Fiscalité</Button></a>
 					</div>
 				{/if}
 			</CardContent>

@@ -1,3 +1,14 @@
-from . import biens, cerfa, locataires, loyers, quitus, scis, stripe
+from . import associes, biens, cerfa, charges, fiscalite, locataires, loyers, quitus, scis, stripe
 
-__all__ = ["biens", "locataires", "loyers", "quitus", "cerfa", "scis", "stripe"]
+__all__ = [
+    "associes",
+    "biens",
+    "charges",
+    "cerfa",
+    "fiscalite",
+    "locataires",
+    "loyers",
+    "quitus",
+    "scis",
+    "stripe",
+]

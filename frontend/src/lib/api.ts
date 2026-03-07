@@ -11,11 +11,15 @@ export type SCIStatus = 'configuration' | 'mise_en_service' | 'exploitation';
 
 export type Associe = {
 	id: EntityId;
+	id_sci?: EntityId | null;
 	user_id?: EntityId | null;
 	nom: string;
 	email?: string | null;
 	part?: number | null;
 	role?: string | null;
+	is_account_member?: boolean | null;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type SCIOverview = {
@@ -41,9 +45,14 @@ export type SCICreatePayload = {
 export type Charge = {
 	id?: EntityId;
 	id_bien: EntityId;
+	id_sci?: EntityId | null;
 	type_charge: string;
 	montant: number;
 	date_paiement: string;
+	bien_adresse?: string | null;
+	bien_ville?: string | null;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type Fiscalite = {
@@ -53,6 +62,10 @@ export type Fiscalite = {
 	total_revenus?: number | null;
 	total_charges?: number | null;
 	resultat_fiscal?: number | null;
+	regime_fiscal?: string | null;
+	nom_sci?: string | null;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type Bien = {
@@ -150,6 +163,48 @@ export type LocataireUpdatePayload = {
 	email?: string | null;
 	date_debut?: string;
 	date_fin?: string | null;
+};
+
+export type AssocieCreatePayload = {
+	id_sci: EntityId;
+	nom: string;
+	email?: string | null;
+	part: number;
+	role: string;
+	user_id?: EntityId | null;
+};
+
+export type AssocieUpdatePayload = {
+	nom?: string;
+	email?: string | null;
+	part?: number;
+	role?: string;
+};
+
+export type ChargeCreatePayload = {
+	id_bien: EntityId;
+	type_charge: string;
+	montant: number;
+	date_paiement: string;
+};
+
+export type ChargeUpdatePayload = {
+	type_charge?: string;
+	montant?: number;
+	date_paiement?: string;
+};
+
+export type FiscaliteCreatePayload = {
+	id_sci: EntityId;
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+};
+
+export type FiscaliteUpdatePayload = {
+	annee?: number;
+	total_revenus?: number;
+	total_charges?: number;
 };
 
 export type LoyerCreatePayload = {
@@ -319,6 +374,21 @@ export function fetchLocataires() {
 	return apiFetch<Locataire[]>('/api/v1/locataires/');
 }
 
+export function fetchAssocies(sciId?: EntityId) {
+	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetch<Associe[]>(`/api/v1/associes/${query}`);
+}
+
+export function fetchCharges(sciId?: EntityId) {
+	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetch<Charge[]>(`/api/v1/charges/${query}`);
+}
+
+export function fetchFiscalite(sciId?: EntityId) {
+	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetch<Fiscalite[]>(`/api/v1/fiscalite/${query}`);
+}
+
 export function createLoyer(loyer: LoyerCreatePayload) {
 	return apiFetch<Loyer>('/api/v1/loyers/', {
 		method: 'POST',
@@ -330,6 +400,27 @@ export function createLocataire(locataire: LocataireCreatePayload) {
 	return apiFetch<Locataire>('/api/v1/locataires/', {
 		method: 'POST',
 		body: JSON.stringify(locataire)
+	});
+}
+
+export function createAssocie(associe: AssocieCreatePayload) {
+	return apiFetch<Associe>('/api/v1/associes/', {
+		method: 'POST',
+		body: JSON.stringify(associe)
+	});
+}
+
+export function createCharge(charge: ChargeCreatePayload) {
+	return apiFetch<Charge>('/api/v1/charges/', {
+		method: 'POST',
+		body: JSON.stringify(charge)
+	});
+}
+
+export function createFiscalite(exercice: FiscaliteCreatePayload) {
+	return apiFetch<Fiscalite>('/api/v1/fiscalite/', {
+		method: 'POST',
+		body: JSON.stringify(exercice)
 	});
 }
 
@@ -360,6 +451,27 @@ export function updateLocataire(locataireId: EntityId, payload: LocataireUpdateP
 	});
 }
 
+export function updateAssocie(associeId: EntityId, payload: AssocieUpdatePayload) {
+	return apiFetch<Associe>(`/api/v1/associes/${associeId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function updateCharge(chargeId: EntityId, payload: ChargeUpdatePayload) {
+	return apiFetch<Charge>(`/api/v1/charges/${chargeId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function updateFiscalite(fiscaliteId: EntityId, payload: FiscaliteUpdatePayload) {
+	return apiFetch<Fiscalite>(`/api/v1/fiscalite/${fiscaliteId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
 export function deleteLoyer(loyerId: EntityId) {
 	return apiFetch<void>(`/api/v1/loyers/${loyerId}`, {
 		method: 'DELETE'
@@ -368,6 +480,24 @@ export function deleteLoyer(loyerId: EntityId) {
 
 export function deleteLocataire(locataireId: EntityId) {
 	return apiFetch<void>(`/api/v1/locataires/${locataireId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteAssocie(associeId: EntityId) {
+	return apiFetch<void>(`/api/v1/associes/${associeId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteCharge(chargeId: EntityId) {
+	return apiFetch<void>(`/api/v1/charges/${chargeId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteFiscalite(fiscaliteId: EntityId) {
+	return apiFetch<void>(`/api/v1/fiscalite/${fiscaliteId}`, {
 		method: 'DELETE'
 	});
 }

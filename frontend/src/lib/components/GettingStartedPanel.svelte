@@ -2,7 +2,9 @@
 	import {
 		Building2,
 		FileText,
+		HandCoins,
 		Home,
+		Landmark,
 		ReceiptText,
 		Users
 	} from 'lucide-svelte';
@@ -76,7 +78,12 @@
 		{
 			title: 'SCI',
 			icon: Building2,
-			fields: 'Nom, SIREN, régime fiscal, statut, associés, rôle utilisateur'
+			fields: 'Nom, SIREN, régime fiscal, statut, gouvernance, capacité et SCI active'
+		},
+		{
+			title: 'Associé',
+			icon: Users,
+			fields: 'Nom, email, part détenue, rôle, membre compte ou gouvernance externe'
 		},
 		{
 			title: 'Bien',
@@ -89,9 +96,19 @@
 			fields: 'Nom ou référence locataire, email, dates d’occupation, bien rattaché'
 		},
 		{
-			title: 'Flux & docs',
+			title: 'Loyer',
 			icon: ReceiptText,
-			fields: 'Date, montant, statut, quittance PDF, charges documentées, clôture fiscale'
+			fields: 'Bien, locataire, date de loyer, montant, statut, quittance PDF'
+		},
+		{
+			title: 'Charge',
+			icon: HandCoins,
+			fields: 'Bien support, type de charge, montant, date de paiement, journal exploitable'
+		},
+		{
+			title: 'Fiscalité',
+			icon: Landmark,
+			fields: 'Année, revenus, charges, résultat fiscal recalculé, lecture consolidée'
 		}
 	];
 </script>
@@ -182,7 +199,7 @@
 						documenter.
 					</p>
 				</div>
-				<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+				<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-2">
 					{#each entityGuide as entity (entity.title)}
 						<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
 							<div class="flex items-center gap-2 text-slate-900 dark:text-slate-100">

@@ -248,7 +248,9 @@
 			</p>
 			<div class="mt-6 flex flex-wrap gap-3">
 				<a href="/dashboard"><Button>Ouvrir le cockpit</Button></a>
+				<a href="/associes"><Button variant="outline">Ouvrir Associés</Button></a>
 				<a href="/biens"><Button variant="outline">Gérer les biens</Button></a>
+				<a href="/charges"><Button variant="outline">Ouvrir Charges</Button></a>
 				<a href="/loyers"><Button variant="outline">Suivre les loyers</Button></a>
 			</div>
 		</div>
@@ -539,8 +541,11 @@
 								Lance ici les prochaines actions utiles sur la SCI active, sans repasser par des zones produit secondaires.
 							</p>
 							<div class="mt-4 grid gap-2">
+								<Button href="/associes" variant="outline" class="justify-start">Gérer les associés</Button>
 								<Button href="/biens" class="justify-start">Gérer les biens</Button>
 								<Button href="/loyers" variant="outline" class="justify-start">Suivre les loyers</Button>
+								<Button href="/charges" variant="outline" class="justify-start">Documenter les charges</Button>
+								<Button href="/fiscalite" variant="outline" class="justify-start">Consolider la fiscalité</Button>
 								<Button href="/dashboard" variant="outline" class="justify-start">Revenir au cockpit</Button>
 							</div>
 							<div
@@ -584,8 +589,11 @@
 					<h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-50">Lecture détaillée</h2>
 				</div>
 				<div class="hidden items-center gap-2 lg:flex">
+					<Button href="/associes" variant="outline">Associés</Button>
 					<Button href="/biens" variant="outline">Biens</Button>
 					<Button href="/loyers" variant="outline">Loyers</Button>
+					<Button href="/charges" variant="outline">Charges</Button>
+					<Button href="/fiscalite" variant="outline">Fiscalité</Button>
 				</div>
 			</div>
 
