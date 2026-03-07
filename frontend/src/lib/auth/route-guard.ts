@@ -1,6 +1,8 @@
 const PROTECTED_ROUTE_PREFIXES = [
 	'/dashboard',
 	'/scis',
+	'/exploitation',
+	'/finance',
 	'/biens',
 	'/associes',
 	'/charges',

@@ -6,6 +6,8 @@ test.describe('Authentication pages', () => {
 		for (const pathname of [
 			'/dashboard',
 			'/scis',
+			'/exploitation',
+			'/finance',
 			'/biens',
 			'/locataires',
 			'/loyers',

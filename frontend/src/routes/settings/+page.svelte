@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchSubscriptionEntitlements, type SubscriptionEntitlements } from '$lib/api';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { addToast } from '$lib/components/ui/toast';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -15,8 +18,9 @@
 
 	const landingRouteOptions: Array<{ value: ApplicationLandingRoute; label: string }> = [
 		{ value: '/dashboard', label: 'Cockpit' },
-		{ value: '/scis', label: 'Portefeuille SCI' },
-		{ value: '/loyers', label: 'Suivi des loyers' },
+		{ value: '/scis', label: 'Portefeuille' },
+		{ value: '/exploitation', label: 'Exploitation' },
+		{ value: '/finance', label: 'Finance' },
 		{ value: '/settings', label: "Paramètres de l'application" }
 	];
 
@@ -27,6 +31,7 @@
 	$: landingRouteLabel =
 		landingRouteOptions.find((option) => option.value === preferences.defaultLandingRoute)?.label ??
 		'Cockpit';
+	$: densityLabel = preferences.density === 'compact' ? 'Compacte' : 'Confortable';
 
 	onMount(async () => {
 		preferences = readApplicationPreferences();
@@ -51,13 +56,69 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">Réglages • Expérience opérateur</p>
-		<h1 class="sci-page-title">Paramètres de l'application</h1>
-		<p class="sci-page-subtitle">
-			Règle le point d’entrée, la densité d’affichage, la prévisualisation PDF et les alertes de ton espace de pilotage.
-		</p>
-	</header>
+	<WorkspaceHeader
+		eyebrow="Paramètres • expérience opérateur"
+		title="Préférences de l'application"
+		subtitle="Les paramètres pilotent uniquement l’expérience locale du navigateur: point d’entrée, densité, PDF et signaux. L’identité et l’offre restent dans Compte."
+		contextLabel="Configuration active"
+		contextValue={`${landingRouteLabel} • ${densityLabel}`}
+		contextDetail={preferences.showPdfPreview ? 'Prévisualisation PDF active.' : 'Prévisualisation PDF désactivée.'}
+	>
+		<Button href="/account">Ouvrir le compte</Button>
+		<Button href="/dashboard" variant="outline">Retour au cockpit</Button>
+	</WorkspaceHeader>
+
+	<WorkspaceActionBar
+		eyebrow="Cadre des préférences"
+		title="Réglages locaux, pas décisions métier"
+		description="On ajuste ici la façon dont l’espace de pilotage s’ouvre et se lit sur ce navigateur. Les paramètres ne doivent pas concurrencer les écrans métier."
+	>
+		<div class="sci-action-grid">
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Point d’entrée</p>
+				<p class="sci-action-card-value">{landingRouteLabel}</p>
+				<p class="sci-action-card-body">Page ouverte après connexion sur ce navigateur.</p>
+			</div>
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Densité</p>
+				<p class="sci-action-card-value">{densityLabel}</p>
+				<p class="sci-action-card-body">Réglage de lecture appliqué à l’ensemble du shell connecté.</p>
+			</div>
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Signaux</p>
+				<p class="sci-action-card-value">{preferences.riskAlertsEnabled ? 'Alertes actives' : 'Alertes neutres'}</p>
+				<p class="sci-action-card-body">Met en avant ou non les retards et risques dans les vues clés.</p>
+			</div>
+		</div>
+		<div class="mt-5 sci-primary-actions">
+			<Button onclick={handleSave}>Enregistrer les paramètres</Button>
+			<Button href="/account" variant="outline">Revenir au compte</Button>
+		</div>
+		{#snippet aside()}
+			<WorkspaceRailCard
+				title="Lecture immédiate"
+				description="Le panneau de droite rappelle les réglages actifs et l’impact de l’offre sans mélanger les actions du compte."
+			>
+				<div class="space-y-3">
+					<div class="sci-action-card">
+						<p class="sci-action-card-title">PDF</p>
+						<p class="sci-action-card-value">{preferences.showPdfPreview ? 'Preview active' : 'Download prioritaire'}</p>
+					</div>
+					{#if subscription}
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Capacité active</p>
+							<p class="sci-action-card-value">{subscription.plan_name}</p>
+							<p class="sci-action-card-body">
+								{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.remaining_scis ?? 0} SCI restantes`}
+								•
+								{subscription.max_biens == null ? 'Biens illimités' : `${subscription.remaining_biens ?? 0} biens restants`}
+							</p>
+						</div>
+					{/if}
+				</div>
+			</WorkspaceRailCard>
+		{/snippet}
+	</WorkspaceActionBar>
 
 	<div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
 		<Card class="sci-section-card">
@@ -121,8 +182,6 @@
 						</div>
 					</label>
 				</div>
-
-				<Button onclick={handleSave}>Enregistrer les paramètres</Button>
 			</CardContent>
 		</Card>
 
@@ -141,7 +200,7 @@
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
 					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Densité d’affichage</p>
-					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{preferences.density === 'compact' ? 'Compacte' : 'Confortable'}</p>
+					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{densityLabel}</p>
 					<p class="mt-1 text-slate-500 dark:text-slate-400">
 						{preferences.density === 'compact'
 							? 'Priorise la densité d’information pour les revues opérateur.'
@@ -177,7 +236,7 @@
 				{/if}
 				<div class="grid gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
 					<Button href="/account" variant="outline" class="justify-start">Aller au compte</Button>
-					<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+					<Button href="/account/privacy" variant="outline" class="justify-start">Ouvrir la confidentialité</Button>
 				</div>
 			</CardContent>
 		</Card>

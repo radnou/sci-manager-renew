@@ -63,4 +63,18 @@ describe('application preferences storage', () => {
 
 		expect(window.localStorage.getItem(APPLICATION_PREFERENCES_STORAGE_KEY)).toBe(JSON.stringify(nextPreferences));
 	});
+
+	it('accepts the connected hubs as landing routes', () => {
+		window.localStorage.setItem(
+			APPLICATION_PREFERENCES_STORAGE_KEY,
+			JSON.stringify({
+				defaultLandingRoute: '/finance'
+			})
+		);
+
+		expect(readApplicationPreferences()).toEqual({
+			...DEFAULT_APPLICATION_PREFERENCES,
+			defaultLandingRoute: '/finance'
+		});
+	});
 });

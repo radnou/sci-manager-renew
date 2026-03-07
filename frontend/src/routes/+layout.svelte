@@ -14,7 +14,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
 	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
-	import { featureFlags } from '$lib/config/features';
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
@@ -31,10 +30,10 @@
 
 	const authenticatedNavItems = [
 		{ href: '/dashboard', label: 'Cockpit' },
-		featureFlags.multiSciDashboardV2 ? { href: '/scis', label: 'SCI' } : null,
-		{ href: '/biens', label: 'Biens' },
-		{ href: '/loyers', label: 'Loyers' }
-	].filter(Boolean) as { href: string; label: string }[];
+		{ href: '/scis', label: 'Portefeuille' },
+		{ href: '/exploitation', label: 'Exploitation' },
+		{ href: '/finance', label: 'Finance' }
+	];
 
 	const authenticatedUtilityItems = [
 		{ href: '/account', label: 'Compte' },
@@ -208,10 +207,8 @@
 								<div
 									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
 								>
-									<p
-										class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-									>
-										Compte connecté
+									<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+										Espace opérateur
 									</p>
 									<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
 										{user.email}
@@ -392,37 +389,24 @@
 	<!-- Footer -->
 	<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
 		{#if user}
-			<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				<div class="grid gap-8 lg:grid-cols-[1.2fr_1fr_1fr]">
-					<div class="space-y-3">
-						<h3 class="font-semibold text-slate-900 dark:text-slate-100">Espace connecté</h3>
-						<p class="max-w-md text-sm text-slate-600 dark:text-slate-400">
-							Cockpit opérateur pour piloter SCI, biens, loyers, conformité et facturation sans repasser par les écrans marketing.
+			<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+				<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+					<div class="space-y-2">
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">Environnement opérateur</h3>
+						<p class="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+							Shell connecté recentré sur le portefeuille, l’exploitation, la finance et le cadrage du compte.
 						</p>
 					</div>
 
-					<div class="space-y-4">
-						<h4 class="font-medium text-slate-900 dark:text-slate-100">Pilotage</h4>
-						<ul class="space-y-2 text-sm">
-							<li><a href="/dashboard" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Cockpit</a></li>
-							<li><a href="/scis" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Portefeuille SCI</a></li>
-							<li><a href="/biens" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Biens</a></li>
-							<li><a href="/loyers" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Loyers</a></li>
-						</ul>
-					</div>
-
-					<div class="space-y-4">
-						<h4 class="font-medium text-slate-900 dark:text-slate-100">Compte et offre</h4>
-						<ul class="space-y-2 text-sm">
-							<li><a href="/account" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Compte</a></li>
-							<li><a href="/pricing" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Offre et facturation</a></li>
-							<li><a href="/settings" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Paramètres</a></li>
-							<li><a href="/account/privacy" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Confidentialité</a></li>
-						</ul>
+					<div class="flex flex-wrap gap-2">
+						<a href="/dashboard" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Cockpit</a>
+						<a href="/scis" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Portefeuille</a>
+						<a href="/account" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Compte</a>
+						<a href="/account/privacy" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Confidentialité</a>
 					</div>
 				</div>
 
-				<div class="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
+				<div class="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
 					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
 						<p class="text-sm text-slate-600 dark:text-slate-400">
 							© 2026 GererSCI. Tous droits réservés.

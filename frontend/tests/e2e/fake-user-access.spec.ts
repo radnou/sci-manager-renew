@@ -736,7 +736,11 @@ test.describe('Fake user access E2E', () => {
 		await expect(page.getByText('Charges et fiscalité')).toBeVisible();
 		await expect(page.getByText('Cadence opérateur')).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
-		await expect(page.getByRole('link', { name: 'SCI', exact: true })).toBeVisible();
+		const primaryNav = page.locator('nav').first();
+		await expect(primaryNav.getByRole('link', { name: 'Portefeuille', exact: true })).toBeVisible();
+		await expect(primaryNav.getByRole('link', { name: 'Exploitation', exact: true })).toBeVisible();
+		await expect(primaryNav.getByRole('link', { name: 'Finance', exact: true })).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Tarifs', exact: true })).toHaveCount(0);
 		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
 		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' }).first()).toBeVisible();
 		await expect(page.getByText('Aucun exercice consolidé pour la SCI active.')).toBeVisible();
@@ -745,8 +749,8 @@ test.describe('Fake user access E2E', () => {
 		await expect(page.getByText('Dernier exercice fiscal')).toBeVisible();
 		await expect(page.getByText('Exercice 2025').first()).toBeVisible();
 
-		await page.getByRole('link', { name: 'SCI', exact: true }).click();
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Pilotage des SCI');
+		await primaryNav.getByRole('link', { name: 'Portefeuille', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Portefeuille SCI');
 		await expect(page.getByText('Camille Bernard')).toBeVisible();
 		await expect(page.getByText('Charges récentes')).toBeVisible();
 
@@ -754,17 +758,28 @@ test.describe('Fake user access E2E', () => {
 		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' }).first()).toBeVisible();
 		await expect(page.getByText('Aucun loyer documenté sur la période récente.')).toBeVisible();
 
-		await page.getByRole('link', { name: 'Paramètres', exact: true }).click();
+		await primaryNav.getByRole('link', { name: 'Exploitation', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Hub exploitation');
+		await expect(page.getByText('Biens → Locataires → Loyers')).toBeVisible();
+
+		await primaryNav.getByRole('link', { name: 'Finance', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Hub finance');
+		await expect(page.getByText('Journaux d’abord, consolidation ensuite')).toBeVisible();
+
+		const accountMenuButton = page.getByRole('button', { name: /Compte/ }).first();
+		await accountMenuButton.click();
+		await page.getByRole('menuitem', { name: 'Paramètres', exact: true }).click();
 		await expect(page.getByRole('heading', { level: 1 })).toContainText(
-			"Paramètres de l'application"
+			"Préférences de l'application"
 		);
 		await page.getByLabel("Page d'ouverture par défaut").selectOption('/scis');
 		await page.getByRole('button', { name: 'Enregistrer les paramètres' }).click();
 		await expect(page.getByText('Paramètres enregistrés')).toBeVisible();
 
-		await page.getByRole('link', { name: 'Compte', exact: true }).click();
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Paramètres du compte');
-		await expect(page.locator('p').filter({ hasText: 'fake.user@sci.test' })).toBeVisible();
+		await accountMenuButton.click();
+		await page.getByRole('menuitem', { name: 'Compte', exact: true }).click();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Compte opérateur');
+		await expect(page.getByText('fake.user@sci.test').first()).toBeVisible();
 
 		await page.goto('/dashboard');
 		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
@@ -782,7 +797,7 @@ test.describe('Fake user access E2E', () => {
 
 		await page.goto('/loyers');
 		await expect(page.getByRole('heading', { level: 1 })).toContainText('Suivi des loyers');
-		await expect(page.getByRole('button', { name: 'Nouveau loyer' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Saisir un loyer' })).toBeVisible();
 		await page
 			.getByRole('button', { name: /Modifier le loyer du/i })
 			.first()
@@ -804,7 +819,7 @@ test.describe('Fake user access E2E', () => {
 
 		await page.goto('/locataires');
 		await expect(page.getByRole('heading', { level: 1 })).toContainText(
-			'Référentiel des locataires'
+			'Referentiel des locataires'
 		);
 		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
 		await expect(page.getByText('Jean Martin')).toBeVisible();
@@ -832,7 +847,7 @@ test.describe('Fake user access E2E', () => {
 		await page.getByRole('button', { name: 'Annuler' }).click();
 
 		await page.goto('/fiscalite');
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Clôture fiscale');
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Cloture fiscale');
 		await expect(page.getByText('Exercice 2025', { exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'Modifier' }).first().click();
 		await page.getByRole('dialog').getByLabel('Total charges (€)').fill('5800');

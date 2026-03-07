@@ -13,8 +13,13 @@
 		type SCIOverview,
 		type SubscriptionEntitlements
 	} from '$lib/api';
+	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -261,26 +266,27 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">GererSCI • Fiscalité</p>
-		<h1 class="sci-page-title">Clôture fiscale</h1>
-		<p class="sci-page-subtitle">
-			Consolide les exercices de la SCI active avec une lecture annuelle des revenus, des charges et
-			du résultat fiscal exploitable en arbitrage.
-		</p>
+	<WorkspaceHeader
+		eyebrow="Finance • cloture annuelle"
+		title="Cloture fiscale"
+		subtitle="La page sert a comparer les exercices et a arbitrer les resultats. La creation et l’edition d’exercice restent des actions contextuelles dans un panneau lateral."
+		contextLabel="SCI active"
+		contextValue={activeSci?.nom || 'Aucune SCI selectionnee'}
+		contextDetail={activeSci
+			? `${scopedExercices.length} exercice(s) • resultat cumule ${metrics.totalResultLabel}`
+			: 'Choisis une SCI active pour cadrer la lecture annuelle.'}
+	>
 		{#if scis.length > 0}
-			<div class="mt-5 max-w-sm">
-				<label class="sci-field">
-					<span class="sci-field-label">SCI active</span>
-					<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
-						{#each scis as sci (sci.id)}
-							<option value={String(sci.id || '')}>{sci.nom}</option>
-						{/each}
-					</select>
-				</label>
-			</div>
+			<label class="sci-field min-w-[14rem]">
+				<span class="sci-field-label">SCI active</span>
+				<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+					{#each scis as sci (sci.id)}
+						<option value={String(sci.id || '')}>{sci.nom}</option>
+					{/each}
+				</select>
+			</label>
 		{/if}
-	</header>
+	</WorkspaceHeader>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
@@ -332,67 +338,63 @@
 			</p>
 			<div class="mt-5 flex flex-wrap gap-3">
 				<a href="/account"><Button>Voir mon offre</Button></a>
-				<a href="/pricing"><Button variant="outline">Comparer les offres</Button></a>
+				<a href="/settings"><Button variant="outline">Revenir aux préférences</Button></a>
 			</div>
 		</div>
 	{:else if !activeSci}
-		<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
-			<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne une SCI active</h2>
-			<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-				La clôture fiscale s’opère toujours dans le contexte d’une SCI précise. Choisis d’abord la société
-				cible avant de renseigner l’exercice.
-			</p>
-			<div class="mt-5 flex flex-wrap gap-3">
-				<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
-				<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
-			</div>
-		</div>
+		<EmptyStateOperator
+			eyebrow="Pre-requis metier"
+			title="Selectionne une SCI active"
+			description="La cloture fiscale s’opere toujours dans le contexte d’une SCI precise. Choisis d’abord la societe cible avant de renseigner l’exercice."
+			primaryHref="/scis"
+			primaryLabel="Ouvrir le portefeuille SCI"
+			secondaryHref="/dashboard"
+			secondaryLabel="Retour au cockpit"
+		/>
 	{:else}
-		<Card class="sci-section-card">
-			<CardHeader>
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<CardTitle class="text-lg">Lecture et actions</CardTitle>
-						<CardDescription>
-							La fiscalité consolidée agrège les revenus et les charges déjà documentés sur la SCI active.
-							Elle ne remplace pas les pièces, elle structure l’arbitrage.
-						</CardDescription>
+		<WorkspaceActionBar
+			eyebrow="Cadre fiscal"
+			title="Historique annuel avant creation"
+			description="La fiscalite consolidee agrege les revenus et les charges deja documentes sur la SCI active. Elle ne remplace pas les pieces, elle structure l’arbitrage."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">SCI active</p>
+					<p class="sci-action-card-value">{activeSci.nom}</p>
+					<p class="sci-action-card-body">Regime {activeSci.regime_fiscal || 'N/A'} • l’exercice se lit sur cette societe.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Caracteristiques</p>
+					<p class="sci-action-card-value">Annee, revenus, charges, resultat calcule</p>
+					<p class="sci-action-card-body">Le resultat fiscal est recalcule automatiquement pour garder une lecture coherente.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Etape suivante</p>
+					<p class="sci-action-card-value">{scopedExercices.length > 0 ? 'Comparer avec les charges' : 'Creer le premier exercice'}</p>
+					<p class="sci-action-card-body">Le module Charges reste la source terrain des depenses, ici tu consolides.</p>
+				</div>
+			</div>
+			<div class="mt-5 sci-primary-actions">
+				<Button onclick={() => (createDialogOpen = true)}>Creer un exercice</Button>
+				<a href="/charges"><Button variant="outline">Ouvrir Charges</Button></a>
+				<a href="/finance"><Button variant="outline">Ouvrir le hub Finance</Button></a>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Vision"
+					description="La lecture annuelle vient apres le journal des charges et les flux documentes."
+				>
+					<div class="space-y-3">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Maintenant</p>
+							<p class="sci-action-card-value">{scopedExercices.length > 0 ? 'Arbitrer le dernier exercice' : 'Ouvrir le premier exercice'}</p>
+							<p class="sci-action-card-body">L’ecran sert a comparer les annees, pas a multiplier les formulaires.</p>
+						</div>
+						<Button href="/charges" variant="outline" class="w-full justify-start">Verifier les charges</Button>
 					</div>
-					<Button onclick={() => (createDialogOpen = true)}>Nouvel exercice</Button>
-				</div>
-			</CardHeader>
-			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{activeSci.nom}</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Régime {activeSci.regime_fiscal || 'N/A'} • l’exercice fiscal se lit sur cette société.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Caractéristiques</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						Année, revenus, charges, résultat calculé
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le résultat fiscal est calculé automatiquement pour garder une lecture cohérente.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{scopedExercices.length > 0 ? 'Comparer avec les charges' : 'Créer le premier exercice'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le module Charges reste la source terrain des dépenses; ici, tu consolides et arbitres.
-					</p>
-					<div class="mt-4">
-						<a href="/charges"><Button size="sm" variant="outline">Ouvrir Charges</Button></a>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
 
 		<Card class="sci-section-card">
 				<CardHeader>
@@ -462,14 +464,12 @@
 		</Card>
 	{/if}
 
-	<Dialog.Dialog bind:open={createDialogOpen}>
-		<Dialog.Content class="sm:max-w-[36rem]">
-			<Dialog.Header>
-				<Dialog.Title>Ajouter un exercice fiscal</Dialog.Title>
-				<Dialog.Description>
-					Saisis l’année et les agrégats de revenus/charges de la SCI active sans quitter l’historique.
-				</Dialog.Description>
-			</Dialog.Header>
+	<EntityDrawer
+		bind:open={createDialogOpen}
+		title="Ajouter un exercice fiscal"
+		description="Saisis l’annee et les agregats de revenus/charges de la SCI active sans quitter l’historique."
+		size="lg"
+	>
 			<div class="grid gap-4 py-2">
 				<label class="sci-field">
 					<span class="sci-field-label">Année</span>
@@ -494,23 +494,22 @@
 					</p>
 				</div>
 			</div>
-			<Dialog.Footer>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
 				<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
 				<Button disabled={submitting} onclick={handleCreateExercice}>
-					{submitting ? 'Création...' : 'Ajouter l’exercice'}
+					{submitting ? 'Creation...' : 'Ajouter l’exercice'}
 				</Button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Dialog>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
-	<Dialog.Dialog bind:open={editDialogOpen}>
-		<Dialog.Content class="sm:max-w-[36rem]">
-			<Dialog.Header>
-				<Dialog.Title>Modifier l’exercice fiscal</Dialog.Title>
-				<Dialog.Description>
-					Mets à jour l’année ou les agrégats de revenus/charges. Le résultat fiscal sera recalculé.
-				</Dialog.Description>
-			</Dialog.Header>
+	<EntityDrawer
+		bind:open={editDialogOpen}
+		title="Modifier l’exercice fiscal"
+		description="Mets a jour l’annee ou les agregats de revenus/charges. Le resultat fiscal sera recalcule."
+		size="lg"
+	>
 			<div class="grid gap-4 py-2">
 				<label class="sci-field">
 					<span class="sci-field-label">Année</span>
@@ -532,14 +531,15 @@
 					</p>
 				</div>
 			</div>
-			<Dialog.Footer>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
 				<Button variant="outline" onclick={closeEditExercice}>Annuler</Button>
 				<Button disabled={submitting} onclick={handleUpdateExercice}>
 					{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
 				</Button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Dialog>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
 	<Dialog.Dialog bind:open={deleteDialogOpen}>
 		<Dialog.Content class="sm:max-w-[32rem]">

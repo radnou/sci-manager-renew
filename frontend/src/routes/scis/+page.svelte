@@ -3,13 +3,17 @@
 	import { Building2, FileText, HandCoins, Landmark, ShieldCheck, Users } from 'lucide-svelte';
 	import {
 		createSci,
+		fetchAssocies,
 		fetchSciDetail,
 		fetchScis,
 		fetchSubscriptionEntitlements,
+		type Associe,
 		type SCIDetail,
 		type SCIOverview,
 		type SubscriptionEntitlements
 	} from '$lib/api';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
+	import GettingStartedPanel from '$lib/components/GettingStartedPanel.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
@@ -38,6 +42,7 @@
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	let scis = $state<SCIOverview[]>([]);
+	let associes = $state<Associe[]>([]);
 	let detail = $state<SCIDetail | null>(null);
 	let activeSciId = $state('');
 	let loading = $state(true);
@@ -109,6 +114,9 @@
 			? "Le quota de SCI de l'offre active est atteint. Passe à une offre supérieure pour continuer."
 			: ''
 	);
+	const shouldShowPortfolioOnboarding = $derived(
+		!loading && (scis.length === 0 || associes.length === 0)
+	);
 
 	$effect(() => {
 		if (!resolvedActiveSciId) {
@@ -141,11 +149,13 @@
 		errorMessage = '';
 
 		try {
-			const [nextScis, nextSubscription] = await Promise.all([
+			const [nextScis, nextAssocies, nextSubscription] = await Promise.all([
 				fetchScis(),
+				fetchAssocies(),
 				fetchSubscriptionEntitlements()
 			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
+			associes = Array.isArray(nextAssocies) ? nextAssocies : [];
 			showCreateSciForm = nextScis.length === 0;
 			subscription = nextSubscription;
 			const storedActiveSciId = getStoredActiveSciId();
@@ -238,10 +248,10 @@
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Portefeuille SCI • Consolidation multi-entités</p>
-		<h1 class="sci-page-title">Pilotage des SCI</h1>
+		<h1 class="sci-page-title">Portefeuille SCI</h1>
 		<p class="sci-page-subtitle">
-			Une vue structurée de toutes les SCI accessibles par le compte, avec identité, gouvernance,
-			patrimoine, charges et flux récents.
+			Lecture d’ensemble des SCI accessibles par le compte. On choisit d’abord la société active, puis
+			on ouvre exploitation, finance et gouvernance depuis ce portefeuille.
 		</p>
 	</header>
 
@@ -268,6 +278,18 @@
 	{:else}
 		{#if errorMessage}
 			<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
+		{/if}
+
+		{#if shouldShowPortfolioOnboarding}
+			<div class="mb-6">
+				<GettingStartedPanel
+					compact={true}
+					scope="portfolio"
+					sciCount={scis.length}
+					associeCount={associes.length}
+					activeSciLabel={detail?.nom || activeSci?.nom || ''}
+				/>
+			</div>
 		{/if}
 
 			<div class="sci-page-toolbar">
@@ -312,8 +334,8 @@
 							Créer une SCI
 						</Button>
 						<a href="/associes"><Button variant="outline">Gouvernance</Button></a>
-						<a href="/biens"><Button variant="outline">Patrimoine</Button></a>
-						<a href="/loyers"><Button variant="outline">Loyers</Button></a>
+						<a href="/exploitation"><Button variant="outline">Exploitation</Button></a>
+						<a href="/finance"><Button variant="outline">Finance</Button></a>
 					</div>
 					{#if sciCreationDisabledMessage}
 						<p class="sci-inline-alert sci-inline-alert-error">{sciCreationDisabledMessage}</p>
@@ -958,15 +980,12 @@
 				</Card>
 			</div>
 
-			<Dialog.Dialog bind:open={showCreateSciForm}>
-				<Dialog.DialogContent class="sm:max-w-[36rem]">
-					<Dialog.DialogHeader>
-						<Dialog.DialogTitle>Créer une nouvelle SCI</Dialog.DialogTitle>
-						<Dialog.DialogDescription>
-							Ajoute une société au portefeuille sans interrompre la lecture du cockpit. La SCI créée
-							deviendra ensuite active pour les autres modules.
-						</Dialog.DialogDescription>
-					</Dialog.DialogHeader>
+			<EntityDrawer
+				bind:open={showCreateSciForm}
+				title="Créer une nouvelle SCI"
+				description="Ajoute une société au portefeuille sans interrompre la lecture du cockpit. La SCI créée deviendra ensuite active pour les autres modules."
+				size="lg"
+			>
 					{#if sciCreationDisabledMessage}
 						<p class="sci-inline-alert sci-inline-alert-error">{sciCreationDisabledMessage}</p>
 					{/if}
@@ -987,14 +1006,15 @@
 							</select>
 						</label>
 					</div>
-					<Dialog.DialogFooter>
+				{#snippet footer()}
+					<div class="flex justify-end gap-3">
 						<Button variant="outline" onclick={() => (showCreateSciForm = false)}>Annuler</Button>
 						<Button disabled={creatingSci || sciCreationDisabled} onclick={handleCreateSci}>
-							{creatingSci ? 'Création en cours...' : 'Créer la SCI'}
+							{creatingSci ? 'Creation en cours...' : 'Creer la SCI'}
 						</Button>
-					</Dialog.DialogFooter>
-				</Dialog.DialogContent>
-			</Dialog.Dialog>
+					</div>
+				{/snippet}
+			</EntityDrawer>
 			</div>
 		{/if}
 	</section>

@@ -16,10 +16,15 @@
 		type LoyerUpdatePayload,
 		type SCIOverview
 	} from '$lib/api';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
+	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -238,26 +243,27 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">GererSCI • Revenus</p>
-		<h1 class="sci-page-title">Suivi des loyers</h1>
-		<p class="sci-page-subtitle">
-			Pilote les encaissements mensuels de la SCI active avec des libellés métier, pas des
-			identifiants bruts.
-		</p>
+	<WorkspaceHeader
+		eyebrow="Exploitation • encaissements locatifs"
+		title="Suivi des loyers"
+		subtitle="Le journal des encaissements reste la lecture centrale. La saisie et la correction s’ouvrent à la demande dans un panneau latéral."
+		contextLabel="SCI active"
+		contextValue={activeSci?.nom || 'Aucune SCI sélectionnée'}
+		contextDetail={activeSci
+			? `${scopedLoyers.length} flux • ${scopedBiens.length} bien(s) • ${scopedLocataires.length} locataire(s)`
+			: 'Choisis une SCI active pour cadrer le journal et la saisie.'}
+	>
 		{#if scis.length > 0}
-			<div class="mt-5 max-w-sm">
-				<label class="sci-field">
-					<span class="sci-field-label">SCI active</span>
-					<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
-						{#each scis as sci (sci.id)}
-							<option value={String(sci.id || '')}>{sci.nom}</option>
-						{/each}
-					</select>
-				</label>
-			</div>
+			<label class="sci-field min-w-[14rem]">
+				<span class="sci-field-label">SCI active</span>
+				<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+					{#each scis as sci (sci.id)}
+						<option value={String(sci.id || '')}>{sci.nom}</option>
+					{/each}
+				</select>
+			</label>
 		{/if}
-	</header>
+	</WorkspaceHeader>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
@@ -301,71 +307,62 @@
 			showRail={true}
 		/>
 	{:else}
-		<Card class="sci-section-card">
-			<CardHeader>
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<CardTitle class="text-lg">Lecture et actions</CardTitle>
-						<CardDescription>
-							Le flux locatif suit une séquence stricte: bien rattaché, locataire identifié,
-							montant, statut, puis quittance. La création se déclenche à la demande.
-						</CardDescription>
+		<WorkspaceActionBar
+			eyebrow="Cadre revenus"
+			title="Journal d’encaissement avant saisie"
+			description="Le flux locatif suit toujours la même séquence: bien, locataire, date, montant, statut, puis quittance. La saisie s’ouvre sans interrompre la lecture."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">SCI active</p>
+					<p class="sci-action-card-value">{activeSci?.nom || 'Aucune SCI sélectionnée'}</p>
+					<p class="sci-action-card-body">Les encaissements affichés et saisis sont toujours filtrés sur cette SCI.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Entités requises</p>
+					<p class="sci-action-card-value">Bien, locataire, date, montant, statut</p>
+					<p class="sci-action-card-body">Le loyer s’appuie désormais sur un locataire référencé, pas sur un texte libre.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Étape suivante</p>
+					<p class="sci-action-card-value">{scopedLoyers.length > 0 ? 'Contrôler puis documenter' : 'Saisir le premier flux'}</p>
+					<p class="sci-action-card-body">La quittance devient une conséquence du journal, pas un écran parallèle.</p>
+				</div>
+			</div>
+			<div class="mt-5 sci-primary-actions">
+				<Button
+					disabled={!activeSci || scopedBiens.length === 0 || scopedLocataires.length === 0}
+					onclick={() => {
+						createDialogOpen = true;
+					}}
+				>
+					Saisir un loyer
+				</Button>
+				<a href="/locataires"><Button variant="outline">Ouvrir Locataires</Button></a>
+				<a href="/finance"><Button variant="outline">Ouvrir Finance</Button></a>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Vision"
+					description="Le journal est l’écran récurrent. Les actions de création et de correction viennent se greffer autour."
+				>
+					<div class="space-y-3">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Maintenant</p>
+							<p class="sci-action-card-value">
+								{scopedBiens.length === 0
+									? 'Ajouter le premier bien'
+									: scopedLocataires.length === 0
+										? 'Documenter le premier locataire'
+										: 'Saisir le premier loyer'}
+							</p>
+							<p class="sci-action-card-body">L’ordre d’exploitation reste bien → locataire → loyer.</p>
+						</div>
+						<Button href="/biens" variant="outline" class="w-full justify-start">Vérifier les biens</Button>
 					</div>
-					<Button
-						disabled={!activeSci || scopedBiens.length === 0 || scopedLocataires.length === 0}
-						onclick={() => {
-							createDialogOpen = true;
-						}}
-					>
-						Nouveau loyer
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{activeSci?.nom || 'Aucune SCI sélectionnée'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Les loyers affichés et saisis sont filtrés sur cette SCI.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Entités à renseigner</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						Bien, locataire, date, montant, statut
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le loyer doit maintenant s’appuyer sur un locataire déjà documenté dans son module dédié.
-					</p>
-					<div class="mt-4">
-						<a href="/locataires"><Button size="sm" variant="outline">Ouvrir Locataires</Button></a>
-					</div>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{scopedLoyers.length > 0 ? 'Contrôler le journal et générer la quittance' : 'Saisir le premier flux'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le module PDF s’active dès qu’un loyer exploitable existe.
-					</p>
-					<div class="mt-4">
-						<Button
-							size="sm"
-							variant="outline"
-							disabled={!activeSci || scopedBiens.length === 0 || scopedLocataires.length === 0}
-							onclick={() => {
-								createDialogOpen = true;
-							}}
-						>
-							Saisir un loyer
-						</Button>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
 
 		{#if scopedBiens.length === 0}
 			<p class="sci-inline-alert">
@@ -388,14 +385,12 @@
 		/>
 	{/if}
 
-	<Dialog.Dialog bind:open={createDialogOpen}>
-		<Dialog.DialogContent class="sm:max-w-5xl">
-			<Dialog.DialogHeader>
-				<Dialog.DialogTitle>Ajouter un loyer</Dialog.DialogTitle>
-				<Dialog.DialogDescription>
-					Crée un flux locatif complet pour la SCI active sans quitter la lecture du journal.
-				</Dialog.DialogDescription>
-			</Dialog.DialogHeader>
+	<EntityDrawer
+		bind:open={createDialogOpen}
+		title="Ajouter un loyer"
+		description="Crée un flux locatif complet pour la SCI active sans quitter la lecture du journal."
+		size="xl"
+	>
 			{#if !activeSci}
 				<p class="sci-inline-alert sci-inline-alert-error">
 					Sélectionne d’abord une SCI active avant de saisir un loyer.
@@ -416,17 +411,14 @@
 					onSubmit={handleCreateLoyer}
 				/>
 			{/if}
-		</Dialog.DialogContent>
-	</Dialog.Dialog>
+	</EntityDrawer>
 
-	<Dialog.Dialog bind:open={editDialogOpen}>
-		<Dialog.DialogContent class="sm:max-w-3xl">
-			<Dialog.DialogHeader>
-				<Dialog.DialogTitle>Modifier le loyer</Dialog.DialogTitle>
-				<Dialog.DialogDescription>
-					Ajuste la date, le montant ou le statut du flux sélectionné.
-				</Dialog.DialogDescription>
-			</Dialog.DialogHeader>
+	<EntityDrawer
+		bind:open={editDialogOpen}
+		title="Modifier le loyer"
+		description="Ajuste la date, le montant ou le statut du flux sélectionné."
+		size="lg"
+	>
 			{#if editingLoyer}
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="sci-field md:col-span-2">
@@ -454,15 +446,16 @@
 						</select>
 					</label>
 				</div>
-				<Dialog.DialogFooter>
-					<Button type="button" variant="outline" onclick={closeEditLoyer}>Annuler</Button>
-					<Button type="button" disabled={submitting} onclick={handleUpdateLoyer}>
-						{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
-					</Button>
-				</Dialog.DialogFooter>
 			{/if}
-		</Dialog.DialogContent>
-	</Dialog.Dialog>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
+				<Button type="button" variant="outline" onclick={closeEditLoyer}>Annuler</Button>
+				<Button type="button" disabled={submitting} onclick={handleUpdateLoyer}>
+					{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
+				</Button>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
 	<Dialog.Dialog bind:open={deleteDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-md">

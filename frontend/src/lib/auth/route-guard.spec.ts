@@ -6,6 +6,8 @@ describe('route guard helpers', () => {
 	it('marks operational routes as protected', () => {
 		expect(isProtectedRoute('/dashboard')).toBe(true);
 		expect(isProtectedRoute('/scis')).toBe(true);
+		expect(isProtectedRoute('/exploitation')).toBe(true);
+		expect(isProtectedRoute('/finance')).toBe(true);
 		expect(isProtectedRoute('/biens/123')).toBe(true);
 		expect(isProtectedRoute('/associes')).toBe(true);
 		expect(isProtectedRoute('/charges')).toBe(true);

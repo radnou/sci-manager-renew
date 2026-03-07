@@ -9,12 +9,18 @@
 		Users
 	} from 'lucide-svelte';
 	import {
+		fetchAssocies,
 		fetchSciDetail,
 		fetchBiens,
+		fetchCharges,
+		fetchFiscalite,
 		fetchLocataires,
 		fetchLoyers,
 		fetchScis,
+		type Associe,
 		type Bien,
+		type Charge,
+		type Fiscalite,
 		type Locataire,
 		type Loyer,
 		type SCIDetail,
@@ -56,6 +62,9 @@
 	let locataires: Locataire[] = [];
 	let loyers: Loyer[] = [];
 	let scis: SCIOverview[] = [];
+	let associes: Associe[] = [];
+	let charges: Charge[] = [];
+	let fiscalite: Fiscalite[] = [];
 	let activeSciDetail: SCIDetail | null = null;
 	let activeSciId = '';
 	let loading = true;
@@ -117,7 +126,15 @@
 	$: shouldShowGettingStarted =
 		onboardingReady &&
 		onboardingVisible &&
-		(scis.length === 0 || scopedBiens.length === 0 || scopedLocataires.length === 0 || scopedLoyers.length === 0);
+		(
+			scis.length === 0 ||
+			associes.length === 0 ||
+			biens.length === 0 ||
+			locataires.length === 0 ||
+			loyers.length === 0 ||
+			charges.length === 0 ||
+			fiscalite.length === 0
+		);
 	$: priorities = [
 		{
 			title:
@@ -331,16 +348,30 @@
 		errorMessage = '';
 
 		try {
-			const [nextScis, nextBiens, nextLocataires, nextLoyers] = await Promise.all([
+			const [
+				nextScis,
+				nextBiens,
+				nextLocataires,
+				nextLoyers,
+				nextAssocies,
+				nextCharges,
+				nextFiscalite
+			] = await Promise.all([
 				fetchScis(),
 				fetchBiens(),
 				fetchLocataires(),
-				fetchLoyers()
+				fetchLoyers(),
+				fetchAssocies(),
+				fetchCharges(),
+				fetchFiscalite()
 			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			locataires = Array.isArray(nextLocataires) ? nextLocataires : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
+			associes = Array.isArray(nextAssocies) ? nextAssocies : [];
+			charges = Array.isArray(nextCharges) ? nextCharges : [];
+			fiscalite = Array.isArray(nextFiscalite) ? nextFiscalite : [];
 
 			const storedActiveSciId = getStoredActiveSciId();
 			const fallbackSci = nextScis[0];
@@ -447,9 +478,12 @@
 				<GettingStartedPanel
 					loading={loading}
 					sciCount={scis.length}
-					bienCount={scopedBiens.length}
-					loyerCount={scopedLoyers.length}
-					locataireCount={scopedLocataires.length}
+					associeCount={associes.length}
+					bienCount={biens.length}
+					loyerCount={loyers.length}
+					locataireCount={locataires.length}
+					chargeCount={charges.length}
+					fiscaliteCount={fiscalite.length}
 					activeSciLabel={activeSciProfile?.nom || activeSci?.nom || ''}
 					onDismiss={hideGettingStarted}
 				/>

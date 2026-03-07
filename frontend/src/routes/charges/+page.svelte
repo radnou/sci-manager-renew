@@ -15,8 +15,13 @@
 		type SCIOverview,
 		type SubscriptionEntitlements
 	} from '$lib/api';
+	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -281,26 +286,27 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">GererSCI • Décaissements</p>
-		<h1 class="sci-page-title">Pilotage des charges</h1>
-		<p class="sci-page-subtitle">
-			Documente les dépenses rattachées à la SCI active avec un bien, un type de charge, un montant
-			et une date de paiement exploitables dans le pilotage fiscal.
-		</p>
+	<WorkspaceHeader
+		eyebrow="Finance • decaissements"
+		title="Pilotage des charges"
+		subtitle="Le journal des sorties reste la lecture principale. La creation et la correction des mouvements se font dans un panneau lateral, sans casser la lecture du registre."
+		contextLabel="SCI active"
+		contextValue={activeSci?.nom || 'Aucune SCI selectionnee'}
+		contextDetail={activeSci
+			? `${scopedCharges.length} charge(s) • ${metrics.totalLabel} documentes`
+			: 'Choisis une SCI active pour rattacher les depenses au bon patrimoine.'}
+	>
 		{#if scis.length > 0}
-			<div class="mt-5 max-w-sm">
-				<label class="sci-field">
-					<span class="sci-field-label">SCI active</span>
-					<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
-						{#each scis as sci (sci.id)}
-							<option value={String(sci.id || '')}>{sci.nom}</option>
-						{/each}
-					</select>
-				</label>
-			</div>
+			<label class="sci-field min-w-[14rem]">
+				<span class="sci-field-label">SCI active</span>
+				<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+					{#each scis as sci (sci.id)}
+						<option value={String(sci.id || '')}>{sci.nom}</option>
+					{/each}
+				</select>
+			</label>
 		{/if}
-	</header>
+	</WorkspaceHeader>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
@@ -352,82 +358,82 @@
 			</p>
 			<div class="mt-5 flex flex-wrap gap-3">
 				<a href="/account"><Button>Voir mon offre</Button></a>
-				<a href="/pricing"><Button variant="outline">Comparer les offres</Button></a>
+				<a href="/settings"><Button variant="outline">Revenir aux préférences</Button></a>
 			</div>
 		</div>
 	{:else if !activeSci}
-		<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
-			<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne une SCI active</h2>
-			<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-				Chaque charge doit être rattachée à un bien et donc à une SCI identifiée. Passe d’abord par le
-				portefeuille SCI.
-			</p>
-			<div class="mt-5 flex flex-wrap gap-3">
-				<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
-				<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
-			</div>
-		</div>
+		<EmptyStateOperator
+			eyebrow="Pre-requis metier"
+			title="Selectionne une SCI active"
+			description="Chaque charge doit etre rattachee a un bien et donc a une SCI identifiee. Passe d’abord par le portefeuille SCI."
+			primaryHref="/scis"
+			primaryLabel="Ouvrir le portefeuille SCI"
+			secondaryHref="/dashboard"
+			secondaryLabel="Retour au cockpit"
+		/>
 	{:else}
-		<Card class="sci-section-card">
-			<CardHeader>
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<CardTitle class="text-lg">Lecture et actions</CardTitle>
-						<CardDescription>
-							Une charge utile au pilotage fiscal est toujours rattachée à un bien de la SCI active, à un
-							type métier clair et à une date de paiement vérifiable.
-						</CardDescription>
+		<WorkspaceActionBar
+			eyebrow="Cadre charges"
+			title="Journal des sorties avant cloture"
+			description="Une charge utile au pilotage fiscal est toujours rattachee a un bien de la SCI active, a un type metier clair et a une date de paiement verifiable."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">SCI active</p>
+					<p class="sci-action-card-value">{activeSci.nom}</p>
+					<p class="sci-action-card-body">Les charges saisies ici alimentent la lecture operationnelle de cette SCI.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Caracteristiques</p>
+					<p class="sci-action-card-value">Bien, type, montant, date de paiement</p>
+					<p class="sci-action-card-body">Le journal doit rester exploitable par bien et par exercice.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Etape suivante</p>
+					<p class="sci-action-card-value">{scopedCharges.length > 0 ? 'Preparer la fiscalite' : 'Documenter la premiere charge'}</p>
+					<p class="sci-action-card-body">Une fois les charges documentees, passe en fiscalite pour consolider.</p>
+				</div>
+			</div>
+			<div class="mt-5 sci-primary-actions">
+				<Button disabled={scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
+					Documenter une charge
+				</Button>
+				<a href="/fiscalite"><Button variant="outline">Ouvrir Fiscalite</Button></a>
+				<a href="/biens"><Button variant="outline">Verifier les biens</Button></a>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Vision"
+					description="Le journal de charges est frequent. La creation et la correction restent des actions de contexte."
+				>
+					<div class="space-y-3">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Maintenant</p>
+							<p class="sci-action-card-value">
+								{scopedBiens.length === 0
+									? 'Ajouter le premier bien'
+									: scopedCharges.length === 0
+										? 'Documenter la premiere charge'
+										: 'Passer a la cloture'}
+							</p>
+							<p class="sci-action-card-body">Le journal doit preceder l’exercice fiscal consolide.</p>
+						</div>
+						<Button href="/finance" variant="outline" class="w-full justify-start">Ouvrir le hub Finance</Button>
 					</div>
-					<Button disabled={scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
-						Nouvelle charge
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{activeSci.nom}</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Les charges saisies ici alimentent la lecture opérationnelle de cette SCI.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Caractéristiques</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						Bien concerné, type de charge, montant, date de paiement
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le journal doit rester exploitable par bien et par exercice, pas juste accumuler des montants.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{scopedCharges.length > 0 ? 'Préparer la fiscalité' : 'Documenter la première charge'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Une fois les charges documentées, passe en fiscalité pour consolider les exercices.
-					</p>
-					<div class="mt-4">
-						<a href="/fiscalite"><Button size="sm" variant="outline">Ouvrir Fiscalité</Button></a>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
 
 		{#if scopedBiens.length === 0}
-			<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis patrimoine</p>
-				<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Ajoute d’abord un bien</h2>
-				<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-					Une charge ne peut pas être saisie sans bien support. Rattache d’abord le premier actif à la SCI active.
-				</p>
-				<div class="mt-5 flex flex-wrap gap-3">
-					<a href="/biens"><Button>Ouvrir Biens</Button></a>
-					<a href="/scis"><Button variant="outline">Retour au portefeuille SCI</Button></a>
-				</div>
-			</div>
+			<EmptyStateOperator
+				eyebrow="Pre-requis patrimoine"
+				title="Ajoute d’abord un bien"
+				description="Une charge ne peut pas etre saisie sans bien support. Rattache d’abord le premier actif a la SCI active."
+				primaryHref="/biens"
+				primaryLabel="Ouvrir Biens"
+				secondaryHref="/scis"
+				secondaryLabel="Retour au portefeuille SCI"
+			/>
 		{:else}
 				<Card class="sci-section-card">
 					<CardHeader>
@@ -496,14 +502,12 @@
 		{/if}
 	{/if}
 
-	<Dialog.Dialog bind:open={createDialogOpen}>
-		<Dialog.Content class="sm:max-w-[36rem]">
-			<Dialog.Header>
-				<Dialog.Title>Ajouter une charge</Dialog.Title>
-				<Dialog.Description>
-					Ajoute un mouvement de dépense sur un bien de la SCI active sans quitter le journal.
-				</Dialog.Description>
-			</Dialog.Header>
+	<EntityDrawer
+		bind:open={createDialogOpen}
+		title="Ajouter une charge"
+		description="Ajoute un mouvement de depense sur un bien de la SCI active sans quitter le journal."
+		size="lg"
+	>
 			{#if scopedBiens.length === 0}
 				<p class="sci-inline-alert sci-inline-alert-error">
 					Ajoute d’abord un bien à la SCI active avant de créer une charge.
@@ -539,24 +543,23 @@
 						<Input bind:value={createDraft.datePaiement} type="date" />
 					</label>
 				</div>
-				<Dialog.Footer>
-					<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
-					<Button disabled={submitting} onclick={handleCreateCharge}>
-						{submitting ? 'Création...' : 'Ajouter la charge'}
-					</Button>
-				</Dialog.Footer>
 			{/if}
-		</Dialog.Content>
-	</Dialog.Dialog>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
+				<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
+				<Button disabled={submitting || scopedBiens.length === 0} onclick={handleCreateCharge}>
+					{submitting ? 'Creation...' : 'Ajouter la charge'}
+				</Button>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
-	<Dialog.Dialog bind:open={editDialogOpen}>
-		<Dialog.Content class="sm:max-w-[36rem]">
-			<Dialog.Header>
-				<Dialog.Title>Modifier la charge</Dialog.Title>
-				<Dialog.Description>
-					Ajuste le type, le montant ou la date de paiement du mouvement sélectionné.
-				</Dialog.Description>
-			</Dialog.Header>
+	<EntityDrawer
+		bind:open={editDialogOpen}
+		title="Modifier la charge"
+		description="Ajuste le type, le montant ou la date de paiement du mouvement selectionne."
+		size="lg"
+	>
 			<div class="grid gap-4 py-2">
 				<label class="sci-field">
 					<span class="sci-field-label">Type de charge</span>
@@ -577,14 +580,15 @@
 					</label>
 				</div>
 			</div>
-			<Dialog.Footer>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
 				<Button variant="outline" onclick={closeEditCharge}>Annuler</Button>
 				<Button disabled={submitting} onclick={handleUpdateCharge}>
 					{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
 				</Button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Dialog>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
 	<Dialog.Dialog bind:open={deleteDialogOpen}>
 		<Dialog.Content class="sm:max-w-[32rem]">

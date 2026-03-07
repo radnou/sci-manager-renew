@@ -13,8 +13,13 @@
 		type LocataireUpdatePayload,
 		type SCIOverview
 	} from '$lib/api';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
+	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -292,26 +297,27 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">GererSCI • Occupants</p>
-		<h1 class="sci-page-title">Référentiel des locataires</h1>
-		<p class="sci-page-subtitle">
-			Documente les occupants par bien avec identité, email et période d’occupation avant de saisir
-			les flux locatifs.
-		</p>
+	<WorkspaceHeader
+		eyebrow="Exploitation • occupation"
+		title="Referentiel des locataires"
+		subtitle="La page sert d’abord a lire l’occupation et la qualite du referentiel. La creation et l’edition s’ouvrent a la demande dans un panneau lateral."
+		contextLabel="SCI active"
+		contextValue={activeSci?.nom || 'Aucune SCI selectionnee'}
+		contextDetail={activeSci
+			? `${scopedLocataires.length} locataire(s) • ${activeLocatairesCount} occupation(s) active(s)`
+			: 'Choisis une SCI active pour documenter l’occupation bien par bien.'}
+	>
 		{#if scis.length > 0}
-			<div class="mt-5 max-w-sm">
-				<label class="sci-field">
-					<span class="sci-field-label">SCI active</span>
-					<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
-						{#each scis as sci (sci.id)}
-							<option value={String(sci.id || '')}>{sci.nom}</option>
-						{/each}
-					</select>
-				</label>
-			</div>
+			<label class="sci-field min-w-[14rem]">
+				<span class="sci-field-label">SCI active</span>
+				<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+					{#each scis as sci (sci.id)}
+						<option value={String(sci.id || '')}>{sci.nom}</option>
+					{/each}
+				</select>
+			</label>
 		{/if}
-	</header>
+	</WorkspaceHeader>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
@@ -355,95 +361,78 @@
 			showRail={true}
 		/>
 	{:else}
-		<Card class="sci-section-card">
-			<CardHeader>
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<CardTitle class="text-lg">Lecture et actions</CardTitle>
-						<CardDescription>
-							Une chaîne propre commence ici: sélectionner un bien, documenter l’occupant, dater
-							l’entrée, puis seulement ouvrir la saisie des loyers et des quittances.
-						</CardDescription>
+		<WorkspaceActionBar
+			eyebrow="Cadre occupation"
+			title="Referentiel d’occupation avant loyers"
+			description="On documente d’abord le bien, l’occupant et la periode d’occupation. Les loyers viennent ensuite utiliser ce referentiel propre."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">SCI active</p>
+					<p class="sci-action-card-value">{activeSci?.nom || 'Aucune SCI selectionnee'}</p>
+					<p class="sci-action-card-body">Le referentiel locataire est filtre par les biens de cette SCI.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Caracteristiques</p>
+					<p class="sci-action-card-value">Bien, nom, email, dates d’occupation</p>
+					<p class="sci-action-card-body">On documente un occupant exploitable, pas une simple valeur libre dans un loyer.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Etape suivante</p>
+					<p class="sci-action-card-value">{scopedLocataires.length > 0 ? 'Passer aux loyers' : 'Creer le premier locataire'}</p>
+					<p class="sci-action-card-body">Le referentiel sert ensuite le recouvrement, les quittances et la lecture du bien.</p>
+				</div>
+			</div>
+			<div class="mt-5 sci-primary-actions">
+				<Button disabled={!activeSci || scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
+					Ajouter un locataire
+				</Button>
+				<a href="/loyers"><Button variant="outline">Ouvrir Loyers</Button></a>
+				<a href="/biens"><Button variant="outline">Ouvrir Biens</Button></a>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Vision"
+					description="L’occupation sert de pivot entre le patrimoine et le journal de loyers."
+				>
+					<div class="space-y-3">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Maintenant</p>
+							<p class="sci-action-card-value">
+								{!activeSci
+									? 'Choisir une SCI active'
+									: scopedBiens.length === 0
+										? 'Ajouter le premier bien'
+										: 'Documenter le premier occupant'}
+							</p>
+							<p class="sci-action-card-body">Sans bien, puis sans occupant, la chaine locative reste incomplète.</p>
+						</div>
+						<Button href="/finance" variant="outline" class="w-full justify-start">Voir la finance</Button>
 					</div>
-					<Button disabled={!activeSci || scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
-						Nouveau locataire
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-						SCI active
-					</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{activeSci?.nom || 'Aucune SCI sélectionnée'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le référentiel des locataires est filtré sur cette SCI via les biens rattachés.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-						Caractéristiques obligatoires
-					</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						Bien, nom, email, date d’entrée, date de sortie
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						On documente un occupant exploitable, pas une simple chaîne libre dans un loyer.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-						Étape suivante
-					</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{scopedLocataires.length > 0 ? 'Passer aux loyers' : 'Créer le premier locataire'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Une fois l’occupant créé, le module Loyers peut utiliser un référentiel propre.
-					</p>
-					<div class="mt-4">
-						<a href="/loyers"><Button size="sm" variant="outline">Ouvrir Loyers</Button></a>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
 
 		{#if !activeSci}
-			<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-					Pré-requis métier
-				</p>
-				<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-					Sélectionne d’abord une SCI active
-				</h2>
-				<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-					Un locataire doit être rattaché à un bien d’une SCI active. Passe par le portefeuille SCI
-					pour choisir ou créer la société cible.
-				</p>
-				<div class="mt-5 flex flex-wrap gap-3">
-					<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
-					<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
-				</div>
-			</div>
+			<EmptyStateOperator
+				eyebrow="Pre-requis metier"
+				title="Selectionne d’abord une SCI active"
+				description="Un locataire doit etre rattache a un bien d’une SCI active. Passe par le portefeuille SCI pour choisir ou creer la societe cible."
+				primaryHref="/scis"
+				primaryLabel="Ouvrir le portefeuille SCI"
+				secondaryHref="/dashboard"
+				secondaryLabel="Retour au cockpit"
+			/>
 		{:else if scopedBiens.length === 0}
-			<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-					Pré-requis patrimoine
-				</p>
-				<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-					Ajoute d’abord un bien à la SCI active
-				</h2>
-				<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-					Le référentiel locataire se construit bien par bien. Sans actif rattaché, on ne peut pas
-					documenter l’occupation.
-				</p>
-				<div class="mt-5 flex flex-wrap gap-3">
-					<a href="/biens"><Button>Ajouter un bien</Button></a>
-					<a href="/scis"><Button variant="outline">Vérifier la SCI active</Button></a>
-				</div>
-			</div>
+			<EmptyStateOperator
+				eyebrow="Pre-requis patrimoine"
+				title="Ajoute d’abord un bien a la SCI active"
+				description="Le referentiel locataire se construit bien par bien. Sans actif rattache, on ne peut pas documenter l’occupation."
+				primaryHref="/biens"
+				primaryLabel="Ajouter un bien"
+				secondaryHref="/scis"
+				secondaryLabel="Verifier la SCI active"
+			/>
 		{/if}
 
 		<Card class="sci-section-card">
@@ -532,14 +521,12 @@
 		</Card>
 	{/if}
 
-	<Dialog.Dialog bind:open={createDialogOpen}>
-		<Dialog.DialogContent class="sm:max-w-4xl">
-			<Dialog.DialogHeader>
-				<Dialog.DialogTitle>Ajouter un locataire</Dialog.DialogTitle>
-				<Dialog.DialogDescription>
-					Crée une fiche locataire complète sans quitter le référentiel d’occupation de la SCI active.
-				</Dialog.DialogDescription>
-			</Dialog.DialogHeader>
+	<EntityDrawer
+		bind:open={createDialogOpen}
+		title="Ajouter un locataire"
+		description="Cree une fiche locataire complete sans quitter le referentiel d’occupation de la SCI active."
+		size="lg"
+	>
 			{#if !activeSci}
 				<p class="sci-inline-alert sci-inline-alert-error">
 					Sélectionne d’abord une SCI active avant de créer un locataire.
@@ -578,26 +565,25 @@
 						<Input bind:value={createDraft.dateFin} type="date" />
 					</label>
 				</div>
-				<Dialog.DialogFooter>
-					<Button type="button" variant="outline" onclick={() => (createDialogOpen = false)}>
-						Annuler
-					</Button>
-					<Button type="button" disabled={submitting} onclick={handleCreateLocataire}>
-						{submitting ? 'Enregistrement...' : 'Ajouter le locataire'}
-					</Button>
-				</Dialog.DialogFooter>
 			{/if}
-		</Dialog.DialogContent>
-	</Dialog.Dialog>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
+				<Button type="button" variant="outline" onclick={() => (createDialogOpen = false)}>
+					Annuler
+				</Button>
+				<Button type="button" disabled={submitting || !activeSci || scopedBiens.length === 0} onclick={handleCreateLocataire}>
+					{submitting ? 'Enregistrement...' : 'Ajouter le locataire'}
+				</Button>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
-	<Dialog.Dialog bind:open={editDialogOpen}>
-		<Dialog.DialogContent class="sm:max-w-3xl">
-			<Dialog.DialogHeader>
-				<Dialog.DialogTitle>Modifier le locataire</Dialog.DialogTitle>
-				<Dialog.DialogDescription>
-					Ajuste l’identité ou la période d’occupation du locataire sélectionné.
-				</Dialog.DialogDescription>
-			</Dialog.DialogHeader>
+	<EntityDrawer
+		bind:open={editDialogOpen}
+		title="Modifier le locataire"
+		description="Ajuste l’identite ou la periode d’occupation du locataire selectionne."
+		size="lg"
+	>
 			{#if editingLocataire}
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="sci-field md:col-span-2">
@@ -625,15 +611,16 @@
 						<Input bind:value={editDraft.dateFin} type="date" />
 					</label>
 				</div>
-				<Dialog.DialogFooter>
-					<Button type="button" variant="outline" onclick={closeEditLocataire}>Annuler</Button>
-					<Button type="button" disabled={submitting} onclick={handleUpdateLocataire}>
-						{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
-					</Button>
-				</Dialog.DialogFooter>
 			{/if}
-		</Dialog.DialogContent>
-	</Dialog.Dialog>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
+				<Button type="button" variant="outline" onclick={closeEditLocataire}>Annuler</Button>
+				<Button type="button" disabled={submitting} onclick={handleUpdateLocataire}>
+					{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
+				</Button>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
 	<Dialog.Dialog bind:open={deleteDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-md">

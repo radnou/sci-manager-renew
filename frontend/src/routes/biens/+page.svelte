@@ -15,9 +15,14 @@
 		type SubscriptionEntitlements
 	} from '$lib/api';
 	import BienForm from '$lib/components/BienForm.svelte';
+	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import BienTable from '$lib/components/BienTable.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -235,26 +240,27 @@
 </script>
 
 	<section class="sci-page-shell">
-		<header class="sci-page-header">
-			<p class="sci-eyebrow">GererSCI • Opérations</p>
-			<h1 class="sci-page-title">Gestion des biens</h1>
-			<p class="sci-page-subtitle">
-				Centralise les actifs immobiliers de la SCI active sans exposer d’identifiants techniques dans
-				les formulaires.
-			</p>
-			{#if scis.length > 0}
-				<div class="mt-5 max-w-sm">
-					<label class="sci-field">
-						<span class="sci-field-label">SCI active</span>
-						<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
-							{#each scis as sci (sci.id)}
-								<option value={String(sci.id || '')}>{sci.nom}</option>
-							{/each}
-						</select>
-					</label>
-				</div>
-			{/if}
-		</header>
+	<WorkspaceHeader
+		eyebrow="Exploitation • actifs immobiliers"
+		title="Gestion des biens"
+		subtitle="La page reste dédiée à la lecture et au contrôle du patrimoine de la SCI active. La création et l’édition s’ouvrent à la demande dans un panneau latéral."
+		contextLabel="SCI active"
+		contextValue={activeSci?.nom || 'Aucune SCI sélectionnée'}
+		contextDetail={activeSci
+			? `${scopedBiens.length} bien(s) rattaché(s) • loyer cible ${metrics.totalMonthlyRentLabel}`
+			: 'Choisis ou crée d’abord une SCI métier avant d’ajouter un actif.'}
+	>
+		{#if scis.length > 0}
+			<label class="sci-field min-w-[14rem]">
+				<span class="sci-field-label">SCI active</span>
+				<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+					{#each scis as sci (sci.id)}
+						<option value={String(sci.id || '')}>{sci.nom}</option>
+					{/each}
+				</select>
+			</label>
+		{/if}
+	</WorkspaceHeader>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
@@ -297,74 +303,76 @@
 			description="On récupère la SCI active, les capacités d’offre et le portefeuille immobilier."
 		/>
 	{:else}
-			<Card class="sci-section-card">
-				<CardHeader>
-					<div class="flex flex-wrap items-center justify-between gap-3">
-						<div>
-							<CardTitle class="text-lg">Lecture et actions</CardTitle>
-							<CardDescription>
-								Ici, tu pilotes d’abord le portefeuille de la SCI active. La création d’un bien se fait
-								à la demande depuis l’action primaire.
-							</CardDescription>
-						</div>
-						<Button
-							disabled={!activeSci || bienCreationDisabled}
-							onclick={() => {
-								createDialogOpen = true;
-							}}
-						>
-							Nouveau bien
-						</Button>
-					</div>
-				</CardHeader>
-				<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{activeSci?.nom || 'Aucune SCI sélectionnée'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Un bien est toujours créé dans le contexte d’une SCI métier.
-					</p>
+		<WorkspaceActionBar
+			eyebrow="Cadre patrimoine"
+			title="Lecture d’actifs avant création"
+			description="Le registre immobilier reste le centre de l’écran. Les actions fréquentes servent à ajouter un bien, ouvrir les locataires ou basculer vers les loyers sans perdre le contexte SCI."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">SCI active</p>
+					<p class="sci-action-card-value">{activeSci?.nom || 'Aucune SCI sélectionnée'}</p>
+					<p class="sci-action-card-body">Un bien n’est jamais créé hors d’une SCI métier clairement choisie.</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Caractéristiques du bien</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						Adresse, type locatif, loyer CC, charges, TMI, acquisition
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Le formulaire attend une fiche complète, pas juste une adresse.
-					</p>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Caractéristiques</p>
+					<p class="sci-action-card-value">Adresse, type, loyer, charges, acquisition</p>
+					<p class="sci-action-card-body">La fiche attend une base patrimoniale exploitable, pas un identifiant technique.</p>
 				</div>
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
-						<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-							{metrics.count > 0 ? 'Passer au référentiel locataire' : 'Créer le premier bien'}
-						</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Une fois le bien créé, passe à `Locataires` pour documenter l’occupant avant la saisie
-						des loyers.
-					</p>
-						<div class="mt-4">
-							<a href="/locataires"><Button size="sm" variant="outline">Ouvrir Locataires</Button></a>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Étape suivante</p>
+					<p class="sci-action-card-value">{metrics.count > 0 ? 'Documenter les locataires' : 'Créer le premier bien'}</p>
+					<p class="sci-action-card-body">Une fois l’actif créé, passe à l’occupation puis au flux locatif.</p>
+				</div>
+			</div>
+			<div class="mt-5 sci-primary-actions">
+				<Button
+					disabled={!activeSci || bienCreationDisabled}
+					onclick={() => {
+						createDialogOpen = true;
+					}}
+				>
+					Ajouter un bien
+				</Button>
+				<a href="/locataires"><Button variant="outline">Ouvrir Locataires</Button></a>
+				<a href="/loyers"><Button variant="outline">Ouvrir Loyers</Button></a>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Vision"
+					description="Le portefeuille immobilier sert d’abord à lire, filtrer et corriger. La création reste une action ponctuelle."
+				>
+					<div class="space-y-3">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Capacité active</p>
+							<p class="sci-action-card-value">
+								{subscription?.max_biens == null
+									? 'Biens illimités'
+									: `${subscription?.current_biens ?? 0}/${subscription?.max_biens ?? 0} biens`}
+							</p>
+							<p class="sci-action-card-body">
+								{bienCreationDisabled
+									? "Le quota de l'offre est atteint."
+									: 'Le portefeuille peut encore accueillir de nouveaux actifs.'}
+							</p>
 						</div>
+						<Button href="/scis" variant="outline" class="w-full justify-start">Vérifier le portefeuille SCI</Button>
 					</div>
-				</CardContent>
-			</Card>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
 
-			{#if !activeSci}
-				<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
-					<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne d’abord une SCI active</h2>
-				<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-					Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible.
-				</p>
-				<div class="mt-5 flex flex-wrap gap-3">
-					<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
-						<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
-					</div>
-				</div>
-			{/if}
+		{#if !activeSci}
+			<EmptyStateOperator
+				eyebrow="Pré-requis métier"
+				title="Sélectionne d’abord une SCI active"
+				description="Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible."
+				primaryHref="/scis"
+				primaryLabel="Ouvrir le portefeuille SCI"
+				secondaryHref="/dashboard"
+				secondaryLabel="Retour au cockpit"
+			/>
+		{/if}
 
 		<BienTable
 			biens={scopedBiens}
@@ -376,15 +384,12 @@
 		/>
 	{/if}
 
-	<Dialog.Dialog bind:open={editDialogOpen}>
-		<Dialog.DialogContent class="sm:max-w-4xl">
-			<Dialog.DialogHeader>
-				<Dialog.DialogTitle>Modifier le bien</Dialog.DialogTitle>
-				<Dialog.DialogDescription>
-					Mets à jour les informations métier du bien sélectionné sans changer la SCI de
-					rattachement.
-				</Dialog.DialogDescription>
-			</Dialog.DialogHeader>
+	<EntityDrawer
+		bind:open={editDialogOpen}
+		title="Modifier le bien"
+		description="Mets à jour les informations métier du bien sélectionné sans changer la SCI de rattachement."
+		size="xl"
+	>
 			{#if editingBien}
 				<div class="grid gap-4 md:grid-cols-2">
 					<label class="sci-field md:col-span-2">
@@ -428,15 +433,16 @@
 						<Input bind:value={editBienDraft.prixAcquisition} type="number" min="0" step="1000" />
 					</label>
 				</div>
-				<Dialog.DialogFooter>
-					<Button type="button" variant="outline" onclick={closeEditBien}>Annuler</Button>
-					<Button type="button" disabled={submitting} onclick={handleUpdateBien}>
-						{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
-					</Button>
-				</Dialog.DialogFooter>
 			{/if}
-		</Dialog.DialogContent>
-	</Dialog.Dialog>
+		{#snippet footer()}
+			<div class="flex justify-end gap-3">
+				<Button type="button" variant="outline" onclick={closeEditBien}>Annuler</Button>
+				<Button type="button" disabled={submitting} onclick={handleUpdateBien}>
+					{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
+				</Button>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
 	<Dialog.Dialog bind:open={deleteDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-md">
@@ -462,14 +468,12 @@
 		</Dialog.DialogContent>
 	</Dialog.Dialog>
 
-	<Dialog.Dialog bind:open={createDialogOpen}>
-		<Dialog.DialogContent class="sm:max-w-5xl">
-			<Dialog.DialogHeader>
-				<Dialog.DialogTitle>Ajouter un bien</Dialog.DialogTitle>
-				<Dialog.DialogDescription>
-					Crée un actif immobilier complet pour la SCI active sans quitter la lecture du portefeuille.
-				</Dialog.DialogDescription>
-			</Dialog.DialogHeader>
+	<EntityDrawer
+		bind:open={createDialogOpen}
+		title="Ajouter un bien"
+		description="Crée un actif immobilier complet pour la SCI active sans quitter la lecture du portefeuille."
+		size="xl"
+	>
 			{#if activeSci}
 				<BienForm
 					activeSciId={resolvedActiveSciId}
@@ -485,6 +489,5 @@
 					Sélectionne d’abord une SCI active avant de créer un bien.
 				</p>
 			{/if}
-		</Dialog.DialogContent>
-	</Dialog.Dialog>
+	</EntityDrawer>
 </section>

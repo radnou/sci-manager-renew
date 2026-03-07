@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchSubscriptionEntitlements, type SubscriptionEntitlements } from '$lib/api';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { getCurrentSession } from '$lib/auth/session';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -17,6 +20,11 @@
 
 	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
 	$: activeSciDetail = activeSciId ? 'Le cockpit reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
+	$: capacityLabel = subscription
+		? subscription.max_scis == null
+			? 'SCI et biens illimités'
+			: `${subscription.current_scis}/${subscription.max_scis} SCI • ${subscription.current_biens}/${subscription.max_biens} biens`
+		: "Chargement de l'offre active";
 
 	onMount(async () => {
 		const session = await getCurrentSession();
@@ -36,19 +44,68 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">Compte • Gouvernance utilisateur</p>
-		<h1 class="sci-page-title">Paramètres du compte</h1>
-		<p class="sci-page-subtitle">
-			Centralise l’identité du compte, les accès utiles et les zones de conformité sans mélanger cela avec les réglages d’interface.
-		</p>
-	</header>
+	<WorkspaceHeader
+		eyebrow="Compte • identité, sécurité, abonnement"
+		title="Compte opérateur"
+		subtitle="Le compte concentre l’identité de connexion, l’offre active, les quotas et les zones de conformité. Les préférences d’interface restent isolées dans Paramètres."
+		contextLabel="Session active"
+		contextValue={email}
+		contextDetail={subscription ? `${subscription.plan_name} • ${capacityLabel}` : accessMode}
+	>
+		<Button href="/pricing">Offre et facturation</Button>
+		<Button href="/settings" variant="outline">Paramètres</Button>
+		<Button href="/account/privacy" variant="outline">Confidentialité</Button>
+	</WorkspaceHeader>
 
-	<div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+	<WorkspaceActionBar
+		eyebrow="Lecture du compte"
+		title="Ce que l’on arbitre ici"
+		description="Vérifier l’identité de connexion, contrôler la capacité active et retrouver les points de conformité sans mélanger cela avec les réglages locaux du navigateur."
+	>
+		<div class="sci-action-grid">
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Identité</p>
+				<p class="sci-action-card-value">{email}</p>
+				<p class="sci-action-card-body">Adresse de référence utilisée pour les liens sécurisés.</p>
+			</div>
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Capacité active</p>
+				<p class="sci-action-card-value">{subscription?.plan_name || 'Offre en cours'}</p>
+				<p class="sci-action-card-body">{capacityLabel}</p>
+			</div>
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Point d’entrée</p>
+				<p class="sci-action-card-value">{defaultLandingRoute}</p>
+				<p class="sci-action-card-body">Page ouverte après connexion sur ce navigateur.</p>
+			</div>
+		</div>
+		<div class="mt-5 sci-primary-actions">
+			<Button href="/pricing">Voir les offres et upgrader</Button>
+			<Button href="/settings" variant="outline">Préférences d’interface</Button>
+			<Button href="/scis" variant="outline">Ouvrir le portefeuille SCI</Button>
+		</div>
+		{#snippet aside()}
+			<WorkspaceRailCard
+				title="Actions rapides"
+				description="Les sujets récurrents du compte restent peu nombreux: offre, confidentialité, retour au pilotage."
+			>
+				<div class="grid gap-2">
+					<Button href="/account/privacy" variant="outline" class="w-full justify-start">
+						Mes données et confidentialité
+					</Button>
+					<Button href="/dashboard" variant="outline" class="w-full justify-start">
+						Retour au cockpit
+					</Button>
+				</div>
+			</WorkspaceRailCard>
+		{/snippet}
+	</WorkspaceActionBar>
+
+	<div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
 		<Card class="sci-section-card">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">Identité du compte</CardTitle>
+					<CardTitle class="text-lg">Identité et contexte</CardTitle>
 					<CardDescription>Référence d’accès, posture d’authentification et contexte de travail retenu.</CardDescription>
 				</div>
 			</CardHeader>
@@ -76,48 +133,30 @@
 			</CardContent>
 		</Card>
 
-		<div class="grid gap-6">
-			<Card class="sci-section-card">
-				<CardHeader>
-					<div>
-						<CardTitle class="text-lg">Abonnement et facturation</CardTitle>
-						<CardDescription>Capacité active, quotas et accès aux options d’évolution de l’offre.</CardDescription>
-					</div>
-				</CardHeader>
-				<CardContent class="grid gap-3 pt-0">
-					{#if subscription}
-						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Offre active</p>
-							<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
-							<p class="mt-1 text-slate-500 dark:text-slate-400">
-								{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.current_scis}/${subscription.max_scis} SCI`}
-								•
-								{subscription.max_biens == null ? 'Biens illimités' : `${subscription.current_biens}/${subscription.max_biens} biens`}
-							</p>
-						</div>
-						<div class="grid gap-2 sm:grid-cols-2">
-							<Button href="/pricing" class="justify-start">Voir les offres et upgrader</Button>
-							<Button href="/scis" variant="outline" class="justify-start">Ouvrir le portefeuille SCI</Button>
-						</div>
-					{:else if subscriptionError}
-						<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
-					{/if}
-				</CardContent>
-			</Card>
-
-			<Card class="sci-section-card">
+		<Card class="sci-section-card">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">Sécurité et données</CardTitle>
-					<CardDescription>Raccourcis vers les réglages d’interface, la confidentialité et les zones de contrôle du compte.</CardDescription>
+					<CardTitle class="text-lg">Offre active et conformité</CardTitle>
+					<CardDescription>Capacité active, quotas et contrôles utiles liés au compte connecté.</CardDescription>
 				</div>
 			</CardHeader>
-			<CardContent class="grid gap-2 pt-0">
-				<Button href="/settings" variant="outline" class="justify-start">Préférences d’interface</Button>
-				<Button href="/account/privacy" variant="outline" class="justify-start">Mes données et confidentialité</Button>
-				<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+			<CardContent class="grid gap-3 pt-0">
+				{#if subscription}
+					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Offre active</p>
+						<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
+						<p class="mt-1 text-slate-500 dark:text-slate-400">{capacityLabel}</p>
+					</div>
+				{:else if subscriptionError}
+					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
+				{/if}
+
+				<div class="grid gap-2">
+					<Button href="/pricing" class="justify-start">Voir les offres et upgrader</Button>
+					<Button href="/account/privacy" variant="outline" class="justify-start">Mes données et confidentialité</Button>
+					<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+				</div>
 			</CardContent>
 		</Card>
-		</div>
 	</div>
 </section>
