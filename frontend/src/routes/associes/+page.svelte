@@ -11,8 +11,13 @@
 		type AssocieUpdatePayload,
 		type SCIOverview
 	} from '$lib/api';
+	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -245,26 +250,30 @@
 </script>
 
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">GererSCI • Gouvernance</p>
-		<h1 class="sci-page-title">Associés et gouvernance</h1>
-		<p class="sci-page-subtitle">
-			Documente la gouvernance de la SCI active avec une répartition claire du capital, les rôles et
-			les accès compte réellement portés par les membres connectés.
-		</p>
+	<WorkspaceHeader
+		eyebrow="Gouvernance • associés et capital"
+		title="Associés et gouvernance"
+		subtitle="Le registre de gouvernance documente le capital, les rôles et les accès compte réels sans mélanger le sujet au reste de l’exploitation."
+		contextLabel="SCI active"
+		contextValue={activeSci?.nom || 'Aucune SCI sélectionnée'}
+		contextDetail={activeSci
+			? `${scopedAssocies.length} associé(s) documenté(s) • ${formatPercent(metrics.totalParts, '0 %')} répartis`
+			: 'Choisis une SCI dans le portefeuille avant de travailler la gouvernance.'}
+	>
 		{#if scis.length > 0}
-			<div class="mt-5 max-w-sm">
-				<label class="sci-field">
-					<span class="sci-field-label">SCI active</span>
-					<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
-						{#each scis as sci (sci.id)}
-							<option value={String(sci.id || '')}>{sci.nom}</option>
-						{/each}
-					</select>
-				</label>
-			</div>
+			<label class="sci-field min-w-[14rem]">
+				<span class="sci-field-label">SCI active</span>
+				<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+					{#each scis as sci (sci.id)}
+						<option value={String(sci.id || '')}>{sci.nom}</option>
+					{/each}
+				</select>
+			</label>
 		{/if}
-	</header>
+		<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}>Ajouter un associé</Button>
+		<Button href="/charges" variant="outline">Charges</Button>
+		<Button href="/fiscalite" variant="outline">Fiscalité</Button>
+	</WorkspaceHeader>
 
 	<div class="grid gap-4 md:grid-cols-3">
 		<KpiCard
@@ -307,67 +316,67 @@
 			description="On aligne la SCI active, la répartition du capital et les accès compte."
 		/>
 	{:else if !activeSci}
-		<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Pré-requis métier</p>
-			<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Sélectionne d’abord une SCI</h2>
-			<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-				La gouvernance se pilote toujours dans le contexte d’une société précise. Choisis ou crée la
-				SCI cible avant de documenter les associés.
-			</p>
-			<div class="mt-5 flex flex-wrap gap-3">
-				<a href="/scis"><Button>Ouvrir le portefeuille SCI</Button></a>
-				<a href="/dashboard"><Button variant="outline">Retour au cockpit</Button></a>
-			</div>
-		</div>
+		<EmptyStateOperator
+			eyebrow="Pré-requis métier"
+			title="Sélectionne d'abord une SCI"
+			description="La gouvernance se pilote toujours dans le contexte d'une société précise. Choisis ou crée la SCI cible avant de documenter les associés."
+			primaryHref="/scis"
+			primaryLabel="Ouvrir le portefeuille SCI"
+			secondaryHref="/dashboard"
+			secondaryLabel="Retour au cockpit"
+		/>
 	{:else}
-		<Card class="sci-section-card">
-			<CardHeader>
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<CardTitle class="text-lg">Lecture et actions</CardTitle>
-						<CardDescription>
-							Commence par la répartition du capital, puis qualifie le rôle de chaque personne et garde le
-							repérage des accès compte séparé du capital pur.
-						</CardDescription>
+		<WorkspaceActionBar
+			eyebrow="Cadre de gouvernance"
+			title="Lecture du capital avant intervention"
+			description="On contrôle d'abord la répartition du capital, puis les rôles et enfin les accès compte. La gouvernance reste séparée des journaux d'exploitation."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">SCI active</p>
+					<p class="sci-action-card-value">{activeSci.nom}</p>
+					<p class="sci-action-card-body">La gouvernance affichée et modifiée est filtrée sur cette SCI.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Caractéristiques</p>
+					<p class="sci-action-card-value">Nom, email, part détenue, rôle, accès connecté</p>
+					<p class="sci-action-card-body">Les accès compte restent visibles, sans réduire la gouvernance à un email.</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Étape suivante</p>
+					<p class="sci-action-card-value">
+						{metrics.total > 0 ? 'Passer au contrôle financier' : 'Structurer la gouvernance'}
+					</p>
+					<p class="sci-action-card-body">
+						Une fois les personnes et les parts documentées, passe aux charges ou à la fiscalité.
+					</p>
+				</div>
+			</div>
+			<div class="mt-5 sci-primary-actions">
+				<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}>
+					Ajouter un associé
+				</Button>
+				<Button href="/charges" variant="outline">Ouvrir Charges</Button>
+				<Button href="/fiscalite" variant="outline">Ouvrir Fiscalité</Button>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Vision"
+					description="Un registre propre permet ensuite d'arbitrer charges, fiscalité et répartition des rôles sans angle mort."
+				>
+					<div class="space-y-3">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Capital restant</p>
+							<p class="sci-action-card-value">{formatPercent(metrics.remainingParts, '0 %')}</p>
+							<p class="sci-action-card-body">À répartir avant d'atteindre une lecture de gouvernance complète.</p>
+						</div>
+						<Button href="/dashboard" variant="outline" class="w-full justify-start">
+							Retour au cockpit
+						</Button>
 					</div>
-					<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}>
-						Nouvel associé
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{activeSci.nom}</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						La gouvernance affichée et modifiée est filtrée sur cette SCI.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Caractéristiques</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						Nom, email, part détenue, rôle, accès connecté
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Les accès compte restent visibles, mais la gouvernance n’est plus réduite à un email.
-					</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Étape suivante</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{metrics.total > 0 ? 'Documenter les charges' : 'Structurer la gouvernance'}
-					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Une fois les personnes et les parts documentées, passe au contrôle des charges ou aux arbitrages
-						fiscaux.
-					</p>
-					<div class="mt-4 flex flex-wrap gap-2">
-						<a href="/charges"><Button size="sm" variant="outline">Ouvrir Charges</Button></a>
-						<a href="/fiscalite"><Button size="sm" variant="outline">Ouvrir Fiscalité</Button></a>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
 
 		<Card class="sci-section-card">
 				<CardHeader>
@@ -440,14 +449,13 @@
 		</Card>
 	{/if}
 
-	<Dialog.Dialog bind:open={createDialogOpen}>
-		<Dialog.Content class="sm:max-w-[36rem]">
-			<Dialog.Header>
-				<Dialog.Title>Ajouter un associé</Dialog.Title>
-				<Dialog.Description>
-					Crée une ligne de gouvernance pour la SCI active sans quitter le registre du capital.
-				</Dialog.Description>
-			</Dialog.Header>
+	<EntityDrawer
+		bind:open={createDialogOpen}
+		title="Ajouter un associé"
+		description="Crée une ligne de gouvernance pour la SCI active sans quitter le registre du capital."
+		size="lg"
+	>
+		{#snippet children()}
 			{#if !activeSci}
 				<p class="sci-inline-alert sci-inline-alert-error">
 					Sélectionne d’abord une SCI active avant d’ajouter un associé.
@@ -486,24 +494,27 @@
 						</p>
 					</div>
 				</div>
-				<Dialog.Footer>
+			{/if}
+		{/snippet}
+		{#snippet footer()}
+			{#if activeSci}
+				<div class="flex flex-wrap justify-end gap-3">
 					<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
 					<Button disabled={submitting || createDisabled} onclick={handleCreateAssocie}>
 						{submitting ? "Création..." : "Ajouter l'associé"}
 					</Button>
-				</Dialog.Footer>
+				</div>
 			{/if}
-		</Dialog.Content>
-	</Dialog.Dialog>
+		{/snippet}
+	</EntityDrawer>
 
-	<Dialog.Dialog bind:open={editDialogOpen}>
-		<Dialog.Content class="sm:max-w-[36rem]">
-			<Dialog.Header>
-				<Dialog.Title>Modifier l’associé</Dialog.Title>
-				<Dialog.Description>
-					Mets à jour le rôle, la part ou les coordonnées sans toucher au contexte SCI.
-				</Dialog.Description>
-			</Dialog.Header>
+	<EntityDrawer
+		bind:open={editDialogOpen}
+		title="Modifier l’associé"
+		description="Mets à jour le rôle, la part ou les coordonnées sans toucher au contexte SCI."
+		size="lg"
+	>
+		{#snippet children()}
 			<div class="grid gap-4 py-2">
 				<label class="sci-field">
 					<span class="sci-field-label">Nom</span>
@@ -528,14 +539,16 @@
 					</label>
 				</div>
 			</div>
-			<Dialog.Footer>
+		{/snippet}
+		{#snippet footer()}
+			<div class="flex flex-wrap justify-end gap-3">
 				<Button variant="outline" onclick={closeEditAssocie}>Annuler</Button>
 				<Button disabled={submitting} onclick={handleUpdateAssocie}>
 					{submitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
 				</Button>
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Dialog>
+			</div>
+		{/snippet}
+	</EntityDrawer>
 
 	<Dialog.Dialog bind:open={deleteDialogOpen}>
 		<Dialog.Content class="sm:max-w-[32rem]">
