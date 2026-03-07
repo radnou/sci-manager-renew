@@ -39,6 +39,7 @@
 	let submitting = $state(false);
 	let deleting = $state(false);
 	let errorMessage = $state('');
+	let createDialogOpen = $state(false);
 	let editDialogOpen = $state(false);
 	let deleteDialogOpen = $state(false);
 	let editingExercice = $state<Fiscalite | null>(null);
@@ -179,6 +180,7 @@
 			const created = await createFiscalite(payload);
 			exercices = [created, ...exercices];
 			resetCreateDraft();
+			createDialogOpen = false;
 		} catch (error) {
 			errorMessage = formatApiErrorMessage(error, "Impossible d'ajouter l'exercice fiscal.");
 		} finally {
@@ -349,11 +351,16 @@
 	{:else}
 		<Card class="sci-section-card">
 			<CardHeader>
-				<CardTitle class="text-lg">Parcours opérateur</CardTitle>
-				<CardDescription>
-					La fiscalité consolidée agrège les revenus et les charges déjà documentés sur la SCI active.
-					Elle ne remplace pas les pièces, elle structure l’arbitrage.
-				</CardDescription>
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<CardTitle class="text-lg">Lecture et actions</CardTitle>
+						<CardDescription>
+							La fiscalité consolidée agrège les revenus et les charges déjà documentés sur la SCI active.
+							Elle ne remplace pas les pièces, elle structure l’arbitrage.
+						</CardDescription>
+					</div>
+					<Button onclick={() => (createDialogOpen = true)}>Nouvel exercice</Button>
+				</div>
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -387,46 +394,7 @@
 			</CardContent>
 		</Card>
 
-		<div class="grid gap-6 xl:grid-cols-[1.05fr_1.4fr]">
-			<Card class="sci-section-card">
-				<CardHeader>
-					<CardTitle class="text-lg">Nouvel exercice fiscal</CardTitle>
-					<CardDescription>
-						Saisis l’année et les agrégats de revenus/charges de la SCI active.
-					</CardDescription>
-				</CardHeader>
-				<CardContent class="grid gap-4 pt-0">
-					<label class="sci-field">
-						<span class="sci-field-label">Année</span>
-						<Input bind:value={createDraft.annee} type="number" min="2000" max="2100" />
-					</label>
-					<div class="grid gap-4 md:grid-cols-2">
-						<label class="sci-field">
-							<span class="sci-field-label">Total revenus (€)</span>
-							<Input bind:value={createDraft.totalRevenus} type="number" min="0" step="100" />
-						</label>
-						<label class="sci-field">
-							<span class="sci-field-label">Total charges (€)</span>
-							<Input bind:value={createDraft.totalCharges} type="number" min="0" step="100" />
-						</label>
-					</div>
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="font-semibold text-slate-900 dark:text-slate-100">
-							Résultat fiscal projeté: {formatEur(createResultPreview, '0 €')}
-						</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							Le résultat est recalculé automatiquement à partir des revenus et des charges.
-						</p>
-					</div>
-					<div class="flex justify-end">
-						<Button disabled={submitting} onclick={handleCreateExercice}>
-							{submitting ? 'Création...' : 'Ajouter l’exercice'}
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card class="sci-section-card">
+		<Card class="sci-section-card">
 				<CardHeader>
 					<div class="flex items-end justify-between gap-4">
 						<div>
@@ -491,9 +459,49 @@
 						{/each}
 					{/if}
 				</CardContent>
-			</Card>
-		</div>
+		</Card>
 	{/if}
+
+	<Dialog.Dialog bind:open={createDialogOpen}>
+		<Dialog.Content class="sm:max-w-[36rem]">
+			<Dialog.Header>
+				<Dialog.Title>Ajouter un exercice fiscal</Dialog.Title>
+				<Dialog.Description>
+					Saisis l’année et les agrégats de revenus/charges de la SCI active sans quitter l’historique.
+				</Dialog.Description>
+			</Dialog.Header>
+			<div class="grid gap-4 py-2">
+				<label class="sci-field">
+					<span class="sci-field-label">Année</span>
+					<Input bind:value={createDraft.annee} type="number" min="2000" max="2100" />
+				</label>
+				<div class="grid gap-4 md:grid-cols-2">
+					<label class="sci-field">
+						<span class="sci-field-label">Total revenus (€)</span>
+						<Input bind:value={createDraft.totalRevenus} type="number" min="0" step="100" />
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Total charges (€)</span>
+						<Input bind:value={createDraft.totalCharges} type="number" min="0" step="100" />
+					</label>
+				</div>
+				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+					<p class="font-semibold text-slate-900 dark:text-slate-100">
+						Résultat fiscal projeté: {formatEur(createResultPreview, '0 €')}
+					</p>
+					<p class="mt-1 text-slate-500 dark:text-slate-400">
+						Le résultat est recalculé automatiquement à partir des revenus et des charges.
+					</p>
+				</div>
+			</div>
+			<Dialog.Footer>
+				<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
+				<Button disabled={submitting} onclick={handleCreateExercice}>
+					{submitting ? 'Création...' : 'Ajouter l’exercice'}
+				</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Dialog>
 
 	<Dialog.Dialog bind:open={editDialogOpen}>
 		<Dialog.Content class="sm:max-w-[36rem]">

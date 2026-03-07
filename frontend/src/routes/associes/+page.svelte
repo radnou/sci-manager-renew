@@ -35,6 +35,7 @@
 	let submitting = $state(false);
 	let deleting = $state(false);
 	let errorMessage = $state('');
+	let createDialogOpen = $state(false);
 	let editDialogOpen = $state(false);
 	let deleteDialogOpen = $state(false);
 	let editingAssocie = $state<Associe | null>(null);
@@ -162,6 +163,7 @@
 			const created = await createAssocie(payload);
 			associes = [...associes, created];
 			resetCreateDraft();
+			createDialogOpen = false;
 		} catch (error) {
 			errorMessage = formatApiErrorMessage(error, "Impossible d'ajouter l'associé sélectionné.");
 		} finally {
@@ -320,11 +322,18 @@
 	{:else}
 		<Card class="sci-section-card">
 			<CardHeader>
-				<CardTitle class="text-lg">Parcours opérateur</CardTitle>
-				<CardDescription>
-					Commence par la répartition du capital, puis qualifie le rôle de chaque personne et garde le
-					repérage des accès compte séparé du capital pur.
-				</CardDescription>
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<CardTitle class="text-lg">Lecture et actions</CardTitle>
+						<CardDescription>
+							Commence par la répartition du capital, puis qualifie le rôle de chaque personne et garde le
+							repérage des accès compte séparé du capital pur.
+						</CardDescription>
+					</div>
+					<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}>
+						Nouvel associé
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -360,55 +369,7 @@
 			</CardContent>
 		</Card>
 
-		<div class="grid gap-6 xl:grid-cols-[1.05fr_1.4fr]">
-			<Card class="sci-section-card">
-				<CardHeader>
-					<CardTitle class="text-lg">Ajouter un associé</CardTitle>
-					<CardDescription>
-						Crée une ligne de gouvernance pour la SCI active sans exposer d’identifiant technique.
-					</CardDescription>
-				</CardHeader>
-				<CardContent class="grid gap-4 pt-0">
-					<label class="sci-field">
-						<span class="sci-field-label">Nom</span>
-						<Input bind:value={createDraft.nom} placeholder="Camille Bernard" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Email</span>
-						<Input bind:value={createDraft.email} type="email" placeholder="camille@sci.local" />
-					</label>
-					<div class="grid gap-4 md:grid-cols-2">
-						<label class="sci-field">
-							<span class="sci-field-label">Part détenue (%)</span>
-							<Input bind:value={createDraft.part} type="number" min="1" max="100" step="0.5" />
-						</label>
-						<label class="sci-field">
-							<span class="sci-field-label">Rôle</span>
-							<select bind:value={createDraft.role} class="sci-select">
-								{#each ASSOCIE_ROLE_OPTIONS as roleOption (roleOption.value)}
-									<option value={roleOption.value}>{roleOption.label}</option>
-								{/each}
-							</select>
-						</label>
-					</div>
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="font-semibold text-slate-900 dark:text-slate-100">
-							Capital restant à répartir: {formatPercent(metrics.remainingParts, '0 %')}
-						</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							Les associés créés ici n’ouvrent pas automatiquement un accès compte. Les membres déjà
-							connectés restent signalés dans le registre.
-						</p>
-					</div>
-					<div class="flex justify-end">
-						<Button disabled={submitting || createDisabled} onclick={handleCreateAssocie}>
-							{submitting ? "Création..." : "Ajouter l'associé"}
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card class="sci-section-card">
+		<Card class="sci-section-card">
 				<CardHeader>
 					<div class="flex items-end justify-between gap-4">
 						<div>
@@ -476,9 +437,64 @@
 						{/each}
 					{/if}
 				</CardContent>
-			</Card>
-		</div>
+		</Card>
 	{/if}
+
+	<Dialog.Dialog bind:open={createDialogOpen}>
+		<Dialog.Content class="sm:max-w-[36rem]">
+			<Dialog.Header>
+				<Dialog.Title>Ajouter un associé</Dialog.Title>
+				<Dialog.Description>
+					Crée une ligne de gouvernance pour la SCI active sans quitter le registre du capital.
+				</Dialog.Description>
+			</Dialog.Header>
+			{#if !activeSci}
+				<p class="sci-inline-alert sci-inline-alert-error">
+					Sélectionne d’abord une SCI active avant d’ajouter un associé.
+				</p>
+			{:else}
+				<div class="grid gap-4 py-2">
+					<label class="sci-field">
+						<span class="sci-field-label">Nom</span>
+						<Input bind:value={createDraft.nom} placeholder="Camille Bernard" />
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Email</span>
+						<Input bind:value={createDraft.email} type="email" placeholder="camille@sci.local" />
+					</label>
+					<div class="grid gap-4 md:grid-cols-2">
+						<label class="sci-field">
+							<span class="sci-field-label">Part détenue (%)</span>
+							<Input bind:value={createDraft.part} type="number" min="1" max="100" step="0.5" />
+						</label>
+						<label class="sci-field">
+							<span class="sci-field-label">Rôle</span>
+							<select bind:value={createDraft.role} class="sci-select">
+								{#each ASSOCIE_ROLE_OPTIONS as roleOption (roleOption.value)}
+									<option value={roleOption.value}>{roleOption.label}</option>
+								{/each}
+							</select>
+						</label>
+					</div>
+					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+						<p class="font-semibold text-slate-900 dark:text-slate-100">
+							Capital restant à répartir: {formatPercent(metrics.remainingParts, '0 %')}
+						</p>
+						<p class="mt-1 text-slate-500 dark:text-slate-400">
+							Les associés créés ici n’ouvrent pas automatiquement un accès compte. Les membres déjà
+							connectés restent signalés dans le registre.
+						</p>
+					</div>
+				</div>
+				<Dialog.Footer>
+					<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
+					<Button disabled={submitting || createDisabled} onclick={handleCreateAssocie}>
+						{submitting ? "Création..." : "Ajouter l'associé"}
+					</Button>
+				</Dialog.Footer>
+			{/if}
+		</Dialog.Content>
+	</Dialog.Dialog>
 
 	<Dialog.Dialog bind:open={editDialogOpen}>
 		<Dialog.Content class="sm:max-w-[36rem]">

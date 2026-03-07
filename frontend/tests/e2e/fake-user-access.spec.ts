@@ -782,7 +782,7 @@ test.describe('Fake user access E2E', () => {
 
 		await page.goto('/loyers');
 		await expect(page.getByRole('heading', { level: 1 })).toContainText('Suivi des loyers');
-		await expect(page.getByLabel('Locataire')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Nouveau loyer' })).toBeVisible();
 		await page
 			.getByRole('button', { name: /Modifier le loyer du/i })
 			.first()

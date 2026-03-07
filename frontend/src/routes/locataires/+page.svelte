@@ -37,6 +37,7 @@
 	let submitting = $state(false);
 	let deleting = $state(false);
 	let errorMessage = $state('');
+	let createDialogOpen = $state(false);
 	let editDialogOpen = $state(false);
 	let deleteDialogOpen = $state(false);
 	let editingLocataire = $state<Locataire | null>(null);
@@ -196,6 +197,7 @@
 			const created = await createLocataire(payload);
 			locataires = [created, ...locataires];
 			resetCreateDraft();
+			createDialogOpen = false;
 		} catch (error) {
 			errorMessage = formatApiErrorMessage(
 				error,
@@ -355,11 +357,18 @@
 	{:else}
 		<Card class="sci-section-card">
 			<CardHeader>
-				<CardTitle class="text-lg">Parcours opérateur</CardTitle>
-				<CardDescription>
-					Une chaîne propre commence ici: sélectionner un bien, documenter l’occupant, dater
-					l’entrée, puis seulement ouvrir la saisie des loyers et des quittances.
-				</CardDescription>
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<CardTitle class="text-lg">Lecture et actions</CardTitle>
+						<CardDescription>
+							Une chaîne propre commence ici: sélectionner un bien, documenter l’occupant, dater
+							l’entrée, puis seulement ouvrir la saisie des loyers et des quittances.
+						</CardDescription>
+					</div>
+					<Button disabled={!activeSci || scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
+						Nouveau locataire
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -435,49 +444,6 @@
 					<a href="/scis"><Button variant="outline">Vérifier la SCI active</Button></a>
 				</div>
 			</div>
-		{:else}
-			<Card class="sci-section-card">
-				<CardHeader>
-					<CardTitle class="text-lg">Nouveau locataire</CardTitle>
-					<CardDescription>
-						Crée une fiche locataire complète avant de saisir les flux mensuels.
-					</CardDescription>
-				</CardHeader>
-				<CardContent class="grid gap-3 pt-0 md:grid-cols-5">
-					<label class="sci-field">
-						<span class="sci-field-label">Bien</span>
-						<select bind:value={createDraft.idBien} class="sci-select">
-							{#each scopedBiens as bien (bien.id)}
-								<option value={String(bien.id || '')}>
-									{bien.adresse}
-									{bien.ville ? ` - ${bien.ville}` : ''}
-								</option>
-							{/each}
-						</select>
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Nom</span>
-						<Input bind:value={createDraft.nom} placeholder="Jean Martin" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Email</span>
-						<Input bind:value={createDraft.email} placeholder="jean.martin@email.fr" type="email" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date d'entrée</span>
-						<Input bind:value={createDraft.dateDebut} type="date" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date de sortie</span>
-						<Input bind:value={createDraft.dateFin} type="date" />
-					</label>
-					<div class="flex justify-end md:col-span-5">
-						<Button disabled={submitting} onclick={handleCreateLocataire}>
-							{submitting ? 'Enregistrement...' : 'Ajouter le locataire'}
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
 		{/if}
 
 		<Card class="sci-section-card">
@@ -565,6 +531,64 @@
 			</CardContent>
 		</Card>
 	{/if}
+
+	<Dialog.Dialog bind:open={createDialogOpen}>
+		<Dialog.DialogContent class="sm:max-w-4xl">
+			<Dialog.DialogHeader>
+				<Dialog.DialogTitle>Ajouter un locataire</Dialog.DialogTitle>
+				<Dialog.DialogDescription>
+					Crée une fiche locataire complète sans quitter le référentiel d’occupation de la SCI active.
+				</Dialog.DialogDescription>
+			</Dialog.DialogHeader>
+			{#if !activeSci}
+				<p class="sci-inline-alert sci-inline-alert-error">
+					Sélectionne d’abord une SCI active avant de créer un locataire.
+				</p>
+			{:else if scopedBiens.length === 0}
+				<p class="sci-inline-alert sci-inline-alert-error">
+					Ajoute d’abord un bien à la SCI active avant de créer un locataire.
+				</p>
+			{:else}
+				<div class="grid gap-4 py-2 md:grid-cols-2">
+					<label class="sci-field md:col-span-2">
+						<span class="sci-field-label">Bien</span>
+						<select bind:value={createDraft.idBien} class="sci-select">
+							{#each scopedBiens as bien (bien.id)}
+								<option value={String(bien.id || '')}>
+									{bien.adresse}
+									{bien.ville ? ` - ${bien.ville}` : ''}
+								</option>
+							{/each}
+						</select>
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Nom</span>
+						<Input bind:value={createDraft.nom} placeholder="Jean Martin" />
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Email</span>
+						<Input bind:value={createDraft.email} placeholder="jean.martin@email.fr" type="email" />
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Date d'entrée</span>
+						<Input bind:value={createDraft.dateDebut} type="date" />
+					</label>
+					<label class="sci-field">
+						<span class="sci-field-label">Date de sortie</span>
+						<Input bind:value={createDraft.dateFin} type="date" />
+					</label>
+				</div>
+				<Dialog.DialogFooter>
+					<Button type="button" variant="outline" onclick={() => (createDialogOpen = false)}>
+						Annuler
+					</Button>
+					<Button type="button" disabled={submitting} onclick={handleCreateLocataire}>
+						{submitting ? 'Enregistrement...' : 'Ajouter le locataire'}
+					</Button>
+				</Dialog.DialogFooter>
+			{/if}
+		</Dialog.DialogContent>
+	</Dialog.Dialog>
 
 	<Dialog.Dialog bind:open={editDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-3xl">

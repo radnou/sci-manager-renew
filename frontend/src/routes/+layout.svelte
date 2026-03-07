@@ -38,7 +38,7 @@
 
 	const authenticatedUtilityItems = [
 		{ href: '/account', label: 'Compte' },
-		{ href: '/pricing', label: 'Abonnement' },
+		{ href: '/pricing', label: 'Offre et facturation' },
 		{ href: '/settings', label: 'Paramètres' },
 		{ href: '/account/privacy', label: 'Confidentialité' }
 	];
@@ -412,10 +412,10 @@
 					</div>
 
 					<div class="space-y-4">
-						<h4 class="font-medium text-slate-900 dark:text-slate-100">Compte</h4>
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Compte et offre</h4>
 						<ul class="space-y-2 text-sm">
 							<li><a href="/account" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Compte</a></li>
-							<li><a href="/pricing" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Abonnement</a></li>
+							<li><a href="/pricing" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Offre et facturation</a></li>
 							<li><a href="/settings" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Paramètres</a></li>
 							<li><a href="/account/privacy" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Confidentialité</a></li>
 						</ul>

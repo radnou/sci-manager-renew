@@ -45,6 +45,7 @@
 	let errorMessage = '';
 	let editingLoyer: Loyer | null = null;
 	let loyerPendingDelete: Loyer | null = null;
+	let createDialogOpen = false;
 	let editDialogOpen = false;
 	let deleteDialogOpen = false;
 	let editLoyerDraft: {
@@ -145,6 +146,7 @@
 		try {
 			const created = await createLoyer(payload as LoyerCreatePayload);
 			loyers = [created, ...loyers];
+			createDialogOpen = false;
 			return true;
 		} catch (error) {
 			errorMessage = formatApiErrorMessage(
@@ -243,6 +245,18 @@
 			Pilote les encaissements mensuels de la SCI active avec des libellés métier, pas des
 			identifiants bruts.
 		</p>
+		{#if scis.length > 0}
+			<div class="mt-5 max-w-sm">
+				<label class="sci-field">
+					<span class="sci-field-label">SCI active</span>
+					<select bind:value={activeSciId} class="sci-select" aria-label="SCI active">
+						{#each scis as sci (sci.id)}
+							<option value={String(sci.id || '')}>{sci.nom}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+		{/if}
 	</header>
 
 	<div class="grid gap-4 md:grid-cols-3">
@@ -289,11 +303,23 @@
 	{:else}
 		<Card class="sci-section-card">
 			<CardHeader>
-				<CardTitle class="text-lg">Parcours opérateur</CardTitle>
-				<CardDescription>
-					Le flux locatif suit une séquence stricte: bien rattaché, locataire identifié, montant,
-					statut, puis quittance.
-				</CardDescription>
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<CardTitle class="text-lg">Lecture et actions</CardTitle>
+						<CardDescription>
+							Le flux locatif suit une séquence stricte: bien rattaché, locataire identifié,
+							montant, statut, puis quittance. La création se déclenche à la demande.
+						</CardDescription>
+					</div>
+					<Button
+						disabled={!activeSci || scopedBiens.length === 0 || scopedLocataires.length === 0}
+						onclick={() => {
+							createDialogOpen = true;
+						}}
+					>
+						Nouveau loyer
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0 md:grid-cols-3">
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -325,6 +351,18 @@
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 						Le module PDF s’active dès qu’un loyer exploitable existe.
 					</p>
+					<div class="mt-4">
+						<Button
+							size="sm"
+							variant="outline"
+							disabled={!activeSci || scopedBiens.length === 0 || scopedLocataires.length === 0}
+							onclick={() => {
+								createDialogOpen = true;
+							}}
+						>
+							Saisir un loyer
+						</Button>
+					</div>
 				</div>
 			</CardContent>
 		</Card>
@@ -339,13 +377,6 @@
 			</p>
 		{/if}
 
-		<LoyerForm
-			biens={scopedBiens}
-			locataires={scopedLocataires}
-			{submitting}
-			onSubmit={handleCreateLoyer}
-		/>
-
 		<LoyerTable
 			loyers={scopedLoyers}
 			biens={scopedBiens}
@@ -356,6 +387,37 @@
 			actionDisabled={deleting}
 		/>
 	{/if}
+
+	<Dialog.Dialog bind:open={createDialogOpen}>
+		<Dialog.DialogContent class="sm:max-w-5xl">
+			<Dialog.DialogHeader>
+				<Dialog.DialogTitle>Ajouter un loyer</Dialog.DialogTitle>
+				<Dialog.DialogDescription>
+					Crée un flux locatif complet pour la SCI active sans quitter la lecture du journal.
+				</Dialog.DialogDescription>
+			</Dialog.DialogHeader>
+			{#if !activeSci}
+				<p class="sci-inline-alert sci-inline-alert-error">
+					Sélectionne d’abord une SCI active avant de saisir un loyer.
+				</p>
+			{:else if scopedBiens.length === 0}
+				<p class="sci-inline-alert sci-inline-alert-error">
+					Ajoute d’abord un bien dans le module Biens avant de saisir un loyer.
+				</p>
+			{:else if scopedLocataires.length === 0}
+				<p class="sci-inline-alert sci-inline-alert-error">
+					Ajoute d’abord un locataire dans le module Locataires avant de saisir un loyer.
+				</p>
+			{:else}
+				<LoyerForm
+					biens={scopedBiens}
+					locataires={scopedLocataires}
+					{submitting}
+					onSubmit={handleCreateLoyer}
+				/>
+			{/if}
+		</Dialog.DialogContent>
+	</Dialog.Dialog>
 
 	<Dialog.Dialog bind:open={editDialogOpen}>
 		<Dialog.DialogContent class="sm:max-w-3xl">
