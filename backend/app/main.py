@@ -18,7 +18,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, scis, stripe
+from app.api.v1 import auth, biens, cerfa, export, files, gdpr, health, loyers, notifications, quitus, scis, stripe
 from app.core.config import Environment, settings
 from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
@@ -399,3 +399,5 @@ app.include_router(files.router, prefix="/api/v1")
 app.include_router(cerfa.router, prefix="/api/v1")
 app.include_router(stripe.router, prefix="/api/v1")
 app.include_router(gdpr.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(export.router, prefix="/api/v1")
