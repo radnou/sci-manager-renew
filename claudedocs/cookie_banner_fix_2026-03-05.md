@@ -115,7 +115,7 @@ resetCookieConsent();
 
 ```javascript
 // Console navigateur
-localStorage.getItem('sci_manager_cookie_consent');
+localStorage.getItem('gerersci_cookie_consent');
 // Devrait afficher: {"necessary":true,"analytics":false,"marketing":false,"timestamp":...}
 ```
 
@@ -166,7 +166,7 @@ Le banner inclut un lien vers `/privacy` pour en savoir plus.
 
 ### Durée de Conservation
 
-- **Clé LocalStorage**: `sci_manager_cookie_consent`
+- **Clé LocalStorage**: `gerersci_cookie_consent`
 - **Durée**: Persistant jusqu'à suppression manuelle
 - **Ré-consentement**: Pas de ré-affichage automatique (conformité RGPD)
 
@@ -188,7 +188,7 @@ Le banner inclut un lien vers `/privacy` pour en savoir plus.
 1. **Vérifier le LocalStorage**:
 ```javascript
 // Console navigateur
-localStorage.getItem('sci_manager_cookie_consent');
+localStorage.getItem('gerersci_cookie_consent');
 // Si retourne une valeur, c'est normal qu'il ne s'affiche pas
 ```
 
@@ -199,7 +199,7 @@ resetCookieConsent();
 // Recharger la page
 
 // En prod
-localStorage.removeItem('sci_manager_cookie_consent');
+localStorage.removeItem('gerersci_cookie_consent');
 // Recharger la page
 ```
 

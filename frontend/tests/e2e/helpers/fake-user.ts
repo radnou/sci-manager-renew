@@ -4,9 +4,9 @@ import { resolve } from 'node:path';
 
 import type { Page } from '@playwright/test';
 
-const COOKIE_CONSENT_KEY = 'sci_manager_cookie_consent';
-const ACTIVE_SCI_KEY = 'sci-manager.active-sci-id';
-const FAKE_SESSION_KEY = 'sci-manager.e2e-fake-session';
+const COOKIE_CONSENT_KEY = 'gerersci_cookie_consent';
+const ACTIVE_SCI_KEY = 'gerersci.active-sci-id';
+const FAKE_SESSION_KEY = 'gerersci.e2e-fake-session';
 
 type SeedOptions = {
 	sciId?: string;

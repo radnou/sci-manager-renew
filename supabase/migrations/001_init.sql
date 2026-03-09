@@ -1,5 +1,5 @@
 -- 001_init.sql
--- SCI-Manager schema with RLS, indexes, and audit timestamps.
+-- GererSCI schema with RLS, indexes, and audit timestamps.
 
 create extension if not exists pgcrypto;
 

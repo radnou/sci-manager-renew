@@ -1,7 +1,7 @@
 # backend/tests/test_exceptions.py
 import pytest
 from app.core.exceptions import (
-    SCIManagerException,
+    GererSCIException,
     DatabaseError,
     ResourceNotFoundError,
     ValidationError,
@@ -12,8 +12,8 @@ from app.core.exceptions import (
 )
 
 def test_base_exception_has_status_code():
-    """Test que SCIManagerException a un status_code"""
-    exc = SCIManagerException("Test error", status_code=418)
+    """Test que GererSCIException a un status_code"""
+    exc = GererSCIException("Test error", status_code=418)
     assert exc.message == "Test error"
     assert exc.status_code == 418
 
@@ -62,8 +62,8 @@ def test_business_logic_error_defaults_to_422():
 
 # Tests for global exception handlers (Task 2.2)
 
-def test_sci_manager_exception_handler_returns_correct_status():
-    """Test que les exceptions SCI-Manager retournent le bon status"""
+def test_gerersci_exception_handler_returns_correct_status():
+    """Test que les exceptions GererSCI retournent le bon status"""
     from fastapi.testclient import TestClient
     from app.main import app
     from fastapi import APIRouter

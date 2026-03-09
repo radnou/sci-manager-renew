@@ -1,4 +1,4 @@
-# Audit de Production Readiness - SCI-Manager
+# Audit de Production Readiness - GererSCI
 
 **Date**: 2026-03-04
 **Scope**: Backend FastAPI + Frontend SvelteKit + Infrastructure Docker
@@ -121,34 +121,34 @@ async def create_bien(bien: BienCreate, user_id: str = Depends(get_current_user)
 #### Actions Requises
 ```python
 # 1. Créer app/core/exceptions.py
-class SCIManagerException(Exception):
-    """Base exception pour SCI-Manager"""
+class GererSCIException(Exception):
+    """Base exception pour GererSCI"""
     def __init__(self, message: str, status_code: int = 500):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
 
-class DatabaseError(SCIManagerException):
+class DatabaseError(GererSCIException):
     def __init__(self, message: str = "Database operation failed"):
         super().__init__(message, status_code=503)
 
-class ResourceNotFoundError(SCIManagerException):
+class ResourceNotFoundError(GererSCIException):
     def __init__(self, resource: str, resource_id: str):
         super().__init__(f"{resource} {resource_id} not found", status_code=404)
 
-class ValidationError(SCIManagerException):
+class ValidationError(GererSCIException):
     def __init__(self, message: str):
         super().__init__(message, status_code=400)
 
-class ExternalServiceError(SCIManagerException):
+class ExternalServiceError(GererSCIException):
     """Stripe, Resend, Supabase Storage"""
     def __init__(self, service: str, message: str):
         super().__init__(f"{service} error: {message}", status_code=503)
 
 # 2. Ajouter global exception handler dans main.py
-@app.exception_handler(SCIManagerException)
-async def sci_manager_exception_handler(request: Request, exc: SCIManagerException):
-    logger.error("sci_manager_exception",
+@app.exception_handler(GererSCIException)
+async def gerersci_exception_handler(request: Request, exc: GererSCIException):
+    logger.error("gerersci_exception",
                  error=exc.message,
                  status_code=exc.status_code,
                  path=request.url.path)
@@ -348,7 +348,7 @@ async def cleanup_resources():
     logger.info("cleanup_complete")
 
 app = FastAPI(
-    title="SCI-Manager API",
+    title="GererSCI API",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -401,7 +401,7 @@ class Environment(str, Enum):
 class Settings(BaseSettings):
     # Environment
     app_env: Environment = Environment.DEVELOPMENT
-    app_name: str = "SCI-Manager"
+    app_name: str = "GererSCI"
     debug: bool = False
 
     # Security
@@ -917,7 +917,7 @@ async def metrics():
 #### Status Actuel
 - ✅ Security headers configurés (bien!)
 - ✅ CORS middleware configuré
-- ⚠️ TrustedHostMiddleware avec wildcard `*.scimanager.fr`
+- ⚠️ TrustedHostMiddleware avec wildcard `*.gerersci.fr`
 - ❌ Pas de CSP (Content Security Policy)
 - ❌ Pas de CSRF protection
 

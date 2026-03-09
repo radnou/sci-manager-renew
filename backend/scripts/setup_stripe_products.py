@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stripe Products Management - Setup for SCI-Manager Plans
+Stripe Products Management - Setup for GererSCI Plans
 """
 import os
 import sys
@@ -39,7 +39,7 @@ PLANS = {
 }
 
 def check_existing_products():
-    """Check for existing SCI-Manager products"""
+    """Check for existing GererSCI products"""
     print("🔍 Vérification des produits Stripe existants...")
     products = stripe.Product.list(limit=100)
     
@@ -72,7 +72,7 @@ def create_product_with_price(plan_key, plan_data, existing):
     print(f"  ✨ Création du produit: {plan_name}...")
     
     product = stripe.Product.create(
-        name=f"SCI-Manager - {plan_data['name']}",
+        name=f"GererSCI - {plan_data['name']}",
         description=plan_data["description"],
         type="service",
         metadata={
@@ -108,7 +108,7 @@ def create_product_with_price(plan_key, plan_data, existing):
 
 def main():
     print("\n" + "="*70)
-    print("     🚀 SCI-Manager Stripe Setup - Création des Plans Tarifaires")
+    print("     🚀 GererSCI Stripe Setup - Création des Plans Tarifaires")
     print("="*70 + "\n")
     
     try:

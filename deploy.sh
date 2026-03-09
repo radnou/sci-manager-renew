@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SCI-Manager Production Deployment Script for Scaleway VPS
+# GererSCI Production Deployment Script for Scaleway VPS
 # Usage: ./deploy.sh
 
 set -e
 
-echo "🚀 Starting SCI-Manager deployment on Scaleway VPS"
+echo "🚀 Starting GererSCI deployment on Scaleway VPS"
 
 # Colors for output
 RED='\033[0;31m'
@@ -51,13 +51,13 @@ sudo ufw --force reload
 
 # Create application directory
 echo -e "${GREEN}📁 Creating application directory...${NC}"
-sudo mkdir -p /opt/sci-manager
-sudo chown -R $USER:$USER /opt/sci-manager
+sudo mkdir -p /opt/gerersci
+sudo chown -R $USER:$USER /opt/gerersci
 
 # Copy application files
 echo -e "${GREEN}📋 Copying application files...${NC}"
-cp -r . /opt/sci-manager/
-cd /opt/sci-manager
+cp -r . /opt/gerersci/
+cd /opt/gerersci
 
 # Create SSL directory
 mkdir -p docker/ssl
@@ -107,13 +107,13 @@ sudo crontab -l | { cat; echo "0 12 * * * /usr/bin/certbot renew --quiet && dock
 cat > backup.sh << 'EOF'
 #!/bin/bash
 # Database backup script
-BACKUP_DIR="/opt/sci-manager/backups"
+BACKUP_DIR="/opt/gerersci/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
 
 # Backup database
-docker compose exec -T db pg_dump -U sci_manager sci_manager_prod > $BACKUP_DIR/backup_$DATE.sql
+docker compose exec -T db pg_dump -U gerersci gerersci_prod > $BACKUP_DIR/backup_$DATE.sql
 
 # Keep only last 7 backups
 cd $BACKUP_DIR && ls -t backup_*.sql | tail -n +8 | xargs rm -f
@@ -124,7 +124,7 @@ EOF
 chmod +x backup.sh
 
 # Setup backup cron job
-sudo crontab -l | { cat; echo "0 2 * * * /opt/sci-manager/backup.sh"; } | sudo crontab -
+sudo crontab -l | { cat; echo "0 2 * * * /opt/gerersci/backup.sh"; } | sudo crontab -
 
 echo -e "${GREEN}✅ Deployment completed!${NC}"
 echo -e "${GREEN}🌐 Your application should be available at: https://$DOMAIN${NC}"

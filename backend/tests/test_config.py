@@ -21,7 +21,7 @@ def test_production_environment_forbids_debug(monkeypatch):
     """Test que le mode production interdit debug=True"""
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("DEBUG", "true")
-    monkeypatch.setenv("CORS_ORIGINS", '["https://scimanager.fr"]')
+    monkeypatch.setenv("CORS_ORIGINS", '["https://gerersci.fr"]')
     monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_live_real_key_example")
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_real_secret")
     monkeypatch.setenv("RESEND_API_KEY", "re_real_key_example")
@@ -56,7 +56,7 @@ def test_production_environment_forbids_placeholder_secrets(monkeypatch):
     """Test que le mode production interdit les placeholders"""
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("DEBUG", "false")
-    monkeypatch.setenv("CORS_ORIGINS", '["https://scimanager.fr"]')
+    monkeypatch.setenv("CORS_ORIGINS", '["https://gerersci.fr"]')
     monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_placeholder")
 
     from app.core.config import Settings

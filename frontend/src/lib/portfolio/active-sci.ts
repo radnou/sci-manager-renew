@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-export const ACTIVE_SCI_STORAGE_KEY = 'sci-manager.active-sci-id';
+export const ACTIVE_SCI_STORAGE_KEY = 'gerersci.active-sci-id';
 
 export function getStoredActiveSciId() {
 	if (!browser) {

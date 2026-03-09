@@ -1,4 +1,4 @@
-export const APPLICATION_PREFERENCES_STORAGE_KEY = 'sci-manager.application-preferences';
+export const APPLICATION_PREFERENCES_STORAGE_KEY = 'gerersci.application-preferences';
 
 export type ApplicationLandingRoute = '/dashboard' | '/scis' | '/loyers' | '/settings';
 export type ApplicationDensity = 'comfortable' | 'compact';

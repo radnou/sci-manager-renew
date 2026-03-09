@@ -1,4 +1,4 @@
-# Deployment Checklist - SCI-Manager
+# Deployment Checklist - GererSCI
 
 ## Pré-Déploiement
 
@@ -96,7 +96,7 @@ git checkout <previous-commit>
 docker compose up -d
 
 # Avec tags
-docker tag sci-manager-backend:previous sci-manager-backend:latest
+docker tag gerersci-backend:previous gerersci-backend:latest
 docker compose up -d
 ```
 
@@ -122,16 +122,16 @@ docker compose up -d
 ### Tests Smoke (Production)
 ```bash
 # Health checks
-curl https://api.scimanager.fr/health/live
-curl https://api.scimanager.fr/health/ready
+curl https://api.gerersci.fr/health/live
+curl https://api.gerersci.fr/health/ready
 
 # Login
-curl -X POST https://api.scimanager.fr/api/v1/auth/magic-link/send \
+curl -X POST https://api.gerersci.fr/api/v1/auth/magic-link/send \
   -H "Content-Type: application/json" \
-  -d '{"email": "test@scimanager.fr"}'
+  -d '{"email": "test@gerersci.fr"}'
 
 # Metrics
-curl https://api.scimanager.fr/health/ready | jq '.checks'
+curl https://api.gerersci.fr/health/ready | jq '.checks'
 ```
 
 ### Monitoring Dashboard

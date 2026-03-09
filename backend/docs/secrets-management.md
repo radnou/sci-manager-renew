@@ -1,4 +1,4 @@
-# Secrets Management - SCI-Manager
+# Secrets Management - GererSCI
 
 ## ⚠️ Règles de Sécurité
 
@@ -27,13 +27,13 @@
 **Fichier**: `.env.staging` (créé depuis `.env.staging.example`)
 **Commité**: ❌ Non (ignoré par .gitignore)
 **Secrets**: Depuis AWS Secrets Manager staging
-**Vault Path**: `sci-manager/staging/*`
+**Vault Path**: `gerersci/staging/*`
 
 ### Production
 **Fichier**: `.env.production` (créé depuis `.env.production.example`)
 **Commité**: ❌ Non (ignoré par .gitignore)
 **Secrets**: Depuis AWS Secrets Manager production
-**Vault Path**: `sci-manager/production/*`
+**Vault Path**: `gerersci/production/*`
 
 ## Configuration par Environnement
 
@@ -90,23 +90,23 @@ LOG_FORMAT=json
 ```bash
 # Staging
 aws secretsmanager create-secret \
-    --name sci-manager/staging/supabase-service-role-key \
+    --name gerersci/staging/supabase-service-role-key \
     --secret-string "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
     --region eu-west-3
 
 aws secretsmanager create-secret \
-    --name sci-manager/staging/stripe-secret-key \
+    --name gerersci/staging/stripe-secret-key \
     --secret-string "sk_test_..." \
     --region eu-west-3
 
 # Production
 aws secretsmanager create-secret \
-    --name sci-manager/staging/supabase-service-role-key \
+    --name gerersci/staging/supabase-service-role-key \
     --secret-string "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
     --region eu-west-3
 
 aws secretsmanager create-secret \
-    --name sci-manager/production/stripe-secret-key \
+    --name gerersci/production/stripe-secret-key \
     --secret-string "sk_live_..." \
     --region eu-west-3
 ```
@@ -147,14 +147,14 @@ Lors du déploiement, les secrets sont chargés automatiquement depuis AWS Secre
 ### Erreur: Secret not found
 ```bash
 # Vérifier que le secret existe
-aws secretsmanager list-secrets --region eu-west-3 | grep sci-manager
+aws secretsmanager list-secrets --region eu-west-3 | grep gerersci
 
 # Vérifier les permissions IAM
-aws secretsmanager describe-secret --secret-id sci-manager/production/stripe-secret-key
+aws secretsmanager describe-secret --secret-id gerersci/production/stripe-secret-key
 ```
 
 ### Erreur: Access Denied
 ```bash
 # Vérifier la policy IAM attachée au role EC2/ECS
-aws iam get-role-policy --role-name sci-manager-backend --policy-name SecretsManagerAccess
+aws iam get-role-policy --role-name gerersci-backend --policy-name SecretsManagerAccess
 ```

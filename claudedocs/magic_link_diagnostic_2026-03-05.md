@@ -119,7 +119,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
 RESEND_API_KEY=re_your_resend_key
-RESEND_FROM_EMAIL=noreply@scimanager.fr
+RESEND_FROM_EMAIL=noreply@gerersci.fr
 
 DATABASE_URL=postgresql://...
 STRIPE_SECRET_KEY=sk_test_...
@@ -142,10 +142,10 @@ cd backend && uvicorn app.main:app --reload
 1. Supabase Dashboard → Authentication → URL Configuration
 2. Ajouter dans **Redirect URLs**:
    - `http://localhost:5173/auth/callback` (dev)
-   - `https://scimanager.fr/auth/callback` (prod)
+   - `https://gerersci.fr/auth/callback` (prod)
 3. Ajouter dans **Site URL**:
    - `http://localhost:5173` (dev)
-   - `https://scimanager.fr` (prod)
+   - `https://gerersci.fr` (prod)
 
 #### Étape 2.2: Configurer SMTP avec Resend
 
@@ -157,8 +157,8 @@ cd backend && uvicorn app.main:app --reload
    - Port: `587` ou `465`
    - Username: `resend`
    - Password: `Your Resend API Key`
-   - Sender email: `noreply@scimanager.fr`
-   - Sender name: `SCI Manager`
+   - Sender email: `noreply@gerersci.fr`
+   - Sender name: `GererSCI`
 
 **Option B: Utiliser Supabase Email Service (Temporaire)**
 
@@ -173,13 +173,13 @@ cd backend && uvicorn app.main:app --reload
 3. Personnaliser le contenu:
 
 ```html
-<h2>Connexion à SCI Manager</h2>
+<h2>Connexion à GererSCI</h2>
 <p>Bonjour,</p>
 <p>Cliquez sur le lien ci-dessous pour vous connecter à votre cockpit SCI :</p>
 <p><a href="{{ .ConfirmationURL }}">Se connecter</a></p>
 <p>Ce lien est valide pendant 1 heure.</p>
 <p>Si vous n'avez pas demandé cette connexion, ignorez cet email.</p>
-<p>L'équipe SCI Manager</p>
+<p>L'équipe GererSCI</p>
 ```
 
 ---

@@ -1,8 +1,8 @@
 # AGENT Instructions
-# SCI-Manager - Documentation Agents Codex
+# GererSCI - Documentation Agents Codex
 
 ## Contexte Projet
-**Nom:** SCI-Manager  
+**Nom:** GererSCI
 **Type:** MicroSaaS B2B  
 **Marché:** France (500k+ SCI, marché locatif 1Md€)  
 **Cible:** Propriétaires SCI familiales, investisseurs LMNP/nu-locatif  
@@ -21,7 +21,7 @@ DEPLOY: VPS Linux (Ubuntu 22.04) + Let's Encrypt SSL
 text
 
 ## Arborescence Cible
-sci-manager/
+gerersci/
 ├── AGENTS.md # Ce fichier
 ├── ARCHITECTURE.md # Phase 1
 ├── README.md # Phase 6

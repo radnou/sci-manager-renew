@@ -1,7 +1,7 @@
 # ✅ PHASE 6 TERMINÉE - Déploiement Production
 
 ## 🎯 Objectif Atteint
-SCI-Manager est maintenant **prêt pour la production** sur VPS Scaleway avec infrastructure complète.
+GererSCI est maintenant **prêt pour la production** sur VPS Scaleway avec infrastructure complète.
 
 ## 🏗️ Infrastructure Déployée
 
@@ -113,7 +113,7 @@ cp .env.production .env  # Éditer avec vraies valeurs
 
 ---
 
-## 🏆 **PHASE 6 COMPLÈTE - SCI-Manager Production-Ready !**
+## 🏆 **PHASE 6 COMPLÈTE - GererSCI Production-Ready !**
 
 **L'application est maintenant déployable en un clic sur n'importe quel VPS Ubuntu avec Docker.**
 

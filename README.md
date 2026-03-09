@@ -1,6 +1,6 @@
-# 🚀 SCI-Manager - Déploiement Production
+# 🚀 GererSCI - Déploiement Production
 
-Guide complet pour déployer SCI-Manager sur un VPS Scaleway en production.
+Guide complet pour déployer GererSCI sur un VPS Scaleway en production.
 
 ## 📋 Prérequis
 
@@ -171,7 +171,7 @@ docker compose exec nginx nginx -t
 
 ```bash
 # Vérifiez la santé de la DB
-docker compose exec db pg_isready -U sci_manager -d sci_manager_prod
+docker compose exec db pg_isready -U gerersci -d gerersci_prod
 
 # Consultez les logs de la DB
 docker compose logs db
@@ -237,7 +237,7 @@ En cas de problème :
 
 ---
 
-**🎉 Félicitations ! Votre SCI-Manager est maintenant en production !**
+**🎉 Félicitations ! Votre GererSCI est maintenant en production !**
 - offre Standard (jusqu'à 5 biens),
 - offre Pro (multi-biens illimités),
 - option onboarding / accompagnement premium.

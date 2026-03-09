@@ -1,7 +1,7 @@
 <section class="space-y-8">
 	<header class="space-y-3">
 		<p class="sci-eyebrow">Foundations</p>
-		<h2 class="sci-page-title text-3xl">Direction visuelle SCI Manager</h2>
+		<h2 class="sci-page-title text-3xl">Direction visuelle GererSCI</h2>
 		<p class="sci-page-subtitle max-w-2xl">
 			Palette froide premium, contraste net et typographie mixte pour distinguer stratégie, finance et opérations.
 		</p>
