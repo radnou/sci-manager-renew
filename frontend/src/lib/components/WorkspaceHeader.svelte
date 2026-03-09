@@ -40,17 +40,17 @@
 	</div>
 
 	{#if contextValue || contextDetail}
-		<div class="mt-2 max-w-xl rounded-[1.35rem] border border-slate-200/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.6)] backdrop-blur-sm dark:border-slate-800/90 dark:bg-slate-900/78">
+		<div class="mt-2 max-w-xl rounded-xl border border-border bg-card px-4 py-4 shadow-sm">
 			{#if contextLabel}
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400">
+				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
 					{contextLabel}
 				</p>
 			{/if}
 			{#if contextValue}
-				<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{contextValue}</p>
+				<p class="mt-2 text-sm font-semibold text-foreground">{contextValue}</p>
 			{/if}
 			{#if contextDetail}
-				<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{contextDetail}</p>
+				<p class="mt-1 text-sm text-muted-foreground">{contextDetail}</p>
 			{/if}
 		</div>
 	{/if}
