@@ -22,7 +22,7 @@ function applyTheme(nextTheme: Theme, withTransition: boolean) {
 }
 
 function createThemeStore() {
-	const { subscribe, set, update } = writable<Theme>('dark');
+	const { subscribe, set, update } = writable<Theme>('light');
 
 	return {
 		subscribe,
