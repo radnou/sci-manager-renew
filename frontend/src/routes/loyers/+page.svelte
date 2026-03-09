@@ -428,7 +428,7 @@
 					<div class="sci-field md:col-span-2">
 						<span class="sci-field-label">Bien concerné</span>
 						<div
-							class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+							class="rounded-xl border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
 						>
 							{resolveBienLabel(editingLoyer.id_bien)}
 						</div>
@@ -469,7 +469,7 @@
 					Cette action retire définitivement la ligne du journal des loyers.
 				</Dialog.DialogDescription>
 			</Dialog.DialogHeader>
-			<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+			<p class="text-sm leading-relaxed text-muted-foreground">
 				{#if loyerPendingDelete}
 					Confirme la suppression du flux du <strong>{loyerPendingDelete.date_loyer}</strong>.
 				{:else}

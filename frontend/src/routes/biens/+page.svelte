@@ -455,7 +455,7 @@
 					Cette action retire le bien du portefeuille affiché pour la SCI active.
 				</Dialog.DialogDescription>
 			</Dialog.DialogHeader>
-			<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+			<p class="text-sm leading-relaxed text-muted-foreground">
 				{#if bienPendingDelete}
 					Confirme la suppression de <strong>{bienPendingDelete.adresse}</strong>.
 				{:else}

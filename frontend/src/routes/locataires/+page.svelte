@@ -445,43 +445,43 @@
 							Identité, bien rattaché et période d’occupation de la SCI active.
 						</CardDescription>
 					</div>
-					<p class="text-[0.72rem] font-semibold tracking-[0.22em] uppercase text-slate-500">
+					<p class="text-[0.72rem] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
 						{scopedLocataires.length} enregistrements
 					</p>
 				</div>
 			</CardHeader>
 			<CardContent class="pt-0">
 				{#if scopedLocataires.length === 0}
-					<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-sm font-medium text-slate-700 dark:text-slate-200">
+					<div class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center">
+						<p class="text-sm font-medium text-foreground">
 							Aucun locataire enregistré pour le moment.
 						</p>
-						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						<p class="mt-1 text-sm text-muted-foreground">
 							Ajoute une première fiche pour sécuriser la suite du parcours loyers et quittances.
 						</p>
 					</div>
 				{:else}
-					<div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-						<table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-							<thead class="bg-slate-50 dark:bg-slate-900">
+					<div class="overflow-x-auto rounded-2xl border border-border">
+						<table class="min-w-full divide-y divide-border text-sm">
+							<thead class="bg-muted">
 								<tr>
-									<th class="px-4 py-3 text-left font-semibold text-slate-500">Locataire</th>
-									<th class="px-4 py-3 text-left font-semibold text-slate-500">Bien</th>
-									<th class="px-4 py-3 text-left font-semibold text-slate-500">Occupation</th>
-									<th class="px-4 py-3 text-left font-semibold text-slate-500">Contact</th>
-									<th class="px-4 py-3 text-right font-semibold text-slate-500">Actions</th>
+									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Locataire</th>
+									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Bien</th>
+									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Occupation</th>
+									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Contact</th>
+									<th class="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+							<tbody class="divide-y divide-border">
 								{#each scopedLocataires as locataire (String(locataire.id || `${locataire.id_bien}-${locataire.nom}`))}
-									<tr class="bg-white dark:bg-slate-950">
+									<tr class="bg-card">
 										<td class="px-4 py-4">
-											<p class="font-semibold text-slate-900 dark:text-slate-100">{locataire.nom}</p>
+											<p class="font-semibold text-foreground">{locataire.nom}</p>
 										</td>
-										<td class="px-4 py-4 text-slate-600 dark:text-slate-300">
+										<td class="px-4 py-4 text-muted-foreground">
 											{resolveBienLabel(locataire.id_bien)}
 										</td>
-										<td class="px-4 py-4 text-slate-600 dark:text-slate-300">
+										<td class="px-4 py-4 text-muted-foreground">
 											{formatFrDate(locataire.date_debut)}
 											{#if locataire.date_fin}
 												&nbsp;→&nbsp;{formatFrDate(locataire.date_fin)}
@@ -489,7 +489,7 @@
 												&nbsp;→&nbsp;en cours
 											{/if}
 										</td>
-										<td class="px-4 py-4 text-slate-600 dark:text-slate-300">
+										<td class="px-4 py-4 text-muted-foreground">
 											{locataire.email || 'Email non renseigné'}
 										</td>
 										<td class="px-4 py-4">
@@ -590,7 +590,7 @@
 					<div class="sci-field md:col-span-2">
 						<span class="sci-field-label">Bien concerné</span>
 						<div
-							class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+							class="rounded-xl border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
 						>
 							{resolveBienLabel(editDraft.idBien)}
 						</div>
@@ -631,7 +631,7 @@
 					Cette action retire la fiche locataire du référentiel de la SCI active.
 				</Dialog.DialogDescription>
 			</Dialog.DialogHeader>
-			<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+			<p class="text-sm leading-relaxed text-muted-foreground">
 				{#if locatairePendingDelete}
 					Confirme la suppression de <strong>{locatairePendingDelete.nom}</strong>.
 				{:else}
