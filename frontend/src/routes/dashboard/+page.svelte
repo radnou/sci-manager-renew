@@ -222,6 +222,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Dashboard — GererSCI</title>
+	<meta name="description" content="Pilotez vos SCI depuis un tableau de bord unifié." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Pilotage SCI • Cockpit exécutif</p>

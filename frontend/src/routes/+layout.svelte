@@ -390,12 +390,14 @@
 	{:else if user}
 		<div class="flex">
 			<AppSidebar {user} />
-			<div class="flex-1">
+			<main class="flex-1 overflow-y-auto">
 				{@render children()}
-			</div>
+			</main>
 		</div>
 	{:else}
-		{@render children()}
+		<main class="flex-1 overflow-y-auto">
+			{@render children()}
+		</main>
 	{/if}
 
 	{#if user}

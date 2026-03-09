@@ -104,6 +104,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Tarifs — GererSCI</title>
+	<meta name="description" content="Offres et abonnements pour gérer vos SCI." />
+</svelte:head>
+
 <main class="min-h-screen bg-slate-50 dark:bg-slate-950">
 	<HeroSection
 		title="Tarifs transparents"

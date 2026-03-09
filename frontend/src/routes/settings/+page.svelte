@@ -55,6 +55,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Paramètres — GererSCI</title>
+	<meta name="description" content="Préférences d'interface et configuration." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Paramètres • expérience opérateur"
