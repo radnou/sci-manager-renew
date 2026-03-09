@@ -36,6 +36,7 @@
 	import PortfolioAllocationChart from '$lib/components/charts/PortfolioAllocationChart.svelte';
 	import AlertBanner from '$lib/components/AlertBanner.svelte';
 	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
+	import TabBar from '$lib/components/TabBar.svelte';
 
 	let biens: Bien[] = [];
 	let loyers: Loyer[] = [];
@@ -48,6 +49,7 @@
 	let detailErrorMessage = '';
 	let detailLoadedFor = '';
 	let detailRequestVersion = 0;
+	let activeTab = 'flux';
 
 	const emptyBienMetrics = calculateBienMetrics([]);
 	const emptyLoyerMetrics = calculateLoyerMetrics([]);
@@ -268,32 +270,24 @@
 		<PortfolioSummary metrics={portfolioMetrics} />
 	</div>
 
-	{#if !loading && loyers.length > 0}
-		<div class="mt-6 grid gap-6 lg:grid-cols-3">
-			<CollectionChart loyers={scopedLoyers} />
-			<RentTrendChart loyers={scopedLoyers} />
-			<PortfolioAllocationChart {biens} {scis} />
+	<div class="mt-6">
+		<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+			<div>
+				<p class="sci-eyebrow">SCI active • Dashboard spécifique</p>
+				<h2 class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
+					Cockpit d'exécution par cas d'usage
+				</h2>
+				<p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+					Le portefeuille reste en haut. Ici, la SCI active est organisée par cas d'usage opérateur.
+				</p>
+			</div>
 		</div>
-	{/if}
+		{#if detailErrorMessage}
+			<p class="sci-inline-alert sci-inline-alert-error">{detailErrorMessage}</p>
+		{/if}
+	</div>
 
 	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
-		<div class="xl:col-span-2">
-			<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-				<div>
-					<p class="sci-eyebrow">SCI active • Dashboard spécifique</p>
-					<h2 class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-						Cockpit d'exécution par cas d'usage
-					</h2>
-					<p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-						Le portefeuille reste en haut. Ici, la SCI active est organisée par cas d'usage opérateur.
-					</p>
-				</div>
-			</div>
-			{#if detailErrorMessage}
-				<p class="sci-inline-alert sci-inline-alert-error">{detailErrorMessage}</p>
-			{/if}
-		</div>
-
 		<CockpitHeader
 			{activeSciProfile}
 			{scis}
@@ -308,32 +302,22 @@
 		<AssociatesPanel associates={associateSummary} />
 	</div>
 
-	<div class="mt-6 grid gap-6 xl:grid-cols-[1.25fr_1fr]">
-		<SCIIdentityCard {activeSciProfile} {activeSciDetail} {scopedBiens} {bienMetrics} {detailLoading} />
-		<ChargesFiscalPanel
-			totalRecordedCharges={activeSciDetail?.total_recorded_charges}
-			chargesCount={activeSciDetail?.charges_count ?? 0}
-			recentCharges={recentChargeFeed}
-			{latestFiscalYear}
-			{detailLoading}
+	<div class="mt-6">
+		<TabBar
+			tabs={[
+				{ id: 'flux', label: 'Flux', badge: loyerMetrics.lateCount > 0 ? loyerMetrics.lateCount : undefined },
+				{ id: 'patrimoine', label: 'Patrimoine' },
+				{ id: 'documents', label: 'Documents' },
+				{ id: 'gouvernance', label: 'Gouvernance' },
+				{ id: 'analytique', label: 'Analytique' }
+			]}
+			{activeTab}
+			onTabChange={(id) => activeTab = id}
 		/>
 	</div>
 
-	<div class="mt-6">
-		<ScopedKPIStrip {bienMetrics} {loyerMetrics} {collectionRate} {loading} />
-	</div>
-
-	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
-		<div class="space-y-6">
-			<div id="dashboard-patrimoine" class="scroll-mt-28">
-				<BienTable
-					biens={scopedBiens.slice(0, 6)}
-					{loading}
-					title="Patrimoine piloté"
-					description="Vue consolidée des biens de la SCI active."
-				/>
-			</div>
-
+	{#if activeTab === 'flux'}
+		<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
 			<Card id="dashboard-execution" class="sci-section-card scroll-mt-28">
 				<CardHeader>
 					<CardTitle class="flex items-center gap-2 text-lg">
@@ -352,16 +336,6 @@
 					/>
 				</CardContent>
 			</Card>
-		</div>
-
-		<div class="space-y-6">
-			<div id="dashboard-documents" class="scroll-mt-28">
-				<QuitusGenerator
-					loyers={scopedLoyers}
-					biens={scopedBiens}
-					sciName={activeSciProfile?.nom || activeSci?.nom || ''}
-				/>
-			</div>
 			<OperatorRituals
 				{latestLoyer}
 				{scopedLoyers}
@@ -370,5 +344,60 @@
 				{latestCharge}
 			/>
 		</div>
-	</div>
+	{:else if activeTab === 'patrimoine'}
+		<div class="mt-6 grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+			<div id="dashboard-patrimoine" class="scroll-mt-28">
+				<BienTable
+					biens={scopedBiens.slice(0, 6)}
+					{loading}
+					title="Patrimoine piloté"
+					description="Vue consolidée des biens de la SCI active."
+				/>
+			</div>
+			<SCIIdentityCard {activeSciProfile} {activeSciDetail} {scopedBiens} {bienMetrics} {detailLoading} />
+		</div>
+	{:else if activeTab === 'documents'}
+		<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
+			<div id="dashboard-documents" class="scroll-mt-28">
+				<QuitusGenerator
+					loyers={scopedLoyers}
+					biens={scopedBiens}
+					sciName={activeSciProfile?.nom || activeSci?.nom || ''}
+				/>
+			</div>
+			<ChargesFiscalPanel
+				totalRecordedCharges={activeSciDetail?.total_recorded_charges}
+				chargesCount={activeSciDetail?.charges_count ?? 0}
+				recentCharges={recentChargeFeed}
+				{latestFiscalYear}
+				{detailLoading}
+			/>
+		</div>
+	{:else if activeTab === 'gouvernance'}
+		<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
+			<AssociatesPanel associates={associateSummary} />
+			<CockpitHeader
+				{activeSciProfile}
+				{scis}
+				activeSciId={resolvedActiveSciId}
+				{collectionRate}
+				{avgAssociateShare}
+				{loyerMetrics}
+				{commandTracks}
+				{priorities}
+				onSciChange={handleSciSelect}
+			/>
+		</div>
+	{:else if activeTab === 'analytique'}
+		<div class="mt-6">
+			<ScopedKPIStrip {bienMetrics} {loyerMetrics} {collectionRate} {loading} />
+		</div>
+		{#if !loading && loyers.length > 0}
+			<div class="mt-6 grid gap-6 lg:grid-cols-3">
+				<CollectionChart loyers={scopedLoyers} />
+				<RentTrendChart loyers={scopedLoyers} />
+				<PortfolioAllocationChart {biens} {scis} />
+			</div>
+		{/if}
+	{/if}
 </section>

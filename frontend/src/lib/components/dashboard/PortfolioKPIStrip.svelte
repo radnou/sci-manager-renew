@@ -1,6 +1,6 @@
 <script lang="ts">
 	import KpiCard from '$lib/components/KPI-Card.svelte';
-	import { formatCompactNumber } from '$lib/high-value/formatters';
+	import { formatCompactNumber, formatPercent } from '$lib/high-value/formatters';
 	import type { PortfolioMetrics } from '$lib/high-value/portfolio';
 
 	interface Props {
@@ -42,20 +42,20 @@
 		{loading}
 	/>
 	<KpiCard
-		label="Encaissements sécurisés"
-		value={metrics.loyerMetrics.totalPaidLabel}
-		caption={`reste à sécuriser ${metrics.loyerMetrics.totalOutstandingLabel}`}
-		trend={metrics.loyerMetrics.totalOutstanding > 0 ? 'neutral' : 'up'}
+		label="Recouvrement"
+		value={formatPercent(metrics.loyerMetrics.collectionRate, '0%')}
+		caption={`${metrics.loyerMetrics.totalPaidLabel} encaissés sur ${metrics.loyerMetrics.totalRecordedLabel}`}
+		trend={metrics.loyerMetrics.lateCount > 0 ? 'down' : metrics.loyerMetrics.totalOutstanding > 0 ? 'neutral' : 'up'}
 		trendValue={metrics.loyerMetrics.lateCount > 0
-			? 'retards'
+			? 'vigilance'
 			: metrics.loyerMetrics.totalOutstanding > 0
-				? 'en attente'
+				? 'à compléter'
 				: 'conforme'}
 		tone={metrics.loyerMetrics.lateCount > 0
 			? 'warning'
 			: metrics.loyerMetrics.totalOutstanding > 0
 				? 'default'
-				: 'success'}
+				: 'accent'}
 		{loading}
 	/>
 </div>
