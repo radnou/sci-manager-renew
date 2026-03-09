@@ -387,13 +387,15 @@
 				</p>
 			</div>
 		</section>
-	{:else}
+	{:else if user}
 		<div class="flex">
 			<AppSidebar {user} />
 			<div class="flex-1">
 				{@render children()}
 			</div>
 		</div>
+	{:else}
+		{@render children()}
 	{/if}
 
 	{#if user}

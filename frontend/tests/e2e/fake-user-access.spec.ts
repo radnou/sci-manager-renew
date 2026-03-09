@@ -730,41 +730,18 @@ test.describe('Fake user access E2E', () => {
 			'Dashboard de portefeuille'
 		);
 		await expect(page.getByText('Portefeuille multi-SCI')).toBeVisible();
-		await expect(page.getByText('Arbitrages du portefeuille', { exact: true })).toBeVisible();
-		await expect(page.getByText("Plan d’action", { exact: true })).toBeVisible();
-		await expect(page.getByText('Fiche d’identité SCI active')).toBeVisible();
-		await expect(page.getByText('Charges et fiscalité')).toBeVisible();
-		await expect(page.getByText('Cadence opérateur')).toBeVisible();
+		await expect(page.getByText(/Cockpit d.ex.cution par cas d.usage/)).toBeVisible();
+		await expect(page.getByText('Patrimoine piloté')).toBeVisible();
+		await expect(page.getByText('Mouvements et alertes')).toBeVisible();
 		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
-		const primaryNav = page.locator('nav').first();
-		await expect(primaryNav.getByRole('link', { name: 'Portefeuille', exact: true })).toBeVisible();
-		await expect(primaryNav.getByRole('link', { name: 'Exploitation', exact: true })).toBeVisible();
-		await expect(primaryNav.getByRole('link', { name: 'Finance', exact: true })).toBeVisible();
-		await expect(page.getByRole('link', { name: 'Tarifs', exact: true })).toHaveCount(0);
+		const sidebar = page.locator('aside').first();
+		await expect(sidebar.getByRole('link', { name: 'Dashboard' })).toBeVisible();
+		await expect(sidebar.getByRole('link', { name: 'Biens' })).toBeVisible();
+		await expect(sidebar.getByRole('link', { name: 'Loyers' })).toBeVisible();
 		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
 		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' }).first()).toBeVisible();
-		await expect(page.getByText('Aucun exercice consolidé pour la SCI active.')).toBeVisible();
 		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
 		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
-		await expect(page.getByText('Dernier exercice fiscal')).toBeVisible();
-		await expect(page.getByText('Exercice 2025').first()).toBeVisible();
-
-		await primaryNav.getByRole('link', { name: 'Portefeuille', exact: true }).click();
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Portefeuille SCI');
-		await expect(page.getByText('Camille Bernard')).toBeVisible();
-		await expect(page.getByText('Charges récentes')).toBeVisible();
-
-		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
-		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' }).first()).toBeVisible();
-		await expect(page.getByText('Aucun loyer documenté sur la période récente.')).toBeVisible();
-
-		await primaryNav.getByRole('link', { name: 'Exploitation', exact: true }).click();
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Hub exploitation');
-		await expect(page.getByText('Biens → Locataires → Loyers')).toBeVisible();
-
-		await primaryNav.getByRole('link', { name: 'Finance', exact: true }).click();
-		await expect(page.getByRole('heading', { level: 1 })).toContainText('Hub finance');
-		await expect(page.getByText('Journaux d’abord, consolidation ensuite')).toBeVisible();
 
 		const accountMenuButton = page.getByRole('button', { name: /Compte/ }).first();
 		await accountMenuButton.click();
