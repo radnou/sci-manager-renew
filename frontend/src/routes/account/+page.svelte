@@ -115,23 +115,23 @@
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Email</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{email}</p>
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Email</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{email}</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Mode d'accès</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{accessMode}</p>
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Mode d'accès</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{accessMode}</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{activeSciStatus}</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{activeSciDetail}</p>
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">SCI active</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{activeSciStatus}</p>
+					<p class="mt-1 text-sm text-muted-foreground">{activeSciDetail}</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Page d’ouverture</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{defaultLandingRoute}</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Page d’ouverture</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{defaultLandingRoute}</p>
+					<p class="mt-1 text-sm text-muted-foreground">
 						Point d’entrée fonctionnel appliqué au navigateur courant.
 					</p>
 				</div>
@@ -147,10 +147,10 @@
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0">
 				{#if subscription}
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Offre active</p>
-						<p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">{capacityLabel}</p>
+					<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Offre active</p>
+						<p class="mt-2 text-lg font-semibold text-foreground">{subscription.plan_name}</p>
+						<p class="mt-1 text-muted-foreground">{capacityLabel}</p>
 					</div>
 				{:else if subscriptionError}
 					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
