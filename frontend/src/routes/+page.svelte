@@ -71,8 +71,8 @@
 		secondaryCta={{ text: 'Voir la stratégie tarifaire', href: '/pricing' }}
 		badges={['Produit SaaS', 'SCI & immobilier locatif']}
 		kpis={[
-			{ value: '+6h', label: "gagnées par semaine sur l'administratif" },
-			{ value: '-42%', label: 'de retard de relance locative' },
+			{ value: '1', label: 'cockpit unique pour centraliser biens, loyers et documents' },
+			{ value: '100%', label: 'des retards visibles dans un tableau de bord centralisé' },
 			{ value: '100%', label: 'des flux consolidés dans une seule vue' }
 		]}
 	/>
@@ -147,11 +147,11 @@
 							</li>
 							<li class="flex items-start">
 								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Vue des risques de retard avant impact trésorerie
+								Suivi des retards en temps réel dans votre cockpit
 							</li>
 							<li class="flex items-start">
 								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Données prêtes pour votre comptable ou investisseur
+								Données structurées pour faciliter les échanges avec votre comptable
 							</li>
 						</ul>
 					</div>
@@ -168,11 +168,11 @@
 						<ul class="space-y-3 text-slate-600 dark:text-slate-400">
 							<li class="flex items-start">
 								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Routines opérationnelles répétables en 10 minutes par jour
+								Processus de suivi standardisés pour chaque SCI
 							</li>
 							<li class="flex items-start">
 								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Backlog priorisé par impact financier réel
+								Points de vigilance automatiques sur vos flux
 							</li>
 							<li class="flex items-start">
 								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
@@ -199,7 +199,7 @@
 					Accès anticipé aux 100 premiers comptes actifs
 				</h2>
 				<p class="mx-auto mb-8 max-w-2xl text-xl text-blue-100">
-					Onboardings guidés, feedback produit prioritaire et roadmap partagée en direct.
+					Démarrage rapide, feedback produit prioritaire et roadmap partagée en direct.
 				</p>
 				<a href="/login">
 					<Button
@@ -364,14 +364,14 @@
 					rating={5}
 				/>
 				<TestimonialCard
-					quote="L'automatisation des quittances nous a fait gagner 3h par semaine. Le ROI est immédiat et l'outil évolue avec nos besoins."
+					quote="La génération des quittances en un clic nous simplifie la vie. Le ROI est immédiat et l'outil évolue avec nos besoins."
 					author="Pierre Martin"
 					role="Opérateur immobilier"
 					company="Martin Investissements"
 					rating={5}
 				/>
 				<TestimonialCard
-					quote="Interface intuitive et fonctionnalités complètes. Parfait pour gérer notre portefeuille de 15 biens sans complexité."
+					quote="Interface intuitive pour gérer notre portefeuille de 15 biens sans complexité. Le cockpit centralise tout ce qu'il faut."
 					author="Sophie Leroy"
 					role="Directrice patrimoniale"
 					company="Cabinet Leroy & Associés"
@@ -423,8 +423,8 @@
 						Quelle promesse principale en 30 jours ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Reprendre le contrôle sur les flux de loyers, identifier les retards avant impact
-						trésorerie, et gagner 2-3h par semaine sur l'administratif.
+						Reprendre le contrôle sur les flux de loyers, identifier les retards dans un cockpit
+						centralisé, et structurer votre suivi SCI.
 					</p>
 				</article>
 
@@ -445,7 +445,7 @@
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
 						La version actuelle privilégie une saisie structurée rapide pour repartir sur des bases
-						fiables. Le module d'import CSV/Excel est en cours d'intégration.
+						fiables. Un module d'import CSV/Excel est prévu dans la roadmap.
 					</p>
 				</article>
 
@@ -476,8 +476,8 @@
 						L'outil gère-t-il la conformité fiscale (2044, 2072) ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Un endpoint CERFA 2044 est disponible en version bêta (calcul simplifié). La couverture
-						complète 2072 et les exports fiscaux avancés sont en préparation.
+						Un calcul simplifié du résultat foncier (revenus − charges) est disponible. La génération
+						PDF CERFA 2044/2072 et les exports fiscaux avancés sont en préparation.
 					</p>
 				</article>
 

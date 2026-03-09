@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date
 
 import structlog
@@ -256,8 +257,69 @@ async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)):
 
         logger.info("loyer_deleted", loyer_id=loyer_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except SCIManagerException:
+    except GererSCIException:
         raise
     except Exception as exc:
         logger.error("delete_loyer_failed", user_id=user_id, loyer_id=loyer_id, error=str(exc), exc_info=True)
         raise DatabaseError("Unable to delete loyer")
+
+
+@router.get("/stats")
+async def loyer_stats(
+    months: int = 12,
+    user: dict = Depends(get_current_user),
+):
+    """Return monthly aggregated loyer stats for the current user."""
+    client = _get_client()
+    user_id = user["sub"]
+    user_sci_ids = _get_user_sci_ids(client, user_id)
+
+    if not user_sci_ids:
+        return {"months": []}
+
+    result = (
+        client.table("loyers")
+        .select("date_loyer, montant, statut")
+        .in_("id_sci", user_sci_ids)
+        .order("date_loyer", desc=True)
+        .execute()
+    )
+
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    monthly: dict[str, dict] = defaultdict(lambda: {"total": 0, "paid": 0, "late": 0, "pending": 0})
+
+    for row in result.data or []:
+        date_str = row.get("date_loyer", "")
+        if not date_str:
+            continue
+        month_key = date_str[:7]  # YYYY-MM
+        amount = row.get("montant", 0) or 0
+        status_val = row.get("statut", "en_attente")
+
+        monthly[month_key]["total"] += amount
+        if status_val == "paye":
+            monthly[month_key]["paid"] += amount
+        elif status_val == "en_retard":
+            monthly[month_key]["late"] += amount
+        else:
+            monthly[month_key]["pending"] += amount
+
+    sorted_months = sorted(monthly.keys(), reverse=True)[:months]
+
+    return {
+        "months": [
+            {
+                "month": m,
+                "total": monthly[m]["total"],
+                "paid": monthly[m]["paid"],
+                "late": monthly[m]["late"],
+                "pending": monthly[m]["pending"],
+                "collection_rate": round(monthly[m]["paid"] / monthly[m]["total"] * 100, 1)
+                if monthly[m]["total"] > 0
+                else 0,
+            }
+            for m in sorted(sorted_months)
+        ]
+    }

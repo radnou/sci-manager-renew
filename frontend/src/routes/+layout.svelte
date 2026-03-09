@@ -3,7 +3,7 @@
 	import type { User } from '@supabase/supabase-js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Menu, X } from 'lucide-svelte';
+	import { Menu, X, Search } from 'lucide-svelte';
 	import { supabase } from '$lib/supabase';
 	import {
 		clearFakeSession,
@@ -17,6 +17,9 @@
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
+	import AppSidebar from '$lib/components/AppSidebar.svelte';
+	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -163,6 +166,8 @@
 							</a>
 						{/each}
 					</div>
+
+					<NotificationCenter />
 
 					<div class="relative hidden md:block" bind:this={accountMenuContainer}>
 						<button
@@ -383,7 +388,16 @@
 			</div>
 		</section>
 	{:else}
-		{@render children()}
+		<div class="flex">
+			<AppSidebar {user} />
+			<div class="flex-1">
+				{@render children()}
+			</div>
+		</div>
+	{/if}
+
+	{#if user}
+		<CommandPalette />
 	{/if}
 
 	<!-- Footer -->

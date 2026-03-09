@@ -530,3 +530,32 @@ export function createCheckoutSession(payload: CheckoutSessionRequestPayload) {
 export function fetchSubscriptionEntitlements() {
 	return apiFetch<SubscriptionEntitlements>('/api/v1/stripe/subscription');
 }
+
+// --- Notifications ---
+
+export type Notification = {
+	id: string;
+	type: 'late_payment' | 'status_change' | 'document_ready' | 'system' | 'info';
+	title: string;
+	message: string;
+	metadata: Record<string, unknown>;
+	read_at: string | null;
+	created_at: string;
+};
+
+export function fetchNotifications(unreadOnly = false): Promise<Notification[]> {
+	const params = unreadOnly ? '?unread_only=true' : '';
+	return apiFetch<Notification[]>(`/api/v1/notifications/${params}`);
+}
+
+export function fetchUnreadCount(): Promise<{ count: number }> {
+	return apiFetch<{ count: number }>('/api/v1/notifications/count');
+}
+
+export function markNotificationRead(id: string): Promise<Notification> {
+	return apiFetch<Notification>(`/api/v1/notifications/${id}/read`, { method: 'PATCH' });
+}
+
+export function markAllNotificationsRead(): Promise<{ updated: number }> {
+	return apiFetch<{ updated: number }>('/api/v1/notifications/read-all', { method: 'PATCH' });
+}

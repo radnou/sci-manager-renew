@@ -23,6 +23,9 @@ export function calculateSciScopeMetrics(sciId: EntityId, biens: Bien[], loyers:
 	};
 }
 
+export type PortfolioMetrics = ReturnType<typeof calculatePortfolioMetrics>;
+export type SciScopeMetrics = ReturnType<typeof calculateSciScopeMetrics>;
+
 export function calculatePortfolioMetrics(scis: SCIOverview[], biens: Bien[], loyers: Loyer[]) {
 	const bienMetrics = calculateBienMetrics(biens);
 	const loyerMetrics = calculateLoyerMetrics(loyers);
