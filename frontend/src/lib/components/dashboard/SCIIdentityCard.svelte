@@ -19,7 +19,8 @@
 		detailLoading: boolean;
 	}
 
-	let { activeSciProfile, activeSciDetail, scopedBiens, bienMetrics, detailLoading }: Props = $props();
+	let { activeSciProfile, activeSciDetail, scopedBiens, bienMetrics, detailLoading }: Props =
+		$props();
 
 	function statusLabel(status: SCIOverview['statut'] | null | undefined) {
 		if (!status || status === 'configuration') return 'À structurer';
@@ -34,9 +35,7 @@
 			<Landmark class="h-5 w-5 text-sky-600" />
 			Fiche d'identité SCI active
 		</CardTitle>
-		<CardDescription>
-			Caractéristiques centrales de la société sélectionnée.
-		</CardDescription>
+		<CardDescription>Caractéristiques centrales de la société sélectionnée.</CardDescription>
 	</CardHeader>
 	<CardContent class="pt-0">
 		{#if detailLoading}
@@ -47,33 +46,55 @@
 			</div>
 		{:else}
 			<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Société</p>
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Société
+					</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						SIREN {activeSciProfile?.siren || 'À compléter'}
 					</p>
-					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{statusLabel(activeSciProfile?.statut)}</p>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						{statusLabel(activeSciProfile?.statut)}
+					</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Gouvernance</p>
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Gouvernance
+					</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{activeSciProfile?.user_role ? mapAssociateRoleLabel(activeSciProfile.user_role) : 'Rôle à confirmer'}
+						{activeSciProfile?.user_role
+							? mapAssociateRoleLabel(activeSciProfile.user_role)
+							: 'Rôle à confirmer'}
 					</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 						Part détenue {formatPercent(activeSciProfile?.user_part, 'N/A')}
 					</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Patrimoine</p>
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Patrimoine
+					</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						{activeSciDetail?.biens_count ?? scopedBiens.length} bien(s)
 					</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Loyer cible {formatEur(activeSciDetail?.total_monthly_rent ?? bienMetrics.totalMonthlyRent)}
+						Loyer cible {formatEur(
+							activeSciDetail?.total_monthly_rent ?? bienMetrics.totalMonthlyRent
+						)}
 					</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Documentation</p>
+				<div
+					class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						Documentation
+					</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						{activeSciDetail?.fiscalite?.length || 0} exercice(s)
 					</p>

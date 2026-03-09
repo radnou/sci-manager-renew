@@ -6,7 +6,13 @@
 	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { getCurrentSession } from '$lib/auth/session';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId } from '$lib/portfolio/active-sci';
 	import { readApplicationPreferences } from '$lib/settings/application-preferences';
@@ -19,7 +25,9 @@
 	let subscriptionError = '';
 
 	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
-	$: activeSciDetail = activeSciId ? 'Le cockpit reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
+	$: activeSciDetail = activeSciId
+		? 'Le cockpit reviendra sur la dernière société suivie.'
+		: 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
 	$: capacityLabel = subscription
 		? subscription.max_scis == null
 			? 'SCI et biens illimités'
@@ -84,7 +92,7 @@
 				<p class="sci-action-card-body">Page ouverte après connexion sur ce navigateur.</p>
 			</div>
 		</div>
-		<div class="mt-5 sci-primary-actions">
+		<div class="sci-primary-actions mt-5">
 			<Button href="/pricing">Voir les offres et upgrader</Button>
 			<Button href="/settings" variant="outline">Préférences d’interface</Button>
 			<Button href="/scis" variant="outline">Ouvrir le portefeuille SCI</Button>
@@ -111,25 +119,35 @@
 			<CardHeader>
 				<div>
 					<CardTitle class="text-lg">Identité et contexte</CardTitle>
-					<CardDescription>Référence d’accès, posture d’authentification et contexte de travail retenu.</CardDescription>
+					<CardDescription
+						>Référence d’accès, posture d’authentification et contexte de travail retenu.</CardDescription
+					>
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
 				<div class="rounded-2xl border border-border bg-muted p-4">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Email</p>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						Email
+					</p>
 					<p class="mt-2 text-sm font-semibold text-foreground">{email}</p>
 				</div>
 				<div class="rounded-2xl border border-border bg-muted p-4">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Mode d'accès</p>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						Mode d'accès
+					</p>
 					<p class="mt-2 text-sm font-semibold text-foreground">{accessMode}</p>
 				</div>
 				<div class="rounded-2xl border border-border bg-muted p-4">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">SCI active</p>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						SCI active
+					</p>
 					<p class="mt-2 text-sm font-semibold text-foreground">{activeSciStatus}</p>
 					<p class="mt-1 text-sm text-muted-foreground">{activeSciDetail}</p>
 				</div>
 				<div class="rounded-2xl border border-border bg-muted p-4">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Page d’ouverture</p>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						Page d’ouverture
+					</p>
 					<p class="mt-2 text-sm font-semibold text-foreground">{defaultLandingRoute}</p>
 					<p class="mt-1 text-sm text-muted-foreground">
 						Point d’entrée fonctionnel appliqué au navigateur courant.
@@ -142,13 +160,19 @@
 			<CardHeader>
 				<div>
 					<CardTitle class="text-lg">Offre active et conformité</CardTitle>
-					<CardDescription>Capacité active, quotas et contrôles utiles liés au compte connecté.</CardDescription>
+					<CardDescription
+						>Capacité active, quotas et contrôles utiles liés au compte connecté.</CardDescription
+					>
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0">
 				{#if subscription}
 					<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Offre active</p>
+						<p
+							class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+						>
+							Offre active
+						</p>
 						<p class="mt-2 text-lg font-semibold text-foreground">{subscription.plan_name}</p>
 						<p class="mt-1 text-muted-foreground">{capacityLabel}</p>
 					</div>
@@ -158,8 +182,12 @@
 
 				<div class="grid gap-2">
 					<Button href="/pricing" class="justify-start">Voir les offres et upgrader</Button>
-					<Button href="/account/privacy" variant="outline" class="justify-start">Mes données et confidentialité</Button>
-					<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+					<Button href="/account/privacy" variant="outline" class="justify-start"
+						>Mes données et confidentialité</Button
+					>
+					<Button href="/dashboard" variant="outline" class="justify-start"
+						>Retour au cockpit</Button
+					>
 				</div>
 			</CardContent>
 		</Card>

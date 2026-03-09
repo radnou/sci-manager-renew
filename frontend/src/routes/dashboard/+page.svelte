@@ -14,12 +14,22 @@
 	import BienTable from '$lib/components/BienTable.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import QuitusGenerator from '$lib/components/QuitusGenerator.svelte';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { calculateBienMetrics } from '$lib/high-value/biens';
 	import { calculateLoyerMetrics } from '$lib/high-value/loyers';
 	import { calculatePortfolioMetrics, calculateSciScopeMetrics } from '$lib/high-value/portfolio';
 	import { formatEur, formatPercent } from '$lib/high-value/formatters';
-	import { formatApiErrorMessage, mapAssociateRoleLabel, mapChargeTypeLabel } from '$lib/high-value/presentation';
+	import {
+		formatApiErrorMessage,
+		mapAssociateRoleLabel,
+		mapChargeTypeLabel
+	} from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	import PortfolioKPIStrip from '$lib/components/dashboard/PortfolioKPIStrip.svelte';
@@ -96,26 +106,40 @@
 
 	$: priorities = [
 		{
-			title: scopedBiens.length === 0 ? 'Structurer le patrimoine' : 'Mettre à jour le portefeuille',
-			description: scopedBiens.length === 0
-				? 'Aucun bien n\'est encore rattaché à la SCI active. Commence par documenter le premier actif.'
-				: `${scopedBiens.length} biens rattachés à la SCI active. Vérifie les loyers et charges du mois.`,
+			title:
+				scopedBiens.length === 0 ? 'Structurer le patrimoine' : 'Mettre à jour le portefeuille',
+			description:
+				scopedBiens.length === 0
+					? "Aucun bien n'est encore rattaché à la SCI active. Commence par documenter le premier actif."
+					: `${scopedBiens.length} biens rattachés à la SCI active. Vérifie les loyers et charges du mois.`,
 			tone: scopedBiens.length === 0 ? 'warning' : 'default'
 		},
 		{
-			title: loyerMetrics.lateCount > 0 ? 'Traiter les retards' : loyerMetrics.totalOutstanding > 0 ? 'Encaissements à sécuriser' : 'Suivi des encaissements sous contrôle',
-			description: loyerMetrics.lateCount > 0
-				? `${loyerMetrics.lateCount} loyer(s) en retard nécessitent une relance ou un arbitrage.`
-				: loyerMetrics.totalOutstanding > 0
-					? `${loyerMetrics.totalOutstandingLabel} restent en attente d'encaissement sur la SCI active.`
-					: 'Tous les flux saisis sont encaissés. Tu peux préparer les quittances et la revue mensuelle.',
-			tone: loyerMetrics.lateCount > 0 ? 'danger' : loyerMetrics.totalOutstanding > 0 ? 'warning' : 'success'
+			title:
+				loyerMetrics.lateCount > 0
+					? 'Traiter les retards'
+					: loyerMetrics.totalOutstanding > 0
+						? 'Encaissements à sécuriser'
+						: 'Suivi des encaissements sous contrôle',
+			description:
+				loyerMetrics.lateCount > 0
+					? `${loyerMetrics.lateCount} loyer(s) en retard nécessitent une relance ou un arbitrage.`
+					: loyerMetrics.totalOutstanding > 0
+						? `${loyerMetrics.totalOutstandingLabel} restent en attente d'encaissement sur la SCI active.`
+						: 'Tous les flux saisis sont encaissés. Tu peux préparer les quittances et la revue mensuelle.',
+			tone:
+				loyerMetrics.lateCount > 0
+					? 'danger'
+					: loyerMetrics.totalOutstanding > 0
+						? 'warning'
+						: 'success'
 		},
 		{
 			title: associateSummary.length > 1 ? 'Coordonner les associés' : 'Gouvernance simple',
-			description: associateSummary.length > 1
-				? `${associateSummary.length} associés sont impliqués. Prépare un point de gouvernance avant les arbitrages.`
-				: 'La SCI est portée par un seul associé référent. Les validations sont fluides.',
+			description:
+				associateSummary.length > 1
+					? `${associateSummary.length} associés sont impliqués. Prépare un point de gouvernance avant les arbitrages.`
+					: 'La SCI est portée par un seul associé référent. Les validations sont fluides.',
 			tone: 'accent'
 		}
 	];
@@ -124,8 +148,13 @@
 		{
 			id: 'dashboard-governance',
 			label: 'Gouvernance',
-			summary: associateSummary.length > 0 ? `${associateSummary.length} associé(s) documenté(s)` : 'Associés à documenter',
-			detail: activeSciProfile?.user_role ? `${mapAssociateRoleLabel(activeSciProfile.user_role)} connecté` : 'Rôle utilisateur à confirmer'
+			summary:
+				associateSummary.length > 0
+					? `${associateSummary.length} associé(s) documenté(s)`
+					: 'Associés à documenter',
+			detail: activeSciProfile?.user_role
+				? `${mapAssociateRoleLabel(activeSciProfile.user_role)} connecté`
+				: 'Rôle utilisateur à confirmer'
 		},
 		{
 			id: 'dashboard-patrimoine',
@@ -137,19 +166,23 @@
 			id: 'dashboard-execution',
 			label: 'Encaissements',
 			summary: `Recouvrement ${formatPercent(collectionRate, '0%')}`,
-			detail: loyerMetrics.lateCount > 0
-				? `${loyerMetrics.lateCount} retard(s) à traiter`
-				: loyerMetrics.totalOutstanding > 0
-					? `${loyerMetrics.totalOutstandingLabel} à sécuriser`
-					: 'Aucun retard détecté'
+			detail:
+				loyerMetrics.lateCount > 0
+					? `${loyerMetrics.lateCount} retard(s) à traiter`
+					: loyerMetrics.totalOutstanding > 0
+						? `${loyerMetrics.totalOutstandingLabel} à sécuriser`
+						: 'Aucun retard détecté'
 		},
 		{
 			id: 'dashboard-documents',
 			label: 'Documents',
-			summary: latestFiscalYear ? `Exercice ${latestFiscalYear.annee} consolidé` : 'Clôture fiscale à préparer',
-			detail: scopedLoyers.length > 0
-				? `${scopedLoyers.length} loyer(s) saisi(s), quittances générables`
-				: 'Aucun loyer saisi pour produire une quittance'
+			summary: latestFiscalYear
+				? `Exercice ${latestFiscalYear.annee} consolidé`
+				: 'Clôture fiscale à préparer',
+			detail:
+				scopedLoyers.length > 0
+					? `${scopedLoyers.length} loyer(s) saisi(s), quittances générables`
+					: 'Aucun loyer saisi pour produire une quittance'
 		}
 	];
 
@@ -177,14 +210,20 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const [nextScis, nextBiens, nextLoyers] = await Promise.all([fetchScis(), fetchBiens(), fetchLoyers()]);
+			const [nextScis, nextBiens, nextLoyers] = await Promise.all([
+				fetchScis(),
+				fetchBiens(),
+				fetchLoyers()
+			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
 			const storedActiveSciId = getStoredActiveSciId();
 			const fallbackSci = nextScis[0];
 			activeSciId =
-				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				(storedActiveSciId &&
+					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
+					storedActiveSciId) ||
 				String(fallbackSci?.id || '');
 			if (!nextScis.length) {
 				activeSciDetail = null;
@@ -211,7 +250,10 @@
 		} catch (error) {
 			if (requestVersion !== detailRequestVersion) return;
 			activeSciDetail = null;
-			detailErrorMessage = formatApiErrorMessage(error, 'Impossible de charger le dashboard spécifique de la SCI active.');
+			detailErrorMessage = formatApiErrorMessage(
+				error,
+				'Impossible de charger le dashboard spécifique de la SCI active.'
+			);
 		} finally {
 			if (requestVersion !== detailRequestVersion) return;
 			detailLoading = false;
@@ -234,7 +276,8 @@
 		<p class="sci-eyebrow">Pilotage SCI • Cockpit exécutif</p>
 		<h1 class="sci-page-title">Dashboard de portefeuille</h1>
 		<p class="sci-page-subtitle">
-			Vue portefeuille de toutes les SCI accessibles. Sélectionnez une SCI active pour la lecture opérationnelle.
+			Vue portefeuille de toutes les SCI accessibles. Sélectionnez une SCI active pour la lecture
+			opérationnelle.
 		</p>
 	</header>
 
@@ -266,7 +309,12 @@
 	<PortfolioKPIStrip metrics={portfolioMetrics} {loading} />
 
 	<div class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
-		<SCIGrid snapshots={sciSnapshots} activeSciId={resolvedActiveSciId} {loading} onSelect={handleSciSelect} />
+		<SCIGrid
+			snapshots={sciSnapshots}
+			activeSciId={resolvedActiveSciId}
+			{loading}
+			onSelect={handleSciSelect}
+		/>
 		<PortfolioSummary metrics={portfolioMetrics} />
 	</div>
 
@@ -305,14 +353,18 @@
 	<div class="mt-6">
 		<TabBar
 			tabs={[
-				{ id: 'flux', label: 'Flux', badge: loyerMetrics.lateCount > 0 ? loyerMetrics.lateCount : undefined },
+				{
+					id: 'flux',
+					label: 'Flux',
+					badge: loyerMetrics.lateCount > 0 ? loyerMetrics.lateCount : undefined
+				},
 				{ id: 'patrimoine', label: 'Patrimoine' },
 				{ id: 'documents', label: 'Documents' },
 				{ id: 'gouvernance', label: 'Gouvernance' },
 				{ id: 'analytique', label: 'Analytique' }
 			]}
 			{activeTab}
-			onTabChange={(id) => activeTab = id}
+			onTabChange={(id) => (activeTab = id)}
 		/>
 	</div>
 
@@ -354,7 +406,13 @@
 					description="Vue consolidée des biens de la SCI active."
 				/>
 			</div>
-			<SCIIdentityCard {activeSciProfile} {activeSciDetail} {scopedBiens} {bienMetrics} {detailLoading} />
+			<SCIIdentityCard
+				{activeSciProfile}
+				{activeSciDetail}
+				{scopedBiens}
+				{bienMetrics}
+				{detailLoading}
+			/>
 		</div>
 	{:else if activeTab === 'documents'}
 		<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">

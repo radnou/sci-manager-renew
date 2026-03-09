@@ -212,7 +212,9 @@
 								<div
 									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
 								>
-									<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+									<p
+										class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									>
 										Espace opérateur
 									</p>
 									<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -410,17 +412,36 @@
 			<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 				<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 					<div class="space-y-2">
-						<h3 class="font-semibold text-slate-900 dark:text-slate-100">Environnement opérateur</h3>
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">
+							Environnement opérateur
+						</h3>
 						<p class="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-							Shell connecté recentré sur le portefeuille, l’exploitation, la finance et le cadrage du compte.
+							Shell connecté recentré sur le portefeuille, l’exploitation, la finance et le cadrage
+							du compte.
 						</p>
 					</div>
 
 					<div class="flex flex-wrap gap-2">
-						<a href="/dashboard" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Cockpit</a>
-						<a href="/scis" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Portefeuille</a>
-						<a href="/account" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Compte</a>
-						<a href="/account/privacy" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100">Confidentialité</a>
+						<a
+							href="/dashboard"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Cockpit</a
+						>
+						<a
+							href="/scis"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Portefeuille</a
+						>
+						<a
+							href="/account"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Compte</a
+						>
+						<a
+							href="/account/privacy"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Confidentialité</a
+						>
 					</div>
 				</div>
 
@@ -450,27 +471,81 @@
 					<div class="space-y-4">
 						<h4 class="font-medium text-slate-900 dark:text-slate-100">Produit</h4>
 						<ul class="space-y-2 text-sm">
-							<li><a href="/pricing" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Tarifs</a></li>
-							<li><a href="/#features" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Fonctionnalités</a></li>
-							<li><a href="/#studies" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Études & sources</a></li>
+							<li>
+								<a
+									href="/pricing"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Tarifs</a
+								>
+							</li>
+							<li>
+								<a
+									href="/#features"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Fonctionnalités</a
+								>
+							</li>
+							<li>
+								<a
+									href="/#studies"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Études & sources</a
+								>
+							</li>
 						</ul>
 					</div>
 
 					<div class="space-y-4">
 						<h4 class="font-medium text-slate-900 dark:text-slate-100">Support</h4>
 						<ul class="space-y-2 text-sm">
-							<li><a href="/login" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Connexion</a></li>
-							<li><a href="/register" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Inscription</a></li>
-							<li><a href="/privacy" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Confidentialité</a></li>
+							<li>
+								<a
+									href="/login"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Connexion</a
+								>
+							</li>
+							<li>
+								<a
+									href="/register"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Inscription</a
+								>
+							</li>
+							<li>
+								<a
+									href="/privacy"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Confidentialité</a
+								>
+							</li>
 						</ul>
 					</div>
 
 					<div class="space-y-4">
 						<h4 class="font-medium text-slate-900 dark:text-slate-100">Entreprise</h4>
 						<ul class="space-y-2 text-sm">
-							<li><a href="/dashboard" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Tableau de bord</a></li>
-							<li><a href="/biens" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Gestion des biens</a></li>
-							<li><a href="/loyers" class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Suivi des loyers</a></li>
+							<li>
+								<a
+									href="/dashboard"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Tableau de bord</a
+								>
+							</li>
+							<li>
+								<a
+									href="/biens"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Gestion des biens</a
+								>
+							</li>
+							<li>
+								<a
+									href="/loyers"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Suivi des loyers</a
+								>
+							</li>
 						</ul>
 					</div>
 				</div>

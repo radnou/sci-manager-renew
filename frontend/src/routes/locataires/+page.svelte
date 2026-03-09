@@ -76,28 +76,30 @@
 		}
 	});
 	let scopedBiens = $derived(
-		activeSci
-			? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id))
-		: biens
+		activeSci ? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id)) : biens
 	);
 	let scopedLocataires = $derived(
 		activeSci
 			? locataires.filter((locataire) => String(locataire.id_sci || '') === String(activeSci.id))
-		: locataires
+			: locataires
 	);
-	let activeLocatairesCount = $derived(scopedLocataires.filter((locataire) => {
-		const endDate = locataire.date_fin ? Date.parse(locataire.date_fin) : Number.POSITIVE_INFINITY;
-		return endDate >= Date.now();
-	}).length);
-	let documentedEmailsCount = $derived(scopedLocataires.filter((locataire) =>
-		Boolean(String(locataire.email || '').trim())
-	).length);
+	let activeLocatairesCount = $derived(
+		scopedLocataires.filter((locataire) => {
+			const endDate = locataire.date_fin
+				? Date.parse(locataire.date_fin)
+				: Number.POSITIVE_INFINITY;
+			return endDate >= Date.now();
+		}).length
+	);
+	let documentedEmailsCount = $derived(
+		scopedLocataires.filter((locataire) => Boolean(String(locataire.email || '').trim())).length
+	);
 	let busyLocataireId = $derived(
 		deleting
 			? String(locatairePendingDelete?.id || '')
-		: submitting && editingLocataire
-			? String(editingLocataire.id || '')
-			: ''
+			: submitting && editingLocataire
+				? String(editingLocataire.id || '')
+				: ''
 	);
 	$effect(() => {
 		if (!createDraft.idBien && scopedBiens.length > 0) {
@@ -237,8 +239,7 @@
 
 		const payload = buildUpdatePayload();
 		if (!payload) {
-			errorMessage =
-				'Complète le nom et la date de début avant d’enregistrer les modifications.';
+			errorMessage = 'Complète le nom et la date de début avant d’enregistrer les modifications.';
 			return;
 		}
 
@@ -375,21 +376,32 @@
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">SCI active</p>
 					<p class="sci-action-card-value">{activeSci?.nom || 'Aucune SCI selectionnee'}</p>
-					<p class="sci-action-card-body">Le referentiel locataire est filtre par les biens de cette SCI.</p>
+					<p class="sci-action-card-body">
+						Le referentiel locataire est filtre par les biens de cette SCI.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Caracteristiques</p>
 					<p class="sci-action-card-value">Bien, nom, email, dates d’occupation</p>
-					<p class="sci-action-card-body">On documente un occupant exploitable, pas une simple valeur libre dans un loyer.</p>
+					<p class="sci-action-card-body">
+						On documente un occupant exploitable, pas une simple valeur libre dans un loyer.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Etape suivante</p>
-					<p class="sci-action-card-value">{scopedLocataires.length > 0 ? 'Passer aux loyers' : 'Creer le premier locataire'}</p>
-					<p class="sci-action-card-body">Le referentiel sert ensuite le recouvrement, les quittances et la lecture du bien.</p>
+					<p class="sci-action-card-value">
+						{scopedLocataires.length > 0 ? 'Passer aux loyers' : 'Creer le premier locataire'}
+					</p>
+					<p class="sci-action-card-body">
+						Le referentiel sert ensuite le recouvrement, les quittances et la lecture du bien.
+					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
-				<Button disabled={!activeSci || scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
+			<div class="sci-primary-actions mt-5">
+				<Button
+					disabled={!activeSci || scopedBiens.length === 0}
+					onclick={() => (createDialogOpen = true)}
+				>
 					Ajouter un locataire
 				</Button>
 				<a href="/loyers"><Button variant="outline">Ouvrir Loyers</Button></a>
@@ -410,9 +422,13 @@
 										? 'Ajouter le premier bien'
 										: 'Documenter le premier occupant'}
 							</p>
-							<p class="sci-action-card-body">Sans bien, puis sans occupant, la chaine locative reste incomplète.</p>
+							<p class="sci-action-card-body">
+								Sans bien, puis sans occupant, la chaine locative reste incomplète.
+							</p>
 						</div>
-						<Button href="/finance" variant="outline" class="w-full justify-start">Voir la finance</Button>
+						<Button href="/finance" variant="outline" class="w-full justify-start"
+							>Voir la finance</Button
+						>
 					</div>
 				</WorkspaceRailCard>
 			{/snippet}
@@ -420,20 +436,26 @@
 
 		{#if !activeSci}
 			<EmptyState
-	align="left"
-	eyebrow="Pre-requis metier"
-	title="Selectionne d’abord une SCI active"
-	description="Un locataire doit etre rattache a un bien d’une SCI active. Passe par le portefeuille SCI pour choisir ou creer la societe cible."
-	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
-/>
+				align="left"
+				eyebrow="Pre-requis metier"
+				title="Selectionne d’abord une SCI active"
+				description="Un locataire doit etre rattache a un bien d’une SCI active. Passe par le portefeuille SCI pour choisir ou creer la societe cible."
+				actions={[
+					{ label: 'Ouvrir le portefeuille SCI', href: '/scis' },
+					{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+				]}
+			/>
 		{:else if scopedBiens.length === 0}
 			<EmptyState
-	align="left"
-	eyebrow="Pre-requis patrimoine"
-	title="Ajoute d’abord un bien a la SCI active"
-	description="Le referentiel locataire se construit bien par bien. Sans actif rattache, on ne peut pas documenter l’occupation."
-	actions={[{ label: 'Ajouter un bien', href: '/biens' }, { label: 'Verifier la SCI active', href: '/scis', variant: 'outline' }]}
-/>
+				align="left"
+				eyebrow="Pre-requis patrimoine"
+				title="Ajoute d’abord un bien a la SCI active"
+				description="Le referentiel locataire se construit bien par bien. Sans actif rattache, on ne peut pas documenter l’occupation."
+				actions={[
+					{ label: 'Ajouter un bien', href: '/biens' },
+					{ label: 'Verifier la SCI active', href: '/scis', variant: 'outline' }
+				]}
+			/>
 		{/if}
 
 		<Card class="sci-section-card">
@@ -445,7 +467,7 @@
 							Identité, bien rattaché et période d’occupation de la SCI active.
 						</CardDescription>
 					</div>
-					<p class="text-[0.72rem] font-semibold tracking-[0.22em] uppercase text-muted-foreground">
+					<p class="text-[0.72rem] font-semibold tracking-[0.22em] text-muted-foreground uppercase">
 						{scopedLocataires.length} enregistrements
 					</p>
 				</div>
@@ -467,7 +489,8 @@
 								<tr>
 									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Locataire</th>
 									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Bien</th>
-									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Occupation</th>
+									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Occupation</th
+									>
 									<th class="px-4 py-3 text-left font-semibold text-muted-foreground">Contact</th>
 									<th class="px-4 py-3 text-right font-semibold text-muted-foreground">Actions</th>
 								</tr>
@@ -528,51 +551,55 @@
 		description="Cree une fiche locataire complete sans quitter le referentiel d’occupation de la SCI active."
 		size="lg"
 	>
-			{#if !activeSci}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Sélectionne d’abord une SCI active avant de créer un locataire.
-				</p>
-			{:else if scopedBiens.length === 0}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Ajoute d’abord un bien à la SCI active avant de créer un locataire.
-				</p>
-			{:else}
-				<div class="grid gap-4 py-2 md:grid-cols-2">
-					<label class="sci-field md:col-span-2">
-						<span class="sci-field-label">Bien</span>
-						<select bind:value={createDraft.idBien} class="sci-select">
-							{#each scopedBiens as bien (bien.id)}
-								<option value={String(bien.id || '')}>
-									{bien.adresse}
-									{bien.ville ? ` - ${bien.ville}` : ''}
-								</option>
-							{/each}
-						</select>
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Nom</span>
-						<Input bind:value={createDraft.nom} placeholder="Jean Martin" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Email</span>
-						<Input bind:value={createDraft.email} placeholder="jean.martin@email.fr" type="email" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date d'entrée</span>
-						<Input bind:value={createDraft.dateDebut} type="date" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date de sortie</span>
-						<Input bind:value={createDraft.dateFin} type="date" />
-					</label>
-				</div>
-			{/if}
+		{#if !activeSci}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Sélectionne d’abord une SCI active avant de créer un locataire.
+			</p>
+		{:else if scopedBiens.length === 0}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Ajoute d’abord un bien à la SCI active avant de créer un locataire.
+			</p>
+		{:else}
+			<div class="grid gap-4 py-2 md:grid-cols-2">
+				<label class="sci-field md:col-span-2">
+					<span class="sci-field-label">Bien</span>
+					<select bind:value={createDraft.idBien} class="sci-select">
+						{#each scopedBiens as bien (bien.id)}
+							<option value={String(bien.id || '')}>
+								{bien.adresse}
+								{bien.ville ? ` - ${bien.ville}` : ''}
+							</option>
+						{/each}
+					</select>
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Nom</span>
+					<Input bind:value={createDraft.nom} placeholder="Jean Martin" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Email</span>
+					<Input bind:value={createDraft.email} placeholder="jean.martin@email.fr" type="email" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Date d'entrée</span>
+					<Input bind:value={createDraft.dateDebut} type="date" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Date de sortie</span>
+					<Input bind:value={createDraft.dateFin} type="date" />
+				</label>
+			</div>
+		{/if}
 		{#snippet footer()}
 			<div class="flex justify-end gap-3">
 				<Button type="button" variant="outline" onclick={() => (createDialogOpen = false)}>
 					Annuler
 				</Button>
-				<Button type="button" disabled={submitting || !activeSci || scopedBiens.length === 0} onclick={handleCreateLocataire}>
+				<Button
+					type="button"
+					disabled={submitting || !activeSci || scopedBiens.length === 0}
+					onclick={handleCreateLocataire}
+				>
 					{submitting ? 'Enregistrement...' : 'Ajouter le locataire'}
 				</Button>
 			</div>
@@ -585,34 +612,34 @@
 		description="Ajuste l’identite ou la periode d’occupation du locataire selectionne."
 		size="lg"
 	>
-			{#if editingLocataire}
-				<div class="grid gap-4 md:grid-cols-2">
-					<div class="sci-field md:col-span-2">
-						<span class="sci-field-label">Bien concerné</span>
-						<div
-							class="rounded-xl border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
-						>
-							{resolveBienLabel(editDraft.idBien)}
-						</div>
+		{#if editingLocataire}
+			<div class="grid gap-4 md:grid-cols-2">
+				<div class="sci-field md:col-span-2">
+					<span class="sci-field-label">Bien concerné</span>
+					<div
+						class="rounded-xl border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
+					>
+						{resolveBienLabel(editDraft.idBien)}
 					</div>
-					<label class="sci-field">
-						<span class="sci-field-label">Nom</span>
-						<Input bind:value={editDraft.nom} />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Email</span>
-						<Input bind:value={editDraft.email} type="email" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date d'entrée</span>
-						<Input bind:value={editDraft.dateDebut} type="date" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date de sortie</span>
-						<Input bind:value={editDraft.dateFin} type="date" />
-					</label>
 				</div>
-			{/if}
+				<label class="sci-field">
+					<span class="sci-field-label">Nom</span>
+					<Input bind:value={editDraft.nom} />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Email</span>
+					<Input bind:value={editDraft.email} type="email" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Date d'entrée</span>
+					<Input bind:value={editDraft.dateDebut} type="date" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Date de sortie</span>
+					<Input bind:value={editDraft.dateFin} type="date" />
+				</label>
+			</div>
+		{/if}
 		{#snippet footer()}
 			<div class="flex justify-end gap-3">
 				<Button type="button" variant="outline" onclick={closeEditLocataire}>Annuler</Button>
@@ -640,7 +667,12 @@
 			</p>
 			<Dialog.DialogFooter>
 				<Button type="button" variant="outline" onclick={closeDeleteLocataire}>Annuler</Button>
-				<Button type="button" variant="destructive" disabled={deleting} onclick={handleDeleteLocataire}>
+				<Button
+					type="button"
+					variant="destructive"
+					disabled={deleting}
+					onclick={handleDeleteLocataire}
+				>
 					{deleting ? 'Suppression...' : 'Confirmer la suppression'}
 				</Button>
 			</Dialog.DialogFooter>

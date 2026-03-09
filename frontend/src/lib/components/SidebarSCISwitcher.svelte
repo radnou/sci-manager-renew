@@ -40,12 +40,16 @@
 			<span class="flex-1 truncate text-sm font-medium">
 				{activeSci?.nom ?? 'Sélectionner une SCI'}
 			</span>
-			<ChevronDown class="h-3.5 w-3.5 text-sidebar-foreground/50 transition-transform {open ? 'rotate-180' : ''}" />
+			<ChevronDown
+				class="h-3.5 w-3.5 text-sidebar-foreground/50 transition-transform {open
+					? 'rotate-180'
+					: ''}"
+			/>
 		</button>
 
 		{#if open}
 			<div
-				class="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-sidebar-border bg-sidebar shadow-lg"
+				class="absolute top-full left-0 z-50 mt-1 w-full rounded-lg border border-sidebar-border bg-sidebar shadow-lg"
 				role="listbox"
 			>
 				{#each scis as sci (String(sci.id))}
@@ -53,7 +57,11 @@
 						type="button"
 						role="option"
 						aria-selected={String(sci.id) === activeSciId}
-						class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent {String(sci.id) === activeSciId ? 'bg-sidebar-accent font-medium' : ''}"
+						class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent {String(
+							sci.id
+						) === activeSciId
+							? 'bg-sidebar-accent font-medium'
+							: ''}"
 						onclick={() => select(String(sci.id))}
 					>
 						<span class="flex-1 truncate">{sci.nom}</span>

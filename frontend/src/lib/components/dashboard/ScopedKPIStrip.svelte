@@ -52,9 +52,21 @@
 		label="Recouvrement"
 		value={formatPercent(collectionRate, '0%')}
 		caption={`${loyerMetrics.totalPaidLabel} encaissés sur ${loyerMetrics.totalRecordedLabel}`}
-		trend={loyerMetrics.lateCount > 0 ? 'down' : loyerMetrics.totalOutstanding > 0 ? 'neutral' : 'up'}
-		trendValue={loyerMetrics.lateCount > 0 ? 'vigilance' : loyerMetrics.totalOutstanding > 0 ? 'à compléter' : 'conforme'}
-		tone={loyerMetrics.lateCount > 0 ? 'warning' : loyerMetrics.totalOutstanding > 0 ? 'default' : 'accent'}
+		trend={loyerMetrics.lateCount > 0
+			? 'down'
+			: loyerMetrics.totalOutstanding > 0
+				? 'neutral'
+				: 'up'}
+		trendValue={loyerMetrics.lateCount > 0
+			? 'vigilance'
+			: loyerMetrics.totalOutstanding > 0
+				? 'à compléter'
+				: 'conforme'}
+		tone={loyerMetrics.lateCount > 0
+			? 'warning'
+			: loyerMetrics.totalOutstanding > 0
+				? 'default'
+				: 'accent'}
 		{loading}
 	/>
 </div>

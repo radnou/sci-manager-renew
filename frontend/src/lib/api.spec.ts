@@ -258,7 +258,14 @@ describe('api helpers', () => {
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(
-				new Response(JSON.stringify({ filename: 'q.pdf', pdf_url: '/api/v1/quitus/files/q.pdf', size_bytes: 42 }), { status: 200 })
+				new Response(
+					JSON.stringify({
+						filename: 'q.pdf',
+						pdf_url: '/api/v1/quitus/files/q.pdf',
+						size_bytes: 42
+					}),
+					{ status: 200 }
+				)
 			);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -293,7 +300,9 @@ describe('api helpers', () => {
 		const payload = { plan_key: 'starter' as const, mode: 'subscription' as const };
 		const fetchMock = vi
 			.fn()
-			.mockResolvedValue(new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 }));
+			.mockResolvedValue(
+				new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 })
+			);
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createCheckoutSession(payload)).resolves.toEqual({ url: 'https://checkout.test' });
@@ -374,9 +383,7 @@ describe('api helpers', () => {
 
 	it('continues without auth header when session lookup throws', async () => {
 		getCurrentSessionMock.mockRejectedValue(new Error('session unavailable'));
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBiens()).resolves.toEqual([]);

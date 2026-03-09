@@ -244,7 +244,7 @@
 	<meta name="description" content="Gérez votre patrimoine immobilier et vos actifs." />
 </svelte:head>
 
-	<section class="sci-page-shell">
+<section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Exploitation • actifs immobiliers"
 		title="Gestion des biens"
@@ -317,20 +317,28 @@
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">SCI active</p>
 					<p class="sci-action-card-value">{activeSci?.nom || 'Aucune SCI sélectionnée'}</p>
-					<p class="sci-action-card-body">Un bien n’est jamais créé hors d’une SCI métier clairement choisie.</p>
+					<p class="sci-action-card-body">
+						Un bien n’est jamais créé hors d’une SCI métier clairement choisie.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Caractéristiques</p>
 					<p class="sci-action-card-value">Adresse, type, loyer, charges, acquisition</p>
-					<p class="sci-action-card-body">La fiche attend une base patrimoniale exploitable, pas un identifiant technique.</p>
+					<p class="sci-action-card-body">
+						La fiche attend une base patrimoniale exploitable, pas un identifiant technique.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Étape suivante</p>
-					<p class="sci-action-card-value">{metrics.count > 0 ? 'Documenter les locataires' : 'Créer le premier bien'}</p>
-					<p class="sci-action-card-body">Une fois l’actif créé, passe à l’occupation puis au flux locatif.</p>
+					<p class="sci-action-card-value">
+						{metrics.count > 0 ? 'Documenter les locataires' : 'Créer le premier bien'}
+					</p>
+					<p class="sci-action-card-body">
+						Une fois l’actif créé, passe à l’occupation puis au flux locatif.
+					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
+			<div class="sci-primary-actions mt-5">
 				<Button
 					disabled={!activeSci || bienCreationDisabled}
 					onclick={() => {
@@ -361,7 +369,9 @@
 									: 'Le portefeuille peut encore accueillir de nouveaux actifs.'}
 							</p>
 						</div>
-						<Button href="/scis" variant="outline" class="w-full justify-start">Vérifier le portefeuille SCI</Button>
+						<Button href="/scis" variant="outline" class="w-full justify-start"
+							>Vérifier le portefeuille SCI</Button
+						>
 					</div>
 				</WorkspaceRailCard>
 			{/snippet}
@@ -369,12 +379,15 @@
 
 		{#if !activeSci}
 			<EmptyState
-	align="left"
-	eyebrow="Pré-requis métier"
-	title="Sélectionne d’abord une SCI active"
-	description="Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible."
-	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
-/>
+				align="left"
+				eyebrow="Pré-requis métier"
+				title="Sélectionne d’abord une SCI active"
+				description="Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible."
+				actions={[
+					{ label: 'Ouvrir le portefeuille SCI', href: '/scis' },
+					{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+				]}
+			/>
 		{/if}
 
 		<BienTable
@@ -393,50 +406,50 @@
 		description="Mets à jour les informations métier du bien sélectionné sans changer la SCI de rattachement."
 		size="xl"
 	>
-			{#if editingBien}
-				<div class="grid gap-4 md:grid-cols-2">
-					<label class="sci-field md:col-span-2">
-						<span class="sci-field-label">Adresse</span>
-						<Input bind:value={editBienDraft.adresse} />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Ville</span>
-						<Input id="bien-edit-ville" bind:value={editBienDraft.ville} />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Code postal</span>
-						<Input bind:value={editBienDraft.codePostal} inputmode="numeric" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Type locatif</span>
-						<select bind:value={editBienDraft.typeLocatif} class="sci-select">
-							<option value="nu">Nu</option>
-							<option value="meuble">Meublé</option>
-							<option value="mixte">Mixte</option>
-						</select>
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Loyer CC (€)</span>
-						<Input bind:value={editBienDraft.loyerCC} type="number" min="0" step="10" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Charges (€)</span>
-						<Input bind:value={editBienDraft.charges} type="number" min="0" step="10" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">TMI (%)</span>
-						<Input bind:value={editBienDraft.tmi} type="number" min="0" max="100" step="0.5" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date d'acquisition</span>
-						<Input bind:value={editBienDraft.acquisitionDate} type="date" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Prix acquisition (€)</span>
-						<Input bind:value={editBienDraft.prixAcquisition} type="number" min="0" step="1000" />
-					</label>
-				</div>
-			{/if}
+		{#if editingBien}
+			<div class="grid gap-4 md:grid-cols-2">
+				<label class="sci-field md:col-span-2">
+					<span class="sci-field-label">Adresse</span>
+					<Input bind:value={editBienDraft.adresse} />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Ville</span>
+					<Input id="bien-edit-ville" bind:value={editBienDraft.ville} />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Code postal</span>
+					<Input bind:value={editBienDraft.codePostal} inputmode="numeric" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Type locatif</span>
+					<select bind:value={editBienDraft.typeLocatif} class="sci-select">
+						<option value="nu">Nu</option>
+						<option value="meuble">Meublé</option>
+						<option value="mixte">Mixte</option>
+					</select>
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Loyer CC (€)</span>
+					<Input bind:value={editBienDraft.loyerCC} type="number" min="0" step="10" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Charges (€)</span>
+					<Input bind:value={editBienDraft.charges} type="number" min="0" step="10" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">TMI (%)</span>
+					<Input bind:value={editBienDraft.tmi} type="number" min="0" max="100" step="0.5" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Date d'acquisition</span>
+					<Input bind:value={editBienDraft.acquisitionDate} type="date" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Prix acquisition (€)</span>
+					<Input bind:value={editBienDraft.prixAcquisition} type="number" min="0" step="1000" />
+				</label>
+			</div>
+		{/if}
 		{#snippet footer()}
 			<div class="flex justify-end gap-3">
 				<Button type="button" variant="outline" onclick={closeEditBien}>Annuler</Button>
@@ -477,20 +490,20 @@
 		description="Crée un actif immobilier complet pour la SCI active sans quitter la lecture du portefeuille."
 		size="xl"
 	>
-			{#if activeSci}
-				<BienForm
-					activeSciId={resolvedActiveSciId}
-					activeSciLabel={activeSci.nom}
-					showSciField={false}
-					{submitting}
-					disabled={bienCreationDisabled}
-					disabledMessage={bienCreationDisabledMessage}
-					onSubmit={handleCreateBien}
-				/>
-			{:else}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Sélectionne d’abord une SCI active avant de créer un bien.
-				</p>
-			{/if}
+		{#if activeSci}
+			<BienForm
+				activeSciId={resolvedActiveSciId}
+				activeSciLabel={activeSci.nom}
+				showSciField={false}
+				{submitting}
+				disabled={bienCreationDisabled}
+				disabledMessage={bienCreationDisabledMessage}
+				onSubmit={handleCreateBien}
+			/>
+		{:else}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Sélectionne d’abord une SCI active avant de créer un bien.
+			</p>
+		{/if}
 	</EntityDrawer>
 </section>

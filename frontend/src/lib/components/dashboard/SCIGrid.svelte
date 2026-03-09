@@ -49,15 +49,19 @@
 
 	function alertLabel(snapshot: SciSnapshot) {
 		if (snapshot.loyerMetrics.lateCount > 0) return `${snapshot.loyerMetrics.lateCount} retard(s)`;
-		if (snapshot.loyerMetrics.totalOutstanding > 0) return `${snapshot.loyerMetrics.totalOutstandingLabel} en attente`;
+		if (snapshot.loyerMetrics.totalOutstanding > 0)
+			return `${snapshot.loyerMetrics.totalOutstandingLabel} en attente`;
 		if (snapshot.biens.length === 0) return 'Patrimoine à structurer';
 		return 'Sous contrôle';
 	}
 
 	function alertClass(snapshot: SciSnapshot) {
-		if (snapshot.loyerMetrics.lateCount > 0) return 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200';
-		if (snapshot.loyerMetrics.totalOutstanding > 0) return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200';
-		if (snapshot.biens.length === 0) return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+		if (snapshot.loyerMetrics.lateCount > 0)
+			return 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200';
+		if (snapshot.loyerMetrics.totalOutstanding > 0)
+			return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200';
+		if (snapshot.biens.length === 0)
+			return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
 		return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200';
 	}
 </script>
@@ -106,7 +110,9 @@
 										: 'Rôle utilisateur à confirmer'}
 								</p>
 							</div>
-							<span class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(snapshot.sci.statut)}`}>
+							<span
+								class={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(snapshot.sci.statut)}`}
+							>
 								{statusLabel(snapshot.sci.statut)}
 							</span>
 						</div>
@@ -120,7 +126,9 @@
 								<p class="opacity-75">Loyer cible</p>
 							</div>
 							<div>
-								<span class={`inline-flex rounded-full px-2 py-1 font-semibold ${alertClass(snapshot)}`}>
+								<span
+									class={`inline-flex rounded-full px-2 py-1 font-semibold ${alertClass(snapshot)}`}
+								>
 									{alertLabel(snapshot)}
 								</span>
 							</div>

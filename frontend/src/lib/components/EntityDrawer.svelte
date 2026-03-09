@@ -37,10 +37,12 @@
 		)}
 	>
 		<div class="flex h-full flex-col">
-			<div class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/96 px-6 py-5 backdrop-blur">
+			<div
+				class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/96 px-6 py-5 backdrop-blur"
+			>
 				<div class="flex items-start justify-between gap-4">
 					<div class="min-w-0">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
+						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 							Action contextuelle
 						</p>
 						<h2 class="mt-2 text-2xl font-semibold text-slate-50">{title}</h2>
@@ -48,7 +50,13 @@
 							<p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">{description}</p>
 						{/if}
 					</div>
-					<Button variant="outline" size="icon" class="border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" onclick={() => (open = false)} aria-label="Fermer le panneau">
+					<Button
+						variant="outline"
+						size="icon"
+						class="border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+						onclick={() => (open = false)}
+						aria-label="Fermer le panneau"
+					>
 						<X class="h-4 w-4" />
 					</Button>
 				</div>
@@ -59,7 +67,9 @@
 			</div>
 
 			{#if footer}
-				<div class="sticky bottom-0 border-t border-slate-800 bg-slate-950/96 px-6 py-4 backdrop-blur">
+				<div
+					class="sticky bottom-0 border-t border-slate-800 bg-slate-950/96 px-6 py-4 backdrop-blur"
+				>
 					{@render footer?.()}
 				</div>
 			{/if}

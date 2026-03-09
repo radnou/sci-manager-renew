@@ -1,11 +1,24 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { FileText, Download } from 'lucide-svelte';
-	import { fetchBiens, fetchLoyers, fetchScis, type Bien, type Loyer, type SCIOverview } from '$lib/api';
+	import {
+		fetchBiens,
+		fetchLoyers,
+		fetchScis,
+		type Bien,
+		type Loyer,
+		type SCIOverview
+	} from '$lib/api';
 	import QuitusGenerator from '$lib/components/QuitusGenerator.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { API_URL } from '$lib/api';
 
 	let scis = $state<SCIOverview[]>([]);
@@ -103,8 +116,10 @@
 				</CardHeader>
 				<CardContent>
 					<p class="text-sm text-muted-foreground">
-						Le calcul fiscal simplifié est disponible depuis le dashboard de chaque SCI.
-						La génération PDF CERFA 2044 est accessible via l'endpoint <code>/api/v1/cerfa/2044/pdf</code>.
+						Le calcul fiscal simplifié est disponible depuis le dashboard de chaque SCI. La
+						génération PDF CERFA 2044 est accessible via l'endpoint <code
+							>/api/v1/cerfa/2044/pdf</code
+						>.
 					</p>
 					<p class="mt-2 text-xs text-muted-foreground">
 						CERFA 2072 et exports fiscaux avancés en préparation.

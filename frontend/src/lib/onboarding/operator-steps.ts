@@ -36,17 +36,13 @@ export function buildOperatorOnboardingSteps(
 						}`
 					: 'Commence par le portefeuille pour cadrer la société, son régime fiscal et son contexte de pilotage.',
 			href: '/scis',
-			actionLabel:
-				metrics.sciCount > 0 ? 'Ouvrir le portefeuille' : 'Créer ma première SCI',
+			actionLabel: metrics.sciCount > 0 ? 'Ouvrir le portefeuille' : 'Créer ma première SCI',
 			done: metrics.sciCount > 0,
 			group: 'portfolio'
 		},
 		{
 			key: 'associe',
-			title:
-				metrics.associeCount > 0
-					? 'Gouvernance documentée'
-					: 'Renseigner le premier associé',
+			title: metrics.associeCount > 0 ? 'Gouvernance documentée' : 'Renseigner le premier associé',
 			description:
 				metrics.associeCount > 0
 					? `${metrics.associeCount} associé(s) renseigné(s) avec part, rôle et rattachement.`
@@ -72,9 +68,7 @@ export function buildOperatorOnboardingSteps(
 		{
 			key: 'locataire',
 			title:
-				metrics.locataireCount > 0
-					? 'Occupation documentée'
-					: 'Renseigner le premier locataire',
+				metrics.locataireCount > 0 ? 'Occupation documentée' : 'Renseigner le premier locataire',
 			description:
 				metrics.locataireCount > 0
 					? `${metrics.locataireCount} locataire(s) rattaché(s) à un bien avec période d’occupation.`
@@ -93,40 +87,32 @@ export function buildOperatorOnboardingSteps(
 					? `${metrics.loyerCount} flux locatif(s) saisi(s), prêts pour recouvrement et quittances.`
 					: 'Documente le premier encaissement pour activer le journal locatif et les documents PDF.',
 			href: '/loyers',
-			actionLabel:
-				metrics.loyerCount > 0 ? 'Suivre les loyers' : 'Saisir mon premier loyer',
+			actionLabel: metrics.loyerCount > 0 ? 'Suivre les loyers' : 'Saisir mon premier loyer',
 			done: metrics.loyerCount > 0,
 			group: 'exploitation'
 		},
 		{
 			key: 'charge',
-			title:
-				metrics.chargeCount > 0 ? 'Charges documentées' : 'Documenter la première charge',
+			title: metrics.chargeCount > 0 ? 'Charges documentées' : 'Documenter la première charge',
 			description:
 				metrics.chargeCount > 0
 					? `${metrics.chargeCount} charge(s) journalisée(s) pour piloter les sorties réelles.`
 					: 'Renseigne la première charge pour sortir du pilotage purement théorique du patrimoine.',
 			href: '/charges',
-			actionLabel:
-				metrics.chargeCount > 0 ? 'Contrôler les charges' : 'Ajouter ma première charge',
+			actionLabel: metrics.chargeCount > 0 ? 'Contrôler les charges' : 'Ajouter ma première charge',
 			done: metrics.chargeCount > 0,
 			group: 'finance'
 		},
 		{
 			key: 'fiscalite',
 			title:
-				metrics.fiscaliteCount > 0
-					? 'Exercice fiscal ouvert'
-					: 'Ouvrir le premier exercice fiscal',
+				metrics.fiscaliteCount > 0 ? 'Exercice fiscal ouvert' : 'Ouvrir le premier exercice fiscal',
 			description:
 				metrics.fiscaliteCount > 0
 					? `${metrics.fiscaliteCount} exercice(s) consolidé(s) pour la lecture annuelle.`
 					: 'Crée l’exercice fiscal pour consolider revenus, charges et résultat de la SCI.',
 			href: '/fiscalite',
-			actionLabel:
-				metrics.fiscaliteCount > 0
-					? 'Voir la fiscalité'
-					: 'Ouvrir mon premier exercice',
+			actionLabel: metrics.fiscaliteCount > 0 ? 'Voir la fiscalité' : 'Ouvrir mon premier exercice',
 			done: metrics.fiscaliteCount > 0,
 			group: 'finance'
 		}

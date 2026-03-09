@@ -27,10 +27,19 @@
 	const data = $derived(allocationBySci());
 	const totalRent = $derived(data.reduce((sum, d) => sum + d.rent, 0));
 
-	const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-cyan-500'];
+	const colors = [
+		'bg-blue-500',
+		'bg-emerald-500',
+		'bg-amber-500',
+		'bg-rose-500',
+		'bg-purple-500',
+		'bg-cyan-500'
+	];
 </script>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+<div
+	class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+>
 	<p class="mb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 		Répartition du portefeuille
 	</p>

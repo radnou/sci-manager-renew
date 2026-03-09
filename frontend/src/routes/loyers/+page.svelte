@@ -320,20 +320,28 @@
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">SCI active</p>
 					<p class="sci-action-card-value">{activeSci?.nom || 'Aucune SCI sélectionnée'}</p>
-					<p class="sci-action-card-body">Les encaissements affichés et saisis sont toujours filtrés sur cette SCI.</p>
+					<p class="sci-action-card-body">
+						Les encaissements affichés et saisis sont toujours filtrés sur cette SCI.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Entités requises</p>
 					<p class="sci-action-card-value">Bien, locataire, date, montant, statut</p>
-					<p class="sci-action-card-body">Le loyer s’appuie désormais sur un locataire référencé, pas sur un texte libre.</p>
+					<p class="sci-action-card-body">
+						Le loyer s’appuie désormais sur un locataire référencé, pas sur un texte libre.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Étape suivante</p>
-					<p class="sci-action-card-value">{scopedLoyers.length > 0 ? 'Contrôler puis documenter' : 'Saisir le premier flux'}</p>
-					<p class="sci-action-card-body">La quittance devient une conséquence du journal, pas un écran parallèle.</p>
+					<p class="sci-action-card-value">
+						{scopedLoyers.length > 0 ? 'Contrôler puis documenter' : 'Saisir le premier flux'}
+					</p>
+					<p class="sci-action-card-body">
+						La quittance devient une conséquence du journal, pas un écran parallèle.
+					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
+			<div class="sci-primary-actions mt-5">
 				<Button
 					disabled={!activeSci || scopedBiens.length === 0 || scopedLocataires.length === 0}
 					onclick={() => {
@@ -360,9 +368,13 @@
 										? 'Documenter le premier locataire'
 										: 'Saisir le premier loyer'}
 							</p>
-							<p class="sci-action-card-body">L’ordre d’exploitation reste bien → locataire → loyer.</p>
+							<p class="sci-action-card-body">
+								L’ordre d’exploitation reste bien → locataire → loyer.
+							</p>
 						</div>
-						<Button href="/biens" variant="outline" class="w-full justify-start">Vérifier les biens</Button>
+						<Button href="/biens" variant="outline" class="w-full justify-start"
+							>Vérifier les biens</Button
+						>
 					</div>
 				</WorkspaceRailCard>
 			{/snippet}
@@ -395,26 +407,26 @@
 		description="Crée un flux locatif complet pour la SCI active sans quitter la lecture du journal."
 		size="xl"
 	>
-			{#if !activeSci}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Sélectionne d’abord une SCI active avant de saisir un loyer.
-				</p>
-			{:else if scopedBiens.length === 0}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Ajoute d’abord un bien dans le module Biens avant de saisir un loyer.
-				</p>
-			{:else if scopedLocataires.length === 0}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Ajoute d’abord un locataire dans le module Locataires avant de saisir un loyer.
-				</p>
-			{:else}
-				<LoyerForm
-					biens={scopedBiens}
-					locataires={scopedLocataires}
-					{submitting}
-					onSubmit={handleCreateLoyer}
-				/>
-			{/if}
+		{#if !activeSci}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Sélectionne d’abord une SCI active avant de saisir un loyer.
+			</p>
+		{:else if scopedBiens.length === 0}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Ajoute d’abord un bien dans le module Biens avant de saisir un loyer.
+			</p>
+		{:else if scopedLocataires.length === 0}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Ajoute d’abord un locataire dans le module Locataires avant de saisir un loyer.
+			</p>
+		{:else}
+			<LoyerForm
+				biens={scopedBiens}
+				locataires={scopedLocataires}
+				{submitting}
+				onSubmit={handleCreateLoyer}
+			/>
+		{/if}
 	</EntityDrawer>
 
 	<EntityDrawer
@@ -423,34 +435,34 @@
 		description="Ajuste la date, le montant ou le statut du flux sélectionné."
 		size="lg"
 	>
-			{#if editingLoyer}
-				<div class="grid gap-4 md:grid-cols-2">
-					<div class="sci-field md:col-span-2">
-						<span class="sci-field-label">Bien concerné</span>
-						<div
-							class="rounded-xl border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
-						>
-							{resolveBienLabel(editingLoyer.id_bien)}
-						</div>
+		{#if editingLoyer}
+			<div class="grid gap-4 md:grid-cols-2">
+				<div class="sci-field md:col-span-2">
+					<span class="sci-field-label">Bien concerné</span>
+					<div
+						class="rounded-xl border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
+					>
+						{resolveBienLabel(editingLoyer.id_bien)}
 					</div>
-					<label class="sci-field">
-						<span class="sci-field-label">Date</span>
-						<Input id="loyer-edit-date" bind:value={editLoyerDraft.dateLoyer} type="date" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Montant (€)</span>
-						<Input bind:value={editLoyerDraft.montant} type="number" min="0" step="10" />
-					</label>
-					<label class="sci-field md:col-span-2">
-						<span class="sci-field-label">Statut</span>
-						<select id="loyer-edit-statut" bind:value={editLoyerDraft.statut} class="sci-select">
-							<option value="paye">Payé</option>
-							<option value="en_attente">En attente</option>
-							<option value="en_retard">En retard</option>
-						</select>
-					</label>
 				</div>
-			{/if}
+				<label class="sci-field">
+					<span class="sci-field-label">Date</span>
+					<Input id="loyer-edit-date" bind:value={editLoyerDraft.dateLoyer} type="date" />
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Montant (€)</span>
+					<Input bind:value={editLoyerDraft.montant} type="number" min="0" step="10" />
+				</label>
+				<label class="sci-field md:col-span-2">
+					<span class="sci-field-label">Statut</span>
+					<select id="loyer-edit-statut" bind:value={editLoyerDraft.statut} class="sci-select">
+						<option value="paye">Payé</option>
+						<option value="en_attente">En attente</option>
+						<option value="en_retard">En retard</option>
+					</select>
+				</label>
+			</div>
+		{/if}
 		{#snippet footer()}
 			<div class="flex justify-end gap-3">
 				<Button type="button" variant="outline" onclick={closeEditLoyer}>Annuler</Button>

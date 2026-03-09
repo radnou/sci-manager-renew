@@ -177,7 +177,7 @@
 				<Input
 					id="bien-adresse"
 					bind:value={adresse}
-					disabled={disabled}
+					{disabled}
 					required
 					placeholder="14 rue Saint-Honoré"
 					aria-required="true"
@@ -188,7 +188,7 @@
 				<Input
 					id="bien-ville"
 					bind:value={ville}
-					disabled={disabled}
+					{disabled}
 					required
 					placeholder="Paris"
 					aria-required="true"
@@ -199,7 +199,7 @@
 				<Input
 					id="bien-code-postal"
 					bind:value={codePostal}
-					disabled={disabled}
+					{disabled}
 					required
 					pattern="[0-9]{5}"
 					placeholder="75001"
@@ -222,7 +222,7 @@
 				<select
 					id="bien-type-locatif"
 					bind:value={typeLocatif}
-					disabled={disabled}
+					{disabled}
 					class="sci-select"
 					aria-label="Type de location"
 				>
@@ -236,7 +236,7 @@
 				<Input
 					id="bien-loyer-cc"
 					bind:value={loyerCC}
-					disabled={disabled}
+					{disabled}
 					type="number"
 					min="0"
 					step="10"
@@ -248,7 +248,7 @@
 				<Input
 					id="bien-charges"
 					bind:value={charges}
-					disabled={disabled}
+					{disabled}
 					type="number"
 					min="0"
 					step="10"
@@ -260,7 +260,7 @@
 				<Input
 					id="bien-tmi"
 					bind:value={tmi}
-					disabled={disabled}
+					{disabled}
 					type="number"
 					min="0"
 					max="100"
@@ -273,7 +273,7 @@
 				<Input
 					id="bien-acquisition-date"
 					bind:value={acquisitionDate}
-					disabled={disabled}
+					{disabled}
 					type="date"
 					aria-label="Date d'acquisition du bien"
 				/>
@@ -283,7 +283,7 @@
 				<Input
 					id="bien-prix-acquisition"
 					bind:value={prixAcquisition}
-					disabled={disabled}
+					{disabled}
 					type="number"
 					min="0"
 					step="1000"

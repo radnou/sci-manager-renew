@@ -20,7 +20,8 @@
 		latestCharge: Charge | null;
 	}
 
-	let { latestLoyer, scopedLoyers, monthlyPropertyCharges, latestFiscalYear, latestCharge }: Props = $props();
+	let { latestLoyer, scopedLoyers, monthlyPropertyCharges, latestFiscalYear, latestCharge }: Props =
+		$props();
 </script>
 
 <Card class="sci-section-card">
@@ -34,21 +35,33 @@
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-4">
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Dernier flux locatif</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				Dernier flux locatif
+			</p>
 			<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
 				{latestLoyer
 					? `${formatFrDate(latestLoyer.date_loyer)} • ${formatEur(latestLoyer.montant)}`
 					: 'Aucun flux saisi'}
 			</p>
 			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-				{latestLoyer ? mapLoyerStatusLabel(latestLoyer.statut) : 'Le journal locatif s\'activera dès la première saisie.'}
+				{latestLoyer
+					? mapLoyerStatusLabel(latestLoyer.statut)
+					: "Le journal locatif s'activera dès la première saisie."}
 			</p>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Cadence documentaire</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				Cadence documentaire
+			</p>
 			<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-				{scopedLoyers.length > 0 ? 'Quittances générables immédiatement' : 'Aucune quittance à produire'}
+				{scopedLoyers.length > 0
+					? 'Quittances générables immédiatement'
+					: 'Aucune quittance à produire'}
 			</p>
 			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 				{scopedLoyers.length > 0
@@ -56,13 +69,25 @@
 					: 'Le module PDF attend au moins un loyer enregistré.'}
 			</p>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Charges récurrentes</p>
-			<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatEur(monthlyPropertyCharges)}</p>
-			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">charges mensuelles renseignées sur les biens de la SCI active.</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				Charges récurrentes
+			</p>
+			<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+				{formatEur(monthlyPropertyCharges)}
+			</p>
+			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+				charges mensuelles renseignées sur les biens de la SCI active.
+			</p>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Clôture fiscale</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				Clôture fiscale
+			</p>
 			<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
 				{latestFiscalYear ? `Exercice ${latestFiscalYear.annee}` : 'Aucun exercice consolidé'}
 			</p>

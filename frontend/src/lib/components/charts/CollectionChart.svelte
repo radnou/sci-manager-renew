@@ -35,7 +35,9 @@
 	const data = $derived(monthlyData());
 </script>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+<div
+	class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+>
 	<p class="mb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 		Taux de recouvrement (6 derniers mois)
 	</p>
@@ -56,10 +58,7 @@
 			>
 				<Axis placement="left" format={(d) => `${d}%`} ticks={3} />
 				<Axis placement="bottom" />
-				<Bars
-					radius={4}
-					class="fill-blue-500 dark:fill-blue-400"
-				/>
+				<Bars radius={4} class="fill-blue-500 dark:fill-blue-400" />
 			</Chart>
 		</div>
 	{/if}

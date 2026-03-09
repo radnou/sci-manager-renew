@@ -45,7 +45,11 @@
 		label="Recouvrement"
 		value={formatPercent(metrics.loyerMetrics.collectionRate, '0%')}
 		caption={`${metrics.loyerMetrics.totalPaidLabel} encaissés sur ${metrics.loyerMetrics.totalRecordedLabel}`}
-		trend={metrics.loyerMetrics.lateCount > 0 ? 'down' : metrics.loyerMetrics.totalOutstanding > 0 ? 'neutral' : 'up'}
+		trend={metrics.loyerMetrics.lateCount > 0
+			? 'down'
+			: metrics.loyerMetrics.totalOutstanding > 0
+				? 'neutral'
+				: 'up'}
 		trendValue={metrics.loyerMetrics.lateCount > 0
 			? 'vigilance'
 			: metrics.loyerMetrics.totalOutstanding > 0

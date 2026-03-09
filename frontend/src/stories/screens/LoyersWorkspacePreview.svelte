@@ -25,9 +25,30 @@
 	</header>
 
 	<div class="grid gap-4 md:grid-cols-3">
-		<KpiCard label="Encaissements" value="3 705 €" caption="période courante" trend="up" trendValue="+4.8%" tone="success" />
-		<KpiCard label="Ticket moyen" value="1 235 €" caption="par loyer" trend="neutral" trendValue="stable" tone="accent" />
-		<KpiCard label="Retards" value={1} caption="à traiter" trend="down" trendValue="attention" tone="warning" />
+		<KpiCard
+			label="Encaissements"
+			value="3 705 €"
+			caption="période courante"
+			trend="up"
+			trendValue="+4.8%"
+			tone="success"
+		/>
+		<KpiCard
+			label="Ticket moyen"
+			value="1 235 €"
+			caption="par loyer"
+			trend="neutral"
+			trendValue="stable"
+			tone="accent"
+		/>
+		<KpiCard
+			label="Retards"
+			value={1}
+			caption="à traiter"
+			trend="down"
+			trendValue="attention"
+			tone="warning"
+		/>
 	</div>
 
 	<div class="grid gap-6 xl:grid-cols-[2fr_1fr]">

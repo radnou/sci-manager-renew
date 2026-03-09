@@ -113,7 +113,10 @@
 					storedActiveSciId) ||
 				String(nextScis[0]?.id || '');
 		} catch (error) {
-			errorMessage = formatApiErrorMessage(error, "Impossible de charger la gouvernance de la SCI.");
+			errorMessage = formatApiErrorMessage(
+				error,
+				'Impossible de charger la gouvernance de la SCI.'
+			);
 		} finally {
 			loading = false;
 		}
@@ -276,7 +279,9 @@
 				</select>
 			</label>
 		{/if}
-		<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}>Ajouter un associé</Button>
+		<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}
+			>Ajouter un associé</Button
+		>
 		<Button href="/charges" variant="outline">Charges</Button>
 		<Button href="/fiscalite" variant="outline">Fiscalité</Button>
 	</WorkspaceHeader>
@@ -323,12 +328,15 @@
 		/>
 	{:else if !activeSci}
 		<EmptyState
-	align="left"
-	eyebrow="Pré-requis métier"
-	title="Sélectionne d'abord une SCI"
-	description="La gouvernance se pilote toujours dans le contexte d'une société précise. Choisis ou crée la SCI cible avant de documenter les associés."
-	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
-/>
+			align="left"
+			eyebrow="Pré-requis métier"
+			title="Sélectionne d'abord une SCI"
+			description="La gouvernance se pilote toujours dans le contexte d'une société précise. Choisis ou crée la SCI cible avant de documenter les associés."
+			actions={[
+				{ label: 'Ouvrir le portefeuille SCI', href: '/scis' },
+				{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+			]}
+		/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre de gouvernance"
@@ -339,12 +347,16 @@
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">SCI active</p>
 					<p class="sci-action-card-value">{activeSci.nom}</p>
-					<p class="sci-action-card-body">La gouvernance affichée et modifiée est filtrée sur cette SCI.</p>
+					<p class="sci-action-card-body">
+						La gouvernance affichée et modifiée est filtrée sur cette SCI.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Caractéristiques</p>
 					<p class="sci-action-card-value">Nom, email, part détenue, rôle, accès connecté</p>
-					<p class="sci-action-card-body">Les accès compte restent visibles, sans réduire la gouvernance à un email.</p>
+					<p class="sci-action-card-body">
+						Les accès compte restent visibles, sans réduire la gouvernance à un email.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Étape suivante</p>
@@ -356,7 +368,7 @@
 					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
+			<div class="sci-primary-actions mt-5">
 				<Button disabled={createDisabled} onclick={() => (createDialogOpen = true)}>
 					Ajouter un associé
 				</Button>
@@ -372,7 +384,9 @@
 						<div class="sci-action-card">
 							<p class="sci-action-card-title">Capital restant</p>
 							<p class="sci-action-card-value">{formatPercent(metrics.remainingParts, '0 %')}</p>
-							<p class="sci-action-card-body">À répartir avant d'atteindre une lecture de gouvernance complète.</p>
+							<p class="sci-action-card-body">
+								À répartir avant d'atteindre une lecture de gouvernance complète.
+							</p>
 						</div>
 						<Button href="/dashboard" variant="outline" class="w-full justify-start">
 							Retour au cockpit
@@ -383,69 +397,83 @@
 		</WorkspaceActionBar>
 
 		<Card class="sci-section-card">
-				<CardHeader>
-					<div class="flex items-end justify-between gap-4">
-						<div>
-							<CardTitle class="text-lg">Registre de gouvernance</CardTitle>
-							<CardDescription>
-								Capital, rôles et statut d’accès compte de la SCI active.
-							</CardDescription>
-						</div>
-						<p class="text-[0.72rem] font-semibold tracking-[0.2em] uppercase text-muted-foreground">
-							{scopedAssocies.length} enregistrement{scopedAssocies.length > 1 ? 's' : ''}
-						</p>
+			<CardHeader>
+				<div class="flex items-end justify-between gap-4">
+					<div>
+						<CardTitle class="text-lg">Registre de gouvernance</CardTitle>
+						<CardDescription>
+							Capital, rôles et statut d’accès compte de la SCI active.
+						</CardDescription>
 					</div>
-				</CardHeader>
-				<CardContent class="grid gap-3 pt-0">
-					{#if scopedAssocies.length === 0}
-						<div class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground">
-							Aucun associé documenté pour l’instant. Commence par renseigner la gouvernance de la SCI active.
-						</div>
-					{:else}
-						{#each scopedAssocies as associe (String(associe.id))}
-							<div class="rounded-2xl border border-border bg-muted p-4">
-								<div class="flex flex-wrap items-start justify-between gap-3">
-									<div>
-										<div class="flex flex-wrap items-center gap-2">
-											<p class="text-sm font-semibold text-foreground">{associe.nom}</p>
-											<StatusBadge text={mapAssociateRoleLabel(associe.role)} variant="neutral" size="md" />
-											{#if associe.is_account_member}
-												<StatusBadge text="Accès compte" variant="success" size="md" />
-											{/if}
-										</div>
-										<p class="mt-1 text-sm text-muted-foreground">
-											{associe.email || 'Email non renseigné'}
-										</p>
+					<p class="text-[0.72rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+						{scopedAssocies.length} enregistrement{scopedAssocies.length > 1 ? 's' : ''}
+					</p>
+				</div>
+			</CardHeader>
+			<CardContent class="grid gap-3 pt-0">
+				{#if scopedAssocies.length === 0}
+					<div
+						class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground"
+					>
+						Aucun associé documenté pour l’instant. Commence par renseigner la gouvernance de la SCI
+						active.
+					</div>
+				{:else}
+					{#each scopedAssocies as associe (String(associe.id))}
+						<div class="rounded-2xl border border-border bg-muted p-4">
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<div>
+									<div class="flex flex-wrap items-center gap-2">
+										<p class="text-sm font-semibold text-foreground">{associe.nom}</p>
+										<StatusBadge
+											text={mapAssociateRoleLabel(associe.role)}
+											variant="neutral"
+											size="md"
+										/>
+										{#if associe.is_account_member}
+											<StatusBadge text="Accès compte" variant="success" size="md" />
+										{/if}
 									</div>
-									<div class="text-right">
-										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Part détenue</p>
-										<p class="mt-1 text-sm font-semibold text-foreground">
-											{formatPercent(associe.part, 'N/A')}
-										</p>
-									</div>
+									<p class="mt-1 text-sm text-muted-foreground">
+										{associe.email || 'Email non renseigné'}
+									</p>
 								</div>
-								<div class="mt-4 flex flex-wrap justify-end gap-2">
-									<Button
-										size="sm"
-										variant="outline"
-										onclick={() => openEditAssocie(associe)}
-										disabled={submitting || deleting}
+								<div class="text-right">
+									<p
+										class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
 									>
-										Modifier
-									</Button>
-									<Button
-										size="sm"
-										variant="outline"
-										onclick={() => openDeleteAssocie(associe)}
-										disabled={submitting || deleting || associe.is_account_member || busyAssocieId === String(associe.id || '')}
-									>
-										{associe.is_account_member ? 'Accès protégé' : 'Supprimer'}
-									</Button>
+										Part détenue
+									</p>
+									<p class="mt-1 text-sm font-semibold text-foreground">
+										{formatPercent(associe.part, 'N/A')}
+									</p>
 								</div>
 							</div>
-						{/each}
-					{/if}
-				</CardContent>
+							<div class="mt-4 flex flex-wrap justify-end gap-2">
+								<Button
+									size="sm"
+									variant="outline"
+									onclick={() => openEditAssocie(associe)}
+									disabled={submitting || deleting}
+								>
+									Modifier
+								</Button>
+								<Button
+									size="sm"
+									variant="outline"
+									onclick={() => openDeleteAssocie(associe)}
+									disabled={submitting ||
+										deleting ||
+										associe.is_account_member ||
+										busyAssocieId === String(associe.id || '')}
+								>
+									{associe.is_account_member ? 'Accès protégé' : 'Supprimer'}
+								</Button>
+							</div>
+						</div>
+					{/each}
+				{/if}
+			</CardContent>
 		</Card>
 	{/if}
 
@@ -501,7 +529,7 @@
 				<div class="flex flex-wrap justify-end gap-3">
 					<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
 					<Button disabled={submitting || createDisabled} onclick={handleCreateAssocie}>
-						{submitting ? "Création..." : "Ajouter l'associé"}
+						{submitting ? 'Création...' : "Ajouter l'associé"}
 					</Button>
 				</div>
 			{/if}
@@ -555,14 +583,17 @@
 			<Dialog.Header>
 				<Dialog.Title>Supprimer cet associé ?</Dialog.Title>
 				<Dialog.Description>
-					Cette action retire la ligne de gouvernance de la SCI active. Les accès compte protégés ne sont
-					pas supprimables ici.
+					Cette action retire la ligne de gouvernance de la SCI active. Les accès compte protégés ne
+					sont pas supprimables ici.
 				</Dialog.Description>
 			</Dialog.Header>
 			<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
 				<p class="font-semibold text-foreground">{associePendingDelete?.nom}</p>
 				<p class="mt-1 text-muted-foreground">
-					{mapAssociateRoleLabel(associePendingDelete?.role)} • {formatPercent(associePendingDelete?.part, 'N/A')}
+					{mapAssociateRoleLabel(associePendingDelete?.role)} • {formatPercent(
+						associePendingDelete?.part,
+						'N/A'
+					)}
 				</p>
 			</div>
 			<Dialog.Footer>

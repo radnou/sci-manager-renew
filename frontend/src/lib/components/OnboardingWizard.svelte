@@ -48,7 +48,9 @@
 </script>
 
 {#if !allDone}
-	<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+	<div
+		class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+	>
 		<div class="mb-4 flex items-center justify-between">
 			<div>
 				<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Démarrage rapide</h3>
@@ -76,17 +78,23 @@
 						? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20'
 						: 'hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:hover:border-slate-700 dark:hover:bg-slate-900'}"
 				>
-					<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full {step.done
-						? 'bg-emerald-500 text-white'
-						: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}">
+					<div
+						class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full {step.done
+							? 'bg-emerald-500 text-white'
+							: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}"
+					>
 						{#if step.done}
 							<Check class="h-4 w-4" />
 						{:else}
 							<step.icon class="h-4 w-4" />
 						{/if}
 					</div>
-					<div class="flex-1 min-w-0">
-						<p class="text-sm font-medium {step.done ? 'text-emerald-700 line-through dark:text-emerald-300' : 'text-slate-900 dark:text-slate-100'}">
+					<div class="min-w-0 flex-1">
+						<p
+							class="text-sm font-medium {step.done
+								? 'text-emerald-700 line-through dark:text-emerald-300'
+								: 'text-slate-900 dark:text-slate-100'}"
+						>
 							{step.label}
 						</p>
 						{#if !step.done}

@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { cn } from '$lib/utils';
 
 	type Trend = 'up' | 'down' | 'neutral';
@@ -47,14 +53,13 @@
 </script>
 
 <Card
-	class={cn(
-		'relative overflow-hidden border shadow-sm',
-		toneClasses[tone]
-	)}
+	class={cn('relative overflow-hidden border shadow-sm', toneClasses[tone])}
 	aria-busy={loading}
 >
 	<CardHeader class="pb-2">
-		<CardDescription class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
+		<CardDescription
+			class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+		>
 			{label}
 		</CardDescription>
 		<CardTitle class="text-2xl font-semibold tracking-tight text-foreground">

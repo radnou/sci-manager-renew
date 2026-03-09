@@ -9,12 +9,12 @@ export const ASSOCIE_ROLE_OPTIONS = [
 
 export function calculateAssociateMetrics(associes: Associe[]) {
 	const total = associes.length;
-	const totalParts = round(
-		associes.reduce((sum, associe) => sum + Number(associe.part ?? 0), 0)
-	);
+	const totalParts = round(associes.reduce((sum, associe) => sum + Number(associe.part ?? 0), 0));
 	const accountMembers = associes.filter((associe) => Boolean(associe.is_account_member)).length;
 	const governanceRoles = associes.filter((associe) =>
-		String(associe.role || '').toLowerCase().includes('gerant')
+		String(associe.role || '')
+			.toLowerCase()
+			.includes('gerant')
 	).length;
 
 	return {

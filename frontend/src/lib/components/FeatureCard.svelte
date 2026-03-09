@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import type { ComponentType } from 'svelte';
 
@@ -12,10 +18,19 @@
 		class?: string;
 	}
 
-	let { icon: Icon, title, description, badge, features = [], class: className = '' }: Props = $props();
+	let {
+		icon: Icon,
+		title,
+		description,
+		badge,
+		features = [],
+		class: className = ''
+	}: Props = $props();
 </script>
 
-<Card class="group relative overflow-hidden border-slate-200/60 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:border-slate-700/60 dark:bg-slate-800/80 {className}">
+<Card
+	class="group relative overflow-hidden border-slate-200/60 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-slate-700/60 dark:bg-slate-800/80 {className}"
+>
 	{#if badge}
 		<div class="absolute top-4 right-4">
 			<Badge variant="secondary" class="text-xs font-medium">
@@ -26,7 +41,9 @@
 
 	<CardHeader class="pb-4">
 		{#if Icon}
-			<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg">
+			<div
+				class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg"
+			>
 				<Icon class="h-6 w-6" />
 			</div>
 		{/if}

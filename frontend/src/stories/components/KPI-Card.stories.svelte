@@ -31,6 +31,13 @@
 <Story name="Default" />
 <Story
 	name="Warning"
-	args={{ label: 'Retards', value: 4, caption: 'dossiers à traiter', trend: 'down', trendValue: 'urgence', tone: 'warning' }}
+	args={{
+		label: 'Retards',
+		value: 4,
+		caption: 'dossiers à traiter',
+		trend: 'down',
+		trendValue: 'urgence',
+		tone: 'warning'
+	}}
 />
 <Story name="Loading" args={{ loading: true }} />

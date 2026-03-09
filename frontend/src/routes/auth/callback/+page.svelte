@@ -53,20 +53,20 @@
 	<Card class="w-full max-w-md p-8 text-center">
 		{#if loading}
 			<div class="space-y-4">
-				<div class="h-12 w-12 animate-spin rounded-full border-4 border-slate-600 border-t-blue-500 mx-auto"></div>
+				<div
+					class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-slate-600 border-t-blue-500"
+				></div>
 				<p class="text-slate-400">Vérification de votre lien de connexion...</p>
 			</div>
 		{:else if error}
 			<div class="space-y-4">
-				<p class="text-red-500 font-semibold">✗ Lien invalide ou expiré</p>
-				<p class="text-slate-400 text-sm">Veuillez réessayer. Vous allez être redirigé...</p>
-				<Button href="/login" class="w-full">
-					Retourner à la connexion
-				</Button>
+				<p class="font-semibold text-red-500">✗ Lien invalide ou expiré</p>
+				<p class="text-sm text-slate-400">Veuillez réessayer. Vous allez être redirigé...</p>
+				<Button href="/login" class="w-full">Retourner à la connexion</Button>
 			</div>
 		{:else}
 			<div class="space-y-4">
-				<p class="text-emerald-500 font-semibold">✓ Connexion réussie!</p>
+				<p class="font-semibold text-emerald-500">✓ Connexion réussie!</p>
 				<p class="text-slate-400">Vous allez être redirigé vers votre tableau de bord...</p>
 			</div>
 		{/if}

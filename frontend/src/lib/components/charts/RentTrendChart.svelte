@@ -30,7 +30,9 @@
 	const data = $derived(monthlyRevenue());
 </script>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+<div
+	class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+>
 	<p class="mb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 		Revenus encaissés (12 mois)
 	</p>
@@ -50,11 +52,18 @@
 				padding={{ left: 48, bottom: 24, top: 8, right: 8 }}
 			>
 				<Axis placement="left" format={(d) => `${d}€`} ticks={3} />
-				<Axis placement="bottom" format={(d) => {
-					const date = d instanceof Date ? d : new Date(d);
-					return date.toLocaleDateString('fr-FR', { month: 'short' });
-				}} ticks={4} />
-				<Area class="fill-emerald-500/20 dark:fill-emerald-400/15" line={{ class: 'stroke-none' }} />
+				<Axis
+					placement="bottom"
+					format={(d) => {
+						const date = d instanceof Date ? d : new Date(d);
+						return date.toLocaleDateString('fr-FR', { month: 'short' });
+					}}
+					ticks={4}
+				/>
+				<Area
+					class="fill-emerald-500/20 dark:fill-emerald-400/15"
+					line={{ class: 'stroke-none' }}
+				/>
 				<Spline class="stroke-emerald-500 dark:stroke-emerald-400" width={2} />
 			</Chart>
 		</div>

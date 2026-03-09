@@ -58,7 +58,8 @@
 	$: if (resolvedActiveSciId) {
 		setStoredActiveSciId(resolvedActiveSciId);
 	}
-	$: shouldShowOnboarding = !loading && (scopedCharges.length === 0 || scopedFiscalite.length === 0);
+	$: shouldShowOnboarding =
+		!loading && (scopedCharges.length === 0 || scopedFiscalite.length === 0);
 
 	onMount(loadOverview);
 
@@ -130,12 +131,15 @@
 		/>
 	{:else if scis.length === 0}
 		<EmptyState
-	align="left"
-	eyebrow="Aucune SCI exploitable"
-	title="La finance ne démarre qu’une fois la SCI et le patrimoine en place"
-	description="Crée d’abord la société et son socle d’exploitation avant d’ouvrir les journaux de charges et la fiscalité."
-	actions={[{ label: 'Créer ma première SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
-/>
+			align="left"
+			eyebrow="Aucune SCI exploitable"
+			title="La finance ne démarre qu’une fois la SCI et le patrimoine en place"
+			description="Crée d’abord la société et son socle d’exploitation avant d’ouvrir les journaux de charges et la fiscalité."
+			actions={[
+				{ label: 'Créer ma première SCI', href: '/scis' },
+				{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+			]}
+		/>
 	{:else}
 		{#if shouldShowOnboarding}
 			<div class="mb-6">
@@ -166,7 +170,9 @@
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Clôture</p>
 					<p class="sci-action-card-value">
-						{scopedFiscalite.length > 0 ? `${scopedFiscalite.length} exercice(s)` : 'Aucun exercice'}
+						{scopedFiscalite.length > 0
+							? `${scopedFiscalite.length} exercice(s)`
+							: 'Aucun exercice'}
 					</p>
 					<p class="sci-action-card-body">
 						La fiscalité consolide revenus et charges pour alimenter la lecture annuelle.
@@ -182,7 +188,7 @@
 					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
+			<div class="sci-primary-actions mt-5">
 				<Button href="/charges">Gérer les charges</Button>
 				<Button href="/fiscalite" variant="outline">Gérer la fiscalité</Button>
 				<Button href="/loyers" variant="outline">Ouvrir les quittances PDF</Button>
@@ -220,7 +226,9 @@
 			<Card class="sci-section-card">
 				<CardHeader>
 					<CardTitle class="text-lg">Charges</CardTitle>
-					<CardDescription>Le journal des décaissements réels reste la lecture financière la plus fréquente.</CardDescription>
+					<CardDescription
+						>Le journal des décaissements réels reste la lecture financière la plus fréquente.</CardDescription
+					>
 				</CardHeader>
 				<CardContent class="space-y-4 pt-0">
 					<KpiCard
@@ -232,7 +240,8 @@
 						tone={scopedCharges.length > 0 ? 'accent' : 'default'}
 					/>
 					<p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-						Filtre ensuite par bien, type de charge et période pour passer du volume brut au contrôle opérationnel.
+						Filtre ensuite par bien, type de charge et période pour passer du volume brut au
+						contrôle opérationnel.
 					</p>
 					<div class="flex flex-wrap gap-2">
 						<Button href="/charges">Ouvrir Charges</Button>
@@ -244,13 +253,17 @@
 			<Card class="sci-section-card">
 				<CardHeader>
 					<CardTitle class="text-lg">Fiscalité</CardTitle>
-					<CardDescription>Les exercices consolidés servent à comparer l’annuel, pas à piloter le quotidien.</CardDescription>
+					<CardDescription
+						>Les exercices consolidés servent à comparer l’annuel, pas à piloter le quotidien.</CardDescription
+					>
 				</CardHeader>
 				<CardContent class="space-y-4 pt-0">
 					<KpiCard
 						label="Exercices ouverts"
 						value={formatCompactNumber(scopedFiscalite.length)}
-						caption={fiscaliteMetrics.latestYear == null ? 'aucune année' : `dernier exercice ${fiscaliteMetrics.latestYear}`}
+						caption={fiscaliteMetrics.latestYear == null
+							? 'aucune année'
+							: `dernier exercice ${fiscaliteMetrics.latestYear}`}
 						trend={scopedFiscalite.length > 0 ? 'up' : 'neutral'}
 						trendValue={scopedFiscalite.length > 0 ? 'consolidation' : 'à préparer'}
 						tone={scopedFiscalite.length > 0 ? 'warning' : 'default'}
@@ -268,7 +281,10 @@
 			<Card class="sci-section-card">
 				<CardHeader>
 					<CardTitle class="text-lg">Documents</CardTitle>
-					<CardDescription>Les quittances et PDF ne sont pas un module autonome: ils servent les flux locatifs déjà saisis.</CardDescription>
+					<CardDescription
+						>Les quittances et PDF ne sont pas un module autonome: ils servent les flux locatifs
+						déjà saisis.</CardDescription
+					>
 				</CardHeader>
 				<CardContent class="space-y-4 pt-0">
 					<KpiCard
@@ -280,7 +296,8 @@
 						tone={scopedLoyers.length > 0 ? 'success' : 'default'}
 					/>
 					<p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-						Les documents sont activés à partir du journal de loyers. Le point d’entrée reste donc le module Loyers.
+						Les documents sont activés à partir du journal de loyers. Le point d’entrée reste donc
+						le module Loyers.
 					</p>
 					<div class="flex flex-wrap gap-2">
 						<Button href="/loyers">Ouvrir Loyers</Button>

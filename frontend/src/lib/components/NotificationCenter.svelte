@@ -13,7 +13,7 @@
 	function formatTimeAgo(dateStr: string): string {
 		const diff = Date.now() - new Date(dateStr).getTime();
 		const minutes = Math.floor(diff / 60000);
-		if (minutes < 1) return 'À l\'instant';
+		if (minutes < 1) return "À l'instant";
 		if (minutes < 60) return `Il y a ${minutes}min`;
 		const hours = Math.floor(minutes / 60);
 		if (hours < 24) return `Il y a ${hours}h`;
@@ -23,10 +23,14 @@
 
 	function typeIcon(type: string) {
 		switch (type) {
-			case 'late_payment': return 'text-rose-500';
-			case 'status_change': return 'text-cyan-500';
-			case 'document_ready': return 'text-emerald-500';
-			default: return 'text-slate-500';
+			case 'late_payment':
+				return 'text-rose-500';
+			case 'status_change':
+				return 'text-cyan-500';
+			case 'document_ready':
+				return 'text-emerald-500';
+			default:
+				return 'text-slate-500';
 		}
 	}
 </script>
@@ -40,7 +44,9 @@
 	>
 		<Bell class="h-4.5 w-4.5" />
 		{#if $notifications.unreadCount > 0}
-			<span class="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+			<span
+				class="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
+			>
 				{$notifications.unreadCount > 9 ? '9+' : $notifications.unreadCount}
 			</span>
 		{/if}
@@ -48,11 +54,13 @@
 
 	{#if open}
 		<div
-			class="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950"
+			class="absolute top-full right-0 z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950"
 			role="dialog"
 			aria-label="Centre de notifications"
 		>
-			<div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+			<div
+				class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800"
+			>
 				<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</h3>
 				{#if $notifications.unreadCount > 0}
 					<button
@@ -75,16 +83,28 @@
 					{#each $notifications.items as notification (notification.id)}
 						<button
 							type="button"
-							class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900 {notification.read_at ? 'opacity-60' : ''}"
+							class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900 {notification.read_at
+								? 'opacity-60'
+								: ''}"
 							onclick={() => {
 								if (!notification.read_at) notifications.markRead(notification.id);
 							}}
 						>
-							<div class="mt-0.5 h-2 w-2 flex-shrink-0 rounded-full {notification.read_at ? 'bg-transparent' : 'bg-blue-500'}"></div>
-							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium text-slate-900 dark:text-slate-100">{notification.title}</p>
-								<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{notification.message}</p>
-								<p class="mt-1 text-[10px] {typeIcon(notification.type)}">{formatTimeAgo(notification.created_at)}</p>
+							<div
+								class="mt-0.5 h-2 w-2 flex-shrink-0 rounded-full {notification.read_at
+									? 'bg-transparent'
+									: 'bg-blue-500'}"
+							></div>
+							<div class="min-w-0 flex-1">
+								<p class="text-sm font-medium text-slate-900 dark:text-slate-100">
+									{notification.title}
+								</p>
+								<p class="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+									{notification.message}
+								</p>
+								<p class="mt-1 text-[10px] {typeIcon(notification.type)}">
+									{formatTimeAgo(notification.created_at)}
+								</p>
 							</div>
 						</button>
 					{/each}

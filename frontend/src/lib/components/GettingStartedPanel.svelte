@@ -90,28 +90,35 @@
 </script>
 
 <Card class="sci-section-card overflow-hidden">
-	<CardHeader class="border-b border-slate-200/80 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
+	<CardHeader
+		class="border-b border-slate-200/80 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80"
+	>
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-					{compact ? 'Cap suivant • parcours opérateur' : 'Première connexion • prise en main guidée'}
+				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					{compact
+						? 'Cap suivant • parcours opérateur'
+						: 'Première connexion • prise en main guidée'}
 				</p>
 				<CardTitle class="mt-2 text-2xl">
 					{compact ? 'Priorités de mise en route' : 'Démarrer le cockpit sans tâtonner'}
 				</CardTitle>
 				<CardDescription class="mt-2 max-w-3xl text-sm leading-7">
 					{#if compact}
-						Le hub te ramène sur les prochaines étapes réellement attendues dans cette zone de travail.
+						Le hub te ramène sur les prochaines étapes réellement attendues dans cette zone de
+						travail.
 					{:else}
-						Les solutions de gestion performantes poussent toujours un parcours simple: structurer le
-						portefeuille, rattacher les actifs, renseigner les occupants, puis activer les flux et les
-						documents. On garde ce fil ici.
+						Les solutions de gestion performantes poussent toujours un parcours simple: structurer
+						le portefeuille, rattacher les actifs, renseigner les occupants, puis activer les flux
+						et les documents. On garde ce fil ici.
 					{/if}
 				</CardDescription>
 			</div>
 			<div class="flex items-center gap-3">
-				<div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-950">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
+				<div
+					class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-950"
+				>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 						Progression
 					</p>
 					<p class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
@@ -119,9 +126,7 @@
 					</p>
 				</div>
 				{#if onDismiss}
-					<Button type="button" variant="outline" size="sm" onclick={onDismiss}>
-						Masquer
-					</Button>
+					<Button type="button" variant="outline" size="sm" onclick={onDismiss}>Masquer</Button>
 				{/if}
 			</div>
 		</div>
@@ -141,7 +146,9 @@
 		{:else}
 			<div class="space-y-3">
 				{#each steps as step (step.key)}
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{step.title}</p>
@@ -172,7 +179,9 @@
 
 			{#if !compact}
 				<div class="space-y-3">
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+					<div
+						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+					>
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<FileText class="h-4 w-4" />
 							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
@@ -186,7 +195,9 @@
 					</div>
 					<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-2">
 						{#each entityGuide as entity (entity.title)}
-							<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+							<div
+								class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+							>
 								<div class="flex items-center gap-2 text-slate-900 dark:text-slate-100">
 									<svelte:component this={entity.icon} class="h-4 w-4 text-cyan-600" />
 									<p class="text-sm font-semibold">{entity.title}</p>

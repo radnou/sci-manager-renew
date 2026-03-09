@@ -24,8 +24,12 @@
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-4 pt-0">
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">SCI opérationnelles</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				SCI opérationnelles
+			</p>
 			<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 				{metrics.operationalSciCount}/{metrics.sciCount}
 			</p>
@@ -36,8 +40,12 @@
 			</p>
 		</div>
 
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Trésorerie consolidée</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				Trésorerie consolidée
+			</p>
 			<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 				{metrics.loyerMetrics.totalOutstandingLabel}
 			</p>
@@ -46,8 +54,12 @@
 			</p>
 		</div>
 
-		<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Points de vigilance</p>
+		<div
+			class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				Points de vigilance
+			</p>
 			<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 				{metrics.attentionSciCount}
 			</p>

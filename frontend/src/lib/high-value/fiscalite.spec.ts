@@ -5,8 +5,20 @@ import { calculateFiscaliteMetrics } from './fiscalite';
 describe('high-value fiscalite helpers', () => {
 	it('calculates latest exercise and cumulative result', () => {
 		const metrics = calculateFiscaliteMetrics([
-			{ id_sci: 'sci-1', annee: 2024, total_revenus: 20000, total_charges: 5000, resultat_fiscal: 15000 },
-			{ id_sci: 'sci-1', annee: 2025, total_revenus: 24000, total_charges: 6000, resultat_fiscal: 18000 }
+			{
+				id_sci: 'sci-1',
+				annee: 2024,
+				total_revenus: 20000,
+				total_charges: 5000,
+				resultat_fiscal: 15000
+			},
+			{
+				id_sci: 'sci-1',
+				annee: 2025,
+				total_revenus: 24000,
+				total_charges: 6000,
+				resultat_fiscal: 18000
+			}
 		]);
 
 		expect(metrics.count).toBe(2);

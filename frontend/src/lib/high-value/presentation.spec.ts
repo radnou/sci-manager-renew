@@ -13,11 +13,13 @@ describe('high-value presentation helpers', () => {
 
 		expect(
 			formatApiErrorMessage(
-				new Error('{"error":"Le quota biens est atteint.","code":"plan_limit_reached","details":{"resource":"biens"}}'),
+				new Error(
+					'{"error":"Le quota biens est atteint.","code":"plan_limit_reached","details":{"resource":"biens"}}'
+				),
 				'Fallback technique'
 			)
 		).toBe(
-			"Le quota de biens de ton offre est atteint. Passe à une offre supérieure pour continuer."
+			'Le quota de biens de ton offre est atteint. Passe à une offre supérieure pour continuer.'
 		);
 	});
 
@@ -28,9 +30,9 @@ describe('high-value presentation helpers', () => {
 		expect(
 			formatApiErrorMessage(new Error('{"message":"Message structuré"}'), 'Fallback technique')
 		).toBe('Message structuré');
-		expect(
-			formatApiErrorMessage(new Error('"Message JSON string"'), 'Fallback technique')
-		).toBe('Message JSON string');
+		expect(formatApiErrorMessage(new Error('"Message JSON string"'), 'Fallback technique')).toBe(
+			'Message JSON string'
+		);
 
 		expect(formatApiErrorMessage(new Error(''), 'Fallback technique')).toBe('Fallback technique');
 		expect(formatApiErrorMessage('erreur', 'Fallback technique')).toBe('Fallback technique');

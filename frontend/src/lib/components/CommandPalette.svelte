@@ -17,14 +17,29 @@
 	let selectedIndex = $state(0);
 
 	const commands = [
-		{ label: 'Dashboard', description: 'Cockpit exécutif', icon: LayoutDashboard, href: '/dashboard' },
+		{
+			label: 'Dashboard',
+			description: 'Cockpit exécutif',
+			icon: LayoutDashboard,
+			href: '/dashboard'
+		},
 		{ label: 'SCI', description: 'Gérer les sociétés', icon: Building2, href: '/scis' },
 		{ label: 'Biens', description: 'Patrimoine immobilier', icon: Building2, href: '/biens' },
 		{ label: 'Loyers', description: 'Suivi des encaissements', icon: HandCoins, href: '/loyers' },
 		{ label: 'Documents', description: 'Quittances et CERFA', icon: FileText, href: '/documents' },
-		{ label: 'Fiscalité', description: 'Exercices et résultats', icon: Calculator, href: '/fiscalite' },
+		{
+			label: 'Fiscalité',
+			description: 'Exercices et résultats',
+			icon: Calculator,
+			href: '/fiscalite'
+		},
 		{ label: 'Tarifs', description: 'Plans et abonnements', icon: HandCoins, href: '/pricing' },
-		{ label: 'Paramètres', description: 'Configuration du compte', icon: Settings, href: '/settings' },
+		{
+			label: 'Paramètres',
+			description: 'Configuration du compte',
+			icon: Settings,
+			href: '/settings'
+		},
 		{ label: 'Compte', description: 'Profil utilisateur', icon: User, href: '/account' }
 	];
 
@@ -82,8 +97,12 @@
 
 	<!-- Palette -->
 	<div class="fixed inset-x-0 top-[15vh] z-[101] mx-auto w-full max-w-lg px-4">
-		<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
-			<div class="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+		<div
+			class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+		>
+			<div
+				class="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800"
+			>
 				<Search class="h-4 w-4 text-slate-400" />
 				<input
 					type="text"
@@ -92,7 +111,9 @@
 					class="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none dark:text-slate-100"
 					autofocus
 				/>
-				<kbd class="hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline dark:border-slate-700 dark:bg-slate-900">
+				<kbd
+					class="hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline dark:border-slate-700 dark:bg-slate-900"
+				>
 					Esc
 				</kbd>
 			</div>
@@ -104,7 +125,8 @@
 					{#each filtered as command, i}
 						<button
 							type="button"
-							class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors {i === selectedIndex
+							class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors {i ===
+							selectedIndex
 								? 'bg-slate-100 dark:bg-slate-900'
 								: 'hover:bg-slate-50 dark:hover:bg-slate-900/50'}"
 							onclick={() => navigate(command.href)}

@@ -8,7 +8,13 @@
 	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { addToast } from '$lib/components/ui/toast';
 
 	interface DataSummary {
@@ -41,7 +47,9 @@
 		loading = true;
 		loadError = '';
 		try {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
 			if (!session) {
 				goto('/login');
 				return;
@@ -49,7 +57,7 @@
 
 			const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/gdpr/data-summary`, {
 				headers: {
-					'Authorization': `Bearer ${session.access_token}`
+					Authorization: `Bearer ${session.access_token}`
 				}
 			});
 
@@ -71,7 +79,9 @@
 	async function exportData() {
 		exportLoading = true;
 		try {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
 			if (!session) {
 				goto('/login');
 				return;
@@ -79,7 +89,7 @@
 
 			const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/gdpr/data-export`, {
 				headers: {
-					'Authorization': `Bearer ${session.access_token}`
+					Authorization: `Bearer ${session.access_token}`
 				}
 			});
 
@@ -87,12 +97,18 @@
 				const data = (await response.json()) as { export_url?: string; expires_at?: string };
 				if (data.export_url) {
 					window.open(data.export_url, '_blank', 'noopener,noreferrer');
-					addToast({ title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.', variant: 'success' });
+					addToast({
+						title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.',
+						variant: 'success'
+					});
 				} else {
-					addToast({ title: "Export cree, mais aucun lien de telechargement n'a ete retourne.", variant: 'error' });
+					addToast({
+						title: "Export cree, mais aucun lien de telechargement n'a ete retourne.",
+						variant: 'error'
+					});
 				}
 			} else {
-				addToast({ title: 'Erreur lors de l\'export des données', variant: 'error' });
+				addToast({ title: "Erreur lors de l'export des données", variant: 'error' });
 			}
 		} catch (error) {
 			addToast({ title: 'Erreur réseau', variant: 'error' });
@@ -110,7 +126,9 @@
 
 		deleteLoading = true;
 		try {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
 			if (!session) {
 				goto('/login');
 				return;
@@ -119,7 +137,7 @@
 			const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/gdpr/account`, {
 				method: 'DELETE',
 				headers: {
-					'Authorization': `Bearer ${session.access_token}`
+					Authorization: `Bearer ${session.access_token}`
 				}
 			});
 
@@ -169,12 +187,16 @@
 		/>
 	{:else if !dataSummary}
 		<EmptyState
-	align="left"
-	eyebrow="Résumé indisponible"
-	title="Impossible de charger les données personnelles"
-	description={loadError || "Le résumé RGPD n'a pas pu être récupéré. Reviens au compte ou recharge la page."}
-	actions={[{ label: 'Retour au compte', href: '/account' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
-/>
+			align="left"
+			eyebrow="Résumé indisponible"
+			title="Impossible de charger les données personnelles"
+			description={loadError ||
+				"Le résumé RGPD n'a pas pu être récupéré. Reviens au compte ou recharge la page."}
+			actions={[
+				{ label: 'Retour au compte', href: '/account' },
+				{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+			]}
+		/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre RGPD"
@@ -184,21 +206,29 @@
 			<div class="sci-action-grid">
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Périmètre stocké</p>
-					<p class="sci-action-card-value">{dataSummary.data_summary.sci_count} SCI • {dataSummary.data_summary.biens_count} biens</p>
-					<p class="sci-action-card-body">Le résumé agrège les données principales rattachées au compte.</p>
+					<p class="sci-action-card-value">
+						{dataSummary.data_summary.sci_count} SCI • {dataSummary.data_summary.biens_count} biens
+					</p>
+					<p class="sci-action-card-body">
+						Le résumé agrège les données principales rattachées au compte.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Portabilité</p>
 					<p class="sci-action-card-value">Export JSON immédiat</p>
-					<p class="sci-action-card-body">Télécharge une copie structurée des données personnelles et métier.</p>
+					<p class="sci-action-card-body">
+						Télécharge une copie structurée des données personnelles et métier.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Suppression</p>
 					<p class="sci-action-card-value">Confirmation explicite requise</p>
-					<p class="sci-action-card-body">La suppression du compte reste irréversible et séparée des autres actions.</p>
+					<p class="sci-action-card-body">
+						La suppression du compte reste irréversible et séparée des autres actions.
+					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
+			<div class="sci-primary-actions mt-5">
 				<Button onclick={exportData} disabled={exportLoading}>
 					{exportLoading ? 'Export en cours...' : 'Exporter mes données'}
 				</Button>
@@ -214,7 +244,10 @@
 						<div class="sci-action-card">
 							<p class="sci-action-card-title">Contact RGPD</p>
 							<p class="sci-action-card-value">
-								<a href="mailto:privacy@gerersci.fr" class="text-cyan-300 underline-offset-4 hover:underline">
+								<a
+									href="mailto:privacy@gerersci.fr"
+									class="text-cyan-300 underline-offset-4 hover:underline"
+								>
 									privacy@gerersci.fr
 								</a>
 							</p>
@@ -222,7 +255,12 @@
 						<div class="sci-action-card">
 							<p class="sci-action-card-title">Autorité de contrôle</p>
 							<p class="sci-action-card-value">
-								<a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" class="text-cyan-300 underline-offset-4 hover:underline">
+								<a
+									href="https://www.cnil.fr"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-cyan-300 underline-offset-4 hover:underline"
+								>
 									CNIL
 								</a>
 							</p>
@@ -236,7 +274,9 @@
 			<Card class="sci-section-card">
 				<CardHeader>
 					<CardTitle>Résumé des données</CardTitle>
-					<CardDescription>Vue d'ensemble des informations stockées sur le compte connecté.</CardDescription>
+					<CardDescription
+						>Vue d'ensemble des informations stockées sur le compte connecté.</CardDescription
+					>
 				</CardHeader>
 				<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
 					<div>
@@ -245,7 +285,9 @@
 					</div>
 					<div>
 						<p class="text-sm text-slate-600 dark:text-slate-400">Compte créé le</p>
-						<p class="font-semibold">{new Date(dataSummary.created_at).toLocaleDateString('fr-FR')}</p>
+						<p class="font-semibold">
+							{new Date(dataSummary.created_at).toLocaleDateString('fr-FR')}
+						</p>
 					</div>
 					<div>
 						<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de SCI</p>
@@ -277,10 +319,12 @@
 							Attention : action irréversible
 						</p>
 						<p class="text-sm text-red-700 dark:text-red-400">
-							La suppression du compte entraîne l'effacement définitif des SCI, biens, loyers, charges et données fiscales rattachés au compte.
+							La suppression du compte entraîne l'effacement définitif des SCI, biens, loyers,
+							charges et données fiscales rattachés au compte.
 						</p>
 						<p class="mt-3 text-xs text-red-600 dark:text-red-500">
-							Les données de facturation restent anonymisées pour répondre aux obligations légales de conservation.
+							Les données de facturation restent anonymisées pour répondre aux obligations légales
+							de conservation.
 						</p>
 					</div>
 

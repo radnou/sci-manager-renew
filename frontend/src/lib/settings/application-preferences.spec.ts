@@ -61,7 +61,9 @@ describe('application preferences storage', () => {
 
 		saveApplicationPreferences(nextPreferences);
 
-		expect(window.localStorage.getItem(APPLICATION_PREFERENCES_STORAGE_KEY)).toBe(JSON.stringify(nextPreferences));
+		expect(window.localStorage.getItem(APPLICATION_PREFERENCES_STORAGE_KEY)).toBe(
+			JSON.stringify(nextPreferences)
+		);
 	});
 
 	it('accepts the connected hubs as landing routes', () => {

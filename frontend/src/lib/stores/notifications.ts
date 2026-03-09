@@ -1,5 +1,11 @@
 import { writable } from 'svelte/store';
-import { fetchNotifications, fetchUnreadCount, markNotificationRead, markAllNotificationsRead, type Notification } from '$lib/api';
+import {
+	fetchNotifications,
+	fetchUnreadCount,
+	markNotificationRead,
+	markAllNotificationsRead,
+	type Notification
+} from '$lib/api';
 
 function createNotificationStore() {
 	const { subscribe, set, update } = writable<{
@@ -18,10 +24,7 @@ function createNotificationStore() {
 		async load() {
 			update((s) => ({ ...s, loading: true }));
 			try {
-				const [items, { count }] = await Promise.all([
-					fetchNotifications(),
-					fetchUnreadCount()
-				]);
+				const [items, { count }] = await Promise.all([fetchNotifications(), fetchUnreadCount()]);
 				set({ items, unreadCount: count, loading: false });
 			} catch {
 				update((s) => ({ ...s, loading: false }));
@@ -32,9 +35,7 @@ function createNotificationStore() {
 			await markNotificationRead(id);
 			update((s) => ({
 				...s,
-				items: s.items.map((n) =>
-					n.id === id ? { ...n, read_at: new Date().toISOString() } : n
-				),
+				items: s.items.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)),
 				unreadCount: Math.max(0, s.unreadCount - 1)
 			}));
 		},

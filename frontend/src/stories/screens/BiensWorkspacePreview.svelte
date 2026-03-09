@@ -16,11 +16,20 @@
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Screen Preview</p>
 		<h1 class="sci-page-title">Espace Biens</h1>
-		<p class="sci-page-subtitle">Composition complète: KPIs, formulaire d’ajout et tableau des actifs.</p>
+		<p class="sci-page-subtitle">
+			Composition complète: KPIs, formulaire d’ajout et tableau des actifs.
+		</p>
 	</header>
 
 	<div class="grid gap-4 md:grid-cols-3">
-		<KpiCard label="Biens" value={3} caption="portefeuille" trend="up" trendValue="+1" tone="accent" />
+		<KpiCard
+			label="Biens"
+			value={3}
+			caption="portefeuille"
+			trend="up"
+			trendValue="+1"
+			tone="accent"
+		/>
 		<KpiCard
 			label="Loyer mensuel"
 			value="3 705 €"
@@ -29,7 +38,13 @@
 			trendValue="+4%"
 			tone="success"
 		/>
-		<KpiCard label="Occupation" value="67%" caption="2/3 biens occupés" trend="neutral" trendValue="stable" />
+		<KpiCard
+			label="Occupation"
+			value="67%"
+			caption="2/3 biens occupés"
+			trend="neutral"
+			trendValue="stable"
+		/>
 	</div>
 
 	<BienForm onSubmit={noop} />

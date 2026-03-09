@@ -26,7 +26,7 @@ export function formatApiErrorMessage(error: unknown, fallback: string) {
 	}
 
 	if (parsedError.code === 'upgrade_required') {
-		return parsedMessage || "Cette fonctionnalité nécessite une offre supérieure.";
+		return parsedMessage || 'Cette fonctionnalité nécessite une offre supérieure.';
 	}
 
 	if (parsedError.code === 'subscription_inactive') {

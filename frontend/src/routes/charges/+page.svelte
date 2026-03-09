@@ -79,9 +79,7 @@
 		}
 	});
 	let scopedBiens = $derived(
-		activeSci
-			? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id))
-			: biens
+		activeSci ? biens.filter((bien) => String(bien.id_sci || '') === String(activeSci.id)) : biens
 	);
 	let scopedCharges = $derived(
 		activeSci
@@ -183,7 +181,9 @@
 
 	function resolveBienLabel(charge: Charge) {
 		if (charge.bien_adresse) {
-			return charge.bien_ville ? `${charge.bien_adresse} - ${charge.bien_ville}` : charge.bien_adresse;
+			return charge.bien_ville
+				? `${charge.bien_adresse} - ${charge.bien_ville}`
+				: charge.bien_adresse;
 		}
 
 		const bien = biens.find((entry) => String(entry.id || '') === String(charge.id_bien || ''));
@@ -236,7 +236,8 @@
 
 		const payload = buildUpdatePayload();
 		if (!payload) {
-			errorMessage = 'Complète le type, le montant et la date avant d’enregistrer les modifications.';
+			errorMessage =
+				'Complète le type, le montant et la date avant d’enregistrer les modifications.';
 			return;
 		}
 
@@ -279,7 +280,10 @@
 			);
 			closeDeleteCharge();
 		} catch (error) {
-			errorMessage = formatApiErrorMessage(error, 'Impossible de supprimer la charge sélectionnée.');
+			errorMessage = formatApiErrorMessage(
+				error,
+				'Impossible de supprimer la charge sélectionnée.'
+			);
 		} finally {
 			deleting = false;
 		}
@@ -336,7 +340,9 @@
 		<KpiCard
 			label="Charge moyenne"
 			value={metrics.averageLabel}
-			caption={metrics.latestChargeDate ? `dernière le ${formatFrDate(metrics.latestChargeDate)}` : 'aucun mouvement'}
+			caption={metrics.latestChargeDate
+				? `dernière le ${formatFrDate(metrics.latestChargeDate)}`
+				: 'aucun mouvement'}
 			trend={metrics.latestChargeDate ? 'up' : 'neutral'}
 			trendValue={metrics.latestChargeDate ? 'à jour' : 'en attente'}
 			tone="default"
@@ -355,12 +361,18 @@
 			description="On aligne la SCI active, les biens rattachés et le journal des décaissements."
 		/>
 	{:else if featureDisabled}
-		<div class="rounded-[1.75rem] border border-border bg-card p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)]">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Fonctionnalité d’offre</p>
-			<h2 class="mt-3 text-2xl font-semibold text-foreground">Le suivi des charges n’est pas actif sur cette offre</h2>
+		<div
+			class="rounded-[1.75rem] border border-border bg-card p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)]"
+		>
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+				Fonctionnalité d’offre
+			</p>
+			<h2 class="mt-3 text-2xl font-semibold text-foreground">
+				Le suivi des charges n’est pas actif sur cette offre
+			</h2>
 			<p class="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-				Le pilotage détaillé des charges est réservé aux offres qui incluent la dimension dépenses et
-				arbitrages fiscaux.
+				Le pilotage détaillé des charges est réservé aux offres qui incluent la dimension dépenses
+				et arbitrages fiscaux.
 			</p>
 			<div class="mt-5 flex flex-wrap gap-3">
 				<a href="/account"><Button>Voir mon offre</Button></a>
@@ -369,12 +381,15 @@
 		</div>
 	{:else if !activeSci}
 		<EmptyState
-	align="left"
-	eyebrow="Pre-requis metier"
-	title="Selectionne une SCI active"
-	description="Chaque charge doit etre rattachee a un bien et donc a une SCI identifiee. Passe d’abord par le portefeuille SCI."
-	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
-/>
+			align="left"
+			eyebrow="Pre-requis metier"
+			title="Selectionne une SCI active"
+			description="Chaque charge doit etre rattachee a un bien et donc a une SCI identifiee. Passe d’abord par le portefeuille SCI."
+			actions={[
+				{ label: 'Ouvrir le portefeuille SCI', href: '/scis' },
+				{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+			]}
+		/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre charges"
@@ -385,20 +400,28 @@
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">SCI active</p>
 					<p class="sci-action-card-value">{activeSci.nom}</p>
-					<p class="sci-action-card-body">Les charges saisies ici alimentent la lecture operationnelle de cette SCI.</p>
+					<p class="sci-action-card-body">
+						Les charges saisies ici alimentent la lecture operationnelle de cette SCI.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Caracteristiques</p>
 					<p class="sci-action-card-value">Bien, type, montant, date de paiement</p>
-					<p class="sci-action-card-body">Le journal doit rester exploitable par bien et par exercice.</p>
+					<p class="sci-action-card-body">
+						Le journal doit rester exploitable par bien et par exercice.
+					</p>
 				</div>
 				<div class="sci-action-card">
 					<p class="sci-action-card-title">Etape suivante</p>
-					<p class="sci-action-card-value">{scopedCharges.length > 0 ? 'Preparer la fiscalite' : 'Documenter la premiere charge'}</p>
-					<p class="sci-action-card-body">Une fois les charges documentees, passe en fiscalite pour consolider.</p>
+					<p class="sci-action-card-value">
+						{scopedCharges.length > 0 ? 'Preparer la fiscalite' : 'Documenter la premiere charge'}
+					</p>
+					<p class="sci-action-card-body">
+						Une fois les charges documentees, passe en fiscalite pour consolider.
+					</p>
 				</div>
 			</div>
-			<div class="mt-5 sci-primary-actions">
+			<div class="sci-primary-actions mt-5">
 				<Button disabled={scopedBiens.length === 0} onclick={() => (createDialogOpen = true)}>
 					Documenter une charge
 				</Button>
@@ -420,9 +443,13 @@
 										? 'Documenter la premiere charge'
 										: 'Passer a la cloture'}
 							</p>
-							<p class="sci-action-card-body">Le journal doit preceder l’exercice fiscal consolide.</p>
+							<p class="sci-action-card-body">
+								Le journal doit preceder l’exercice fiscal consolide.
+							</p>
 						</div>
-						<Button href="/finance" variant="outline" class="w-full justify-start">Ouvrir le hub Finance</Button>
+						<Button href="/finance" variant="outline" class="w-full justify-start"
+							>Ouvrir le hub Finance</Button
+						>
 					</div>
 				</WorkspaceRailCard>
 			{/snippet}
@@ -430,75 +457,90 @@
 
 		{#if scopedBiens.length === 0}
 			<EmptyState
-	align="left"
-	eyebrow="Pre-requis patrimoine"
-	title="Ajoute d’abord un bien"
-	description="Une charge ne peut pas etre saisie sans bien support. Rattache d’abord le premier actif a la SCI active."
-	actions={[{ label: 'Ouvrir Biens', href: '/biens' }, { label: 'Retour au portefeuille SCI', href: '/scis', variant: 'outline' }]}
-/>
+				align="left"
+				eyebrow="Pre-requis patrimoine"
+				title="Ajoute d’abord un bien"
+				description="Une charge ne peut pas etre saisie sans bien support. Rattache d’abord le premier actif a la SCI active."
+				actions={[
+					{ label: 'Ouvrir Biens', href: '/biens' },
+					{ label: 'Retour au portefeuille SCI', href: '/scis', variant: 'outline' }
+				]}
+			/>
 		{:else}
-				<Card class="sci-section-card">
-					<CardHeader>
-						<div class="flex items-end justify-between gap-4">
-							<div>
-								<CardTitle class="text-lg">Journal des charges</CardTitle>
-								<CardDescription>
-									Historique des dépenses rattachées au patrimoine de la SCI active.
-								</CardDescription>
-							</div>
-							<p class="text-[0.72rem] font-semibold tracking-[0.2em] uppercase text-muted-foreground">
-								{scopedCharges.length} enregistrement{scopedCharges.length > 1 ? 's' : ''}
-							</p>
+			<Card class="sci-section-card">
+				<CardHeader>
+					<div class="flex items-end justify-between gap-4">
+						<div>
+							<CardTitle class="text-lg">Journal des charges</CardTitle>
+							<CardDescription>
+								Historique des dépenses rattachées au patrimoine de la SCI active.
+							</CardDescription>
 						</div>
-					</CardHeader>
-					<CardContent class="grid gap-3 pt-0">
-						{#if scopedCharges.length === 0}
-							<div class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground">
-								Aucune charge documentée pour l’instant sur la SCI active.
-							</div>
-						{:else}
-							{#each scopedCharges as charge (String(charge.id))}
-								<div class="rounded-2xl border border-border bg-muted p-4">
-									<div class="flex flex-wrap items-start justify-between gap-3">
-										<div>
-											<div class="flex flex-wrap items-center gap-2">
-												<p class="text-sm font-semibold text-foreground">
-													{mapChargeTypeLabel(charge.type_charge)}
-												</p>
-												<StatusBadge text={formatFrDate(charge.date_paiement)} variant="neutral" size="md" />
-											</div>
-											<p class="mt-1 text-sm text-muted-foreground">
-												{resolveBienLabel(charge)}
+						<p
+							class="text-[0.72rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase"
+						>
+							{scopedCharges.length} enregistrement{scopedCharges.length > 1 ? 's' : ''}
+						</p>
+					</div>
+				</CardHeader>
+				<CardContent class="grid gap-3 pt-0">
+					{#if scopedCharges.length === 0}
+						<div
+							class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground"
+						>
+							Aucune charge documentée pour l’instant sur la SCI active.
+						</div>
+					{:else}
+						{#each scopedCharges as charge (String(charge.id))}
+							<div class="rounded-2xl border border-border bg-muted p-4">
+								<div class="flex flex-wrap items-start justify-between gap-3">
+									<div>
+										<div class="flex flex-wrap items-center gap-2">
+											<p class="text-sm font-semibold text-foreground">
+												{mapChargeTypeLabel(charge.type_charge)}
 											</p>
+											<StatusBadge
+												text={formatFrDate(charge.date_paiement)}
+												variant="neutral"
+												size="md"
+											/>
 										</div>
-										<div class="text-right">
-											<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Montant</p>
-											<p class="mt-1 text-sm font-semibold text-foreground">{charge.montant} €</p>
-										</div>
+										<p class="mt-1 text-sm text-muted-foreground">
+											{resolveBienLabel(charge)}
+										</p>
 									</div>
-									<div class="mt-4 flex flex-wrap justify-end gap-2">
-										<Button
-											size="sm"
-											variant="outline"
-											onclick={() => openEditCharge(charge)}
-											disabled={submitting || deleting}
+									<div class="text-right">
+										<p
+											class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
 										>
-											Modifier
-										</Button>
-										<Button
-											size="sm"
-											variant="outline"
-											onclick={() => openDeleteCharge(charge)}
-											disabled={submitting || deleting || busyChargeId === String(charge.id || '')}
-										>
-											Supprimer
-										</Button>
+											Montant
+										</p>
+										<p class="mt-1 text-sm font-semibold text-foreground">{charge.montant} €</p>
 									</div>
 								</div>
-							{/each}
-						{/if}
-					</CardContent>
-				</Card>
+								<div class="mt-4 flex flex-wrap justify-end gap-2">
+									<Button
+										size="sm"
+										variant="outline"
+										onclick={() => openEditCharge(charge)}
+										disabled={submitting || deleting}
+									>
+										Modifier
+									</Button>
+									<Button
+										size="sm"
+										variant="outline"
+										onclick={() => openDeleteCharge(charge)}
+										disabled={submitting || deleting || busyChargeId === String(charge.id || '')}
+									>
+										Supprimer
+									</Button>
+								</div>
+							</div>
+						{/each}
+					{/if}
+				</CardContent>
+			</Card>
 		{/if}
 	{/if}
 
@@ -508,42 +550,42 @@
 		description="Ajoute un mouvement de depense sur un bien de la SCI active sans quitter le journal."
 		size="lg"
 	>
-			{#if scopedBiens.length === 0}
-				<p class="sci-inline-alert sci-inline-alert-error">
-					Ajoute d’abord un bien à la SCI active avant de créer une charge.
-				</p>
-			{:else}
-				<div class="grid gap-4 py-2">
+		{#if scopedBiens.length === 0}
+			<p class="sci-inline-alert sci-inline-alert-error">
+				Ajoute d’abord un bien à la SCI active avant de créer une charge.
+			</p>
+		{:else}
+			<div class="grid gap-4 py-2">
+				<label class="sci-field">
+					<span class="sci-field-label">Bien</span>
+					<select bind:value={createDraft.idBien} class="sci-select">
+						{#each scopedBiens as bien (String(bien.id || ''))}
+							<option value={String(bien.id || '')}>
+								{bien.ville ? `${bien.adresse} - ${bien.ville}` : bien.adresse}
+							</option>
+						{/each}
+					</select>
+				</label>
+				<div class="grid gap-4 md:grid-cols-2">
 					<label class="sci-field">
-						<span class="sci-field-label">Bien</span>
-						<select bind:value={createDraft.idBien} class="sci-select">
-							{#each scopedBiens as bien (String(bien.id || ''))}
-								<option value={String(bien.id || '')}>
-									{bien.ville ? `${bien.adresse} - ${bien.ville}` : bien.adresse}
-								</option>
+						<span class="sci-field-label">Type de charge</span>
+						<select bind:value={createDraft.typeCharge} class="sci-select">
+							{#each CHARGE_TYPE_OPTIONS as typeOption (typeOption.value)}
+								<option value={typeOption.value}>{typeOption.label}</option>
 							{/each}
 						</select>
 					</label>
-					<div class="grid gap-4 md:grid-cols-2">
-						<label class="sci-field">
-							<span class="sci-field-label">Type de charge</span>
-							<select bind:value={createDraft.typeCharge} class="sci-select">
-								{#each CHARGE_TYPE_OPTIONS as typeOption (typeOption.value)}
-									<option value={typeOption.value}>{typeOption.label}</option>
-								{/each}
-							</select>
-						</label>
-						<label class="sci-field">
-							<span class="sci-field-label">Montant (€)</span>
-							<Input bind:value={createDraft.montant} type="number" min="1" step="10" />
-						</label>
-					</div>
 					<label class="sci-field">
-						<span class="sci-field-label">Date de paiement</span>
-						<Input bind:value={createDraft.datePaiement} type="date" />
+						<span class="sci-field-label">Montant (€)</span>
+						<Input bind:value={createDraft.montant} type="number" min="1" step="10" />
 					</label>
 				</div>
-			{/if}
+				<label class="sci-field">
+					<span class="sci-field-label">Date de paiement</span>
+					<Input bind:value={createDraft.datePaiement} type="date" />
+				</label>
+			</div>
+		{/if}
 		{#snippet footer()}
 			<div class="flex justify-end gap-3">
 				<Button variant="outline" onclick={() => (createDialogOpen = false)}>Annuler</Button>
@@ -560,26 +602,26 @@
 		description="Ajuste le type, le montant ou la date de paiement du mouvement selectionne."
 		size="lg"
 	>
-			<div class="grid gap-4 py-2">
+		<div class="grid gap-4 py-2">
+			<label class="sci-field">
+				<span class="sci-field-label">Type de charge</span>
+				<select bind:value={editDraft.typeCharge} class="sci-select">
+					{#each CHARGE_TYPE_OPTIONS as typeOption (typeOption.value)}
+						<option value={typeOption.value}>{typeOption.label}</option>
+					{/each}
+				</select>
+			</label>
+			<div class="grid gap-4 md:grid-cols-2">
 				<label class="sci-field">
-					<span class="sci-field-label">Type de charge</span>
-					<select bind:value={editDraft.typeCharge} class="sci-select">
-						{#each CHARGE_TYPE_OPTIONS as typeOption (typeOption.value)}
-							<option value={typeOption.value}>{typeOption.label}</option>
-						{/each}
-					</select>
+					<span class="sci-field-label">Montant (€)</span>
+					<Input bind:value={editDraft.montant} type="number" min="1" step="10" />
 				</label>
-				<div class="grid gap-4 md:grid-cols-2">
-					<label class="sci-field">
-						<span class="sci-field-label">Montant (€)</span>
-						<Input bind:value={editDraft.montant} type="number" min="1" step="10" />
-					</label>
-					<label class="sci-field">
-						<span class="sci-field-label">Date de paiement</span>
-						<Input bind:value={editDraft.datePaiement} type="date" />
-					</label>
-				</div>
+				<label class="sci-field">
+					<span class="sci-field-label">Date de paiement</span>
+					<Input bind:value={editDraft.datePaiement} type="date" />
+				</label>
 			</div>
+		</div>
 		{#snippet footer()}
 			<div class="flex justify-end gap-3">
 				<Button variant="outline" onclick={closeEditCharge}>Annuler</Button>
@@ -603,7 +645,9 @@
 					{mapChargeTypeLabel(chargePendingDelete?.type_charge)}
 				</p>
 				<p class="mt-1 text-muted-foreground">
-					{resolveBienLabel(chargePendingDelete || { id_bien: '', type_charge: '', montant: 0, date_paiement: '' })}
+					{resolveBienLabel(
+						chargePendingDelete || { id_bien: '', type_charge: '', montant: 0, date_paiement: '' }
+					)}
 					{#if chargePendingDelete?.date_paiement}
 						{' '}• {formatFrDate(chargePendingDelete.date_paiement)}
 					{/if}

@@ -19,7 +19,13 @@
 		detailLoading: boolean;
 	}
 
-	let { totalRecordedCharges, chargesCount, recentCharges, latestFiscalYear, detailLoading }: Props = $props();
+	let {
+		totalRecordedCharges,
+		chargesCount,
+		recentCharges,
+		latestFiscalYear,
+		detailLoading
+	}: Props = $props();
 </script>
 
 <Card class="sci-section-card">
@@ -40,8 +46,12 @@
 				{/each}
 			</div>
 		{:else}
-			<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Charges documentées</p>
+			<div
+				class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+			>
+				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Charges documentées
+				</p>
 				<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 					{formatEur(totalRecordedCharges, 'N/A')}
 				</p>
@@ -53,30 +63,51 @@
 			<div class="space-y-3">
 				{#if recentCharges.length}
 					{#each recentCharges.slice(0, 2) as charge (String(charge.id || `${charge.id_bien}-${charge.date_paiement}`))}
-						<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950">
+						<div
+							class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+						>
 							<div class="flex items-center justify-between gap-3">
-								<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{mapChargeTypeLabel(charge.type_charge)}</p>
-								<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatEur(charge.montant, 'N/A')}</p>
+								<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+									{mapChargeTypeLabel(charge.type_charge)}
+								</p>
+								<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+									{formatEur(charge.montant, 'N/A')}
+								</p>
 							</div>
-							<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Payée le {formatFrDate(charge.date_paiement)}</p>
+							<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+								Payée le {formatFrDate(charge.date_paiement)}
+							</p>
 						</div>
 					{/each}
 				{:else}
-					<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+					<div
+						class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+					>
 						Aucune charge récente documentée pour cette SCI.
 					</div>
 				{/if}
 			</div>
 
-			<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Dernier exercice fiscal</p>
+			<div
+				class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+			>
+				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Dernier exercice fiscal
+				</p>
 				{#if latestFiscalYear}
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Exercice {latestFiscalYear.annee}</p>
+					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+						Exercice {latestFiscalYear.annee}
+					</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-						Résultat {formatEur(latestFiscalYear.resultat_fiscal, 'N/A')} • revenus {formatEur(latestFiscalYear.total_revenus, 'N/A')}
+						Résultat {formatEur(latestFiscalYear.resultat_fiscal, 'N/A')} • revenus {formatEur(
+							latestFiscalYear.total_revenus,
+							'N/A'
+						)}
 					</p>
 				{:else}
-					<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Aucun exercice consolidé pour la SCI active.</p>
+					<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+						Aucun exercice consolidé pour la SCI active.
+					</p>
 				{/if}
 			</div>
 		{/if}

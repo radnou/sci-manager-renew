@@ -264,25 +264,23 @@
 			<div class="rounded-2xl border border-border bg-card p-6">
 				<p class="text-sm font-semibold text-ds-accent">Gérant solo</p>
 				<p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-					Marc gère 2 SCI familiales. Il génère ses quittances en un clic
-					et suit ses loyers sans tableur. Le calcul fiscal simplifié lui
-					fait gagner une demi-journée par trimestre.
+					Marc gère 2 SCI familiales. Il génère ses quittances en un clic et suit ses loyers sans
+					tableur. Le calcul fiscal simplifié lui fait gagner une demi-journée par trimestre.
 				</p>
 			</div>
 			<div class="rounded-2xl border border-border bg-card p-6">
 				<p class="text-sm font-semibold text-ds-accent">Cabinet comptable</p>
 				<p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-					Le cabinet Durand accompagne 15 SCI. Chaque associé accède à son
-					portefeuille, le cabinet centralise la conformité documentaire
-					et les échéances fiscales depuis un dashboard consolidé.
+					Le cabinet Durand accompagne 15 SCI. Chaque associé accède à son portefeuille, le cabinet
+					centralise la conformité documentaire et les échéances fiscales depuis un dashboard
+					consolidé.
 				</p>
 			</div>
 			<div class="rounded-2xl border border-border bg-card p-6">
 				<p class="text-sm font-semibold text-ds-accent">Opérateur patrimonial</p>
 				<p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-					Patrimonia pilote 8 SCI en exploitation. Le dashboard consolide
-					le cashflow mensuel, les taux de recouvrement et les alertes
-					de loyers impayés pour arbitrer rapidement.
+					Patrimonia pilote 8 SCI en exploitation. Le dashboard consolide le cashflow mensuel, les
+					taux de recouvrement et les alertes de loyers impayés pour arbitrer rapidement.
 				</p>
 			</div>
 		</div>
@@ -292,9 +290,7 @@
 	<section class="py-24">
 		<div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-16 text-center">
-				<h2 class="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
-					Questions fréquentes
-				</h2>
+				<h2 class="mb-4 text-3xl font-bold text-foreground sm:text-4xl">Questions fréquentes</h2>
 			</div>
 
 			<div class="space-y-6">

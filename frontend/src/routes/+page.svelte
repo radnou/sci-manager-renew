@@ -434,8 +434,8 @@
 						Mes données sont-elles sécurisées (RGPD) ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité
-						dédié (résumé des données, export JSON, suppression de compte).
+						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace
+						confidentialité dédié (résumé des données, export JSON, suppression de compte).
 					</p>
 				</article>
 
@@ -476,8 +476,8 @@
 						L'outil gère-t-il la conformité fiscale (2044, 2072) ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Un calcul simplifié du résultat foncier (revenus − charges) est disponible. La génération
-						PDF CERFA 2044/2072 et les exports fiscaux avancés sont en préparation.
+						Un calcul simplifié du résultat foncier (revenus − charges) est disponible. La
+						génération PDF CERFA 2044/2072 et les exports fiscaux avancés sont en préparation.
 					</p>
 				</article>
 
@@ -486,8 +486,8 @@
 						Que se passe-t-il si je veux arrêter ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander la
-						suppression de votre compte depuis l'espace confidentialité.
+						Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander
+						la suppression de votre compte depuis l'espace confidentialité.
 					</p>
 				</article>
 			</div>

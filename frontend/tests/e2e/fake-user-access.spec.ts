@@ -209,7 +209,9 @@ async function installCoreApiMocks(page: Page) {
 		const scopedBiens = biens.filter((bien) => String(bien.id_sci) === sciId);
 		const scopedLoyers = loyers.filter((loyer) => String(loyer.id_sci) === sciId);
 		const scopedCharges = charges.filter((charge) => String(charge.id_sci || '') === sciId);
-		const scopedFiscalite = exercicesFiscaux.filter((exercice) => String(exercice.id_sci) === sciId);
+		const scopedFiscalite = exercicesFiscaux.filter(
+			(exercice) => String(exercice.id_sci) === sciId
+		);
 		const totalMonthlyRent = scopedBiens.reduce((sum, bien) => sum + Number(bien.loyer_cc || 0), 0);
 		const totalMonthlyPropertyCharges = scopedBiens.reduce(
 			(sum, bien) => sum + Number(bien.charges || 0),
@@ -309,7 +311,15 @@ async function installCoreApiMocks(page: Page) {
 				loyers_count: 0,
 				user_role: 'gerant',
 				user_part: 100,
-				associes: [{ id: 'associe-new', nom: 'Rad Noumane', email: 'rad@sci.local', part: 100, role: 'gerant' }]
+				associes: [
+					{
+						id: 'associe-new',
+						nom: 'Rad Noumane',
+						email: 'rad@sci.local',
+						part: 100,
+						role: 'gerant'
+					}
+				]
 			});
 			await route.fulfill({
 				status: 201,
@@ -497,7 +507,8 @@ async function installCoreApiMocks(page: Page) {
 			const created = {
 				id: `loc-${locataires.length + 1}`,
 				id_bien: payload.id_bien,
-				id_sci: biens.find((bien) => String(bien.id) === String(payload.id_bien))?.id_sci || 'sci-1',
+				id_sci:
+					biens.find((bien) => String(bien.id) === String(payload.id_bien))?.id_sci || 'sci-1',
 				nom: payload.nom,
 				email: payload.email || null,
 				date_debut: payload.date_debut,
