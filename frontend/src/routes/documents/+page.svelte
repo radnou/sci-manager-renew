@@ -51,7 +51,7 @@
 				</CardHeader>
 				<CardContent>
 					{#if loading}
-						<div class="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
+						<div class="h-32 animate-pulse rounded-2xl bg-muted"></div>
 					{:else if loyers.length === 0}
 						<EmptyState
 							icon={FileText}
@@ -102,11 +102,11 @@
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<p class="text-sm text-slate-500 dark:text-slate-400">
+					<p class="text-sm text-muted-foreground">
 						Le calcul fiscal simplifié est disponible depuis le dashboard de chaque SCI.
 						La génération PDF CERFA 2044 est accessible via l'endpoint <code>/api/v1/cerfa/2044/pdf</code>.
 					</p>
-					<p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+					<p class="mt-2 text-xs text-muted-foreground">
 						CERFA 2072 et exports fiscaux avancés en préparation.
 					</p>
 				</CardContent>

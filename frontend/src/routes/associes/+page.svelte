@@ -15,6 +15,7 @@
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
 	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
 	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
@@ -390,39 +391,35 @@
 								Capital, rôles et statut d’accès compte de la SCI active.
 							</CardDescription>
 						</div>
-						<p class="text-[0.72rem] font-semibold tracking-[0.2em] uppercase text-slate-500">
+						<p class="text-[0.72rem] font-semibold tracking-[0.2em] uppercase text-muted-foreground">
 							{scopedAssocies.length} enregistrement{scopedAssocies.length > 1 ? 's' : ''}
 						</p>
 					</div>
 				</CardHeader>
 				<CardContent class="grid gap-3 pt-0">
 					{#if scopedAssocies.length === 0}
-						<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+						<div class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground">
 							Aucun associé documenté pour l’instant. Commence par renseigner la gouvernance de la SCI active.
 						</div>
 					{:else}
 						{#each scopedAssocies as associe (String(associe.id))}
-							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<div class="rounded-2xl border border-border bg-muted p-4">
 								<div class="flex flex-wrap items-start justify-between gap-3">
 									<div>
 										<div class="flex flex-wrap items-center gap-2">
-											<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{associe.nom}</p>
-											<span class="rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-												{mapAssociateRoleLabel(associe.role)}
-											</span>
+											<p class="text-sm font-semibold text-foreground">{associe.nom}</p>
+											<StatusBadge text={mapAssociateRoleLabel(associe.role)} variant="neutral" size="md" />
 											{#if associe.is_account_member}
-												<span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-													Accès compte
-												</span>
+												<StatusBadge text="Accès compte" variant="success" size="md" />
 											{/if}
 										</div>
-										<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+										<p class="mt-1 text-sm text-muted-foreground">
 											{associe.email || 'Email non renseigné'}
 										</p>
 									</div>
 									<div class="text-right">
-										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Part détenue</p>
-										<p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+										<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Part détenue</p>
+										<p class="mt-1 text-sm font-semibold text-foreground">
 											{formatPercent(associe.part, 'N/A')}
 										</p>
 									</div>
@@ -487,11 +484,11 @@
 							</select>
 						</label>
 					</div>
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="font-semibold text-slate-900 dark:text-slate-100">
+					<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
+						<p class="font-semibold text-foreground">
 							Capital restant à répartir: {formatPercent(metrics.remainingParts, '0 %')}
 						</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
+						<p class="mt-1 text-muted-foreground">
 							Les associés créés ici n’ouvrent pas automatiquement un accès compte. Les membres déjà
 							connectés restent signalés dans le registre.
 						</p>
@@ -562,9 +559,9 @@
 					pas supprimables ici.
 				</Dialog.Description>
 			</Dialog.Header>
-			<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-				<p class="font-semibold text-slate-900 dark:text-slate-100">{associePendingDelete?.nom}</p>
-				<p class="mt-1 text-slate-500 dark:text-slate-400">
+			<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
+				<p class="font-semibold text-foreground">{associePendingDelete?.nom}</p>
+				<p class="mt-1 text-muted-foreground">
 					{mapAssociateRoleLabel(associePendingDelete?.role)} • {formatPercent(associePendingDelete?.part, 'N/A')}
 				</p>
 			</div>
