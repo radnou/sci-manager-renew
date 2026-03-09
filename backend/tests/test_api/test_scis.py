@@ -111,3 +111,37 @@ def test_get_sci_detail_returns_identity_card(client, auth_headers, fake_supabas
     assert data["recent_loyers"][0]["id"] == "loyer-2"
     assert data["recent_charges"][0]["id"] == "charge-2"
     assert data["fiscalite"][0]["annee"] == 2025
+
+
+def test_create_sci_creates_membership(client, auth_headers, fake_supabase):
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "pro",
+            "status": "active",
+            "is_active": True,
+            "max_scis": 10,
+            "max_biens": 20,
+            "features": {
+                "multi_sci_enabled": True,
+                "charges_enabled": True,
+                "fiscalite_enabled": True,
+                "quitus_enabled": True,
+                "cerfa_enabled": True,
+                "priority_support": True,
+            },
+        }
+    ]
+    response = client.post(
+        "/api/v1/scis/",
+        json={"nom": "SCI Delta Paris", "siren": "111222333", "regime_fiscal": "IR"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["nom"] == "SCI Delta Paris"
+
+    associes = fake_supabase.store["associes"]
+    created_membership = next(row for row in associes if row["id_sci"] == payload["id"])
+    assert created_membership["user_id"] == "user-123"
+    assert created_membership["role"] == "gerant"

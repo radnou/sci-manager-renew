@@ -85,3 +85,54 @@ def test_update_and_delete_loyer(client, auth_headers):
 
     deleted = client.delete(f"/api/v1/loyers/{loyer_id}", headers=auth_headers)
     assert deleted.status_code == 204
+
+
+def test_list_loyers_rejects_invalid_date_range(client, auth_headers):
+    response = client.get(
+        "/api/v1/loyers/?date_from=2026-04-01&date_to=2026-02-01",
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["code"] == "validation_error"
+    assert payload["error"] == "date_from must be earlier than or equal to date_to"
+
+
+def test_update_loyer_rejects_empty_payload(client, auth_headers):
+    bien_payload = {
+        "id_sci": "sci-1",
+        "adresse": "12 rue Loyer",
+        "ville": "Marseille",
+        "code_postal": "13001",
+        "type_locatif": "nu",
+        "loyer_cc": 900.0,
+        "charges": 50.0,
+        "tmi": 20.0,
+    }
+    bien_created = client.post("/api/v1/biens/", json=bien_payload, headers=auth_headers)
+    assert bien_created.status_code == 201
+    bien_id = bien_created.json()["id"]
+
+    created = client.post(
+        "/api/v1/loyers/?id_sci=sci-1",
+        json={
+            "id_bien": bien_id,
+            "id_locataire": "loc-3",
+            "date_loyer": "2026-05-01",
+            "montant": 900.0,
+            "statut": "en_attente",
+            "quitus_genere": False,
+        },
+        headers=auth_headers,
+    )
+    assert created.status_code == 201
+
+    response = client.patch(
+        f"/api/v1/loyers/{created.json()['id']}",
+        json={},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["code"] == "validation_error"
+    assert payload["error"] == "No update fields provided"

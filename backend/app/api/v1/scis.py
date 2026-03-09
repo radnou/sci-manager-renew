@@ -3,17 +3,21 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from fastapi import APIRouter, Depends
+import structlog
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, ConfigDict, Field
 from supabase import create_client
 
 from app.core.config import settings
-from app.core.exceptions import DatabaseError, ResourceNotFoundError
+from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
 from app.core.security import get_current_user
 from app.models.biens import BienResponse
 from app.models.loyers import LoyerResponse
+from app.models.sci import SCICreate, SCIResponse
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/scis", tags=["scis"])
+logger = structlog.get_logger(__name__)
 
 
 class AssocieOverview(BaseModel):
@@ -116,6 +120,10 @@ def _select_by_scope(client, table_name: str, sci_ids: list[str], fields: str = 
     return _select_by_field_values(client, table_name, "id_sci", sci_ids, fields=fields)
 
 
+def _get_user_memberships(client, user_id: str) -> list[dict]:
+    return _execute_select(client.table("associes").select("*").eq("user_id", user_id))
+
+
 def _derive_sci_status(biens_count: int, loyers_count: int) -> str:
     if biens_count == 0:
         return "configuration"
@@ -177,7 +185,7 @@ def _build_sci_overview(
 async def list_scis(user_id: str = Depends(get_current_user)):
     client = _get_client()
 
-    memberships = _execute_select(client.table("associes").select("*").eq("user_id", user_id))
+    memberships = _get_user_memberships(client, user_id)
     sci_ids = [str(row.get("id_sci")) for row in memberships if row.get("id_sci")]
     if not sci_ids:
         return []
@@ -201,7 +209,7 @@ async def list_scis(user_id: str = Depends(get_current_user)):
 async def get_sci_detail(sci_id: str, user_id: str = Depends(get_current_user)):
     client = _get_client()
 
-    memberships = _execute_select(client.table("associes").select("*").eq("user_id", user_id))
+    memberships = _get_user_memberships(client, user_id)
     user_sci_ids = [str(row.get("id_sci")) for row in memberships if row.get("id_sci")]
     if sci_id not in user_sci_ids:
         raise ResourceNotFoundError("SCI", sci_id)
@@ -243,3 +251,45 @@ async def get_sci_detail(sci_id: str, user_id: str = Depends(get_current_user)):
         recent_charges=[ChargeOverview(**charge) for charge in _sort_rows_desc(charges_rows, "date_paiement")[:8]],
         fiscalite=[FiscaliteOverview(**fiscalite) for fiscalite in _sort_rows_desc(fiscalite_rows, "annee")[:4]],
     )
+
+
+@router.post("", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
+async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user)):
+    logger.info("creating_sci", user_id=user_id, nom=payload.nom)
+
+    summary = SubscriptionService.enforce_limit(user_id, "scis")
+    plan_key = str(summary.get("plan_key") or "")
+    features = summary.get("features") or {}
+    if summary.get("current_scis", 0) > 0 and not features.get("multi_sci_enabled", False):
+        raise UpgradeRequiredError(
+            "Le plan actif n'autorise pas la gestion de plusieurs SCI.",
+            plan_key=plan_key,
+        )
+
+    client = _get_client()
+    result = client.table("sci").insert(payload.model_dump(mode="json")).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    rows = result.data or []
+    if not rows:
+        raise DatabaseError("Unable to create SCI")
+
+    created = rows[0]
+
+    associe_result = client.table("associes").insert(
+        {
+            "id_sci": created["id"],
+            "user_id": user_id,
+            "nom": "Compte principal",
+            "email": None,
+            "part": 100,
+            "role": "gerant",
+        }
+    ).execute()
+    if getattr(associe_result, "error", None):
+        raise DatabaseError(str(associe_result.error))
+
+    logger.info("sci_created", user_id=user_id, sci_id=created.get("id"), plan_key=plan_key)
+    return created

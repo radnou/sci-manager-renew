@@ -22,15 +22,16 @@ function applyTheme(nextTheme: Theme, withTransition: boolean) {
 }
 
 function createThemeStore() {
-	const { subscribe, set, update } = writable<Theme>('dark');
+	const { subscribe, set, update } = writable<Theme>('light');
 
 	return {
 		subscribe,
-		toggle: () => update(theme => {
-			const newTheme = theme === 'light' ? 'dark' : 'light';
-			applyTheme(newTheme, true);
-			return newTheme;
-		}),
+		toggle: () =>
+			update((theme) => {
+				const newTheme = theme === 'light' ? 'dark' : 'light';
+				applyTheme(newTheme, true);
+				return newTheme;
+			}),
 		set: (theme: Theme) => {
 			const nextTheme = theme === 'light' ? 'light' : 'dark';
 			set(nextTheme);

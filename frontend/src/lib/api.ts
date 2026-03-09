@@ -3,6 +3,7 @@ import { getCurrentSession } from '$lib/auth/session';
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export type EntityId = number | string;
+export type PlanKey = 'free' | 'starter' | 'pro' | 'lifetime';
 
 export type BienType = 'nu' | 'meuble' | 'mixte';
 export type LoyerStatus = 'en_attente' | 'paye' | 'en_retard';
@@ -10,11 +11,15 @@ export type SCIStatus = 'configuration' | 'mise_en_service' | 'exploitation';
 
 export type Associe = {
 	id: EntityId;
+	id_sci?: EntityId | null;
 	user_id?: EntityId | null;
 	nom: string;
 	email?: string | null;
 	part?: number | null;
 	role?: string | null;
+	is_account_member?: boolean | null;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type SCIOverview = {
@@ -31,12 +36,23 @@ export type SCIOverview = {
 	associes?: Associe[];
 };
 
+export type SCICreatePayload = {
+	nom: string;
+	siren?: string | null;
+	regime_fiscal?: 'IR' | 'IS';
+};
+
 export type Charge = {
 	id?: EntityId;
 	id_bien: EntityId;
+	id_sci?: EntityId | null;
 	type_charge: string;
 	montant: number;
 	date_paiement: string;
+	bien_adresse?: string | null;
+	bien_ville?: string | null;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type Fiscalite = {
@@ -46,6 +62,10 @@ export type Fiscalite = {
 	total_revenus?: number | null;
 	total_charges?: number | null;
 	resultat_fiscal?: number | null;
+	regime_fiscal?: string | null;
+	nom_sci?: string | null;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export type Bien = {
@@ -63,6 +83,18 @@ export type Bien = {
 	rentabilite_brute?: number;
 	rentabilite_nette?: number;
 	cashflow_annuel?: number;
+	created_at?: string;
+	updated_at?: string;
+};
+
+export type Locataire = {
+	id?: EntityId;
+	id_bien: EntityId;
+	id_sci?: EntityId | null;
+	nom: string;
+	email?: string | null;
+	date_debut: string;
+	date_fin?: string | null;
 	created_at?: string;
 	updated_at?: string;
 };
@@ -118,6 +150,63 @@ export type BienUpdatePayload = {
 	prix_acquisition?: number | null;
 };
 
+export type LocataireCreatePayload = {
+	id_bien: EntityId;
+	nom: string;
+	email?: string | null;
+	date_debut: string;
+	date_fin?: string | null;
+};
+
+export type LocataireUpdatePayload = {
+	nom?: string;
+	email?: string | null;
+	date_debut?: string;
+	date_fin?: string | null;
+};
+
+export type AssocieCreatePayload = {
+	id_sci: EntityId;
+	nom: string;
+	email?: string | null;
+	part: number;
+	role: string;
+	user_id?: EntityId | null;
+};
+
+export type AssocieUpdatePayload = {
+	nom?: string;
+	email?: string | null;
+	part?: number;
+	role?: string;
+};
+
+export type ChargeCreatePayload = {
+	id_bien: EntityId;
+	type_charge: string;
+	montant: number;
+	date_paiement: string;
+};
+
+export type ChargeUpdatePayload = {
+	type_charge?: string;
+	montant?: number;
+	date_paiement?: string;
+};
+
+export type FiscaliteCreatePayload = {
+	id_sci: EntityId;
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+};
+
+export type FiscaliteUpdatePayload = {
+	annee?: number;
+	total_revenus?: number;
+	total_charges?: number;
+};
+
 export type LoyerCreatePayload = {
 	id_bien: EntityId;
 	id_locataire?: EntityId;
@@ -154,12 +243,37 @@ export type QuitusResponsePayload = {
 export type CheckoutMode = 'subscription' | 'payment';
 
 export type CheckoutSessionRequestPayload = {
-	price_id: string;
+	plan_key: PlanKey;
 	mode?: CheckoutMode;
 };
 
 export type CheckoutSessionResponsePayload = {
 	url: string;
+};
+
+export type SubscriptionEntitlements = {
+	plan_key: PlanKey;
+	plan_name: string;
+	status: string;
+	mode: CheckoutMode;
+	is_active: boolean;
+	stripe_price_id?: string | null;
+	entitlements_version: number;
+	max_scis?: number | null;
+	max_biens?: number | null;
+	current_scis: number;
+	current_biens: number;
+	remaining_scis?: number | null;
+	remaining_biens?: number | null;
+	over_limit: boolean;
+	features: Record<string, boolean>;
+};
+
+type ApiErrorPayload = {
+	error?: string;
+	code?: string;
+	details?: unknown;
+	request_id?: string;
 };
 
 export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -234,6 +348,13 @@ export function fetchScis() {
 	return apiFetch<SCIOverview[]>('/api/v1/scis/');
 }
 
+export function createSci(payload: SCICreatePayload) {
+	return apiFetch<SCIOverview>('/api/v1/scis/', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+}
+
 export function fetchSciDetail(sciId: EntityId) {
 	return apiFetch<SCIDetail>(`/api/v1/scis/${sciId}`);
 }
@@ -249,10 +370,57 @@ export function fetchLoyers() {
 	return apiFetch<Loyer[]>('/api/v1/loyers/');
 }
 
+export function fetchLocataires() {
+	return apiFetch<Locataire[]>('/api/v1/locataires/');
+}
+
+export function fetchAssocies(sciId?: EntityId) {
+	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetch<Associe[]>(`/api/v1/associes/${query}`);
+}
+
+export function fetchCharges(sciId?: EntityId) {
+	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetch<Charge[]>(`/api/v1/charges/${query}`);
+}
+
+export function fetchFiscalite(sciId?: EntityId) {
+	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetch<Fiscalite[]>(`/api/v1/fiscalite/${query}`);
+}
+
 export function createLoyer(loyer: LoyerCreatePayload) {
 	return apiFetch<Loyer>('/api/v1/loyers/', {
 		method: 'POST',
 		body: JSON.stringify(loyer)
+	});
+}
+
+export function createLocataire(locataire: LocataireCreatePayload) {
+	return apiFetch<Locataire>('/api/v1/locataires/', {
+		method: 'POST',
+		body: JSON.stringify(locataire)
+	});
+}
+
+export function createAssocie(associe: AssocieCreatePayload) {
+	return apiFetch<Associe>('/api/v1/associes/', {
+		method: 'POST',
+		body: JSON.stringify(associe)
+	});
+}
+
+export function createCharge(charge: ChargeCreatePayload) {
+	return apiFetch<Charge>('/api/v1/charges/', {
+		method: 'POST',
+		body: JSON.stringify(charge)
+	});
+}
+
+export function createFiscalite(exercice: FiscaliteCreatePayload) {
+	return apiFetch<Fiscalite>('/api/v1/fiscalite/', {
+		method: 'POST',
+		body: JSON.stringify(exercice)
 	});
 }
 
@@ -276,8 +444,60 @@ export function updateLoyer(loyerId: EntityId, payload: LoyerUpdatePayload) {
 	});
 }
 
+export function updateLocataire(locataireId: EntityId, payload: LocataireUpdatePayload) {
+	return apiFetch<Locataire>(`/api/v1/locataires/${locataireId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function updateAssocie(associeId: EntityId, payload: AssocieUpdatePayload) {
+	return apiFetch<Associe>(`/api/v1/associes/${associeId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function updateCharge(chargeId: EntityId, payload: ChargeUpdatePayload) {
+	return apiFetch<Charge>(`/api/v1/charges/${chargeId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function updateFiscalite(fiscaliteId: EntityId, payload: FiscaliteUpdatePayload) {
+	return apiFetch<Fiscalite>(`/api/v1/fiscalite/${fiscaliteId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(payload)
+	});
+}
+
 export function deleteLoyer(loyerId: EntityId) {
 	return apiFetch<void>(`/api/v1/loyers/${loyerId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteLocataire(locataireId: EntityId) {
+	return apiFetch<void>(`/api/v1/locataires/${locataireId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteAssocie(associeId: EntityId) {
+	return apiFetch<void>(`/api/v1/associes/${associeId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteCharge(chargeId: EntityId) {
+	return apiFetch<void>(`/api/v1/charges/${chargeId}`, {
+		method: 'DELETE'
+	});
+}
+
+export function deleteFiscalite(fiscaliteId: EntityId) {
+	return apiFetch<void>(`/api/v1/fiscalite/${fiscaliteId}`, {
 		method: 'DELETE'
 	});
 }
@@ -305,4 +525,37 @@ export function createCheckoutSession(payload: CheckoutSessionRequestPayload) {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});
+}
+
+export function fetchSubscriptionEntitlements() {
+	return apiFetch<SubscriptionEntitlements>('/api/v1/stripe/subscription');
+}
+
+// --- Notifications ---
+
+export type Notification = {
+	id: string;
+	type: 'late_payment' | 'status_change' | 'document_ready' | 'system' | 'info';
+	title: string;
+	message: string;
+	metadata: Record<string, unknown>;
+	read_at: string | null;
+	created_at: string;
+};
+
+export function fetchNotifications(unreadOnly = false): Promise<Notification[]> {
+	const params = unreadOnly ? '?unread_only=true' : '';
+	return apiFetch<Notification[]>(`/api/v1/notifications/${params}`);
+}
+
+export function fetchUnreadCount(): Promise<{ count: number }> {
+	return apiFetch<{ count: number }>('/api/v1/notifications/count');
+}
+
+export function markNotificationRead(id: string): Promise<Notification> {
+	return apiFetch<Notification>(`/api/v1/notifications/${id}/read`, { method: 'PATCH' });
+}
+
+export function markAllNotificationsRead(): Promise<{ updated: number }> {
+	return apiFetch<{ updated: number }>('/api/v1/notifications/read-all', { method: 'PATCH' });
 }

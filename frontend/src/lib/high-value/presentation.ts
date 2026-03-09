@@ -8,9 +8,29 @@ export function formatApiErrorMessage(error: unknown, fallback: string) {
 		return fallback;
 	}
 
-	const parsedMessage = parseStructuredErrorMessage(rawMessage);
+	const parsedError = parseStructuredErrorMessage(rawMessage);
+	const parsedMessage = parsedError.message;
 	if (!parsedMessage) {
 		return fallback;
+	}
+
+	if (parsedError.code === 'plan_limit_reached') {
+		const resource = String((parsedError.details as { resource?: string } | null)?.resource || '');
+		if (resource === 'biens') {
+			return 'Le quota de biens de ton offre est atteint. Passe à une offre supérieure pour continuer.';
+		}
+		if (resource === 'scis') {
+			return 'Le quota de SCI de ton offre est atteint. Passe à une offre supérieure pour continuer.';
+		}
+		return "Le quota de l'offre active est atteint.";
+	}
+
+	if (parsedError.code === 'upgrade_required') {
+		return parsedMessage || 'Cette fonctionnalité nécessite une offre supérieure.';
+	}
+
+	if (parsedError.code === 'subscription_inactive') {
+		return "L'abonnement actif ne permet pas cette opération. Vérifie ton offre ou réactive-la.";
 	}
 
 	const normalizedMachineMessage = normalizeMachineToken(parsedMessage);
@@ -67,23 +87,29 @@ function parseStructuredErrorMessage(rawMessage: string) {
 	try {
 		const parsed = JSON.parse(normalizedMessage);
 		if (typeof parsed === 'string') {
-			return parsed.trim() || null;
+			return { message: parsed.trim() || null, code: null, details: null };
 		}
 
 		if (parsed && typeof parsed === 'object') {
+			const code = typeof parsed.code === 'string' ? parsed.code.trim() : null;
+			const details = parsed.details ?? null;
 			if (typeof parsed.detail === 'string' && parsed.detail.trim()) {
-				return parsed.detail.trim();
+				return { message: parsed.detail.trim(), code, details };
 			}
 
 			if (typeof parsed.message === 'string' && parsed.message.trim()) {
-				return parsed.message.trim();
+				return { message: parsed.message.trim(), code, details };
+			}
+
+			if (typeof parsed.error === 'string' && parsed.error.trim()) {
+				return { message: parsed.error.trim(), code, details };
 			}
 		}
 	} catch {
-		return normalizedMessage;
+		return { message: normalizedMessage, code: null, details: null };
 	}
 
-	return normalizedMessage;
+	return { message: normalizedMessage, code: null, details: null };
 }
 
 function normalizeMachineToken(value: string | null | undefined) {

@@ -62,7 +62,7 @@
 	<link rel="canonical" href="https://gerersci.fr" />
 </svelte:head>
 
-<main class="min-h-screen bg-slate-50 dark:bg-slate-950">
+<main class="min-h-screen">
 	<HeroSection
 		title="Passez du tableur bricolé"
 		subtitle="au cockpit SCI qui convertit vos données en décisions"
@@ -71,17 +71,17 @@
 		secondaryCta={{ text: 'Voir la stratégie tarifaire', href: '/pricing' }}
 		badges={['Produit SaaS', 'SCI & immobilier locatif']}
 		kpis={[
-			{ value: '+6h', label: "gagnées par semaine sur l'administratif" },
-			{ value: '-42%', label: 'de retard de relance locative' },
+			{ value: '1', label: 'cockpit unique pour centraliser biens, loyers et documents' },
+			{ value: '100%', label: 'des retards visibles dans un tableau de bord centralisé' },
 			{ value: '100%', label: 'des flux consolidés dans une seule vue' }
 		]}
 	/>
 
 	<!-- Social Proof Section -->
-	<section class="bg-white py-16 dark:bg-slate-900">
+	<section class="bg-card py-16">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center">
-				<p class="text-lg font-medium text-slate-600 dark:text-slate-400">
+				<p class="text-lg font-medium text-muted-foreground">
 					Utilisé par des gérants SCI indépendants, cabinets comptables et opérateurs patrimoniaux
 				</p>
 				<div class="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -94,13 +94,13 @@
 	</section>
 
 	<!-- Features Section -->
-	<section id="features" class="bg-slate-50 py-24 dark:bg-slate-950">
+	<section id="features" class="py-24">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-16 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
 					>Positionnement produit</Badge
 				>
-				<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
+				<h2 class="text-3xl font-bold text-foreground sm:text-4xl">
 					Un produit conçu pour la croissance d'un solopreneur immobilier ambitieux
 				</h2>
 			</div>
@@ -129,7 +129,7 @@
 	</section>
 
 	<!-- Audience Section -->
-	<section class="bg-white py-24 dark:bg-slate-900">
+	<section class="bg-card py-24">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="grid gap-12 lg:grid-cols-2">
 				<div class="space-y-8">
@@ -137,21 +137,21 @@
 						<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
 							>Pour le gérant SCI</Badge
 						>
-						<h3 class="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-100">
+						<h3 class="mb-4 text-2xl font-bold text-foreground">
 							Vous pilotez enfin vos actifs comme un vrai portefeuille
 						</h3>
-						<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+						<ul class="space-y-3 text-muted-foreground">
 							<li class="flex items-start">
-								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
+								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-accent"></div>
 								Suivi des biens, loyers et quittances dans un seul système
 							</li>
 							<li class="flex items-start">
-								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Vue des risques de retard avant impact trésorerie
+								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-accent"></div>
+								Suivi des retards en temps réel dans votre cockpit
 							</li>
 							<li class="flex items-start">
-								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Données prêtes pour votre comptable ou investisseur
+								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-accent"></div>
+								Données structurées pour faciliter les échanges avec votre comptable
 							</li>
 						</ul>
 					</div>
@@ -162,20 +162,20 @@
 						<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
 							>Pour l'opérateur croissance</Badge
 						>
-						<h3 class="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-100">
+						<h3 class="mb-4 text-2xl font-bold text-foreground">
 							Votre levier n'est plus le temps, c'est le système
 						</h3>
-						<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+						<ul class="space-y-3 text-muted-foreground">
 							<li class="flex items-start">
-								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Routines opérationnelles répétables en 10 minutes par jour
+								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-accent"></div>
+								Processus de suivi standardisés pour chaque SCI
 							</li>
 							<li class="flex items-start">
-								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
-								Backlog priorisé par impact financier réel
+								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-accent"></div>
+								Points de vigilance automatiques sur vos flux
 							</li>
 							<li class="flex items-start">
-								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
+								<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-accent"></div>
 								Vision instantanée pour arbitrer, vendre ou refinancer
 							</li>
 						</ul>
@@ -186,25 +186,25 @@
 	</section>
 
 	<!-- CTA Section -->
-	<section class="bg-gradient-to-r from-blue-600 to-cyan-600 py-24">
+	<section class="bg-ds-accent py-24">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center">
 				<Badge
 					variant="secondary"
-					class="mb-4 border-white/20 bg-white/10 px-3 py-1 text-sm font-medium text-white"
+					class="mb-4 border-ds-accent-foreground/20 bg-ds-accent-foreground/10 px-3 py-1 text-sm font-medium text-ds-accent-foreground"
 				>
 					Offre de lancement
 				</Badge>
-				<h2 class="mb-4 text-3xl font-bold text-white sm:text-4xl">
+				<h2 class="mb-4 text-3xl font-bold text-ds-accent-foreground sm:text-4xl">
 					Accès anticipé aux 100 premiers comptes actifs
 				</h2>
-				<p class="mx-auto mb-8 max-w-2xl text-xl text-blue-100">
-					Onboardings guidés, feedback produit prioritaire et roadmap partagée en direct.
+				<p class="mx-auto mb-8 max-w-2xl text-xl text-ds-accent-foreground/80">
+					Démarrage rapide, feedback produit prioritaire et roadmap partagée en direct.
 				</p>
 				<a href="/login">
 					<Button
 						size="lg"
-						class="bg-white px-8 py-3 text-lg font-semibold text-blue-600 shadow-lg hover:bg-blue-50"
+						class="bg-card px-8 py-3 text-lg font-semibold text-ds-accent shadow-lg hover:bg-card/90"
 					>
 						Rejoindre la liste prioritaire
 					</Button>
@@ -214,16 +214,16 @@
 	</section>
 
 	<!-- Market Data Section -->
-	<section id="market-data" class="bg-slate-50 py-24 dark:bg-slate-950">
+	<section id="market-data" class="py-24">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-16 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
 					>Données du secteur</Badge
 				>
-				<h2 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
+				<h2 class="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
 					Chiffres clés de la gestion immobilière en France
 				</h2>
-				<p class="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-400">
+				<p class="mx-auto max-w-2xl text-lg text-muted-foreground">
 					Sources officielles et études récentes (2024-2025)
 				</p>
 			</div>
@@ -250,76 +250,76 @@
 			</div>
 
 			<!-- KPI Section -->
-			<div class="mb-16 rounded-lg bg-white p-8 dark:bg-slate-900">
-				<h3 class="mb-8 text-center text-2xl font-bold text-slate-900 dark:text-slate-100">
+			<div class="mb-16 rounded-lg border border-border bg-card p-8">
+				<h3 class="mb-8 text-center text-2xl font-bold text-foreground">
 					KPI critiques à suivre (standards sectoriels)
 				</h3>
 				<div class="grid gap-6 md:grid-cols-3">
 					<div class="text-center">
-						<div class="mb-2 text-4xl font-bold text-blue-600 dark:text-blue-400">>98%</div>
-						<div class="text-slate-600 dark:text-slate-400">Taux de recouvrement optimal</div>
-						<div class="mt-1 text-sm text-slate-500 dark:text-slate-500">Source: Lockimmo</div>
+						<div class="mb-2 text-4xl font-bold text-ds-accent">>98%</div>
+						<div class="text-muted-foreground">Taux de recouvrement optimal</div>
+						<div class="mt-1 text-sm text-muted-foreground">Source: Lockimmo</div>
 					</div>
 					<div class="text-center">
-						<div class="mb-2 text-4xl font-bold text-blue-600 dark:text-blue-400">5%</div>
-						<div class="text-slate-600 dark:text-slate-400">Taux de vacance cible</div>
-						<div class="mt-1 text-sm text-slate-500 dark:text-slate-500">Source: CAFPI</div>
+						<div class="mb-2 text-4xl font-bold text-ds-accent">5%</div>
+						<div class="text-muted-foreground">Taux de vacance cible</div>
+						<div class="mt-1 text-sm text-muted-foreground">Source: CAFPI</div>
 					</div>
 					<div class="text-center">
-						<div class="mb-2 text-4xl font-bold text-blue-600 dark:text-blue-400">30j</div>
-						<div class="text-slate-600 dark:text-slate-400">Délai de paiement légal</div>
-						<div class="mt-1 text-sm text-slate-500 dark:text-slate-500">Source: Manda</div>
+						<div class="mb-2 text-4xl font-bold text-ds-accent">30j</div>
+						<div class="text-muted-foreground">Délai de paiement légal</div>
+						<div class="mt-1 text-sm text-muted-foreground">Source: Manda</div>
 					</div>
 				</div>
 			</div>
 
 			<!-- Regulatory Context -->
 			<div
-				class="mb-16 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 p-8 dark:from-slate-800 dark:to-slate-900"
+				class="mb-16 rounded-lg border border-ds-warning/30 bg-ds-warning-soft p-8"
 			>
-				<h3 class="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-100">
+				<h3 class="mb-4 text-2xl font-bold text-foreground">
 					Cadre réglementaire: Loi ELAN
 				</h3>
-				<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+				<ul class="space-y-3 text-muted-foreground">
 					<li class="flex items-start">
-						<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-amber-500"></div>
+						<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-warning"></div>
 						<span
 							><strong>Sanctions encadrement loyers:</strong> Jusqu'à 15000€ pour les SCI (personnes morales)
 							ne respectant pas l'encadrement</span
 						>
 					</li>
 					<li class="flex items-start">
-						<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-amber-500"></div>
+						<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-warning"></div>
 						<span
 							><strong>Performance énergétique:</strong> Logements classés G interdits à la location depuis
 							2025</span
 						>
 					</li>
 					<li class="flex items-start">
-						<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-amber-500"></div>
+						<div class="mt-1 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-ds-warning"></div>
 						<span
 							><strong>Obligations décence:</strong> Sanctions renforcées pour non-respect des obligations
 							de salubrité</span
 						>
 					</li>
 				</ul>
-				<p class="mt-4 text-sm text-slate-500 dark:text-slate-500">
+				<p class="mt-4 text-sm text-muted-foreground">
 					Sources: Crédit Agricole e-immobilier, SGL, Empruntis
 				</p>
 			</div>
 
 			<!-- Studies Section -->
-			<div id="studies" class="mb-16 rounded-lg bg-white p-8 dark:bg-slate-900">
+			<div id="studies" class="mb-16 rounded-lg border border-border bg-card p-8">
 				<div class="mb-8 text-center">
 					<div
-						class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
+						class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-ds-accent-soft"
 					>
-						<FileText class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+						<FileText class="h-6 w-6 text-ds-accent" />
 					</div>
-					<h3 class="mb-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+					<h3 class="mb-2 text-2xl font-bold text-foreground">
 						Études détaillées consultées
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
+					<p class="text-muted-foreground">
 						Synthèse issue des études documentées dans <code
 							>claudedocs/landing_page_update_2026-03-05.md</code
 						>.
@@ -329,17 +329,17 @@
 				<div class="grid gap-4 md:grid-cols-2">
 					{#each studyReferences as study (study.title)}
 						<article
-							class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/60"
+							class="rounded-xl border border-border bg-muted p-5"
 						>
-							<h4 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+							<h4 class="mb-2 text-lg font-semibold text-foreground">
 								{study.title}
 							</h4>
-							<p class="mb-3 text-sm text-slate-600 dark:text-slate-400">{study.finding}</p>
+							<p class="mb-3 text-sm text-muted-foreground">{study.finding}</p>
 							<a
 								href={study.url}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+								class="text-sm font-medium text-ds-accent hover:text-ds-accent-hover"
 							>
 								Source: {study.source}
 							</a>
@@ -350,7 +350,7 @@
 
 			<!-- Testimonials -->
 			<div class="mb-12 text-center">
-				<h3 class="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-100">
+				<h3 class="mb-4 text-2xl font-bold text-foreground">
 					Témoignages de clients pilotes
 				</h3>
 			</div>
@@ -364,14 +364,14 @@
 					rating={5}
 				/>
 				<TestimonialCard
-					quote="L'automatisation des quittances nous a fait gagner 3h par semaine. Le ROI est immédiat et l'outil évolue avec nos besoins."
+					quote="La génération des quittances en un clic nous simplifie la vie. Le ROI est immédiat et l'outil évolue avec nos besoins."
 					author="Pierre Martin"
 					role="Opérateur immobilier"
 					company="Martin Investissements"
 					rating={5}
 				/>
 				<TestimonialCard
-					quote="Interface intuitive et fonctionnalités complètes. Parfait pour gérer notre portefeuille de 15 biens sans complexité."
+					quote="Interface intuitive pour gérer notre portefeuille de 15 biens sans complexité. Le cockpit centralise tout ce qu'il faut."
 					author="Sophie Leroy"
 					role="Directrice patrimoniale"
 					company="Cabinet Leroy & Associés"
@@ -382,119 +382,119 @@
 	</section>
 
 	<!-- FAQ Section -->
-	<section class="bg-white py-24 dark:bg-slate-900">
+	<section class="bg-card py-24">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-16 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
 					>Questions fréquentes</Badge
 				>
-				<h2 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
+				<h2 class="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
 					Décider rapidement si GererSCI est fait pour vous
 				</h2>
-				<p class="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-400">
+				<p class="mx-auto max-w-2xl text-lg text-muted-foreground">
 					Réponses aux questions les plus posées par les gérants de SCI
 				</p>
 			</div>
 
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
 				<!-- Général -->
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Le produit est-il adapté à une petite SCI familiale ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
+					<p class="text-muted-foreground">
 						Absolument. L'interface est pensée pour démarrer simple avec 1-2 biens, puis monter en
 						sophistication sans refonte.
 					</p>
 				</article>
 
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Puis-je l'utiliser avec mon expert-comptable actuel ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
+					<p class="text-muted-foreground">
 						Oui. Les données sont structurées dans le cockpit pour faciliter les échanges avec votre
 						comptable. Les exports avancés sont planifiés dans la roadmap.
 					</p>
 				</article>
 
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Quelle promesse principale en 30 jours ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
-						Reprendre le contrôle sur les flux de loyers, identifier les retards avant impact
-						trésorerie, et gagner 2-3h par semaine sur l'administratif.
+					<p class="text-muted-foreground">
+						Reprendre le contrôle sur les flux de loyers, identifier les retards dans un cockpit
+						centralisé, et structurer votre suivi SCI.
 					</p>
 				</article>
 
 				<!-- Sécurité & Données -->
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Mes données sont-elles sécurisées (RGPD) ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
-						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité
-						dédié (résumé des données, export JSON, suppression de compte).
+					<p class="text-muted-foreground">
+						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace
+						confidentialité dédié (résumé des données, export JSON, suppression de compte).
 					</p>
 				</article>
 
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Comment migrer depuis Excel ou autre outil ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
+					<p class="text-muted-foreground">
 						La version actuelle privilégie une saisie structurée rapide pour repartir sur des bases
-						fiables. Le module d'import CSV/Excel est en cours d'intégration.
+						fiables. Un module d'import CSV/Excel est prévu dans la roadmap.
 					</p>
 				</article>
 
 				<!-- Pricing & Support -->
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Y a-t-il un essai gratuit ou une démo ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
+					<p class="text-muted-foreground">
 						Vous pouvez créer un compte immédiatement pour découvrir l'interface, puis activer
 						l'abonnement depuis la page tarifs.
 					</p>
 				</article>
 
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Quel support technique est disponible ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
+					<p class="text-muted-foreground">
 						Un support email est disponible pour les demandes produit et incidents techniques.
 						L'objectif de réponse est sous 24-48h ouvrées.
 					</p>
 				</article>
 
 				<!-- Conformité & Fiscalité -->
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						L'outil gère-t-il la conformité fiscale (2044, 2072) ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
-						Un endpoint CERFA 2044 est disponible en version bêta (calcul simplifié). La couverture
-						complète 2072 et les exports fiscaux avancés sont en préparation.
+					<p class="text-muted-foreground">
+						Un calcul simplifié du résultat foncier (revenus − charges) est disponible. La
+						génération PDF CERFA 2044/2072 et les exports fiscaux avancés sont en préparation.
 					</p>
 				</article>
 
-				<article class="rounded-lg bg-slate-50 p-6 dark:bg-slate-800">
-					<h3 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				<article class="rounded-lg border border-border bg-muted p-6">
+					<h3 class="mb-3 text-lg font-semibold text-foreground">
 						Que se passe-t-il si je veux arrêter ?
 					</h3>
-					<p class="text-slate-600 dark:text-slate-400">
-						Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander la
-						suppression de votre compte depuis l'espace confidentialité.
+					<p class="text-muted-foreground">
+						Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander
+						la suppression de votre compte depuis l'espace confidentialité.
 					</p>
 				</article>
 			</div>
 
 			<!-- CTA supplémentaire -->
 			<div class="mt-16 text-center">
-				<p class="mb-6 text-slate-600 dark:text-slate-400">Vous avez d'autres questions ?</p>
+				<p class="mb-6 text-muted-foreground">Vous avez d'autres questions ?</p>
 				<a href="/login">
 					<Button variant="outline" size="lg">Accéder à la liste prioritaire</Button>
 				</a>

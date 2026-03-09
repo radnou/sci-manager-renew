@@ -9,10 +9,15 @@
 
 	const labelMap: Record<string, string> = {
 		dashboard: 'Cockpit',
-		scis: 'SCI',
+		scis: 'Portefeuille',
+		exploitation: 'Exploitation',
+		finance: 'Finance',
 		biens: 'Biens',
+		associes: 'Associés',
+		charges: 'Charges',
+		fiscalite: 'Fiscalité',
 		loyers: 'Loyers',
-		pricing: 'Tarifs',
+		pricing: 'Offre et facturation',
 		login: 'Connexion',
 		register: 'Inscription',
 		privacy: 'Confidentialité',

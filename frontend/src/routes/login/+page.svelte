@@ -48,6 +48,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Connexion — GererSCI</title>
+	<meta name="description" content="Connectez-vous à votre espace GererSCI." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">

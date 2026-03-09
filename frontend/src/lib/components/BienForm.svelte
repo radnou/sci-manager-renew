@@ -15,7 +15,6 @@
 	type BienFormSubmit = (
 		payload: BienCreatePayload | BienUpdatePayload
 	) => Promise<boolean | void> | boolean | void;
-	const defaultSciId = import.meta.env.VITE_DEFAULT_SCI_ID || 'sci-1';
 
 	let {
 		title = 'Nouveau bien',
@@ -23,11 +22,13 @@
 		mode = 'create',
 		submitLabel = 'Ajouter le bien',
 		cancelLabel = 'Annuler',
-		activeSciId = defaultSciId,
+		activeSciId = '',
 		activeSciLabel = 'SCI active',
 		showSciField = false,
 		initialValues = null,
 		submitting = false,
+		disabled = false,
+		disabledMessage = '',
 		onCancel = undefined,
 		onSubmit = () => true
 	}: {
@@ -41,11 +42,13 @@
 		showSciField?: boolean;
 		initialValues?: Bien | null;
 		submitting?: boolean;
+		disabled?: boolean;
+		disabledMessage?: string;
 		onCancel?: (() => void) | undefined;
 		onSubmit?: BienFormSubmit;
 	} = $props();
 
-	let idSci = $state(defaultSciId);
+	let idSci = $state('');
 	let adresse = $state('');
 	let ville = $state('');
 	let codePostal = $state('');
@@ -82,7 +85,7 @@
 	}
 
 	function applyBienValues(bien: Bien) {
-		idSci = String(bien.id_sci || activeSciId || defaultSciId);
+		idSci = String(bien.id_sci || activeSciId || '');
 		adresse = bien.adresse || '';
 		ville = bien.ville || '';
 		codePostal = bien.code_postal || '';
@@ -95,7 +98,7 @@
 	}
 
 	$effect(() => {
-		idSci = activeSciId || defaultSciId;
+		idSci = activeSciId || '';
 	});
 
 	$effect(() => {
@@ -152,38 +155,29 @@
 		<CardDescription>{description}</CardDescription>
 	</CardHeader>
 	<CardContent>
+		{#if disabled && disabledMessage}
+			<p class="sci-inline-alert sci-inline-alert-error mb-4">{disabledMessage}</p>
+		{/if}
 		<form
 			bind:this={formElement}
 			class="grid gap-3 md:grid-cols-4"
 			onsubmit={handleSubmit}
 			aria-label="Formulaire d'ajout de bien immobilier"
 		>
-			{#if showSciField}
-				<label for="bien-id-sci" class="sci-field">
-					<span class="sci-field-label">SCI</span>
-					<Input
-						id="bien-id-sci"
-						bind:value={idSci}
-						required
-						placeholder="SCI principale"
-						aria-required="true"
-					/>
-				</label>
-			{:else}
-				<div class="sci-field">
-					<span class="sci-field-label">SCI rattachée</span>
-					<div
-						class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-					>
-						{activeSciLabel}
-					</div>
+			<div class="sci-field">
+				<span class="sci-field-label">{showSciField ? 'SCI à sélectionner' : 'SCI rattachée'}</span>
+				<div
+					class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+				>
+					{activeSciLabel}
 				</div>
-			{/if}
+			</div>
 			<label for="bien-adresse" class="sci-field md:col-span-2">
 				<span class="sci-field-label">Adresse</span>
 				<Input
 					id="bien-adresse"
 					bind:value={adresse}
+					{disabled}
 					required
 					placeholder="14 rue Saint-Honoré"
 					aria-required="true"
@@ -194,6 +188,7 @@
 				<Input
 					id="bien-ville"
 					bind:value={ville}
+					{disabled}
 					required
 					placeholder="Paris"
 					aria-required="true"
@@ -204,6 +199,7 @@
 				<Input
 					id="bien-code-postal"
 					bind:value={codePostal}
+					{disabled}
 					required
 					pattern="[0-9]{5}"
 					placeholder="75001"
@@ -226,6 +222,7 @@
 				<select
 					id="bien-type-locatif"
 					bind:value={typeLocatif}
+					{disabled}
 					class="sci-select"
 					aria-label="Type de location"
 				>
@@ -239,6 +236,7 @@
 				<Input
 					id="bien-loyer-cc"
 					bind:value={loyerCC}
+					{disabled}
 					type="number"
 					min="0"
 					step="10"
@@ -250,6 +248,7 @@
 				<Input
 					id="bien-charges"
 					bind:value={charges}
+					{disabled}
 					type="number"
 					min="0"
 					step="10"
@@ -261,6 +260,7 @@
 				<Input
 					id="bien-tmi"
 					bind:value={tmi}
+					{disabled}
 					type="number"
 					min="0"
 					max="100"
@@ -273,6 +273,7 @@
 				<Input
 					id="bien-acquisition-date"
 					bind:value={acquisitionDate}
+					{disabled}
 					type="date"
 					aria-label="Date d'acquisition du bien"
 				/>
@@ -282,6 +283,7 @@
 				<Input
 					id="bien-prix-acquisition"
 					bind:value={prixAcquisition}
+					{disabled}
 					type="number"
 					min="0"
 					step="1000"
@@ -296,7 +298,7 @@
 				{/if}
 				<Button
 					type="button"
-					disabled={submitting}
+					disabled={submitting || disabled}
 					class="min-w-[11rem]"
 					aria-live="polite"
 					onclick={() => {

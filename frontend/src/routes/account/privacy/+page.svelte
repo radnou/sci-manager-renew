@@ -1,9 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import PageSpecificSkeleton from '$lib/components/PageSpecificSkeleton.svelte';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { addToast } from '$lib/components/ui/toast';
 
 	interface DataSummary {
@@ -26,6 +37,7 @@
 	let dataSummary = $state<DataSummary | null>(null);
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmText = $state('');
+	let loadError = $state('');
 
 	onMount(async () => {
 		await loadDataSummary();
@@ -33,8 +45,11 @@
 
 	async function loadDataSummary() {
 		loading = true;
+		loadError = '';
 		try {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
 			if (!session) {
 				goto('/login');
 				return;
@@ -42,16 +57,18 @@
 
 			const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/gdpr/data-summary`, {
 				headers: {
-					'Authorization': `Bearer ${session.access_token}`
+					Authorization: `Bearer ${session.access_token}`
 				}
 			});
 
 			if (response.ok) {
 				dataSummary = await response.json();
 			} else {
+				loadError = 'Impossible de charger le résumé des données personnelles.';
 				addToast({ title: 'Erreur lors du chargement du résumé des données', variant: 'error' });
 			}
 		} catch (error) {
+			loadError = 'Erreur réseau pendant le chargement des données personnelles.';
 			addToast({ title: 'Erreur réseau', variant: 'error' });
 			console.error(error);
 		} finally {
@@ -62,7 +79,9 @@
 	async function exportData() {
 		exportLoading = true;
 		try {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
 			if (!session) {
 				goto('/login');
 				return;
@@ -70,7 +89,7 @@
 
 			const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/gdpr/data-export`, {
 				headers: {
-					'Authorization': `Bearer ${session.access_token}`
+					Authorization: `Bearer ${session.access_token}`
 				}
 			});
 
@@ -78,12 +97,18 @@
 				const data = (await response.json()) as { export_url?: string; expires_at?: string };
 				if (data.export_url) {
 					window.open(data.export_url, '_blank', 'noopener,noreferrer');
-					addToast({ title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.', variant: 'success' });
+					addToast({
+						title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.',
+						variant: 'success'
+					});
 				} else {
-					addToast({ title: "Export cree, mais aucun lien de telechargement n'a ete retourne.", variant: 'error' });
+					addToast({
+						title: "Export cree, mais aucun lien de telechargement n'a ete retourne.",
+						variant: 'error'
+					});
 				}
 			} else {
-				addToast({ title: 'Erreur lors de l\'export des données', variant: 'error' });
+				addToast({ title: "Erreur lors de l'export des données", variant: 'error' });
 			}
 		} catch (error) {
 			addToast({ title: 'Erreur réseau', variant: 'error' });
@@ -101,7 +126,9 @@
 
 		deleteLoading = true;
 		try {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
 			if (!session) {
 				goto('/login');
 				return;
@@ -110,7 +137,7 @@
 			const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/gdpr/account`, {
 				method: 'DELETE',
 				headers: {
-					'Authorization': `Bearer ${session.access_token}`
+					Authorization: `Bearer ${session.access_token}`
 				}
 			});
 
@@ -134,124 +161,185 @@
 	<title>Mes Données Personnelles - GererSCI</title>
 </svelte:head>
 
-<div class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-	<div class="mb-8">
-		<h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-			Mes Données Personnelles
-		</h1>
-		<p class="text-slate-600 dark:text-slate-400">
-			Gérez vos données conformément au RGPD (Art. 15, 17, 20)
-		</p>
-	</div>
+<section class="sci-page-shell">
+	<WorkspaceHeader
+		eyebrow="Confidentialité • droits RGPD"
+		title="Données et confidentialité"
+		subtitle="Export, transparence et suppression du compte passent par ce workspace. L'objectif est de garder les demandes RGPD lisibles et traçables, sans les perdre dans les préférences locales."
+		contextLabel="Compte concerné"
+		contextValue={dataSummary?.email || 'Session connectée'}
+		contextDetail={dataSummary
+			? `${dataSummary.data_summary.sci_count} SCI • ${dataSummary.data_summary.biens_count} biens • ${dataSummary.data_summary.loyers_count} loyers`
+			: 'Les demandes RGPD portent sur l’ensemble des données rattachées au compte.'}
+	>
+		<Button onclick={exportData} disabled={exportLoading}>
+			{exportLoading ? 'Export en cours...' : 'Exporter mes données'}
+		</Button>
+		<Button href="/account" variant="outline">Retour au compte</Button>
+	</WorkspaceHeader>
 
 	{#if loading}
-		<Card>
-			<CardContent class="p-8 text-center">
-				<p class="text-slate-600 dark:text-slate-400">Chargement...</p>
-			</CardContent>
-		</Card>
-	{:else if dataSummary}
-		<div class="space-y-6">
-			<!-- Résumé des données -->
-			<Card>
+		<PageSpecificSkeleton
+			mode="hub"
+			eyebrow="Chargement confidentialité"
+			title="Préparation des données personnelles"
+			description="On consolide le résumé du compte, les volumes stockés et les actions RGPD disponibles."
+		/>
+	{:else if !dataSummary}
+		<EmptyState
+			align="left"
+			eyebrow="Résumé indisponible"
+			title="Impossible de charger les données personnelles"
+			description={loadError ||
+				"Le résumé RGPD n'a pas pu être récupéré. Reviens au compte ou recharge la page."}
+			actions={[
+				{ label: 'Retour au compte', href: '/account' },
+				{ label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }
+			]}
+		/>
+	{:else}
+		<WorkspaceActionBar
+			eyebrow="Cadre RGPD"
+			title="Transparence, portabilité, suppression"
+			description="Commence par la lecture du périmètre stocké, puis exporte les données si besoin. La suppression du compte reste une action séparée et explicitement confirmée."
+		>
+			<div class="sci-action-grid">
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Périmètre stocké</p>
+					<p class="sci-action-card-value">
+						{dataSummary.data_summary.sci_count} SCI • {dataSummary.data_summary.biens_count} biens
+					</p>
+					<p class="sci-action-card-body">
+						Le résumé agrège les données principales rattachées au compte.
+					</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Portabilité</p>
+					<p class="sci-action-card-value">Export JSON immédiat</p>
+					<p class="sci-action-card-body">
+						Télécharge une copie structurée des données personnelles et métier.
+					</p>
+				</div>
+				<div class="sci-action-card">
+					<p class="sci-action-card-title">Suppression</p>
+					<p class="sci-action-card-value">Confirmation explicite requise</p>
+					<p class="sci-action-card-body">
+						La suppression du compte reste irréversible et séparée des autres actions.
+					</p>
+				</div>
+			</div>
+			<div class="sci-primary-actions mt-5">
+				<Button onclick={exportData} disabled={exportLoading}>
+					{exportLoading ? 'Export en cours...' : 'Exporter mes données'}
+				</Button>
+				<Button href="/account" variant="outline">Ouvrir le compte</Button>
+				<Button href="/dashboard" variant="outline">Retour au cockpit</Button>
+			</div>
+			{#snippet aside()}
+				<WorkspaceRailCard
+					title="Support et recours"
+					description="Canal RGPD direct et recours externe si les droits du compte ne sont pas respectés."
+				>
+					<div class="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Contact RGPD</p>
+							<p class="sci-action-card-value">
+								<a
+									href="mailto:privacy@gerersci.fr"
+									class="text-cyan-300 underline-offset-4 hover:underline"
+								>
+									privacy@gerersci.fr
+								</a>
+							</p>
+						</div>
+						<div class="sci-action-card">
+							<p class="sci-action-card-title">Autorité de contrôle</p>
+							<p class="sci-action-card-value">
+								<a
+									href="https://www.cnil.fr"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-cyan-300 underline-offset-4 hover:underline"
+								>
+									CNIL
+								</a>
+							</p>
+						</div>
+					</div>
+				</WorkspaceRailCard>
+			{/snippet}
+		</WorkspaceActionBar>
+
+		<div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+			<Card class="sci-section-card">
 				<CardHeader>
-					<CardTitle>📊 Résumé de vos données</CardTitle>
-					<CardDescription>Vue d'ensemble des informations stockées</CardDescription>
+					<CardTitle>Résumé des données</CardTitle>
+					<CardDescription
+						>Vue d'ensemble des informations stockées sur le compte connecté.</CardDescription
+					>
 				</CardHeader>
-				<CardContent class="space-y-3">
-					<div class="grid grid-cols-2 gap-4">
-						<div>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Email</p>
-							<p class="font-semibold">{dataSummary.email}</p>
-						</div>
-						<div>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Compte créé le</p>
-							<p class="font-semibold">{new Date(dataSummary.created_at).toLocaleDateString('fr-FR')}</p>
-						</div>
-						<div>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de SCI</p>
-							<p class="font-semibold">{dataSummary.data_summary.sci_count}</p>
-						</div>
-						<div>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de biens</p>
-							<p class="font-semibold">{dataSummary.data_summary.biens_count}</p>
-						</div>
-						<div>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de loyers</p>
-							<p class="font-semibold">{dataSummary.data_summary.loyers_count}</p>
-						</div>
-						<div>
-							<p class="text-sm text-slate-600 dark:text-slate-400">Nombre d'associés</p>
-							<p class="font-semibold">{dataSummary.data_summary.associes_count}</p>
-						</div>
+				<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
+					<div>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Email</p>
+						<p class="font-semibold">{dataSummary.email}</p>
+					</div>
+					<div>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Compte créé le</p>
+						<p class="font-semibold">
+							{new Date(dataSummary.created_at).toLocaleDateString('fr-FR')}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de SCI</p>
+						<p class="font-semibold">{dataSummary.data_summary.sci_count}</p>
+					</div>
+					<div>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de biens</p>
+						<p class="font-semibold">{dataSummary.data_summary.biens_count}</p>
+					</div>
+					<div>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Nombre de loyers</p>
+						<p class="font-semibold">{dataSummary.data_summary.loyers_count}</p>
+					</div>
+					<div>
+						<p class="text-sm text-slate-600 dark:text-slate-400">Nombre d'associés</p>
+						<p class="font-semibold">{dataSummary.data_summary.associes_count}</p>
 					</div>
 				</CardContent>
 			</Card>
 
-			<!-- Export de données (Art. 20) -->
-			<Card>
+			<Card class="sci-section-card border-red-200 dark:border-red-900">
 				<CardHeader>
-					<CardTitle>📥 Export de données (Portabilité)</CardTitle>
-					<CardDescription>RGPD Article 20 - Droit à la portabilité</CardDescription>
+					<CardTitle class="text-red-600 dark:text-red-400">Suppression du compte</CardTitle>
+					<CardDescription>Droit à l'effacement avec confirmation explicite.</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
-					<p class="text-sm text-slate-600 dark:text-slate-400">
-						Téléchargez une copie complète de toutes vos données personnelles dans un format structuré (JSON).
-						Cela inclut vos SCI, biens, loyers, associés, charges et données fiscales.
-					</p>
-					<Button
-						onclick={exportData}
-						disabled={exportLoading}
-						class="min-w-[200px]"
-					>
-						{exportLoading ? 'Export en cours...' : '📦 Exporter mes données'}
-					</Button>
-				</CardContent>
-			</Card>
-
-			<!-- Suppression de compte (Art. 17) -->
-			<Card class="border-red-200 dark:border-red-900">
-				<CardHeader>
-					<CardTitle class="text-red-600 dark:text-red-400">
-						🗑️ Suppression de compte (Droit à l'oubli)
-					</CardTitle>
-					<CardDescription>RGPD Article 17 - Droit à l'effacement</CardDescription>
-				</CardHeader>
-				<CardContent class="space-y-4">
-					<div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-						<p class="text-sm font-semibold text-red-800 dark:text-red-300 mb-2">
-							⚠️ Attention : Action irréversible !
+					<div class="rounded-2xl bg-red-50 p-4 dark:bg-red-900/20">
+						<p class="mb-2 text-sm font-semibold text-red-800 dark:text-red-300">
+							Attention : action irréversible
 						</p>
 						<p class="text-sm text-red-700 dark:text-red-400">
-							La suppression de votre compte entraînera la suppression définitive de :
+							La suppression du compte entraîne l'effacement définitif des SCI, biens, loyers,
+							charges et données fiscales rattachés au compte.
 						</p>
-						<ul class="text-sm text-red-700 dark:text-red-400 list-disc list-inside mt-2 space-y-1">
-							<li>Votre compte et votre email</li>
-							<li>Toutes vos SCI</li>
-							<li>Tous vos biens immobiliers</li>
-							<li>Tous vos loyers et charges</li>
-							<li>Toutes vos données fiscales</li>
-						</ul>
-						<p class="text-xs text-red-600 dark:text-red-500 mt-3">
-							Note : Les données de facturation seront anonymisées (conservation légale obligatoire de 10 ans)
+						<p class="mt-3 text-xs text-red-600 dark:text-red-500">
+							Les données de facturation restent anonymisées pour répondre aux obligations légales
+							de conservation.
 						</p>
 					</div>
 
 					{#if !showDeleteConfirm}
-						<Button
-							variant="destructive"
-							onclick={() => showDeleteConfirm = true}
-						>
+						<Button variant="destructive" onclick={() => (showDeleteConfirm = true)}>
 							Supprimer définitivement mon compte
 						</Button>
 					{:else}
 						<div class="space-y-3 border-l-4 border-red-500 pl-4">
-							<p class="text-sm font-semibold">Tapez "SUPPRIMER" pour confirmer :</p>
+							<p class="text-sm font-semibold">Tape "SUPPRIMER" pour confirmer.</p>
 							<input
 								type="text"
 								bind:value={deleteConfirmText}
 								placeholder="SUPPRIMER"
-								class="border border-slate-300 dark:border-slate-700 rounded-md px-3 py-2 w-full max-w-xs"
+								class="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 dark:border-slate-700"
 							/>
 							<div class="flex gap-2">
 								<Button
@@ -275,30 +363,6 @@
 					{/if}
 				</CardContent>
 			</Card>
-
-			<!-- Informations supplémentaires -->
-			<Card>
-				<CardHeader>
-					<CardTitle>ℹ️ Informations supplémentaires</CardTitle>
-				</CardHeader>
-				<CardContent class="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-					<p>
-						<strong>Délai de traitement :</strong> Les demandes d'export et de suppression sont traitées immédiatement.
-					</p>
-					<p>
-						<strong>Contact RGPD :</strong> Pour toute question sur vos données personnelles, contactez
-						<a href="mailto:privacy@gerersci.fr" class="text-blue-600 dark:text-blue-400 hover:underline">
-							privacy@gerersci.fr
-						</a>
-					</p>
-					<p>
-						<strong>Réclamation :</strong> Si vos droits ne sont pas respectés, vous pouvez contacter la
-						<a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">
-							CNIL
-						</a>
-					</p>
-				</CardContent>
-			</Card>
 		</div>
 	{/if}
-</div>
+</section>

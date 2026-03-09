@@ -5,7 +5,7 @@
 	import { Moon, Sun } from 'lucide-svelte';
 
 	let currentTheme: 'light' | 'dark' = 'dark';
-	const unsubscribe = theme.subscribe(value => {
+	const unsubscribe = theme.subscribe((value) => {
 		currentTheme = value;
 	});
 

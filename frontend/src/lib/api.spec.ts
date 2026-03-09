@@ -12,6 +12,7 @@ import {
 	API_URL,
 	createCheckoutSession,
 	createBien,
+	createSci,
 	createLoyer,
 	deleteBien,
 	deleteLoyer,
@@ -20,6 +21,7 @@ import {
 	fetchLoyers,
 	fetchSciDetail,
 	fetchScis,
+	fetchSubscriptionEntitlements,
 	generateQuitus,
 	renderQuitus,
 	updateBien,
@@ -92,6 +94,21 @@ describe('api helpers', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1`);
+	});
+
+	it('createSci posts JSON body', async () => {
+		const payload = { nom: 'SCI Delta Paris', siren: '111222333', regime_fiscal: 'IR' as const };
+		const created = { id: 'sci-3', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createSci(payload)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
 	});
 
 	it('createBien posts JSON body', async () => {
@@ -241,7 +258,14 @@ describe('api helpers', () => {
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(
-				new Response(JSON.stringify({ filename: 'q.pdf', pdf_url: '/api/v1/quitus/files/q.pdf', size_bytes: 42 }), { status: 200 })
+				new Response(
+					JSON.stringify({
+						filename: 'q.pdf',
+						pdf_url: '/api/v1/quitus/files/q.pdf',
+						size_bytes: 42
+					}),
+					{ status: 200 }
+				)
 			);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -273,10 +297,12 @@ describe('api helpers', () => {
 	});
 
 	it('createCheckoutSession posts JSON payload', async () => {
-		const payload = { price_id: 'price_123', mode: 'subscription' as const };
+		const payload = { plan_key: 'starter' as const, mode: 'subscription' as const };
 		const fetchMock = vi
 			.fn()
-			.mockResolvedValue(new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 }));
+			.mockResolvedValue(
+				new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 })
+			);
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createCheckoutSession(payload)).resolves.toEqual({ url: 'https://checkout.test' });
@@ -284,6 +310,33 @@ describe('api helpers', () => {
 		expect(url).toBe(`${API_URL}/api/v1/stripe/create-checkout-session`);
 		expect(options.method).toBe('POST');
 		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('fetchSubscriptionEntitlements returns the active offer summary', async () => {
+		const payload = {
+			plan_key: 'starter',
+			plan_name: 'Starter',
+			status: 'active',
+			mode: 'subscription',
+			is_active: true,
+			entitlements_version: 1,
+			max_scis: 1,
+			max_biens: 5,
+			current_scis: 1,
+			current_biens: 2,
+			remaining_scis: 0,
+			remaining_biens: 3,
+			over_limit: false,
+			features: { multi_sci_enabled: false, quitus_enabled: true }
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchSubscriptionEntitlements()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/stripe/subscription`);
 	});
 
 	it('adds authorization header when a supabase session is available', async () => {
@@ -330,9 +383,7 @@ describe('api helpers', () => {
 
 	it('continues without auth header when session lookup throws', async () => {
 		getCurrentSessionMock.mockRejectedValue(new Error('session unavailable'));
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBiens()).resolves.toEqual([]);

@@ -1,8 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fetchSubscriptionEntitlements, type SubscriptionEntitlements } from '$lib/api';
+	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
+	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
+	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { getCurrentSession } from '$lib/auth/session';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
+	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId } from '$lib/portfolio/active-sci';
 	import { readApplicationPreferences } from '$lib/settings/application-preferences';
 
@@ -10,6 +21,18 @@
 	let accessMode = 'Session sécurisée';
 	let activeSciId = '';
 	let defaultLandingRoute = '/dashboard';
+	let subscription: SubscriptionEntitlements | null = null;
+	let subscriptionError = '';
+
+	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
+	$: activeSciDetail = activeSciId
+		? 'Le cockpit reviendra sur la dernière société suivie.'
+		: 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
+	$: capacityLabel = subscription
+		? subscription.max_scis == null
+			? 'SCI et biens illimités'
+			: `${subscription.current_scis}/${subscription.max_scis} SCI • ${subscription.current_biens}/${subscription.max_biens} biens`
+		: "Chargement de l'offre active";
 
 	onMount(async () => {
 		const session = await getCurrentSession();
@@ -17,44 +40,118 @@
 		accessMode = session?.user?.email ? 'Connexion par lien sécurisé' : 'Aucune session active';
 		activeSciId = getStoredActiveSciId() || '';
 		defaultLandingRoute = readApplicationPreferences().defaultLandingRoute;
+		try {
+			subscription = await fetchSubscriptionEntitlements();
+		} catch (error) {
+			subscriptionError = formatApiErrorMessage(
+				error,
+				"Impossible de charger l'offre active du compte."
+			);
+		}
 	});
 </script>
 
+<svelte:head>
+	<title>Compte — GererSCI</title>
+	<meta name="description" content="Identité, abonnement et confidentialité." />
+</svelte:head>
+
 <section class="sci-page-shell">
-	<header class="sci-page-header">
-		<p class="sci-eyebrow">Compte • Gouvernance utilisateur</p>
-		<h1 class="sci-page-title">Paramètres du compte</h1>
-		<p class="sci-page-subtitle">
-			Centralise l’identité du compte, les accès utiles et les zones de conformité sans mélanger cela avec les réglages d’interface.
-		</p>
-	</header>
+	<WorkspaceHeader
+		eyebrow="Compte • identité, sécurité, abonnement"
+		title="Compte opérateur"
+		subtitle="Le compte concentre l’identité de connexion, l’offre active, les quotas et les zones de conformité. Les préférences d’interface restent isolées dans Paramètres."
+		contextLabel="Session active"
+		contextValue={email}
+		contextDetail={subscription ? `${subscription.plan_name} • ${capacityLabel}` : accessMode}
+	>
+		<Button href="/pricing">Offre et facturation</Button>
+		<Button href="/settings" variant="outline">Paramètres</Button>
+		<Button href="/account/privacy" variant="outline">Confidentialité</Button>
+	</WorkspaceHeader>
+
+	<WorkspaceActionBar
+		eyebrow="Lecture du compte"
+		title="Ce que l’on arbitre ici"
+		description="Vérifier l’identité de connexion, contrôler la capacité active et retrouver les points de conformité sans mélanger cela avec les réglages locaux du navigateur."
+	>
+		<div class="sci-action-grid">
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Identité</p>
+				<p class="sci-action-card-value">{email}</p>
+				<p class="sci-action-card-body">Adresse de référence utilisée pour les liens sécurisés.</p>
+			</div>
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Capacité active</p>
+				<p class="sci-action-card-value">{subscription?.plan_name || 'Offre en cours'}</p>
+				<p class="sci-action-card-body">{capacityLabel}</p>
+			</div>
+			<div class="sci-action-card">
+				<p class="sci-action-card-title">Point d’entrée</p>
+				<p class="sci-action-card-value">{defaultLandingRoute}</p>
+				<p class="sci-action-card-body">Page ouverte après connexion sur ce navigateur.</p>
+			</div>
+		</div>
+		<div class="sci-primary-actions mt-5">
+			<Button href="/pricing">Voir les offres et upgrader</Button>
+			<Button href="/settings" variant="outline">Préférences d’interface</Button>
+			<Button href="/scis" variant="outline">Ouvrir le portefeuille SCI</Button>
+		</div>
+		{#snippet aside()}
+			<WorkspaceRailCard
+				title="Actions rapides"
+				description="Les sujets récurrents du compte restent peu nombreux: offre, confidentialité, retour au pilotage."
+			>
+				<div class="grid gap-2">
+					<Button href="/account/privacy" variant="outline" class="w-full justify-start">
+						Mes données et confidentialité
+					</Button>
+					<Button href="/dashboard" variant="outline" class="w-full justify-start">
+						Retour au cockpit
+					</Button>
+				</div>
+			</WorkspaceRailCard>
+		{/snippet}
+	</WorkspaceActionBar>
 
 	<div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
 		<Card class="sci-section-card">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">Identité du compte</CardTitle>
-					<CardDescription>Référence d’accès, contexte SCI actif et point d’entrée préféré.</CardDescription>
+					<CardTitle class="text-lg">Identité et contexte</CardTitle>
+					<CardDescription
+						>Référence d’accès, posture d’authentification et contexte de travail retenu.</CardDescription
+					>
 				</div>
 			</CardHeader>
 			<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Email</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{email}</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Mode d'accès</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{accessMode}</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">SCI active</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						{activeSciId ? 'Une SCI active est mémorisée pour ce navigateur' : 'Aucune SCI active mémorisée'}
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						Email
 					</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{email}</p>
 				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Page d’ouverture</p>
-					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{defaultLandingRoute}</p>
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						Mode d'accès
+					</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{accessMode}</p>
+				</div>
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						SCI active
+					</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{activeSciStatus}</p>
+					<p class="mt-1 text-sm text-muted-foreground">{activeSciDetail}</p>
+				</div>
+				<div class="rounded-2xl border border-border bg-muted p-4">
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+						Page d’ouverture
+					</p>
+					<p class="mt-2 text-sm font-semibold text-foreground">{defaultLandingRoute}</p>
+					<p class="mt-1 text-sm text-muted-foreground">
+						Point d’entrée fonctionnel appliqué au navigateur courant.
+					</p>
 				</div>
 			</CardContent>
 		</Card>
@@ -62,15 +159,36 @@
 		<Card class="sci-section-card">
 			<CardHeader>
 				<div>
-					<CardTitle class="text-lg">Actions de compte</CardTitle>
-					<CardDescription>Les raccourcis critiques pour gérer la sécurité, les données et la configuration.</CardDescription>
+					<CardTitle class="text-lg">Offre active et conformité</CardTitle>
+					<CardDescription
+						>Capacité active, quotas et contrôles utiles liés au compte connecté.</CardDescription
+					>
 				</div>
 			</CardHeader>
-			<CardContent class="grid gap-2 pt-0">
-				<Button href="/settings" variant="outline" class="justify-start">Paramètres de l'application</Button>
-				<Button href="/account/privacy" variant="outline" class="justify-start">Mes données et confidentialité</Button>
-				<Button href="/scis" variant="outline" class="justify-start">Revenir au portefeuille SCI</Button>
-				<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+			<CardContent class="grid gap-3 pt-0">
+				{#if subscription}
+					<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
+						<p
+							class="text-[0.68rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+						>
+							Offre active
+						</p>
+						<p class="mt-2 text-lg font-semibold text-foreground">{subscription.plan_name}</p>
+						<p class="mt-1 text-muted-foreground">{capacityLabel}</p>
+					</div>
+				{:else if subscriptionError}
+					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
+				{/if}
+
+				<div class="grid gap-2">
+					<Button href="/pricing" class="justify-start">Voir les offres et upgrader</Button>
+					<Button href="/account/privacy" variant="outline" class="justify-start"
+						>Mes données et confidentialité</Button
+					>
+					<Button href="/dashboard" variant="outline" class="justify-start"
+						>Retour au cockpit</Button
+					>
+				</div>
 			</CardContent>
 		</Card>
 	</div>

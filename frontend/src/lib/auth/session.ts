@@ -43,7 +43,8 @@ function parseFakeSession(): Session | null {
 
 		const now = Math.floor(Date.now() / 1000);
 		const expiresIn = payload.expires_in && payload.expires_in > 0 ? payload.expires_in : 3600;
-		const expiresAt = payload.expires_at && payload.expires_at > now ? payload.expires_at : now + expiresIn;
+		const expiresAt =
+			payload.expires_at && payload.expires_at > now ? payload.expires_at : now + expiresIn;
 
 		return {
 			access_token: accessToken,
@@ -77,7 +78,9 @@ export async function getCurrentSession(): Promise<Session | null> {
 	return session;
 }
 
-export function subscribeToSessionChanges(callback: (session: Session | null) => void): SessionSubscription {
+export function subscribeToSessionChanges(
+	callback: (session: Session | null) => void
+): SessionSubscription {
 	const fakeSession = parseFakeSession();
 	if (fakeSession) {
 		callback(fakeSession);

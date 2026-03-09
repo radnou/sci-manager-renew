@@ -4,6 +4,7 @@ import structlog
 import resend
 
 from app.core.config import settings
+from app.core.external_services import run_with_retry
 from app.core.exceptions import ExternalServiceError
 
 logger = structlog.get_logger(__name__)
@@ -36,13 +37,16 @@ class EmailService:
 
             html = template.render(link=magic_link)
 
-            result = resend.Emails.send(
-                {
-                    "from": self.from_email,
-                    "to": email,
-                    "subject": "Connexion à GererSCI",
-                    "html": html,
-                }
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": "Connexion à GererSCI",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_magic_link",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email},
             )
 
             logger.info("magic_link_sent", email=email)
@@ -76,13 +80,16 @@ class EmailService:
 
             html = template.render(name=user_name)
 
-            result = resend.Emails.send(
-                {
-                    "from": self.from_email,
-                    "to": email,
-                    "subject": "Bienvenue sur GererSCI!",
-                    "html": html,
-                }
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": "Bienvenue sur GererSCI!",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_welcome",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email},
             )
 
             logger.info("welcome_email_sent", email=email)
@@ -110,13 +117,16 @@ class EmailService:
 
             html = template.render(bien=bien_name)
 
-            result = resend.Emails.send(
-                {
-                    "from": self.from_email,
-                    "to": email,
-                    "subject": f"Quitus généré - {bien_name}",
-                    "html": html,
-                }
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": f"Quitus généré - {bien_name}",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_quitus_notification",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email, "bien": bien_name},
             )
 
             logger.info("quitus_notification_sent", email=email, bien=bien_name)
@@ -144,13 +154,16 @@ class EmailService:
 
             html = template.render(plan=plan)
 
-            result = resend.Emails.send(
-                {
-                    "from": self.from_email,
-                    "to": email,
-                    "subject": "Abonnement activé",
-                    "html": html,
-                }
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": "Abonnement activé",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_subscription_confirmation",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email, "plan": plan},
             )
 
             logger.info("subscription_confirmation_sent", email=email, plan=plan)

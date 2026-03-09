@@ -9,12 +9,11 @@ describe('/+page.svelte', () => {
 
 		const heading = page.getByRole('heading', { level: 1 });
 		await expect.element(heading).toBeInTheDocument();
-		await expect.element(
-			page.getByRole('link', { name: 'Demander un accès prioritaire' })
-		).toHaveAttribute('href', '/login');
-		await expect.element(page.getByRole('link', { name: 'Voir la stratégie tarifaire' })).toHaveAttribute(
-			'href',
-			'/pricing'
-		);
+		await expect
+			.element(page.getByRole('link', { name: 'Demander un accès prioritaire' }))
+			.toHaveAttribute('href', '/login');
+		await expect
+			.element(page.getByRole('link', { name: 'Voir la stratégie tarifaire' }))
+			.toHaveAttribute('href', '/pricing');
 	});
 });

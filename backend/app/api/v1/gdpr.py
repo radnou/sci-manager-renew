@@ -10,16 +10,20 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+import structlog
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
 from app.core.audit_log import AuditLogger
+from app.core.exceptions import SCIManagerException
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/gdpr", tags=["gdpr"])
 GDPR_EXPORT_TTL_SECONDS = 60 * 30
+logger = structlog.get_logger(__name__)
 
 
 class DataExportResponse(BaseModel):
@@ -42,6 +46,7 @@ class AccountDeleteResponse(BaseModel):
 
 
 @router.get("/data-export", response_model=DataExportResponse)
+@limiter.limit("3/hour")
 async def export_user_data(
     request: Request,
     user_id: str = Depends(get_current_user),
@@ -151,19 +156,22 @@ async def export_user_data(
         )
 
     except Exception as e:
+        logger.error("gdpr_data_export_failed", user_id=user_id, error=str(e), exc_info=True)
         await AuditLogger.log_gdpr_event(
             event="data_export_failed",
             user_id=user_id,
             request=request,
             details={"error": str(e)},
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Échec de l'export des données: {str(e)}",
+        raise SCIManagerException(
+            "Échec de l'export des données.",
+            status_code=500,
+            code="gdpr_export_failed",
         )
 
 
 @router.get("/data-summary", response_model=DataSummaryResponse)
+@limiter.limit("10/hour")
 async def get_data_summary(
     request: Request,
     user_id: str = Depends(get_current_user),
@@ -208,13 +216,16 @@ async def get_data_summary(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Échec de la récupération du résumé: {str(e)}",
+        logger.error("gdpr_data_summary_failed", user_id=user_id, error=str(e), exc_info=True)
+        raise SCIManagerException(
+            "Échec de la récupération du résumé de données.",
+            status_code=500,
+            code="gdpr_summary_failed",
         )
 
 
 @router.delete("/account", response_model=AccountDeleteResponse)
+@limiter.limit("2/day")
 async def delete_user_account(
     request: Request,
     user_id: str = Depends(get_current_user),
@@ -315,13 +326,15 @@ async def delete_user_account(
         )
 
     except Exception as e:
+        logger.error("gdpr_account_delete_failed", user_id=user_id, error=str(e), exc_info=True)
         await AuditLogger.log_gdpr_event(
             event="account_delete_failed",
             user_id=user_id,
             request=request,
             details={"error": str(e)},
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Échec de la suppression du compte: {str(e)}",
+        raise SCIManagerException(
+            "Échec de la suppression du compte.",
+            status_code=500,
+            code="gdpr_account_delete_failed",
         )

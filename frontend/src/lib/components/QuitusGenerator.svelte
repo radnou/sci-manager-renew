@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import type { Bien, Loyer } from '$lib/api';
+	import type { Bien, Locataire, Loyer } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -23,6 +23,7 @@
 		buttonLabel = 'Générer le PDF',
 		loyers = [],
 		biens = [],
+		locataires = [],
 		sciName = '',
 		generateQuitus = undefined
 	}: {
@@ -31,6 +32,7 @@
 		buttonLabel?: string;
 		loyers?: Loyer[];
 		biens?: Bien[];
+		locataires?: Locataire[];
 		sciName?: string;
 		generateQuitus?: GenerateQuitusFn;
 	} = $props();
@@ -50,6 +52,13 @@
 	let selectedBien = $derived(
 		selectedLoyer
 			? biens.find((bien) => String(bien.id || '') === String(selectedLoyer.id_bien || '')) || null
+			: null
+	);
+	let selectedLocataire = $derived(
+		selectedLoyer
+			? locataires.find(
+					(locataire) => String(locataire.id || '') === String(selectedLoyer.id_locataire || '')
+				) || null
 			: null
 	);
 
@@ -88,6 +97,7 @@
 		periode = formatFrDate(selectedLoyer.date_loyer, 'Période à confirmer');
 		montant = String(selectedLoyer.montant ?? 0);
 		pdfDownloadName = buildPdfFilename(selectedLoyer, selectedBien);
+		nomLocataire = selectedLocataire?.nom || 'Locataire à confirmer';
 	});
 
 	async function defaultGenerateQuitus() {

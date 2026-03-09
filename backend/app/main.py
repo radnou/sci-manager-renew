@@ -1,4 +1,5 @@
 import asyncio
+import json
 import signal
 import threading
 import time
@@ -18,7 +19,24 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, scis, stripe
+from app.api.v1 import (
+    associes,
+    auth,
+    biens,
+    cerfa,
+    charges,
+    export,
+    files,
+    fiscalite,
+    gdpr,
+    health,
+    locataires,
+    loyers,
+    notifications,
+    quitus,
+    scis,
+    stripe,
+)
 from app.core.config import Environment, settings
 from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
@@ -34,6 +52,21 @@ logger = structlog.get_logger(__name__)
 
 # Shutdown event pour coordonner le shutdown gracieux
 shutdown_event = asyncio.Event()
+
+
+def _json_safe(value):
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+
+    try:
+        json.dumps(value)
+        return value
+    except TypeError:
+        return str(value)
 
 
 @asynccontextmanager
@@ -54,6 +87,7 @@ async def lifespan(app: FastAPI):
                 app_name=settings.app_name,
                 app_env=settings.app_env,
                 version="1.0.0")
+    shutdown_event.clear()
 
     # Configurer les signal handlers pour graceful shutdown
     loop = asyncio.get_event_loop()
@@ -152,6 +186,8 @@ async def gerersci_exception_handler(
         status_code=exc.status_code,
         content={
             "error": exc.message,
+            "code": exc.code,
+            "details": exc.details,
             "request_id": request_id
         }
     )
@@ -169,7 +205,7 @@ async def request_validation_exception_handler(
     request_id = getattr(request.state, "request_id", "unknown")
 
     # Extraire les erreurs de validation
-    errors = exc.errors()
+    errors = _json_safe(exc.errors())
 
     logger.warning(
         "request_validation_error",
@@ -182,6 +218,7 @@ async def request_validation_exception_handler(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": "Validation error",
+            "code": "validation_error",
             "details": errors,
             "request_id": request_id
         }
@@ -198,7 +235,7 @@ async def pydantic_validation_exception_handler(
 
     logger.warning(
         "pydantic_validation_error",
-        validation_errors=exc.errors(),
+        validation_errors=_json_safe(exc.errors()),
         path=request.url.path
     )
 
@@ -206,7 +243,8 @@ async def pydantic_validation_exception_handler(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": "Validation error",
-            "details": exc.errors(),
+            "code": "validation_error",
+            "details": _json_safe(exc.errors()),
             "request_id": request_id
         }
     )
@@ -236,7 +274,7 @@ async def global_exception_handler(
 
     # En production: cacher les détails
     # En dev: montrer l'exception pour debugging
-    if settings.app_env == "production":
+    if settings.app_env == Environment.PRODUCTION:
         error_message = "Internal server error"
     else:
         error_message = f"{exc.__class__.__name__}: {str(exc)}"
@@ -245,6 +283,7 @@ async def global_exception_handler(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": error_message,
+            "code": "internal_error",
             "request_id": request_id
         }
     )
@@ -313,6 +352,13 @@ async def logging_middleware(
     # Stocker request_id dans request.state pour l'utiliser ailleurs
     request.state.request_id = request_id
 
+    if shutdown_event.is_set() and not request.url.path.startswith("/health"):
+        logger.warning("request_rejected_during_shutdown", path=request.url.path, method=request.method)
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"error": "Service shutting down", "code": "service_unavailable", "request_id": request_id},
+        )
+
     # Logger le début de la requête
     logger.info("request_started",
                 method=request.method,
@@ -322,14 +368,26 @@ async def logging_middleware(
     # Mesurer le temps de traitement
     start_time = time.time()
 
-    # Traiter la requête
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration = time.time() - start_time
+        logger.error(
+            "request_failed",
+            method=request.method,
+            path=request.url.path,
+            duration_ms=int(duration * 1000),
+            exc_info=True,
+        )
+        raise
 
     # Calculer la durée
     duration = time.time() - start_time
 
     # Logger la fin de la requête
     logger.info("request_completed",
+                method=request.method,
+                path=request.url.path,
                 status_code=response.status_code,
                 duration_ms=int(duration * 1000))
 
@@ -391,7 +449,11 @@ app.include_router(health.router)
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(scis.router, prefix="/api/v1")
+app.include_router(associes.router, prefix="/api/v1")
 app.include_router(biens.router, prefix="/api/v1")
+app.include_router(charges.router, prefix="/api/v1")
+app.include_router(fiscalite.router, prefix="/api/v1")
+app.include_router(locataires.router, prefix="/api/v1")
 app.include_router(loyers.router, prefix="/api/v1")
 app.include_router(quitus.router, prefix="/api/v1")
 app.include_router(files.router, prefix="/api/v1")
@@ -399,3 +461,5 @@ app.include_router(files.router, prefix="/api/v1")
 app.include_router(cerfa.router, prefix="/api/v1")
 app.include_router(stripe.router, prefix="/api/v1")
 app.include_router(gdpr.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(export.router, prefix="/api/v1")

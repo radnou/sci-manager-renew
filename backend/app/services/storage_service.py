@@ -5,6 +5,7 @@ import structlog
 from supabase import create_client
 
 from app.core.config import settings
+from app.core.external_services import run_with_retry
 from app.core.exceptions import ExternalServiceError
 
 logger = structlog.get_logger(__name__)
@@ -30,10 +31,15 @@ class StorageService:
         logger.info("uploading_file", path=file_path, size=len(file_content))
 
         try:
-            self.client.storage.from_(self.bucket_name).upload(
-                path=file_path,
-                file=file_content,
-                file_options={"content-type": content_type, "upsert": "true"},
+            await run_with_retry(
+                operation="supabase_storage.upload",
+                func=lambda: self.client.storage.from_(self.bucket_name).upload(
+                    path=file_path,
+                    file=file_content,
+                    file_options={"content-type": content_type, "upsert": "true"},
+                ),
+                allow_retry=False,
+                context={"path": file_path, "bucket": self.bucket_name},
             )
 
             # Keep returning a URL for backward compatibility, even when bucket is private.
@@ -61,7 +67,12 @@ class StorageService:
         logger.info("deleting_file", path=file_path)
 
         try:
-            self.client.storage.from_(self.bucket_name).remove([file_path])
+            await run_with_retry(
+                operation="supabase_storage.delete",
+                func=lambda: self.client.storage.from_(self.bucket_name).remove([file_path]),
+                allow_retry=False,
+                context={"path": file_path, "bucket": self.bucket_name},
+            )
             logger.info("file_deleted", path=file_path)
             return True
         except Exception as e:
@@ -77,7 +88,11 @@ class StorageService:
         logger.info("downloading_file", path=file_path)
 
         try:
-            content = self.client.storage.from_(self.bucket_name).download(file_path)
+            content = await run_with_retry(
+                operation="supabase_storage.download",
+                func=lambda: self.client.storage.from_(self.bucket_name).download(file_path),
+                context={"path": file_path, "bucket": self.bucket_name},
+            )
             logger.info("file_downloaded", path=file_path, size=len(content))
             return content
         except Exception as e:
@@ -97,9 +112,13 @@ class StorageService:
         logger.info("creating_signed_url", path=file_path, expires_in=expires_in)
 
         try:
-            payload = self.client.storage.from_(self.bucket_name).create_signed_url(
-                file_path,
-                expires_in,
+            payload = await run_with_retry(
+                operation="supabase_storage.create_signed_url",
+                func=lambda: self.client.storage.from_(self.bucket_name).create_signed_url(
+                    file_path,
+                    expires_in,
+                ),
+                context={"path": file_path, "bucket": self.bucket_name},
             )
         except Exception as e:
             logger.error("signed_url_creation_failed", path=file_path, error=str(e), exc_info=True)
@@ -132,7 +151,11 @@ class StorageService:
             ExternalServiceError: Si la création du bucket échoue
         """
         try:
-            buckets = self.client.storage.list_buckets() or []
+            buckets = await run_with_retry(
+                operation="supabase_storage.list_buckets",
+                func=lambda: self.client.storage.list_buckets() or [],
+                context={"bucket": self.bucket_name},
+            )
         except Exception as e:
             logger.error("bucket_listing_failed", bucket=self.bucket_name, error=str(e), exc_info=True)
             raise ExternalServiceError("Supabase Storage", f"Bucket listing failed: {str(e)}")
@@ -144,9 +167,14 @@ class StorageService:
 
         try:
             logger.info("creating_bucket", bucket=self.bucket_name)
-            self.client.storage.create_bucket(
-                bucket_id=self.bucket_name,
-                options={"public": False},
+            await run_with_retry(
+                operation="supabase_storage.create_bucket",
+                func=lambda: self.client.storage.create_bucket(
+                    bucket_id=self.bucket_name,
+                    options={"public": False},
+                ),
+                allow_retry=False,
+                context={"bucket": self.bucket_name},
             )
             logger.info("bucket_created", bucket=self.bucket_name)
             return True
@@ -163,7 +191,11 @@ class StorageService:
         logger.info("listing_files", folder=folder)
 
         try:
-            files = self.client.storage.from_(self.bucket_name).list(path=folder)
+            files = await run_with_retry(
+                operation="supabase_storage.list_files",
+                func=lambda: self.client.storage.from_(self.bucket_name).list(path=folder),
+                context={"bucket": self.bucket_name, "folder": folder},
+            )
             logger.info("files_listed", folder=folder, count=len(files))
             return files
         except Exception as e:

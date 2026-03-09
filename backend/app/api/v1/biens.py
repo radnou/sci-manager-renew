@@ -9,6 +9,7 @@ from app.core.exceptions import AuthorizationError, DatabaseError, ResourceNotFo
 from app.core.security import get_current_user
 from app.models.biens import BienCreate, BienResponse, BienUpdate
 from app.services.sci_service import SCIService
+from app.services.subscription_service import SubscriptionService
 
 logger = structlog.get_logger(__name__)
 
@@ -76,6 +77,7 @@ async def list_biens(id_sci: str | None = None, user_id: str = Depends(get_curre
 async def create_bien(payload: BienCreate, user_id: str = Depends(get_current_user)):
     logger.info("creating_bien", user_id=user_id, adresse=payload.adresse)
 
+    summary = SubscriptionService.enforce_limit(user_id, "biens")
     client = _get_client()
     user_sci_ids = _get_user_sci_ids(client, user_id)
     _require_sci_access(user_sci_ids, payload.id_sci)
@@ -92,7 +94,7 @@ async def create_bien(payload: BienCreate, user_id: str = Depends(get_current_us
         raise DatabaseError("Unable to create bien")
 
     created = data[0]
-    logger.info("bien_created", bien_id=created.get("id"))
+    logger.info("bien_created", bien_id=created.get("id"), plan_key=summary.get("plan_key"))
     return created
 
 

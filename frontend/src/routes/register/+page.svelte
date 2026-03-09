@@ -49,6 +49,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Inscription — GererSCI</title>
+	<meta name="description" content="Créez votre compte GererSCI." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">

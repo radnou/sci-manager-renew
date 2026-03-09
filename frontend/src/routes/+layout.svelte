@@ -1,25 +1,31 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { User } from '@supabase/supabase-js';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Menu, X } from 'lucide-svelte';
+	import { Menu, X, Search } from 'lucide-svelte';
 	import { supabase } from '$lib/supabase';
 	import {
 		clearFakeSession,
 		getCurrentSession,
 		subscribeToSessionChanges
 	} from '$lib/auth/session';
+	import { buildLoginRedirect, isGuestOnlyRoute, isProtectedRoute } from '$lib/auth/route-guard';
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
 	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
+	import AppSidebar from '$lib/components/AppSidebar.svelte';
+	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
 	let { children } = $props();
 	let user = $state<User | null>(null);
+	let authResolved = $state(false);
 	let mobileMenuOpen = $state(false);
 	let accountMenuOpen = $state(false);
 	let previousPath = page.url.pathname;
@@ -27,14 +33,14 @@
 
 	const authenticatedNavItems = [
 		{ href: '/dashboard', label: 'Cockpit' },
-		{ href: '/scis', label: 'SCI' },
-		{ href: '/biens', label: 'Biens' },
-		{ href: '/loyers', label: 'Loyers' },
-		{ href: '/pricing', label: 'Tarifs' }
+		{ href: '/scis', label: 'Portefeuille' },
+		{ href: '/exploitation', label: 'Exploitation' },
+		{ href: '/finance', label: 'Finance' }
 	];
 
 	const authenticatedUtilityItems = [
 		{ href: '/account', label: 'Compte' },
+		{ href: '/pricing', label: 'Offre et facturation' },
 		{ href: '/settings', label: 'Paramètres' },
 		{ href: '/account/privacy', label: 'Confidentialité' }
 	];
@@ -57,12 +63,14 @@
 		getCurrentSession().then((session) => {
 			if (mounted) {
 				user = session?.user || null;
+				authResolved = true;
 			}
 		});
 
 		const subscription = subscribeToSessionChanges((session) => {
 			if (mounted) {
 				user = session?.user || null;
+				authResolved = true;
 			}
 		});
 
@@ -89,6 +97,29 @@
 			mobileMenuOpen = false;
 			accountMenuOpen = false;
 			previousPath = currentPath;
+		}
+	});
+
+	$effect(() => {
+		if (!authResolved) {
+			return;
+		}
+
+		const pathname = page.url.pathname;
+		const search = page.url.search;
+
+		if (!user && isProtectedRoute(pathname)) {
+			goto(buildLoginRedirect(pathname, search), { replaceState: true, noScroll: true });
+			return;
+		}
+
+		if (user && pathname === '/') {
+			goto('/dashboard', { replaceState: true, noScroll: true });
+			return;
+		}
+
+		if (user && isGuestOnlyRoute(pathname)) {
+			goto('/dashboard', { replaceState: true, noScroll: true });
 		}
 	});
 </script>
@@ -136,6 +167,8 @@
 						{/each}
 					</div>
 
+					<NotificationCenter />
+
 					<div class="relative hidden md:block" bind:this={accountMenuContainer}>
 						<button
 							type="button"
@@ -182,7 +215,7 @@
 									<p
 										class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
 									>
-										Compte connecté
+										Espace opérateur
 									</p>
 									<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
 										{user.email}
@@ -324,45 +357,120 @@
 		<AppBreadcrumbs />
 	{/if}
 
-	{@render children()}
+	{#if authResolved && user && page.url.pathname === '/'}
+		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
+			<div
+				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
+			>
+				<p class="text-sm font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Espace connecté
+				</p>
+				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+					Ouverture du cockpit
+				</h1>
+				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+					Redirection vers votre dashboard opérateur.
+				</p>
+			</div>
+		</section>
+	{:else if isProtectedRoute(page.url.pathname) && (!authResolved || !user)}
+		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
+			<div
+				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
+			>
+				<p class="text-sm font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Zone protégée
+				</p>
+				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+					Connexion requise
+				</h1>
+				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+					Redirection vers l’espace de connexion sécurisé.
+				</p>
+			</div>
+		</section>
+	{:else if user}
+		<div class="flex">
+			<AppSidebar {user} />
+			<main class="flex-1 overflow-y-auto">
+				{@render children()}
+			</main>
+		</div>
+	{:else}
+		<main class="flex-1 overflow-y-auto">
+			{@render children()}
+		</main>
+	{/if}
+
+	{#if user}
+		<CommandPalette />
+	{/if}
 
 	<!-- Footer -->
 	<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-		<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-			<div class="grid gap-8 md:grid-cols-4">
-				<div class="space-y-4">
-					<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
-					<p class="text-sm text-slate-600 dark:text-slate-400">
-						Pilotez votre SCI comme un opérateur avec des outils professionnels.
-					</p>
+		{#if user}
+			<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+				<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+					<div class="space-y-2">
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">
+							Environnement opérateur
+						</h3>
+						<p class="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+							Shell connecté recentré sur le portefeuille, l’exploitation, la finance et le cadrage
+							du compte.
+						</p>
+					</div>
+
+					<div class="flex flex-wrap gap-2">
+						<a
+							href="/dashboard"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Cockpit</a
+						>
+						<a
+							href="/scis"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Portefeuille</a
+						>
+						<a
+							href="/account"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Compte</a
+						>
+						<a
+							href="/account/privacy"
+							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
+							>Confidentialité</a
+						>
+					</div>
 				</div>
 
-				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">Produit</h4>
-					<ul class="space-y-2 text-sm">
-						{#if user}
-							<li>
-								<a
-									href="/pricing"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Tarifs</a
-								>
-							</li>
-							<li>
-								<a
-									href="/dashboard"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Cockpit</a
-								>
-							</li>
-							<li>
-								<a
-									href="/scis"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Portefeuille SCI</a
-								>
-							</li>
-						{:else}
+				<div class="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
+					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							© 2026 GererSCI. Tous droits réservés.
+						</p>
+						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+							<span>🇫🇷 Fait en France</span>
+							<span>•</span>
+							<span>Conforme RGPD</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+				<div class="grid gap-8 md:grid-cols-4">
+					<div class="space-y-4">
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							Pilotez votre SCI comme un opérateur avec des outils professionnels.
+						</p>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Produit</h4>
+						<ul class="space-y-2 text-sm">
 							<li>
 								<a
 									href="/pricing"
@@ -384,38 +492,12 @@
 									>Études & sources</a
 								>
 							</li>
-						{/if}
-					</ul>
-				</div>
+						</ul>
+					</div>
 
-				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">
-						{user ? 'Compte' : 'Support'}
-					</h4>
-					<ul class="space-y-2 text-sm">
-						{#if user}
-							<li>
-								<a
-									href="/account"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Compte</a
-								>
-							</li>
-							<li>
-								<a
-									href="/settings"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Paramètres</a
-								>
-							</li>
-							<li>
-								<a
-									href="/account/privacy"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Confidentialité</a
-								>
-							</li>
-						{:else}
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Support</h4>
+						<ul class="space-y-2 text-sm">
 							<li>
 								<a
 									href="/login"
@@ -437,53 +519,51 @@
 									>Confidentialité</a
 								>
 							</li>
-						{/if}
-					</ul>
+						</ul>
+					</div>
+
+					<div class="space-y-4">
+						<h4 class="font-medium text-slate-900 dark:text-slate-100">Entreprise</h4>
+						<ul class="space-y-2 text-sm">
+							<li>
+								<a
+									href="/dashboard"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Tableau de bord</a
+								>
+							</li>
+							<li>
+								<a
+									href="/biens"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Gestion des biens</a
+								>
+							</li>
+							<li>
+								<a
+									href="/loyers"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Suivi des loyers</a
+								>
+							</li>
+						</ul>
+					</div>
 				</div>
 
-				<div class="space-y-4">
-					<h4 class="font-medium text-slate-900 dark:text-slate-100">
-						{user ? 'Pilotage' : 'Entreprise'}
-					</h4>
-					<ul class="space-y-2 text-sm">
-						<li>
-							<a
-								href="/dashboard"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>{user ? 'Cockpit' : 'Tableau de bord'}</a
-							>
-						</li>
-						<li>
-							<a
-								href="/biens"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Gestion des biens</a
-							>
-						</li>
-						<li>
-							<a
-								href="/loyers"
-								class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-								>Suivi des loyers</a
-							>
-						</li>
-					</ul>
-				</div>
-			</div>
-
-			<div class="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
-				<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-					<p class="text-sm text-slate-600 dark:text-slate-400">
-						© 2026 GererSCI. Tous droits réservés.
-					</p>
-					<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-						<span>🇫🇷 Fait en France</span>
-						<span>•</span>
-						<span>Conforme RGPD</span>
+				<div class="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
+					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+						<p class="text-sm text-slate-600 dark:text-slate-400">
+							© 2026 GererSCI. Tous droits réservés.
+						</p>
+						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+							<span>🇫🇷 Fait en France</span>
+							<span>•</span>
+							<span>Conforme RGPD</span>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+		{/if}
 	</footer>
 
 	<Toaster />

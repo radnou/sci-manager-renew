@@ -35,6 +35,11 @@
 	}: BadgeProps = $props();
 </script>
 
-<div bind:this={ref} data-slot="badge" class={cn(badgeVariants({ variant }), className)} {...restProps}>
+<div
+	bind:this={ref}
+	data-slot="badge"
+	class={cn(badgeVariants({ variant }), className)}
+	{...restProps}
+>
 	{@render children?.()}
 </div>

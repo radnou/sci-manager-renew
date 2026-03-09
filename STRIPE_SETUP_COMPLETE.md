@@ -24,15 +24,12 @@ STRIPE_LIFETIME_PRICE_ID=price_1T7MW7BCxd3SKdGJVrHWprJ8
 ```
 # ⚠️ Clés publiques Stripe (remplacer avec les vôtres)
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_ACTUAL_KEY_HERE
-VITE_STRIPE_STARTER_PRICE_ID=price_1T7MW5BCxd3SKdGJP2xjawrj
-VITE_STRIPE_PRO_PRICE_ID=price_1T7MW6BCxd3SKdGJKzcNqdkJ
-VITE_STRIPE_LIFETIME_PRICE_ID=price_1T7MW7BCxd3SKdGJVrHWprJ8
 ```
 
 ## 🔧 Fichiers Configurés
 
 ✅ `backend/app/core/config.py` - Ajout des 3 price IDs
-✅ `frontend/src/routes/pricing/+page.svelte` - Utilise les noms corrects
+✅ `frontend/src/routes/pricing/+page.svelte` - Envoie `plan_key` au backend
 ✅ `.env` - Test keys + tous les Price IDs
 ✅ `.env.example` - Template avec placeholders
 
@@ -52,7 +49,7 @@ cd frontend && npm run dev
 ### 2. Vérifier la page de paiement
 - Cliquer sur "Choisir" pour un plan
 - Vérifier que la session Stripe est créée
-- Le Price ID doit corresponde au product Stripe
+- Le backend doit résoudre le `price_id` correspondant au `plan_key` choisi
 
 ### 3. Configurer Webhook Stripe (avant prod)
 ```bash

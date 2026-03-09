@@ -13,18 +13,12 @@
 		class?: string;
 	}
 
-	let {
-		quote,
-		author,
-		role,
-		company,
-		rating = 5,
-		avatar,
-		class: className = ''
-	}: Props = $props();
+	let { quote, author, role, company, rating = 5, avatar, class: className = '' }: Props = $props();
 </script>
 
-<Card class="relative overflow-hidden border-slate-200/60 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:border-slate-700/60 dark:bg-slate-800/80 {className}">
+<Card
+	class="relative overflow-hidden border-slate-200/60 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:border-slate-700/60 dark:bg-slate-800/80 {className}"
+>
 	<CardContent class="p-6">
 		<div class="flex items-start gap-4">
 			{#if avatar}
@@ -34,7 +28,9 @@
 					class="h-12 w-12 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
 				/>
 			{:else}
-				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold text-lg">
+				<div
+					class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-lg font-semibold text-white"
+				>
 					{author.charAt(0).toUpperCase()}
 				</div>
 			{/if}

@@ -13,9 +13,16 @@
 	}
 </script>
 
-<div class="pointer-events-none fixed right-4 bottom-4 z-50 flex w-[min(92vw,22rem)] flex-col gap-2">
+<div
+	class="pointer-events-none fixed right-4 bottom-4 z-50 flex w-[min(92vw,22rem)] flex-col gap-2"
+>
 	{#each $toasts as toast (toast.id)}
-		<div class={cn('pointer-events-auto rounded-xl border p-3 shadow-xl backdrop-blur-md', cardClass(toast))}>
+		<div
+			class={cn(
+				'pointer-events-auto rounded-xl border p-3 shadow-xl backdrop-blur-md',
+				cardClass(toast)
+			)}
+		>
 			<div class="flex items-start justify-between gap-3">
 				<div class="space-y-1">
 					<p class="text-sm font-semibold">{toast.title}</p>

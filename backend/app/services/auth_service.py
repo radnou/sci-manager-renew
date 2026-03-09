@@ -1,10 +1,13 @@
 """Magic Link authentication service"""
 from typing import Optional
 
+import structlog
 from supabase import create_client
 
 from app.core.config import settings
+from app.core.external_services import run_with_retry
 
+logger = structlog.get_logger(__name__)
 
 class MagicLinkService:
     """Service for magic link authentication"""
@@ -20,7 +23,11 @@ class MagicLinkService:
         Returns the access token and session info
         """
         try:
-            response = self.client.auth.sign_in_with_otp({"email": email})
+            response = await run_with_retry(
+                operation="supabase_auth.send_magic_link",
+                func=lambda: self.client.auth.sign_in_with_otp({"email": email}),
+                context={"email": email},
+            )
 
             return {
                 "success": True,
@@ -28,6 +35,7 @@ class MagicLinkService:
                 "data": response,
             }
         except Exception as e:
+            logger.error("send_magic_link_failed", email=email, error=str(e), exc_info=True)
             return {"success": False, "message": str(e), "data": None}
 
     async def verify_magic_link(self, token: str) -> Optional[dict]:
@@ -40,6 +48,7 @@ class MagicLinkService:
             # Frontend receives the session after clicking magic link
             return {"success": True, "message": "Magic link verified"}
         except Exception as e:
+            logger.error("verify_magic_link_failed", error=str(e), exc_info=True)
             return {"success": False, "message": str(e)}
 
     async def create_user_from_magic_link(
@@ -64,6 +73,7 @@ class MagicLinkService:
 
             return {"success": True, "message": "User authenticated"}
         except Exception as e:
+            logger.error("create_user_from_magic_link_failed", email=email, error=str(e), exc_info=True)
             return {"success": False, "message": str(e), "data": None}
 
     async def sign_out(self, access_token: str) -> dict:
@@ -72,6 +82,7 @@ class MagicLinkService:
             # Frontend should handle this via Supabase client
             return {"success": True, "message": "Signed out successfully"}
         except Exception as e:
+            logger.error("sign_out_failed", error=str(e), exc_info=True)
             return {"success": False, "message": str(e)}
 
     async def get_user_session(self, access_token: str) -> Optional[dict]:
@@ -79,7 +90,11 @@ class MagicLinkService:
         Get current user session from access token
         """
         try:
-            user = self.client.auth.get_user(access_token)
+            user = await run_with_retry(
+                operation="supabase_auth.get_user",
+                func=lambda: self.client.auth.get_user(access_token),
+                context={"has_access_token": bool(access_token)},
+            )
             return user
         except Exception:
             return None
@@ -89,7 +104,11 @@ class MagicLinkService:
         Refresh user session using refresh token
         """
         try:
-            response = self.client.auth.refresh_session(refresh_token)
+            response = await run_with_retry(
+                operation="supabase_auth.refresh_session",
+                func=lambda: self.client.auth.refresh_session(refresh_token),
+                context={"has_refresh_token": bool(refresh_token)},
+            )
             return response
         except Exception:
             return None

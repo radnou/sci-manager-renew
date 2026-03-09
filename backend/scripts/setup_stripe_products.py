@@ -7,6 +7,8 @@ import sys
 import stripe
 from dotenv import load_dotenv
 
+from app.core.entitlements import PlanKey, get_plan
+
 # Load environment
 load_dotenv()
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -17,7 +19,7 @@ PLANS = {
         "price": 1900,  # €19.00
         "currency": "eur",
         "billing_period": "month",
-        "features": ["5 biens max", "Gestion loyers de base", "Quitus PDF", "Support email"],
+        "features": ["1 SCI max", "5 biens max", "Gestion loyers de base", "Quitus PDF", "Support email"],
         "description": "Plan idéal pour débuter avec votre gestion SCI"
     },
     "pro": {
@@ -25,7 +27,7 @@ PLANS = {
         "price": 4900,  # €49.00
         "currency": "eur",
         "billing_period": "month",
-        "features": ["Biens illimités", "Gestion complète loyers/charges", "Cerfa 2044 auto", "Quitus numérotés", "Support prioritaire", "Import/export données"],
+        "features": ["10 SCI max", "20 biens max", "Gestion complète loyers/charges", "Cerfa 2044 auto", "Quitus numérotés", "Support prioritaire", "Import/export données"],
         "description": "Plan complet pour les investisseurs SCI professionnels"
     },
     "lifetime": {
@@ -33,7 +35,7 @@ PLANS = {
         "price": 29900,  # €299.00
         "currency": "eur",
         "billing_period": "once",
-        "features": ["Accès à vie", "Toutes fonctionnalités Pro", "Mises à jour illimitées", "Support prioritaire à vie"],
+        "features": ["SCI illimitées", "Biens illimités", "Accès à vie", "Toutes fonctionnalités Pro", "Mises à jour illimitées", "Support prioritaire à vie"],
         "description": "Achat unique - Licence à vie sans renouvellement"
     }
 }
@@ -54,6 +56,7 @@ def check_existing_products():
 def create_product_with_price(plan_key, plan_data, existing):
     """Create or update a product and its price"""
     plan_name = plan_data["name"]
+    entitlements = get_plan(PlanKey(plan_key))
     
     # Check if already exists
     existing_key = plan_name.lower()
@@ -76,9 +79,9 @@ def create_product_with_price(plan_key, plan_data, existing):
         description=plan_data["description"],
         type="service",
         metadata={
+            **entitlements.metadata_payload(),
             "plan_type": plan_key,
-            "billing_period": plan_data["billing_period"],
-            "features": ", ".join(plan_data["features"])
+            "features": ", ".join(plan_data["features"]),
         }
     )
     
@@ -93,13 +96,15 @@ def create_product_with_price(plan_key, plan_data, existing):
             recurring={
                 "interval": "month",
                 "usage_type": "licensed"
-            }
+            },
+            metadata=entitlements.metadata_payload(),
         )
     else:  # lifetime/once
         price = stripe.Price.create(
             product=product.id,
             unit_amount=plan_data["price"],
-            currency=plan_data["currency"]
+            currency=plan_data["currency"],
+            metadata=entitlements.metadata_payload(),
         )
     
     print(f"     └─ Prix créé: {plan_data['price']/100:.2f} {plan_data['currency'].upper()}")

@@ -29,8 +29,10 @@ def test_upload_quitus_failure(client, auth_headers, monkeypatch):
         params={"file_path": "quitus/user-123/sample.pdf"},
         headers=auth_headers,
     )
-    assert response.status_code == 500
-    assert "Failed to upload quitus" in response.json()["detail"]
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["code"] == "external_service_error"
+    assert "Failed to upload quitus" in payload["error"]
 
 
 def test_download_file_success(client, auth_headers, monkeypatch):
@@ -74,8 +76,10 @@ def test_delete_file_failure(client, auth_headers, monkeypatch):
         "/api/v1/files/delete/quitus/user-123/sample.pdf",
         headers=auth_headers,
     )
-    assert response.status_code == 500
-    assert "Failed to delete file" in response.json()["detail"]
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["code"] == "external_service_error"
+    assert "Failed to delete file" in payload["error"]
 
 
 def test_list_files_success(client, auth_headers, monkeypatch):
@@ -98,5 +102,19 @@ def test_list_files_failure(client, auth_headers, monkeypatch):
     monkeypatch.setattr(files.storage_service, "list_files", fake_list_files)
 
     response = client.get("/api/v1/files/list/quitus/user-123", headers=auth_headers)
-    assert response.status_code == 500
-    assert "Failed to list files" in response.json()["detail"]
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["code"] == "external_service_error"
+    assert "Failed to list files" in payload["error"]
+
+
+def test_upload_quitus_invalid_path(client, auth_headers):
+    response = client.post(
+        "/api/v1/files/upload-quitus",
+        params={"file_path": "../secret.txt"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["code"] == "validation_error"
+    assert payload["error"] == "Chemin de fichier invalide."

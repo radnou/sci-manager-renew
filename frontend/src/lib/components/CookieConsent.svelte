@@ -25,9 +25,9 @@
 
 	function acceptAll() {
 		const consent = {
-			necessary: true,  // Toujours true
-			analytics: false,  // Pas d'analytics pour l'instant
-			marketing: false,  // Pas de marketing
+			necessary: true, // Toujours true
+			analytics: false, // Pas d'analytics pour l'instant
+			marketing: false, // Pas de marketing
 			timestamp: Date.now()
 		};
 
@@ -62,12 +62,12 @@
 
 {#if $showBanner && !$consentGiven}
 	<div
-		class="fixed bottom-0 left-0 right-0 z-[9999] p-4 sm:p-6 animate-in slide-in-from-bottom duration-300"
+		class="fixed right-0 bottom-0 left-0 z-[9999] animate-in p-4 duration-300 slide-in-from-bottom sm:p-6"
 		role="dialog"
 		aria-live="polite"
 		aria-label="Cookie consent banner"
 	>
-		<Card class="mx-auto max-w-4xl border-2 shadow-2xl bg-white dark:bg-slate-900">
+		<Card class="mx-auto max-w-4xl border-2 bg-white shadow-2xl dark:bg-slate-900">
 			<div class="p-4 sm:p-6">
 				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div class="flex-1 space-y-2">
@@ -79,26 +79,22 @@
 							et le fonctionnement du service. Aucun tracking publicitaire ou analytics.
 						</p>
 						<p class="text-xs text-slate-500 dark:text-slate-500">
-							En continuant, vous acceptez l'utilisation de cookies techniques nécessaires au service.
-							<a href="/privacy" class="text-blue-600 dark:text-blue-400 hover:underline ml-1">
+							En continuant, vous acceptez l'utilisation de cookies techniques nécessaires au
+							service.
+							<a href="/privacy" class="ml-1 text-blue-600 hover:underline dark:text-blue-400">
 								En savoir plus →
 							</a>
 						</p>
 					</div>
 
 					<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-						<Button
-							variant="outline"
-							size="sm"
-							onclick={acceptNecessary}
-							class="whitespace-nowrap"
-						>
+						<Button variant="outline" size="sm" onclick={acceptNecessary} class="whitespace-nowrap">
 							Cookies essentiels uniquement
 						</Button>
 						<Button
 							size="sm"
 							onclick={acceptAll}
-							class="whitespace-nowrap bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border-0"
+							class="border-0 bg-gradient-to-r from-blue-500 to-cyan-500 whitespace-nowrap text-white hover:from-blue-600 hover:to-cyan-600"
 						>
 							Tout accepter
 						</Button>

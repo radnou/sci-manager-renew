@@ -132,7 +132,7 @@ Minimum attendu:
 - `STRIPE_SECRET_KEY=<sk_live_...>`
 - `STRIPE_WEBHOOK_SECRET=<whsec_...>`
 - `RESEND_API_KEY=<re_...>`
-- `RESEND_FROM_EMAIL=noreply@gerersci.fr`
+- `RESEND_FROM_EMAIL=noreply@email.radnoumane.com`
 
 Frontend file: `/opt/gerersci/app/frontend/.env`
 
@@ -141,6 +141,7 @@ Minimum attendu:
 - `VITE_SUPABASE_URL=<value>`
 - `VITE_SUPABASE_ANON_KEY=<value>`
 - `VITE_STRIPE_PUBLISHABLE_KEY=<pk_live_...>`
+- `PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true`
 
 ## 7) Security baseline (minimum viable hardening)
 
