@@ -45,12 +45,25 @@ body {
 	--chart-5: oklch(0.73 0.16 66.4);
 	--sidebar: oklch(0.98 0.008 95.7);
 	--sidebar-foreground: oklch(0.24 0.03 243.2);
-	--sidebar-primary: oklch(0.55 0.15 218.5);
+	--sidebar-primary: oklch(0.50 0.17 265);
 	--sidebar-primary-foreground: oklch(0.99 0.01 90.5);
 	--sidebar-accent: oklch(0.94 0.025 204.2);
 	--sidebar-accent-foreground: oklch(0.29 0.04 243.2);
 	--sidebar-border: oklch(0.89 0.015 243.1);
 	--sidebar-ring: oklch(0.62 0.13 218.5);
+	/* ── Design System semantic tokens ── */
+	--ds-accent: oklch(0.50 0.17 265);
+	--ds-accent-hover: oklch(0.44 0.18 265);
+	--ds-accent-soft: oklch(0.96 0.03 265);
+	--ds-accent-foreground: oklch(0.99 0.01 90);
+	--ds-success: oklch(0.55 0.16 150);
+	--ds-success-soft: oklch(0.96 0.04 150);
+	--ds-warning: oklch(0.65 0.16 75);
+	--ds-warning-soft: oklch(0.96 0.04 85);
+	--ds-error: oklch(0.58 0.22 27);
+	--ds-error-soft: oklch(0.96 0.03 25);
+	--ds-info: oklch(0.55 0.15 250);
+	--ds-info-soft: oklch(0.96 0.03 250);
 }
 
 .dark {
@@ -85,6 +98,19 @@ body {
 	--sidebar-accent-foreground: oklch(0.97 0.01 91.4);
 	--sidebar-border: oklch(1 0 0 / 12%);
 	--sidebar-ring: oklch(0.68 0.08 214.8);
+	/* ── Design System semantic tokens (dark) ── */
+	--ds-accent: oklch(0.70 0.14 265);
+	--ds-accent-hover: oklch(0.76 0.12 265);
+	--ds-accent-soft: oklch(0.25 0.06 265);
+	--ds-accent-foreground: oklch(0.15 0.02 265);
+	--ds-success: oklch(0.70 0.14 150);
+	--ds-success-soft: oklch(0.25 0.06 150);
+	--ds-warning: oklch(0.75 0.14 75);
+	--ds-warning-soft: oklch(0.25 0.06 75);
+	--ds-error: oklch(0.70 0.18 27);
+	--ds-error-soft: oklch(0.25 0.06 27);
+	--ds-info: oklch(0.70 0.12 250);
+	--ds-info-soft: oklch(0.25 0.06 250);
 }
 
 @theme inline {
@@ -123,6 +149,18 @@ body {
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+	--color-ds-accent: var(--ds-accent);
+	--color-ds-accent-hover: var(--ds-accent-hover);
+	--color-ds-accent-soft: var(--ds-accent-soft);
+	--color-ds-accent-foreground: var(--ds-accent-foreground);
+	--color-ds-success: var(--ds-success);
+	--color-ds-success-soft: var(--ds-success-soft);
+	--color-ds-warning: var(--ds-warning);
+	--color-ds-warning-soft: var(--ds-warning-soft);
+	--color-ds-error: var(--ds-error);
+	--color-ds-error-soft: var(--ds-error-soft);
+	--color-ds-info: var(--ds-info);
+	--color-ds-info-soft: var(--ds-info-soft);
 }
 
 @layer base {
