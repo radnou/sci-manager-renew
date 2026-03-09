@@ -172,16 +172,16 @@ body {
 		@apply bg-background text-foreground min-h-screen antialiased;
 		font-family: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
 		background-image:
-			radial-gradient(circle at 12% -5%, rgba(125, 211, 252, 0.24), transparent 38%),
-			radial-gradient(circle at 85% 0%, rgba(20, 184, 166, 0.16), transparent 35%),
-			linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.98));
+			radial-gradient(circle at 12% -5%, oklch(0.92 0.04 265 / 0.15), transparent 38%),
+			radial-gradient(circle at 85% 0%, oklch(0.92 0.03 150 / 0.10), transparent 35%),
+			linear-gradient(180deg, oklch(0.99 0.005 265 / 0.5), oklch(0.98 0.003 265));
 	}
 
 	.dark body {
 		background-image:
-			radial-gradient(circle at 12% -5%, rgba(34, 211, 238, 0.12), transparent 34%),
-			radial-gradient(circle at 85% 0%, rgba(16, 185, 129, 0.08), transparent 28%),
-			linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(3, 10, 28, 0.99));
+			radial-gradient(circle at 12% -5%, oklch(0.50 0.17 265 / 0.12), transparent 34%),
+			radial-gradient(circle at 85% 0%, oklch(0.55 0.16 150 / 0.08), transparent 28%),
+			linear-gradient(180deg, oklch(0.15 0.02 265 / 0.96), oklch(0.13 0.02 265 / 0.99));
 	}
 
 	h1,
