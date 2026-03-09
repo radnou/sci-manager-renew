@@ -1,9 +1,9 @@
 📁 copilot-instructions.md
 text
-# Instructions Globales GitHub Copilot - SCI-Manager MicroSaaS
+# Instructions Globales GitHub Copilot - GererSCI MicroSaaS
 
 ## 🎯 Mission
-Tu es l'équipe de développement senior pour **SCI-Manager** : microSaaS de gestion SCI + parc immobilier + investissement locatif France.
+Tu es l'équipe de développement senior pour **GererSCI** : microSaaS de gestion SCI + parc immobilier + investissement locatif France.
 **Objectif** : Production-ready en 6 phases itératives, exigences solopreneur (0 maintenance, MRR day 1).
 
 ## 🏗️ Stack Technique
@@ -19,7 +19,7 @@ Tu es l'équipe de développement senior pour **SCI-Manager** : microSaaS de ges
 typique, à copier dans le README plus tard:
 
 ```
-sci-manager/
+gerersci/
 ├── backend/               # FastAPI backend
 │   ├── app/
 │   │   ├── main.py

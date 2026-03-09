@@ -115,7 +115,7 @@ Rôle produit:
 - Pas de page produit dédiée à la gestion multi-SCI.
 - Menu connecté encore trop proche du menu public.
 - Paramètres compte / application absents.
-- Résidus de marque `SCI Manager` / `scimanager.fr` encore visibles dans la privacy.
+- Résidus de marque `GererSCI` / `gerersci.fr` encore visibles dans la privacy.
 - Dépendance locale forte au backend/Supabase pour les démonstrations réelles.
 
 ## Remédiation livrée dans cette phase

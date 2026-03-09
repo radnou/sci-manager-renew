@@ -46,7 +46,7 @@ from app.services.email_service import email_service
 # Envoyer magic link
 await email_service.send_magic_link(
     email="user@example.com",
-    magic_link="https://app.scimanager.fr/auth/callback?token=..."
+    magic_link="https://app.gerersci.fr/auth/callback?token=..."
 )
 
 # Envoyer welcome
@@ -90,7 +90,7 @@ url = await storage_service.get_file_url("2024/quitus/bien-1.pdf")
 ```env
 # Email (Resend)
 RESEND_API_KEY=re_5iUFid19_MUkdrohHXjMMCErFoKcq1uHx  # ← Votre clé
-RESEND_FROM_EMAIL=noreply@scimanager.fr
+RESEND_FROM_EMAIL=noreply@gerersci.fr
 
 # Supabase (déjà configuré)
 SUPABASE_URL=http://localhost:54321

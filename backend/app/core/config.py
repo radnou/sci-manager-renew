@@ -17,7 +17,7 @@ class Environment(str, Enum):
 
 class Settings(BaseSettings):
     # Environment
-    app_name: str = "sci-manager"
+    app_name: str = "gerersci"
     app_env: Environment = Environment.DEVELOPMENT
     debug: bool = False
 

@@ -1,6 +1,6 @@
-# Rapport d'Audit de Conformité - SCI Manager
+# Rapport d'Audit de Conformité - GererSCI
 **Date**: 5 mars 2026
-**Projet**: SCI-Manager (Application SaaS de gestion de SCI)
+**Projet**: GererSCI (Application SaaS de gestion de SCI)
 **Version auditée**: main branch (commit: 8b4bfd2)
 
 ---
@@ -8,7 +8,7 @@
 ## 📋 Résumé Exécutif
 
 ### Vue d'Ensemble
-Cet audit couvre 8 dimensions critiques de conformité pour l'application SCI-Manager :
+Cet audit couvre 8 dimensions critiques de conformité pour l'application GererSCI :
 1. ✅ Licences des dépendances
 2. 🔴 Fichier LICENSE du projet
 3. 🟡 Conformité accessibilité (WCAG 2.1)
@@ -88,7 +88,7 @@ Cet audit couvre 8 dimensions critiques de conformité pour l'application SCI-Ma
 1. **Choisir et appliquer une licence** (immédiat):
    ```bash
    # Option A: Propriétaire (SaaS commercial)
-   Créer LICENSE avec copyright © 2024 SCI Manager. All Rights Reserved.
+   Créer LICENSE avec copyright © 2024 GererSCI. All Rights Reserved.
 
    # Option B: Open-source permissive (si applicable)
    Appliquer MIT License (compatible avec toutes les dépendances)
@@ -104,7 +104,7 @@ Cet audit couvre 8 dimensions critiques de conformité pour l'application SCI-Ma
    ```python
    # backend/app/**/*.py
    """
-   Copyright (c) 2024 SCI Manager
+   Copyright (c) 2024 GererSCI
    Licensed under [LICENSE TYPE]
    """
    ```
@@ -118,7 +118,7 @@ Cet audit couvre 8 dimensions critiques de conformité pour l'application SCI-Ma
    ```
 
 **Recommandation**:
-Étant donné que SCI-Manager est un produit SaaS commercial avec abonnements Stripe, recommandation = **Licence Propriétaire** avec copyright strict + clause "All Rights Reserved".
+Étant donné que GererSCI est un produit SaaS commercial avec abonnements Stripe, recommandation = **Licence Propriétaire** avec copyright strict + clause "All Rights Reserved".
 
 ---
 
@@ -210,7 +210,7 @@ Cet audit couvre 8 dimensions critiques de conformité pour l'application SCI-Ma
 
 2. **Ajouter alt text sur toutes les images**:
    ```svelte
-   <img src={logo} alt="Logo SCI Manager" />
+   <img src={logo} alt="Logo GererSCI" />
    <!-- Icônes décoratives -->
    <ChevronRight aria-hidden="true" />
    ```
@@ -343,10 +343,10 @@ Cet audit couvre 8 dimensions critiques de conformité pour l'application SCI-Ma
 
 **Template RGPD-compliant**:
 ```markdown
-# Politique de Confidentialité - SCI Manager
+# Politique de Confidentialité - GererSCI
 
 ## 1. Responsable du traitement
-SCI Manager, [adresse], [email contact], [SIRET]
+GererSCI, [adresse], [email contact], [SIRET]
 
 ## 2. Données collectées
 - Email (authentification)
@@ -355,7 +355,7 @@ SCI Manager, [adresse], [email contact], [SIRET]
 
 ## 3. Base légale
 - Consentement (cookies non-essentiels)
-- Exécution du contrat (service SCI Manager)
+- Exécution du contrat (service GererSCI)
 - Obligation légale (facturation)
 
 ## 4. Finalités
@@ -386,7 +386,7 @@ Stripe Inc. (US) - Protected by EU-US Data Privacy Framework
 - Opposition
 - Limitation du traitement
 
-Contact: privacy@scimanager.fr
+Contact: privacy@gerersci.fr
 Délai de réponse: 1 mois maximum
 
 ## 9. Réclamation
@@ -434,7 +434,7 @@ pnpm add @beyonk/gdpr-cookie-consent-banner
         description: 'Authentification et sécurité'
       }
     },
-    cookieName: 'sci_manager_gdpr_consent',
+    cookieName: 'gerersci_gdpr_consent',
     heading: 'Gestion des cookies',
     description: 'Nous utilisons des cookies essentiels pour votre authentification.',
     choices: {
@@ -544,7 +544,7 @@ async def get_data_summary(user_id: str = Depends(get_current_user)):
 
 **Créer registre des traitements** (Art. 30 RGPD):
 ```markdown
-# REGISTRE DES TRAITEMENTS - SCI Manager
+# REGISTRE DES TRAITEMENTS - GererSCI
 
 ## Traitement 1: Gestion de compte utilisateur
 - Finalité: Authentification et accès au service
@@ -661,7 +661,7 @@ grep -r "Content-Security-Policy" backend/ frontend/ docker/
 - 🔴 Vulnérable à injection de code malveillant
 - 🔴 Pas de protection contre data exfiltration
 
-**CSP recommandée pour SCI-Manager**:
+**CSP recommandée pour GererSCI**:
 
 ```python
 # backend/app/main.py - Ajouter au middleware
@@ -773,7 +773,7 @@ cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 2. **Configurer CORS prod dans .env**:
 ```bash
 # .env.production
-CORS_ORIGINS=https://app.scimanager.fr,https://www.scimanager.fr
+CORS_ORIGINS=https://app.gerersci.fr,https://www.gerersci.fr
 ```
 
 3. **Validation stricte backend**:
@@ -869,7 +869,7 @@ curl -I https://localhost:8000/health
 ### Statut: 🟡 **PARTIELLEMENT CONFORME** - Insuffisant pour SOC 2 / ISO 27001
 
 **Contexte**:
-SCI-Manager gère des données fiscales → Potentiellement soumis à audits comptables et fiscaux
+GererSCI gère des données fiscales → Potentiellement soumis à audits comptables et fiscaux
 Clients cabinets comptables → Exigences de traçabilité (SOX, SOC 2)
 
 ### Findings - Points Positifs ✅
@@ -1145,7 +1145,7 @@ async def delete_bien(...):
 import logging.handlers
 
 handler = logging.handlers.RotatingFileHandler(
-    "/var/log/sci-manager/audit.log",
+    "/var/log/gerersci/audit.log",
     maxBytes=100_000_000,  # 100MB
     backupCount=120  # 120 fichiers = ~10 ans si rotation mensuelle
 )

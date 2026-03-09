@@ -4,12 +4,12 @@ services:
   # Base de données PostgreSQL (remplace Supabase local)
   db:
     image: postgres:15-alpine
-    container_name: sci_manager_db
+    container_name: gerersci_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DATABASE_USER:-sci_manager}
+      POSTGRES_USER: ${DATABASE_USER:-gerersci}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME:-sci_manager}
+      POSTGRES_DB: ${DATABASE_NAME:-gerersci}
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
@@ -19,7 +19,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${DATABASE_USER:-sci_manager} -d ${DATABASE_NAME:-sci_manager}",
+          "pg_isready -U ${DATABASE_USER:-gerersci} -d ${DATABASE_NAME:-gerersci}",
         ]
       interval: 10s
       timeout: 5s
@@ -30,13 +30,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sci_manager_backend
+    container_name: gerersci_backend
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       APP_ENV: development
-      DATABASE_URL: postgresql://${DATABASE_USER:-sci_manager}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME:-sci_manager}
+      DATABASE_URL: postgresql://${DATABASE_USER:-gerersci}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME:-gerersci}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
@@ -73,7 +73,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: sci_manager_frontend
+    container_name: gerersci_frontend
     restart: unless-stopped
     ports:
       - "4173:4173"
@@ -98,7 +98,7 @@ services:
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
-    container_name: sci_manager_nginx
+    container_name: gerersci_nginx
     restart: unless-stopped
     ports:
       - "80:80"

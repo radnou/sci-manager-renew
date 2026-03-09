@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SCI-Manager est une application SaaS pour la gestion de SCI (Sociétés Civiles Immobilières) en France. L'application suit une architecture full-stack moderne avec:
+GererSCI est une application SaaS pour la gestion de SCI (Sociétés Civiles Immobilières) en France. L'application suit une architecture full-stack moderne avec:
 
 - **Frontend**: SvelteKit 2.x + TypeScript + Tailwind CSS 4
 - **Backend**: FastAPI (Python 3.12) avec architecture en couches

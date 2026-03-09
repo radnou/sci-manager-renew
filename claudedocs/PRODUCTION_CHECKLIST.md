@@ -1,4 +1,4 @@
-# Checklist de Mise en Production - SCI Manager
+# Checklist de Mise en Production - GererSCI
 **Date**: 5 mars 2026
 **Statut Conformité**: 🟢 **90/100** (Prêt pour production avec checklist finale)
 
@@ -9,7 +9,7 @@
 ### 1. LICENSE Propriétaire ✅
 **Fichier**: `LICENSE` à la racine du projet
 
-✅ Licence propriétaire avec copyright SCI Manager
+✅ Licence propriétaire avec copyright GererSCI
 ✅ Restrictions d'utilisation clairement définies
 ✅ Conformité légale pour SaaS commercial
 
@@ -111,7 +111,7 @@ async def send_magic_link(request: MagicLinkRequest, req: Request):
 **Validation Production**:
 ```bash
 # Tester les headers de sécurité
-curl -I https://api.scimanager.fr/health
+curl -I https://api.gerersci.fr/health
 
 # Utiliser securityheaders.com
 # Objectif: Score A+
@@ -145,7 +145,7 @@ curl -I https://api.scimanager.fr/health
 **TODO Production**:
 - [ ] Vérifier région Supabase (doit être EU: `eu-central-1`)
 - [ ] Obtenir DPA signé de Resend
-- [ ] Mettre à jour email contact: `privacy@scimanager.fr`
+- [ ] Mettre à jour email contact: `privacy@gerersci.fr`
 - [ ] Vérifier SIRET/adresse légale
 
 ```bash
@@ -270,7 +270,7 @@ return DataExportResponse(
 
 - [ ] Ajouter alt text sur toutes les images/icônes:
 ```svelte
-<img src={logo} alt="Logo SCI Manager" />
+<img src={logo} alt="Logo GererSCI" />
 <ChevronRight aria-hidden="true" /> <!-- Si décoratif -->
 ```
 
@@ -320,16 +320,16 @@ pnpm dlx @lhci/cli autorun
 
 - [ ] Configurer CORS_ORIGINS dans `.env.production`:
 ```bash
-CORS_ORIGINS=["https://app.scimanager.fr","https://www.scimanager.fr"]
+CORS_ORIGINS=["https://app.gerersci.fr","https://www.gerersci.fr"]
 ```
 
 - [ ] Valider que FastAPI CORS fonctionne:
 ```bash
-curl -H "Origin: https://app.scimanager.fr" \
+curl -H "Origin: https://app.gerersci.fr" \
      -H "Access-Control-Request-Method: POST" \
      -X OPTIONS \
-     https://api.scimanager.fr/api/v1/biens
-# Doit retourner: Access-Control-Allow-Origin: https://app.scimanager.fr
+     https://api.gerersci.fr/api/v1/biens
+# Doit retourner: Access-Control-Allow-Origin: https://app.gerersci.fr
 ```
 
 ---
@@ -347,8 +347,8 @@ LOG_FORMAT=json
 APP_ENV=production
 
 # CORS
-CORS_ORIGINS=["https://app.scimanager.fr","https://www.scimanager.fr"]
-FRONTEND_URL=https://app.scimanager.fr
+CORS_ORIGINS=["https://app.gerersci.fr","https://www.gerersci.fr"]
+FRONTEND_URL=https://app.gerersci.fr
 
 # Supabase (région EU)
 SUPABASE_URL=https://[project-id].supabase.co  # Vérifier eu-central-1
@@ -365,7 +365,7 @@ STRIPE_LIFETIME_PRICE_ID=price_[live]
 
 # Resend
 RESEND_API_KEY=re_[production]
-RESEND_FROM_EMAIL=noreply@scimanager.fr
+RESEND_FROM_EMAIL=noreply@gerersci.fr
 ```
 
 - [ ] Migrer Supabase vers région EU si nécessaire:
@@ -390,7 +390,7 @@ RESEND_FROM_EMAIL=noreply@scimanager.fr
 #### Frontend
 - [ ] Mettre à jour variables d'environnement production:
 ```bash
-VITE_API_URL=https://api.scimanager.fr
+VITE_API_URL=https://api.gerersci.fr
 VITE_SUPABASE_URL=https://[project-id].supabase.co
 VITE_SUPABASE_ANON_KEY=[anon-key-production]
 VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...

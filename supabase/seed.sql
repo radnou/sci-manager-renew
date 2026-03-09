@@ -1,1 +1,1 @@
--- Seed data placeholder for SCI-Manager.
+-- Seed data placeholder for GererSCI.

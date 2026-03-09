@@ -7,7 +7,7 @@
 	const showBanner = writable(false);
 	const consentGiven = writable(false);
 
-	const CONSENT_KEY = 'sci_manager_cookie_consent';
+	const CONSENT_KEY = 'gerersci_cookie_consent';
 
 	onMount(() => {
 		// Vérifier si le consentement a déjà été donné

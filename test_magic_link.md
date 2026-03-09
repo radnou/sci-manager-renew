@@ -116,7 +116,7 @@ curl -X POST 'https://api.resend.com/emails' \
   -H 'Authorization: Bearer re_your_api_key' \
   -H 'Content-Type: application/json' \
   -d '{
-    "from": "noreply@scimanager.fr",
+    "from": "noreply@gerersci.fr",
     "to": "test@example.com",
     "subject": "Test SMTP",
     "html": "<p>Test email from Resend</p>"

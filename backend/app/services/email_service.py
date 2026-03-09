@@ -27,7 +27,7 @@ class EmailService:
         try:
             template = Template(
                 """
-            <h1>Connexion à SCI-Manager</h1>
+            <h1>Connexion à GererSCI</h1>
             <p>Cliquez sur le lien ci-dessous pour vous connecter:</p>
             <a href="{{ link }}">Se connecter</a>
             <p>Ce lien expire dans 24h.</p>
@@ -40,7 +40,7 @@ class EmailService:
                 {
                     "from": self.from_email,
                     "to": email,
-                    "subject": "Connexion à SCI-Manager",
+                    "subject": "Connexion à GererSCI",
                     "html": html,
                 }
             )
@@ -62,7 +62,7 @@ class EmailService:
         try:
             template = Template(
                 """
-            <h1>Bienvenue sur SCI-Manager, {{ name }}!</h1>
+            <h1>Bienvenue sur GererSCI, {{ name }}!</h1>
             <p>Votre compte a été créé avec succès.</p>
             <p>Vous pouvez maintenant:</p>
             <ul>
@@ -80,7 +80,7 @@ class EmailService:
                 {
                     "from": self.from_email,
                     "to": email,
-                    "subject": "Bienvenue sur SCI-Manager!",
+                    "subject": "Bienvenue sur GererSCI!",
                     "html": html,
                 }
             )

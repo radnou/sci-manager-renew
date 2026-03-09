@@ -1,8 +1,8 @@
-# SCI-Manager Architecture (Phase 1)
+# GererSCI Architecture (Phase 1)
 
 ## 1. Vision Globale
 
-SCI-Manager suit une architecture web modulaire:
+GererSCI suit une architecture web modulaire:
 
 - Frontend `SvelteKit` (UX, SSR, dashboard, parcours utilisateur)
 - Backend `FastAPI` (API metier, validation, orchestration)

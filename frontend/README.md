@@ -1,4 +1,4 @@
-# Frontend SCI Manager
+# Frontend GererSCI
 
 Interface SvelteKit orientée exécution métier pour la gestion SCI:
 

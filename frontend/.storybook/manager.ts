@@ -1,9 +1,9 @@
 import { addons } from 'storybook/manager-api';
 import { create } from 'storybook/theming/create';
 
-const sciManagerTheme = create({
+const gerersciTheme = create({
 	base: 'light',
-	brandTitle: 'SCI Manager • Design System',
+	brandTitle: 'GererSCI • Design System',
 	brandUrl: '/',
 	brandTarget: '_self',
 	colorPrimary: '#0f766e',
@@ -28,7 +28,7 @@ const sciManagerTheme = create({
 });
 
 addons.setConfig({
-	theme: sciManagerTheme,
+	theme: gerersciTheme,
 	panelPosition: 'right',
 	showNav: true,
 	showPanel: true,

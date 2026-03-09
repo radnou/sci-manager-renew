@@ -290,7 +290,7 @@ async def lifespan(app: FastAPI):
     logger.info("application_shutting_down")
 
 app = FastAPI(
-    title="SCI-Manager API",
+    title="GererSCI API",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -818,7 +818,7 @@ git commit -m "docs(logging): add logging format documentation
 # backend/tests/test_exceptions.py
 import pytest
 from app.core.exceptions import (
-    SCIManagerException,
+    GererSCIException,
     DatabaseError,
     ResourceNotFoundError,
     ValidationError,
@@ -828,8 +828,8 @@ from app.core.exceptions import (
 )
 
 def test_base_exception_has_status_code():
-    """Test que SCIManagerException a un status_code"""
-    exc = SCIManagerException("Test error", status_code=418)
+    """Test que GererSCIException a un status_code"""
+    exc = GererSCIException("Test error", status_code=418)
     assert exc.message == "Test error"
     assert exc.status_code == 418
 
@@ -876,20 +876,20 @@ def test_authorization_error_defaults_to_403():
 pytest tests/test_exceptions.py -v
 ```
 
-Expected: `FAILED - ImportError: cannot import name 'SCIManagerException'`
+Expected: `FAILED - ImportError: cannot import name 'GererSCIException'`
 
 **Step 3: Implement custom exceptions**
 
 ```python
 # backend/app/core/exceptions.py
 """
-Exceptions custom pour SCI-Manager.
-Toutes héritent de SCIManagerException qui inclut un status_code HTTP.
+Exceptions custom pour GererSCI.
+Toutes héritent de GererSCIException qui inclut un status_code HTTP.
 """
 
-class SCIManagerException(Exception):
+class GererSCIException(Exception):
     """
-    Exception de base pour toutes les erreurs SCI-Manager.
+    Exception de base pour toutes les erreurs GererSCI.
 
     Attributes:
         message: Message d'erreur lisible
@@ -900,23 +900,23 @@ class SCIManagerException(Exception):
         self.status_code = status_code
         super().__init__(self.message)
 
-class DatabaseError(SCIManagerException):
+class DatabaseError(GererSCIException):
     """Erreur de base de données (Supabase)"""
     def __init__(self, message: str = "Database operation failed"):
         super().__init__(message, status_code=503)
 
-class ResourceNotFoundError(SCIManagerException):
+class ResourceNotFoundError(GererSCIException):
     """Ressource non trouvée (bien, loyer, associé, etc.)"""
     def __init__(self, resource: str, resource_id: str):
         message = f"{resource} {resource_id} not found"
         super().__init__(message, status_code=404)
 
-class ValidationError(SCIManagerException):
+class ValidationError(GererSCIException):
     """Erreur de validation des données d'entrée"""
     def __init__(self, message: str):
         super().__init__(message, status_code=400)
 
-class ExternalServiceError(SCIManagerException):
+class ExternalServiceError(GererSCIException):
     """
     Erreur d'un service externe (Stripe, Resend, Supabase Storage).
     Utilisé quand l'erreur vient d'un service tiers, pas de notre code.
@@ -925,18 +925,18 @@ class ExternalServiceError(SCIManagerException):
         full_message = f"{service} error: {message}"
         super().__init__(full_message, status_code=503)
 
-class AuthenticationError(SCIManagerException):
+class AuthenticationError(GererSCIException):
     """Erreur d'authentification (token invalide, expiré)"""
     def __init__(self, message: str = "Authentication failed"):
         super().__init__(message, status_code=401)
 
-class AuthorizationError(SCIManagerException):
+class AuthorizationError(GererSCIException):
     """Erreur d'autorisation (user n'a pas le droit d'accéder à la ressource)"""
     def __init__(self, resource: str, resource_id: str):
         message = f"User not authorized to access {resource} {resource_id}"
         super().__init__(message, status_code=403)
 
-class BusinessLogicError(SCIManagerException):
+class BusinessLogicError(GererSCIException):
     """
     Erreur de logique métier (ex: loyer déjà enregistré pour ce mois).
     Status 422 Unprocessable Entity (syntaxe OK mais logique invalide).
@@ -959,7 +959,7 @@ Expected: All tests `PASSED`
 git add backend/app/core/exceptions.py backend/tests/test_exceptions.py
 git commit -m "feat(errors): add custom exception hierarchy
 
-- Create SCIManagerException base class with status_code
+- Create GererSCIException base class with status_code
 - Add DatabaseError (503) for Supabase errors
 - Add ResourceNotFoundError (404) for missing resources
 - Add ValidationError (400) for input validation
@@ -986,8 +986,8 @@ Resolves production-readiness audit gap #2 (partial)"
 from fastapi.testclient import TestClient
 from app.main import app
 
-def test_sci_manager_exception_handler_returns_correct_status():
-    """Test que les exceptions SCI-Manager retournent le bon status"""
+def test_gerersci_exception_handler_returns_correct_status():
+    """Test que les exceptions GererSCI retournent le bon status"""
     client = TestClient(app)
 
     # Créer un endpoint de test qui lève une exception
@@ -1066,7 +1066,7 @@ def test_pydantic_validation_error_handler():
 **Step 2: Run test to verify it fails**
 
 ```bash
-pytest tests/test_exceptions.py::test_sci_manager_exception_handler_returns_correct_status -v
+pytest tests/test_exceptions.py::test_gerersci_exception_handler_returns_correct_status -v
 ```
 
 Expected: `FAILED` (handlers pas encore implémentés)
@@ -1081,7 +1081,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError as PydanticValidationError
 
-from app.core.exceptions import SCIManagerException, ValidationError
+from app.core.exceptions import GererSCIException, ValidationError
 from app.core.config import settings
 
 logger = structlog.get_logger(__name__)
@@ -1089,7 +1089,7 @@ logger = structlog.get_logger(__name__)
 # ... (code existant du lifespan) ...
 
 app = FastAPI(
-    title="SCI-Manager API",
+    title="GererSCI API",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -1098,13 +1098,13 @@ app = FastAPI(
 # EXCEPTION HANDLERS GLOBAUX
 # ============================================================
 
-@app.exception_handler(SCIManagerException)
-async def sci_manager_exception_handler(
+@app.exception_handler(GererSCIException)
+async def gerersci_exception_handler(
     request: Request,
-    exc: SCIManagerException
+    exc: GererSCIException
 ) -> JSONResponse:
     """
-    Handler pour toutes les exceptions métier SCI-Manager.
+    Handler pour toutes les exceptions métier GererSCI.
     Retourne un JSON avec le message d'erreur et le request_id.
     """
     # Récupérer le request_id du contexte
@@ -1112,7 +1112,7 @@ async def sci_manager_exception_handler(
 
     # Logger l'erreur avec contexte
     logger.error(
-        "sci_manager_exception",
+        "gerersci_exception",
         error_type=exc.__class__.__name__,
         error_message=exc.message,
         status_code=exc.status_code,
@@ -1235,7 +1235,7 @@ Expected: All new tests `PASSED`
 git add backend/app/main.py backend/tests/test_exceptions.py
 git commit -m "feat(errors): add global exception handlers
 
-- Handle SCIManagerException with proper status codes
+- Handle GererSCIException with proper status codes
 - Handle FastAPI RequestValidationError (422)
 - Handle Pydantic ValidationError (422)
 - Handle generic Exception with production-safe messages
@@ -1436,9 +1436,9 @@ class EmailService:
             result = resend.Emails.send({
                 "from": settings.resend_from_email,
                 "to": email,
-                "subject": "Connexion à SCI-Manager",
+                "subject": "Connexion à GererSCI",
                 "html": f"""
-                <h1>Connexion à SCI-Manager</h1>
+                <h1>Connexion à GererSCI</h1>
                 <p>Cliquez sur le lien ci-dessous pour vous connecter:</p>
                 <a href="{magic_link}">Se connecter</a>
                 <p>Ce lien expire dans 1 heure.</p>
@@ -1942,7 +1942,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sci-manager-backend
+    container_name: gerersci-backend
     ports:
       - "8000:8000"
     environment:
@@ -2383,7 +2383,7 @@ async def cleanup_resources():
 
 # Créer l'app FastAPI avec le lifecycle
 app = FastAPI(
-    title="SCI-Manager API",
+    title="GererSCI API",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -2547,7 +2547,7 @@ def test_production_environment_forbids_placeholder_secrets():
     """Test que le mode production interdit les placeholders"""
     os.environ["APP_ENV"] = "production"
     os.environ["DEBUG"] = "false"
-    os.environ["CORS_ORIGINS"] = "https://scimanager.fr"
+    os.environ["CORS_ORIGINS"] = "https://gerersci.fr"
     os.environ["STRIPE_SECRET_KEY"] = "sk_test_placeholder"
 
     with pytest.raises(ValidationError) as exc_info:
@@ -2609,7 +2609,7 @@ class Settings(BaseSettings):
 
     # ==================== Environment ====================
     app_env: Environment = Environment.DEVELOPMENT
-    app_name: str = "SCI-Manager"
+    app_name: str = "GererSCI"
     debug: bool = False
 
     # ==================== Security ====================
@@ -2628,14 +2628,14 @@ class Settings(BaseSettings):
 
     # Resend
     resend_api_key: str
-    resend_from_email: str = "noreply@scimanager.fr"
+    resend_from_email: str = "noreply@gerersci.fr"
 
     # ==================== CORS ====================
     cors_origins: list[str] = ["http://localhost:5173"]
     frontend_url: str = "http://localhost:5173"
 
     # ==================== Database ====================
-    database_url: str = "postgresql://user:password@localhost:5432/scimanager"
+    database_url: str = "postgresql://user:password@localhost:5432/gerersci"
     database_pool_size: int = 10
     database_max_overflow: int = 20
     database_pool_timeout: int = 30
@@ -2732,7 +2732,7 @@ LOG_LEVEL=DEBUG
 LOG_FORMAT=console
 
 # Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/scimanager_dev
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gerersci_dev
 
 # Supabase (dev project)
 SUPABASE_URL=https://dev-project.supabase.co
@@ -2749,7 +2749,7 @@ STRIPE_LIFETIME_PRICE_ID=price_test_lifetime
 
 # Resend (test mode)
 RESEND_API_KEY=re_dev_key
-RESEND_FROM_EMAIL=dev@scimanager.local
+RESEND_FROM_EMAIL=dev@gerersci.local
 
 # CORS
 CORS_ORIGINS=http://localhost:5173,http://localhost:3000
@@ -2773,7 +2773,7 @@ LOG_LEVEL=INFO
 LOG_FORMAT=json
 
 # Database
-DATABASE_URL=postgresql://user:password@staging-db:5432/scimanager_staging
+DATABASE_URL=postgresql://user:password@staging-db:5432/gerersci_staging
 
 # Supabase (staging project)
 SUPABASE_URL=https://staging-project.supabase.co
@@ -2790,11 +2790,11 @@ STRIPE_LIFETIME_PRICE_ID=price_staging_lifetime
 
 # Resend
 RESEND_API_KEY=<from_vault>
-RESEND_FROM_EMAIL=staging@scimanager.fr
+RESEND_FROM_EMAIL=staging@gerersci.fr
 
 # CORS
-CORS_ORIGINS=https://staging.scimanager.fr
-FRONTEND_URL=https://staging.scimanager.fr
+CORS_ORIGINS=https://staging.gerersci.fr
+FRONTEND_URL=https://staging.gerersci.fr
 
 # Rate Limiting
 RATE_LIMIT_ENABLED=true
@@ -2832,11 +2832,11 @@ STRIPE_LIFETIME_PRICE_ID=<from_stripe_dashboard>
 
 # Resend
 RESEND_API_KEY=<from_vault>
-RESEND_FROM_EMAIL=noreply@scimanager.fr
+RESEND_FROM_EMAIL=noreply@gerersci.fr
 
 # CORS
-CORS_ORIGINS=https://scimanager.fr
-FRONTEND_URL=https://scimanager.fr
+CORS_ORIGINS=https://gerersci.fr
+FRONTEND_URL=https://gerersci.fr
 
 # Rate Limiting
 RATE_LIMIT_ENABLED=true
@@ -2924,7 +2924,7 @@ Resolves production-readiness audit gap #5 (partial)"
 
 ```markdown
 # backend/docs/secrets-management.md
-# Secrets Management - SCI-Manager
+# Secrets Management - GererSCI
 
 ## ⚠️ Règles de Sécurité
 
@@ -2953,13 +2953,13 @@ Resolves production-readiness audit gap #5 (partial)"
 **Fichier**: `.env.staging` (créé depuis `.env.staging.example`)
 **Commité**: ❌ Non (ignoré par .gitignore)
 **Secrets**: Depuis AWS Secrets Manager staging
-**Vault Path**: `sci-manager/staging/*`
+**Vault Path**: `gerersci/staging/*`
 
 ### Production
 **Fichier**: `.env.production` (créé depuis `.env.production.example`)
 **Commité**: ❌ Non (ignoré par .gitignore)
 **Secrets**: Depuis AWS Secrets Manager production
-**Vault Path**: `sci-manager/production/*`
+**Vault Path**: `gerersci/production/*`
 
 ## AWS Secrets Manager Setup
 
@@ -2968,23 +2968,23 @@ Resolves production-readiness audit gap #5 (partial)"
 ```bash
 # Staging
 aws secretsmanager create-secret \
-    --name sci-manager/staging/supabase-service-role-key \
+    --name gerersci/staging/supabase-service-role-key \
     --secret-string "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
     --region eu-west-3
 
 aws secretsmanager create-secret \
-    --name sci-manager/staging/stripe-secret-key \
+    --name gerersci/staging/stripe-secret-key \
     --secret-string "sk_test_..." \
     --region eu-west-3
 
 # Production
 aws secretsmanager create-secret \
-    --name sci-manager/production/supabase-service-role-key \
+    --name gerersci/production/supabase-service-role-key \
     --secret-string "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
     --region eu-west-3
 
 aws secretsmanager create-secret \
-    --name sci-manager/production/stripe-secret-key \
+    --name gerersci/production/stripe-secret-key \
     --secret-string "sk_live_..." \
     --region eu-west-3
 ```
@@ -3018,7 +3018,7 @@ def load_secrets_from_aws(environment: str):
     env_vars = []
 
     for secret_name in secrets_to_load:
-        secret_id = f"sci-manager/{environment}/{secret_name}"
+        secret_id = f"gerersci/{environment}/{secret_name}"
 
         try:
             response = client.get_secret_value(SecretId=secret_id)
@@ -3102,7 +3102,7 @@ Vérifier les logs AWS CloudTrail pour les accès aux secrets:
 
 ```bash
 aws cloudtrail lookup-events \
-    --lookup-attributes AttributeKey=ResourceName,AttributeValue=sci-manager/production/stripe-secret-key \
+    --lookup-attributes AttributeKey=ResourceName,AttributeValue=gerersci/production/stripe-secret-key \
     --region eu-west-3
 ```
 
@@ -3128,7 +3128,7 @@ aws cloudtrail lookup-events \
 
 ```markdown
 # backend/docs/deployment-checklist.md
-# Deployment Checklist - SCI-Manager
+# Deployment Checklist - GererSCI
 
 ## Pre-Deployment (1 semaine avant)
 
@@ -3148,7 +3148,7 @@ aws cloudtrail lookup-events \
 
 ### Infrastructure
 - [ ] Base de données créée et migrée
-- [ ] DNS configuré (staging.scimanager.fr ou scimanager.fr)
+- [ ] DNS configuré (staging.gerersci.fr ou gerersci.fr)
 - [ ] SSL/TLS certificat installé et valide
 - [ ] Firewall configuré (ports 80/443 seulement)
 - [ ] Backup automatique DB configuré
@@ -3164,13 +3164,13 @@ aws cloudtrail lookup-events \
 ### 1. Backup
 ```bash
 # Backup DB actuelle
-pg_dump -h staging-db -U user scimanager_staging > backup_$(date +%Y%m%d_%H%M%S).sql
+pg_dump -h staging-db -U user gerersci_staging > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### 2. Deploy
 ```bash
 # Sur le serveur staging
-cd /opt/sci-manager
+cd /opt/gerersci
 git pull origin main
 
 # Charger les secrets
@@ -3197,7 +3197,7 @@ curl -f http://localhost:8000/health/ready || echo "Health check failed!"
 ### 4. Load Testing
 ```bash
 # Test de charge basique
-ab -n 1000 -c 10 http://staging.scimanager.fr/health/live
+ab -n 1000 -c 10 http://staging.gerersci.fr/health/live
 
 # Vérifier les logs et métriques
 ```
@@ -3211,7 +3211,7 @@ docker compose build backend
 docker compose up -d backend
 
 # Rollback DB si migration
-psql -h staging-db -U user scimanager_staging < backup_<timestamp>.sql
+psql -h staging-db -U user gerersci_staging < backup_<timestamp>.sql
 ```
 
 ## Production Deployment
@@ -3237,16 +3237,16 @@ psql -h staging-db -U user scimanager_staging < backup_<timestamp>.sql
 ### 2. Backup
 ```bash
 # Backup DB production
-pg_dump -h prod-db -U user scimanager_prod > backup_prod_$(date +%Y%m%d_%H%M%S).sql
+pg_dump -h prod-db -U user gerersci_prod > backup_prod_$(date +%Y%m%d_%H%M%S).sql
 
 # Copier sur S3
-aws s3 cp backup_prod_*.sql s3://sci-manager-backups/
+aws s3 cp backup_prod_*.sql s3://gerersci-backups/
 ```
 
 ### 3. Deploy
 ```bash
 # Sur le serveur production
-cd /opt/sci-manager
+cd /opt/gerersci
 
 # Charger les secrets
 python scripts/load_secrets.py production
@@ -3260,7 +3260,7 @@ docker compose build --no-cache backend
 # Rolling restart avec health check
 docker compose up -d --no-deps --scale backend=2 backend
 sleep 45
-curl -f https://scimanager.fr/health/ready || echo "Health check failed!"
+curl -f https://gerersci.fr/health/ready || echo "Health check failed!"
 
 # Scaler back to 1
 docker compose up -d --no-deps --scale backend=1 backend
@@ -3294,7 +3294,7 @@ docker compose build --no-cache backend
 docker compose up -d backend
 
 # Si migration DB problématique
-psql -h prod-db -U user scimanager_prod < backup_prod_<timestamp>.sql
+psql -h prod-db -U user gerersci_prod < backup_prod_<timestamp>.sql
 ```
 
 ### 7. Post-Deployment
@@ -3360,7 +3360,7 @@ Resolves production-readiness audit gap #5 (complete)"
 
 ```bash
 # Sur le serveur staging (ou en local pour simulation)
-cd /opt/sci-manager
+cd /opt/gerersci
 
 # Charger .env.staging
 cp .env.staging.example .env.staging

@@ -11,7 +11,7 @@
 - [ ] Projet Supabase créé (si nouveau) ou existant
 - [ ] Compte Resend créé: [resend.com](https://resend.com)
 - [ ] API Key Resend générée
-- [ ] Domaine vérifié dans Resend (ex: scimanager.fr)
+- [ ] Domaine vérifié dans Resend (ex: gerersci.fr)
 
 ---
 
@@ -20,7 +20,7 @@
 ### 1.1 Se connecter à Supabase Dashboard
 
 1. Aller sur [app.supabase.com](https://app.supabase.com)
-2. Sélectionner votre projet **SCI Manager**
+2. Sélectionner votre projet **GererSCI**
 3. Aller dans **Settings** → **API**
 
 ### 1.2 Copier les clés
@@ -60,7 +60,7 @@ SUPABASE_JWT_SECRET=your-jwt-secret-from-api-settings
 
 1. Aller sur [resend.com/api-keys](https://resend.com/api-keys)
 2. Cliquer sur **Create API Key**
-3. Nom: `SCI Manager - Supabase Auth`
+3. Nom: `GererSCI - Supabase Auth`
 4. Permission: **Full Access** (ou **Sending Access** minimum)
 5. Copier la clé (commence par `re_`)
 
@@ -69,11 +69,11 @@ SUPABASE_JWT_SECRET=your-jwt-secret-from-api-settings
 ### 2.2 Vérifier le domaine dans Resend
 
 1. Aller sur [resend.com/domains](https://resend.com/domains)
-2. Ajouter votre domaine: `scimanager.fr`
+2. Ajouter votre domaine: `gerersci.fr`
 3. Configurer les DNS records (SPF, DKIM, DMARC)
 4. Attendre la vérification (peut prendre 1-24h)
 
-**Email expéditeur**: `noreply@scimanager.fr`
+**Email expéditeur**: `noreply@gerersci.fr`
 
 ### 2.3 Configurer SMTP dans Supabase
 
@@ -83,8 +83,8 @@ SUPABASE_JWT_SECRET=your-jwt-secret-from-api-settings
 4. Remplir les champs:
 
 ```
-Sender name: SCI Manager
-Sender email: noreply@scimanager.fr
+Sender name: GererSCI
+Sender email: noreply@gerersci.fr
 
 Host: smtp.resend.com
 Port: 587 (ou 465 pour SSL)
@@ -120,13 +120,13 @@ http://127.0.0.1:5173/auth/callback
 
 **Production** (quand déployé):
 ```
-https://scimanager.fr/auth/callback
-https://www.scimanager.fr/auth/callback
+https://gerersci.fr/auth/callback
+https://www.gerersci.fr/auth/callback
 ```
 
 3. Dans **Site URL**, définir:
    - Dev: `http://localhost:5173`
-   - Prod: `https://scimanager.fr`
+   - Prod: `https://gerersci.fr`
 
 4. Cliquer sur **Save**
 
@@ -153,7 +153,7 @@ https://*.vercel.app/auth/callback
 Remplacer le template par défaut par:
 
 ```html
-<h2>Connexion à SCI Manager</h2>
+<h2>Connexion à GererSCI</h2>
 
 <p>Bonjour,</p>
 
@@ -162,7 +162,7 @@ Remplacer le template par défaut par:
 <p>
   <a href="{{ .ConfirmationURL }}"
      style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
-    Se connecter à SCI Manager
+    Se connecter à GererSCI
   </a>
 </p>
 
@@ -174,8 +174,8 @@ Remplacer le template par défaut par:
 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
 
 <p style="color: #94a3b8; font-size: 12px;">
-  L'équipe SCI Manager<br>
-  <a href="https://scimanager.fr" style="color: #2563eb;">scimanager.fr</a>
+  L'équipe GererSCI<br>
+  <a href="https://gerersci.fr" style="color: #2563eb;">gerersci.fr</a>
 </p>
 ```
 

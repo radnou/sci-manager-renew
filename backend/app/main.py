@@ -20,7 +20,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1 import auth, biens, cerfa, files, gdpr, health, loyers, quitus, scis, stripe
 from app.core.config import Environment, settings
-from app.core.exceptions import SCIManagerException
+from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
 
@@ -119,20 +119,20 @@ async def cleanup_resources():
     logger.info("cleanup_complete")
 
 
-app = FastAPI(title="SCI-Manager API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="GererSCI API", version="1.0.0", lifespan=lifespan)
 
 
 # ============================================================
 # EXCEPTION HANDLERS GLOBAUX
 # ============================================================
 
-@app.exception_handler(SCIManagerException)
-async def sci_manager_exception_handler(
+@app.exception_handler(GererSCIException)
+async def gerersci_exception_handler(
     request: Request,
-    exc: SCIManagerException
+    exc: GererSCIException
 ) -> JSONResponse:
     """
-    Handler pour toutes les exceptions métier SCI-Manager.
+    Handler pour toutes les exceptions métier GererSCI.
     Retourne un JSON avec le message d'erreur et le request_id.
     """
     # Récupérer le request_id du contexte
@@ -140,7 +140,7 @@ async def sci_manager_exception_handler(
 
     # Logger l'erreur avec contexte
     logger.error(
-        "sci_manager_exception",
+        "gerersci_exception",
         error_type=exc.__class__.__name__,
         error_message=exc.message,
         status_code=exc.status_code,

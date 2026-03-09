@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '$lib/supabase';
 
-export const E2E_FAKE_SESSION_STORAGE_KEY = 'sci-manager.e2e-fake-session';
+export const E2E_FAKE_SESSION_STORAGE_KEY = 'gerersci.e2e-fake-session';
 
 type SessionSubscription = {
 	unsubscribe: () => void;
