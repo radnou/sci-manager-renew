@@ -17,6 +17,7 @@
 	} from '$lib/api';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
 	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
@@ -354,10 +355,10 @@
 			description="On aligne la SCI active, les biens rattachés et le journal des décaissements."
 		/>
 	{:else if featureDisabled}
-		<div class="rounded-[1.75rem] border border-slate-200 bg-white/92 p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)] dark:border-slate-800 dark:bg-slate-900/84">
-			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Fonctionnalité d’offre</p>
-			<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">Le suivi des charges n’est pas actif sur cette offre</h2>
-			<p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+		<div class="rounded-[1.75rem] border border-border bg-card p-6 shadow-[0_20px_65px_-45px_rgba(15,23,42,0.5)]">
+			<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Fonctionnalité d’offre</p>
+			<h2 class="mt-3 text-2xl font-semibold text-foreground">Le suivi des charges n’est pas actif sur cette offre</h2>
+			<p class="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
 				Le pilotage détaillé des charges est réservé aux offres qui incluent la dimension dépenses et
 				arbitrages fiscaux.
 			</p>
@@ -445,36 +446,34 @@
 									Historique des dépenses rattachées au patrimoine de la SCI active.
 								</CardDescription>
 							</div>
-							<p class="text-[0.72rem] font-semibold tracking-[0.2em] uppercase text-slate-500">
+							<p class="text-[0.72rem] font-semibold tracking-[0.2em] uppercase text-muted-foreground">
 								{scopedCharges.length} enregistrement{scopedCharges.length > 1 ? 's' : ''}
 							</p>
 						</div>
 					</CardHeader>
 					<CardContent class="grid gap-3 pt-0">
 						{#if scopedCharges.length === 0}
-							<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+							<div class="rounded-2xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground">
 								Aucune charge documentée pour l’instant sur la SCI active.
 							</div>
 						{:else}
 							{#each scopedCharges as charge (String(charge.id))}
-								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<div class="rounded-2xl border border-border bg-muted p-4">
 									<div class="flex flex-wrap items-start justify-between gap-3">
 										<div>
 											<div class="flex flex-wrap items-center gap-2">
-												<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+												<p class="text-sm font-semibold text-foreground">
 													{mapChargeTypeLabel(charge.type_charge)}
 												</p>
-												<span class="rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-													{formatFrDate(charge.date_paiement)}
-												</span>
+												<StatusBadge text={formatFrDate(charge.date_paiement)} variant="neutral" size="md" />
 											</div>
-											<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+											<p class="mt-1 text-sm text-muted-foreground">
 												{resolveBienLabel(charge)}
 											</p>
 										</div>
 										<div class="text-right">
-											<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Montant</p>
-											<p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{charge.montant} €</p>
+											<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground">Montant</p>
+											<p class="mt-1 text-sm font-semibold text-foreground">{charge.montant} €</p>
 										</div>
 									</div>
 									<div class="mt-4 flex flex-wrap justify-end gap-2">
@@ -599,11 +598,11 @@
 					Cette action retire le mouvement du journal de charges de la SCI active.
 				</Dialog.Description>
 			</Dialog.Header>
-			<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-				<p class="font-semibold text-slate-900 dark:text-slate-100">
+			<div class="rounded-2xl border border-border bg-muted p-4 text-sm">
+				<p class="font-semibold text-foreground">
 					{mapChargeTypeLabel(chargePendingDelete?.type_charge)}
 				</p>
-				<p class="mt-1 text-slate-500 dark:text-slate-400">
+				<p class="mt-1 text-muted-foreground">
 					{resolveBienLabel(chargePendingDelete || { id_bien: '', type_charge: '', montant: 0, date_paiement: '' })}
 					{#if chargePendingDelete?.date_paiement}
 						{' '}• {formatFrDate(chargePendingDelete.date_paiement)}
