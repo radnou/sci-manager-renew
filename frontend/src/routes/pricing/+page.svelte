@@ -52,8 +52,8 @@
 			billing: '/mois',
 			description: 'Pour les SCI actives avec plusieurs actifs.',
 			features: [
-				'Jusqu'à 10 SCI',
-				'Jusqu'à 20 biens',
+				"Jusqu'à 10 SCI",
+				"Jusqu'à 20 biens",
 				'Contexte multi-SCI',
 				'Filtres loyers (date + statut)',
 				'Accès prioritaire aux évolutions produit'
