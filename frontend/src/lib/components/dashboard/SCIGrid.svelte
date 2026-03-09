@@ -81,8 +81,7 @@
 				icon={Building2}
 				title="Créez votre première SCI en 2 minutes"
 				description="Le dashboard portefeuille s'activera dès qu'une société sera liée à votre compte."
-				ctaText="Créer une SCI"
-				ctaHref="/scis"
+				actions={[{ label: 'Créer une SCI', href: '/scis' }]}
 			/>
 		{:else}
 			<div class="grid gap-3 lg:grid-cols-2">

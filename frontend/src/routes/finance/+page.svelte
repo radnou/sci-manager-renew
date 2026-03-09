@@ -10,7 +10,7 @@
 		type Loyer,
 		type SCIOverview
 	} from '$lib/api';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import GettingStartedPanel from '$lib/components/GettingStartedPanel.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import PageSpecificSkeleton from '$lib/components/PageSpecificSkeleton.svelte';
@@ -129,15 +129,13 @@
 			description="On aligne les sorties, les exercices fiscaux et les flux exploitables pour les documents."
 		/>
 	{:else if scis.length === 0}
-		<EmptyStateOperator
-			eyebrow="Aucune SCI exploitable"
-			title="La finance ne démarre qu’une fois la SCI et le patrimoine en place"
-			description="Crée d’abord la société et son socle d’exploitation avant d’ouvrir les journaux de charges et la fiscalité."
-			primaryHref="/scis"
-			primaryLabel="Créer ma première SCI"
-			secondaryHref="/dashboard"
-			secondaryLabel="Retour au cockpit"
-		/>
+		<EmptyState
+	align="left"
+	eyebrow="Aucune SCI exploitable"
+	title="La finance ne démarre qu’une fois la SCI et le patrimoine en place"
+	description="Crée d’abord la société et son socle d’exploitation avant d’ouvrir les journaux de charges et la fiscalité."
+	actions={[{ label: 'Créer ma première SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 	{:else}
 		{#if shouldShowOnboarding}
 			<div class="mb-6">

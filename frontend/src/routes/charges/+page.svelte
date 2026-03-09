@@ -15,7 +15,7 @@
 		type SCIOverview,
 		type SubscriptionEntitlements
 	} from '$lib/api';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
@@ -285,6 +285,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Charges — GererSCI</title>
+	<meta name="description" content="Pilotage des charges et décaissements." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Finance • decaissements"
@@ -362,15 +367,13 @@
 			</div>
 		</div>
 	{:else if !activeSci}
-		<EmptyStateOperator
-			eyebrow="Pre-requis metier"
-			title="Selectionne une SCI active"
-			description="Chaque charge doit etre rattachee a un bien et donc a une SCI identifiee. Passe d’abord par le portefeuille SCI."
-			primaryHref="/scis"
-			primaryLabel="Ouvrir le portefeuille SCI"
-			secondaryHref="/dashboard"
-			secondaryLabel="Retour au cockpit"
-		/>
+		<EmptyState
+	align="left"
+	eyebrow="Pre-requis metier"
+	title="Selectionne une SCI active"
+	description="Chaque charge doit etre rattachee a un bien et donc a une SCI identifiee. Passe d’abord par le portefeuille SCI."
+	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre charges"
@@ -425,15 +428,13 @@
 		</WorkspaceActionBar>
 
 		{#if scopedBiens.length === 0}
-			<EmptyStateOperator
-				eyebrow="Pre-requis patrimoine"
-				title="Ajoute d’abord un bien"
-				description="Une charge ne peut pas etre saisie sans bien support. Rattache d’abord le premier actif a la SCI active."
-				primaryHref="/biens"
-				primaryLabel="Ouvrir Biens"
-				secondaryHref="/scis"
-				secondaryLabel="Retour au portefeuille SCI"
-			/>
+			<EmptyState
+	align="left"
+	eyebrow="Pre-requis patrimoine"
+	title="Ajoute d’abord un bien"
+	description="Une charge ne peut pas etre saisie sans bien support. Rattache d’abord le premier actif a la SCI active."
+	actions={[{ label: 'Ouvrir Biens', href: '/biens' }, { label: 'Retour au portefeuille SCI', href: '/scis', variant: 'outline' }]}
+/>
 		{:else}
 				<Card class="sci-section-card">
 					<CardHeader>

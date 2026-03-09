@@ -11,7 +11,7 @@
 		type AssocieUpdatePayload,
 		type SCIOverview
 	} from '$lib/api';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
@@ -249,6 +249,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Associés — GererSCI</title>
+	<meta name="description" content="Gouvernance, capital et accès des associés." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Gouvernance • associés et capital"
@@ -316,15 +321,13 @@
 			description="On aligne la SCI active, la répartition du capital et les accès compte."
 		/>
 	{:else if !activeSci}
-		<EmptyStateOperator
-			eyebrow="Pré-requis métier"
-			title="Sélectionne d'abord une SCI"
-			description="La gouvernance se pilote toujours dans le contexte d'une société précise. Choisis ou crée la SCI cible avant de documenter les associés."
-			primaryHref="/scis"
-			primaryLabel="Ouvrir le portefeuille SCI"
-			secondaryHref="/dashboard"
-			secondaryLabel="Retour au cockpit"
-		/>
+		<EmptyState
+	align="left"
+	eyebrow="Pré-requis métier"
+	title="Sélectionne d'abord une SCI"
+	description="La gouvernance se pilote toujours dans le contexte d'une société précise. Choisis ou crée la SCI cible avant de documenter les associés."
+	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre de gouvernance"

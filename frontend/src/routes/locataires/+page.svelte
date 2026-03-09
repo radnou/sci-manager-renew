@@ -14,7 +14,7 @@
 		type SCIOverview
 	} from '$lib/api';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
 	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
@@ -296,6 +296,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Locataires — GererSCI</title>
+	<meta name="description" content="Référentiel des locataires et suivi d'occupation." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Exploitation • occupation"
@@ -414,25 +419,21 @@
 		</WorkspaceActionBar>
 
 		{#if !activeSci}
-			<EmptyStateOperator
-				eyebrow="Pre-requis metier"
-				title="Selectionne d’abord une SCI active"
-				description="Un locataire doit etre rattache a un bien d’une SCI active. Passe par le portefeuille SCI pour choisir ou creer la societe cible."
-				primaryHref="/scis"
-				primaryLabel="Ouvrir le portefeuille SCI"
-				secondaryHref="/dashboard"
-				secondaryLabel="Retour au cockpit"
-			/>
+			<EmptyState
+	align="left"
+	eyebrow="Pre-requis metier"
+	title="Selectionne d’abord une SCI active"
+	description="Un locataire doit etre rattache a un bien d’une SCI active. Passe par le portefeuille SCI pour choisir ou creer la societe cible."
+	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 		{:else if scopedBiens.length === 0}
-			<EmptyStateOperator
-				eyebrow="Pre-requis patrimoine"
-				title="Ajoute d’abord un bien a la SCI active"
-				description="Le referentiel locataire se construit bien par bien. Sans actif rattache, on ne peut pas documenter l’occupation."
-				primaryHref="/biens"
-				primaryLabel="Ajouter un bien"
-				secondaryHref="/scis"
-				secondaryLabel="Verifier la SCI active"
-			/>
+			<EmptyState
+	align="left"
+	eyebrow="Pre-requis patrimoine"
+	title="Ajoute d’abord un bien a la SCI active"
+	description="Le referentiel locataire se construit bien par bien. Sans actif rattache, on ne peut pas documenter l’occupation."
+	actions={[{ label: 'Ajouter un bien', href: '/biens' }, { label: 'Verifier la SCI active', href: '/scis', variant: 'outline' }]}
+/>
 		{/if}
 
 		<Card class="sci-section-card">

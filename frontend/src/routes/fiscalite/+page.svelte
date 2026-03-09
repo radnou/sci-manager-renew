@@ -13,7 +13,7 @@
 		type SCIOverview,
 		type SubscriptionEntitlements
 	} from '$lib/api';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import OperatorWorkspaceSkeleton from '$lib/components/OperatorWorkspaceSkeleton.svelte';
@@ -265,6 +265,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Fiscalité — GererSCI</title>
+	<meta name="description" content="Clôture fiscale annuelle et déclarations." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Finance • cloture annuelle"
@@ -342,15 +347,13 @@
 			</div>
 		</div>
 	{:else if !activeSci}
-		<EmptyStateOperator
-			eyebrow="Pre-requis metier"
-			title="Selectionne une SCI active"
-			description="La cloture fiscale s’opere toujours dans le contexte d’une SCI precise. Choisis d’abord la societe cible avant de renseigner l’exercice."
-			primaryHref="/scis"
-			primaryLabel="Ouvrir le portefeuille SCI"
-			secondaryHref="/dashboard"
-			secondaryLabel="Retour au cockpit"
-		/>
+		<EmptyState
+	align="left"
+	eyebrow="Pre-requis metier"
+	title="Selectionne une SCI active"
+	description="La cloture fiscale s’opere toujours dans le contexte d’une SCI precise. Choisis d’abord la societe cible avant de renseigner l’exercice."
+	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre fiscal"

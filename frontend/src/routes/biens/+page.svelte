@@ -15,7 +15,7 @@
 		type SubscriptionEntitlements
 	} from '$lib/api';
 	import BienForm from '$lib/components/BienForm.svelte';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
 	import BienTable from '$lib/components/BienTable.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
@@ -239,6 +239,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Biens — GererSCI</title>
+	<meta name="description" content="Gérez votre patrimoine immobilier et vos actifs." />
+</svelte:head>
+
 	<section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Exploitation • actifs immobiliers"
@@ -363,15 +368,13 @@
 		</WorkspaceActionBar>
 
 		{#if !activeSci}
-			<EmptyStateOperator
-				eyebrow="Pré-requis métier"
-				title="Sélectionne d’abord une SCI active"
-				description="Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible."
-				primaryHref="/scis"
-				primaryLabel="Ouvrir le portefeuille SCI"
-				secondaryHref="/dashboard"
-				secondaryLabel="Retour au cockpit"
-			/>
+			<EmptyState
+	align="left"
+	eyebrow="Pré-requis métier"
+	title="Sélectionne d’abord une SCI active"
+	description="Un bien doit toujours être rattaché à une SCI métier, jamais à un identifiant technique. Passe par le portefeuille SCI pour choisir ou créer la société cible."
+	actions={[{ label: 'Ouvrir le portefeuille SCI', href: '/scis' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 		{/if}
 
 		<BienTable

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PageSpecificSkeleton from '$lib/components/PageSpecificSkeleton.svelte';
 	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
 	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
@@ -168,15 +168,13 @@
 			description="On consolide le résumé du compte, les volumes stockés et les actions RGPD disponibles."
 		/>
 	{:else if !dataSummary}
-		<EmptyStateOperator
-			eyebrow="Résumé indisponible"
-			title="Impossible de charger les données personnelles"
-			description={loadError || "Le résumé RGPD n'a pas pu être récupéré. Reviens au compte ou recharge la page."}
-			primaryHref="/account"
-			primaryLabel="Retour au compte"
-			secondaryHref="/dashboard"
-			secondaryLabel="Retour au cockpit"
-		/>
+		<EmptyState
+	align="left"
+	eyebrow="Résumé indisponible"
+	title="Impossible de charger les données personnelles"
+	description={loadError || "Le résumé RGPD n'a pas pu être récupéré. Reviens au compte ou recharge la page."}
+	actions={[{ label: 'Retour au compte', href: '/account' }, { label: 'Retour au cockpit', href: '/dashboard', variant: 'outline' }]}
+/>
 	{:else}
 		<WorkspaceActionBar
 			eyebrow="Cadre RGPD"

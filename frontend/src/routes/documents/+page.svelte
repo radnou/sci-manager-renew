@@ -25,6 +25,11 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Documents — GererSCI</title>
+	<meta name="description" content="Quittances, exports CSV et calcul fiscal." />
+</svelte:head>
+
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Documents & conformité</p>
@@ -52,8 +57,7 @@
 							icon={FileText}
 							title="Aucun loyer enregistré"
 							description="Enregistrez votre premier loyer pour pouvoir générer des quittances."
-							ctaText="Ajouter un loyer"
-							ctaHref="/loyers"
+							actions={[{ label: 'Ajouter un loyer', href: '/loyers' }]}
 						/>
 					{:else}
 						<QuitusGenerator {loyers} {biens} sciName={scis[0]?.nom || ''} />

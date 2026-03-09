@@ -17,7 +17,6 @@
 		type SCIOverview
 	} from '$lib/api';
 	import EntityDrawer from '$lib/components/EntityDrawer.svelte';
-	import EmptyStateOperator from '$lib/components/EmptyStateOperator.svelte';
 	import KpiCard from '$lib/components/KPI-Card.svelte';
 	import LoyerForm from '$lib/components/LoyerForm.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
@@ -241,6 +240,11 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Loyers — GererSCI</title>
+	<meta name="description" content="Suivi des encaissements et quittances de loyer." />
+</svelte:head>
 
 <section class="sci-page-shell">
 	<WorkspaceHeader
