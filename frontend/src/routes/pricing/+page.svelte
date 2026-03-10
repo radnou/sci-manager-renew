@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { addToast } from '$lib/components/ui/toast';
 	import { createCheckoutSession, type PlanKey } from '$lib/api';
+	import { getCurrentSession } from '$lib/auth/session';
 	import { Check, Users, Shield, Zap } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
@@ -84,6 +86,11 @@
 	let activeCheckout = $state<PlanKey | null>(null);
 
 	async function handleCheckout(plan: Plan) {
+		const session = await getCurrentSession();
+		if (!session?.user) {
+			goto('/login?redirect=/pricing');
+			return;
+		}
 		activeCheckout = plan.planKey;
 		try {
 			const { url } = await createCheckoutSession({
