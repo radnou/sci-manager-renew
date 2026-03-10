@@ -3,11 +3,12 @@ import * as Sentry from '@sentry/sveltekit';
 import { getTextDirection } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 
-if (process.env.VITE_SENTRY_DSN) {
+const SENTRY_DSN = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN;
+if (SENTRY_DSN) {
 	Sentry.init({
-		dsn: process.env.VITE_SENTRY_DSN,
+		dsn: SENTRY_DSN,
 		tracesSampleRate: 0.2,
-		environment: process.env.NODE_ENV || 'development'
+		environment: process.env.NODE_ENV || 'production'
 	});
 }
 

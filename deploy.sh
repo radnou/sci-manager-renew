@@ -1,139 +1,163 @@
 #!/bin/bash
-
-# GererSCI Production Deployment Script for Scaleway VPS
-# Usage: ./deploy.sh
-
 set -e
 
-echo "🚀 Starting GererSCI deployment on Scaleway VPS"
+# GererSCI — Production Deployment Script
+# Usage: ./deploy.sh [--initial] [--with-staging]
+#
+# --initial      First-time setup (installs Docker, configures firewall, gets SSL)
+# --with-staging Also deploy the staging environment
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Configuration
-DOMAIN=${DOMAIN:-"your-domain.com"}
-EMAIL=${EMAIL:-"admin@your-domain.com"}
+INITIAL=false
+WITH_STAGING=false
 
-echo -e "${YELLOW}Domain: $DOMAIN${NC}"
-echo -e "${YELLOW}Email: $EMAIL${NC}"
+for arg in "$@"; do
+    case $arg in
+        --initial) INITIAL=true ;;
+        --with-staging) WITH_STAGING=true ;;
+    esac
+done
 
-# Update system
-echo -e "${GREEN}📦 Updating system packages...${NC}"
-sudo apt update && sudo apt upgrade -y
+echo -e "${GREEN}=== GererSCI Deployment ===${NC}"
 
-# Install required packages
-echo -e "${GREEN}📦 Installing Docker and dependencies...${NC}"
-sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release ufw
+# ------------------------------------------------------------------
+# INITIAL SETUP (first time only)
+# ------------------------------------------------------------------
+if [ "$INITIAL" = true ]; then
+    echo -e "${YELLOW}Running initial server setup...${NC}"
 
-# Install Docker
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    # Update system
+    sudo apt update && sudo apt upgrade -y
 
-# Start and enable Docker
-sudo systemctl start docker
-sudo systemctl enable docker
+    # Install dependencies
+    sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release \
+        ufw fail2ban dnsutils jq
 
-# Add current user to docker group
-sudo usermod -aG docker $USER
+    # Install Docker
+    if ! command -v docker &> /dev/null; then
+        echo -e "${GREEN}Installing Docker...${NC}"
+        curl -fsSL https://get.docker.com | sudo sh
+        sudo usermod -aG docker "$USER"
+        sudo systemctl enable --now docker
+    fi
 
-# Configure firewall
-echo -e "${GREEN}🔥 Configuring firewall...${NC}"
-sudo ufw --force enable
-sudo ufw allow ssh
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw --force reload
+    # Configure firewall
+    echo -e "${GREEN}Configuring firewall...${NC}"
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    sudo ufw allow OpenSSH
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw --force enable
 
-# Create application directory
-echo -e "${GREEN}📁 Creating application directory...${NC}"
-sudo mkdir -p /opt/gerersci
-sudo chown -R $USER:$USER /opt/gerersci
+    # Configure fail2ban
+    sudo systemctl enable --now fail2ban
 
-# Copy application files
-echo -e "${GREEN}📋 Copying application files...${NC}"
-cp -r . /opt/gerersci/
-cd /opt/gerersci
+    # Harden SSH
+    echo -e "${YELLOW}Hardening SSH...${NC}"
+    sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%s)
+    sudo sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+    # Note: enable key-only auth after setting up SSH keys
+    # sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sudo systemctl reload ssh
 
-# Create SSL directory
-mkdir -p docker/ssl
+    # Create app directory
+    sudo mkdir -p /opt/gerersci
+    sudo chown -R "$USER":"$USER" /opt/gerersci
 
-# Install Certbot for SSL
-echo -e "${GREEN}🔒 Installing Certbot for SSL certificates...${NC}"
-sudo apt install -y certbot
+    echo -e "${GREEN}Initial setup complete.${NC}"
+    echo -e "${YELLOW}Next: clone the repo to /opt/gerersci, configure .env, run init-ssl.sh${NC}"
+    exit 0
+fi
 
-# Create .env file from production template
+# ------------------------------------------------------------------
+# DEPLOYMENT
+# ------------------------------------------------------------------
+
+# Check .env exists
 if [ ! -f .env ]; then
-    echo -e "${YELLOW}⚠️  Creating .env file from template...${NC}"
-    cp .env.production .env
-    echo -e "${RED}❗ Please edit .env file with your actual values before continuing!${NC}"
-    echo -e "${YELLOW}Run: nano .env${NC}"
+    echo -e "${RED}ERROR: .env file not found!${NC}"
+    echo -e "Run: cp .env.production.example .env && nano .env"
     exit 1
 fi
 
-# Build and start services
-echo -e "${GREEN}🐳 Building and starting Docker services...${NC}"
-docker compose down || true
-docker compose build --no-cache
-docker compose up -d
+# Check SSL certificates exist
+if [ ! -d "/var/lib/docker/volumes/gerersci_certbot_conf/_data/live/gerersci.fr" ] && \
+   [ ! -d "$(docker volume inspect gerersci_certbot_conf --format '{{.Mountpoint}}' 2>/dev/null)/live/gerersci.fr" ]; then
+    # Try to check inside the volume
+    CERT_CHECK=$(docker run --rm -v gerersci_certbot_conf:/etc/letsencrypt alpine ls /etc/letsencrypt/live/gerersci.fr/fullchain.pem 2>/dev/null || echo "MISSING")
+    if [ "$CERT_CHECK" = "MISSING" ]; then
+        echo -e "${YELLOW}WARNING: SSL certificates not found. Run scripts/init-ssl.sh first.${NC}"
+        echo -e "Continuing with HTTP only..."
+    fi
+fi
 
-# Wait for services to be ready
-echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
-sleep 30
+# Pull latest code (if in git repo)
+if [ -d .git ]; then
+    echo -e "${GREEN}Pulling latest code...${NC}"
+    git pull origin main 2>/dev/null || echo -e "${YELLOW}Git pull skipped${NC}"
+fi
 
-# Check if services are running
-echo -e "${GREEN}🔍 Checking service status...${NC}"
-docker compose ps
+# Build and deploy
+echo -e "${GREEN}Building and deploying...${NC}"
 
-# Get SSL certificate (temporary - will be automated)
-echo -e "${YELLOW}⚠️  SSL Certificate Setup:${NC}"
-echo -e "1. Make sure your domain DNS points to this VPS IP: $(curl -s ifconfig.me)"
-echo -e "2. Run SSL setup manually after DNS propagation:"
-echo -e "   sudo certbot certonly --standalone -d $DOMAIN"
-echo -e "3. Copy certificates to docker/ssl/:"
-echo -e "   sudo cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem docker/ssl/"
-echo -e "   sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem docker/ssl/"
-echo -e "4. Restart services: docker compose restart nginx"
+if [ "$WITH_STAGING" = true ]; then
+    echo -e "${YELLOW}Including staging environment...${NC}"
+    docker compose -f docker-compose.yml -f docker-compose.staging.yml build
+    docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+else
+    docker compose build
+    docker compose up -d
+fi
 
-# Setup automatic SSL renewal
-echo -e "${GREEN}🔄 Setting up SSL certificate renewal...${NC}"
-sudo crontab -l | { cat; echo "0 12 * * * /usr/bin/certbot renew --quiet && docker compose restart nginx"; } | sudo crontab -
+# Wait for services
+echo -e "${GREEN}Waiting for services to start...${NC}"
+sleep 15
 
-# Create backup script
-cat > backup.sh << 'EOF'
-#!/bin/bash
-# Database backup script
-BACKUP_DIR="/opt/gerersci/backups"
-DATE=$(date +%Y%m%d_%H%M%S)
+# Health checks
+echo -e "${GREEN}Running health checks...${NC}"
+echo ""
 
-mkdir -p $BACKUP_DIR
+check_service() {
+    local name=$1
+    local url=$2
+    local result
+    result=$(curl -sf --max-time 10 "$url" 2>/dev/null || echo "FAIL")
+    if echo "$result" | grep -qi "FAIL\|error\|refused"; then
+        echo -e "  ${RED}✗${NC} $name — FAILED"
+        return 1
+    else
+        echo -e "  ${GREEN}✓${NC} $name — OK"
+        return 0
+    fi
+}
 
-# Backup database
-docker compose exec -T db pg_dump -U gerersci gerersci_prod > $BACKUP_DIR/backup_$DATE.sql
+FAILURES=0
+check_service "Backend liveness" "http://localhost:8000/health/live" || ((FAILURES++))
+check_service "Backend readiness" "http://localhost:8000/health/ready" || ((FAILURES++))
+check_service "Frontend" "http://localhost:4173/" || ((FAILURES++))
+check_service "Nginx" "http://localhost:80/nginx-health" || ((FAILURES++))
 
-# Keep only last 7 backups
-cd $BACKUP_DIR && ls -t backup_*.sql | tail -n +8 | xargs rm -f
+echo ""
+echo -e "${GREEN}Service status:${NC}"
+docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
 
-echo "Backup completed: $BACKUP_DIR/backup_$DATE.sql"
-EOF
+if [ $FAILURES -gt 0 ]; then
+    echo ""
+    echo -e "${RED}$FAILURES health check(s) failed. Check logs:${NC}"
+    echo -e "  docker compose logs backend --tail=50"
+    echo -e "  docker compose logs frontend --tail=50"
+    echo -e "  docker compose logs nginx --tail=50"
+    exit 1
+fi
 
-chmod +x backup.sh
-
-# Setup backup cron job
-sudo crontab -l | { cat; echo "0 2 * * * /opt/gerersci/backup.sh"; } | sudo crontab -
-
-echo -e "${GREEN}✅ Deployment completed!${NC}"
-echo -e "${GREEN}🌐 Your application should be available at: https://$DOMAIN${NC}"
-echo -e "${YELLOW}📋 Next steps:${NC}"
-echo -e "1. Configure your .env file with production values"
-echo -e "2. Setup SSL certificates with Certbot"
-echo -e "3. Test the application"
-echo -e "4. Configure monitoring and alerts"
-
-# Display service status
-echo -e "${GREEN}📊 Service Status:${NC}"
-docker compose logs --tail=20
+echo ""
+echo -e "${GREEN}=== Deployment successful! ===${NC}"
+echo -e "  Frontend: https://app.gerersci.fr"
+echo -e "  API:      https://api.gerersci.fr"
+echo -e "  Matomo:   https://analytics.gerersci.fr"
+echo -e "  Status:   https://status.gerersci.fr"

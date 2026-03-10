@@ -1,0 +1,81 @@
+# Staging environment overlay
+# Usage: docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d staging-backend staging-frontend
+#
+# Routes via nginx: staging.gerersci.fr → staging-frontend / staging-backend
+
+services:
+  staging-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gerersci_staging_backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: staging
+      DEBUG: "false"
+      DATABASE_URL: ${STAGING_DATABASE_URL:-}
+      SUPABASE_URL: ${STAGING_SUPABASE_URL:-${SUPABASE_URL}}
+      SUPABASE_ANON_KEY: ${STAGING_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
+      SUPABASE_SERVICE_ROLE_KEY: ${STAGING_SUPABASE_SERVICE_ROLE_KEY:-${SUPABASE_SERVICE_ROLE_KEY}}
+      SUPABASE_JWT_SECRET: ${STAGING_SUPABASE_JWT_SECRET:-${SUPABASE_JWT_SECRET}}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STAGING_STRIPE_WEBHOOK_SECRET:-${STRIPE_WEBHOOK_SECRET}}
+      STRIPE_STARTER_PRICE_ID: ${STRIPE_STARTER_PRICE_ID}
+      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID}
+      STRIPE_LIFETIME_PRICE_ID: ${STRIPE_LIFETIME_PRICE_ID}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@gerersci.fr}
+      CORS_ORIGINS: '["https://staging.gerersci.fr"]'
+      ALLOWED_HOSTS: "staging.gerersci.fr,*.gerersci.fr,localhost"
+      FRONTEND_URL: https://staging.gerersci.fr
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT: warn
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "--max-time", "10", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 40s
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  staging-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: https://staging.gerersci.fr/api
+        VITE_SUPABASE_URL: ${STAGING_SUPABASE_URL:-${SUPABASE_URL}}
+        VITE_SUPABASE_ANON_KEY: ${STAGING_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+        PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: "true"
+        VITE_MATOMO_URL: https://analytics.gerersci.fr
+        VITE_MATOMO_SITE_ID: "2"
+    container_name: gerersci_staging_frontend
+    restart: unless-stopped
+    depends_on:
+      staging-backend:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:4173/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+networks:
+  internal:
+    external: true
+    name: gerersci_internal

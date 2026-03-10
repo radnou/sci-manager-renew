@@ -420,13 +420,14 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
 
     # Content Security Policy (CSP)
+    matomo_url = os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr")
     csp_policy = (
         "default-src 'self'; "
-        "script-src 'self' https://js.stripe.com; "
+        f"script-src 'self' https://js.stripe.com {matomo_url}; "
         "style-src 'self' 'unsafe-inline'; "  # Tailwind nécessite unsafe-inline
-        f"img-src 'self' data: https:; "
+        "img-src 'self' data: https:; "
         "font-src 'self' data:; "
-        f"connect-src 'self' {settings.supabase_url} https://api.stripe.com; "
+        f"connect-src 'self' {settings.supabase_url} https://api.stripe.com {matomo_url}; "
         "frame-src https://js.stripe.com; "
         "object-src 'none'; "
         "base-uri 'self'; "

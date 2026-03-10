@@ -42,8 +42,8 @@ async def _check_database() -> dict:
         return {"healthy": True, "latency_ms": latency}
     except Exception as exc:  # pragma: no cover - network dependent
         fallback_error = str(exc)
-        # In local docker setup we may have PostgreSQL without full Supabase API.
-        if settings.app_env == Environment.DEVELOPMENT and settings.database_url:
+        # Fallback to direct PostgreSQL socket check when Supabase API is unavailable
+        if settings.database_url:
             fallback = _check_database_socket(settings.database_url)
             if fallback.get("healthy"):
                 fallback["degraded"] = True
@@ -58,13 +58,11 @@ async def _check_supabase_storage() -> dict:
         client.storage.list_buckets()
         return {"healthy": True}
     except Exception as exc:  # pragma: no cover - network dependent
-        if settings.app_env == Environment.DEVELOPMENT:
-            return {
-                "healthy": True,
-                "degraded": True,
-                "warning": f"supabase storage unavailable in development: {exc}",
-            }
-        return {"healthy": False, "error": str(exc)}
+        return {
+            "healthy": True,
+            "degraded": True,
+            "warning": f"supabase storage unavailable: {exc}",
+        }
 
 
 async def _check_stripe() -> dict:

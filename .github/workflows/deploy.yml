@@ -14,6 +14,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    timeout-minutes: 15
 
     steps:
       - name: Deploy to VPS
@@ -22,32 +23,69 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
           script: |
             set -e
             cd /opt/gerersci
 
-            # Pull latest code
-            git pull origin main 2>/dev/null || true
+            echo "=== Pulling latest code ==="
+            git fetch origin main
+            git reset --hard origin/main
 
-            # Build and deploy with zero-downtime
-            docker compose build --no-cache
-            docker compose up -d
+            echo "=== Building containers ==="
+            docker compose build
 
-            # Wait for health checks
-            echo "Waiting for services..."
-            sleep 30
+            echo "=== Deploying with rolling restart ==="
+            # Restart backend first (frontend depends on it)
+            docker compose up -d --no-deps backend
+            sleep 10
 
-            # Verify health
-            HEALTH=$(curl -sf http://localhost/health/ready || echo "FAIL")
-            if echo "$HEALTH" | grep -q "FAIL"; then
-              echo "❌ Health check failed! Rolling back..."
-              docker compose down
-              docker compose up -d
+            # Check backend health before continuing
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:8000/health/live > /dev/null 2>&1; then
+                echo "Backend healthy after ${i}s"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "Backend health check failed after 30s"
+                docker compose logs backend --tail=50
+                exit 1
+              fi
+              sleep 1
+            done
+
+            # Now restart frontend
+            docker compose up -d --no-deps frontend
+            sleep 10
+
+            # Reload nginx to pick up any config changes
+            docker compose up -d --no-deps nginx
+
+            echo "=== Final health checks ==="
+            sleep 5
+
+            # Backend readiness
+            READY=$(curl -sf http://localhost:8000/health/ready 2>/dev/null || echo '{"status":"FAIL"}')
+            echo "Backend readiness: $READY"
+
+            if echo "$READY" | grep -q '"status":"not_ready"'; then
+              echo "WARNING: Backend not fully ready (some services degraded)"
+            fi
+
+            # Frontend check
+            if curl -sf http://localhost:4173/ > /dev/null 2>&1; then
+              echo "Frontend: OK"
+            else
+              echo "Frontend: FAILED"
+              docker compose logs frontend --tail=30
               exit 1
             fi
 
-            echo "✅ Deployment successful!"
+            echo "=== Deployment successful! ==="
+            docker compose ps
 
       - name: Notify on failure
         if: failure()
-        run: echo "::error::Deployment failed! Check VPS logs."
+        run: |
+          echo "::error::Deployment failed! Check VPS logs: ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          echo "::error::Debug: docker compose logs --tail=100"

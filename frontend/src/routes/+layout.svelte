@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
 	import type { User } from '@supabase/supabase-js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Menu, X } from 'lucide-svelte';
+	import { initMatomo, trackPageView } from '$lib/matomo';
 	import { supabase } from '$lib/supabase';
 	import {
 		clearFakeSession,
@@ -42,6 +44,11 @@
 		return page.url.pathname === href || (href !== '/' && page.url.pathname.startsWith(`${href}/`));
 	}
 
+	// Track page views on SvelteKit client-side navigation
+	afterNavigate(() => {
+		trackPageView(page.url.pathname);
+	});
+
 	onMount(() => {
 		let mounted = true;
 		const handleDocumentClick = (event: MouseEvent) => {
@@ -52,6 +59,9 @@
 
 		// Initialize theme
 		theme.initialize();
+
+		// Initialize Matomo analytics
+		initMatomo();
 
 		getCurrentSession().then((session) => {
 			if (mounted) {

@@ -1,41 +1,21 @@
-services:
-  # Base de données PostgreSQL (remplace Supabase local)
-  db:
-    image: postgres:15-alpine
-    container_name: gerersci_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DATABASE_USER:-gerersci}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME:-gerersci}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
-    networks:
-      - backend
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DATABASE_USER:-gerersci} -d ${DATABASE_NAME:-gerersci}",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+name: gerersci
 
-  # Backend FastAPI
+services:
+  # ============================================================
+  # CORE APPLICATION
+  # ============================================================
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: gerersci_backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     environment:
-      APP_ENV: ${APP_ENV:-staging}
-      DATABASE_URL: postgresql://${DATABASE_USER:-gerersci}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME:-gerersci}
-      SUPABASE_URL: ${SUPABASE_INTERNAL_URL:-${SUPABASE_URL}}
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: ${DATABASE_URL:-}
+      SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
@@ -45,77 +25,85 @@ services:
       STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID}
       STRIPE_LIFETIME_PRICE_ID: ${STRIPE_LIFETIME_PRICE_ID}
       RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@gerersci.fr}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      FRONTEND_URL: ${FRONTEND_URL}
-      SENTRY_DSN: ${SENTRY_DSN}
-    depends_on:
-      db:
-        condition: service_healthy
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*.gerersci.fr,gerersci.fr,localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-https://app.gerersci.fr}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-WARNING}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT: ${FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT:-enforce}
     networks:
-      - backend
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - internal
     volumes:
-      - ./logs:/app/logs
-    # Health check configuration
+      - backend_logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-sf", "--max-time", "10", "http://localhost:8000/health/live"]
       interval: 30s
       timeout: 15s
       retries: 5
       start_period: 40s
-    # Graceful shutdown configuration
     stop_grace_period: 30s
     stop_signal: SIGTERM
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
-  # Frontend SvelteKit
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:-https://api.gerersci.fr}
         VITE_SUPABASE_URL: ${SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
         VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
         PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: ${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}
-        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_MATOMO_URL: ${VITE_MATOMO_URL:-https://analytics.gerersci.fr}
+        VITE_MATOMO_SITE_ID: ${VITE_MATOMO_SITE_ID:-1}
     container_name: gerersci_frontend
     restart: unless-stopped
-    ports:
-      - "4173:4173"
     environment:
-      VITE_API_URL: ${VITE_API_URL}
-      VITE_SUPABASE_URL: ${SUPABASE_URL}
-      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: ${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}
-      VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
+      # adapter-node runtime config
+      PORT: "4173"
+      HOST: "0.0.0.0"
+      ORIGIN: ${FRONTEND_URL:-https://app.gerersci.fr}
+      # Sentry server-side (process.env)
+      SENTRY_DSN: ${VITE_SENTRY_DSN:-}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
-      - frontend
+      - internal
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --spider -q http://127.0.0.1:4173/ || exit 1",
-        ]
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:4173/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-  # Nginx Reverse Proxy
+  # ============================================================
+  # REVERSE PROXY + SSL
+  # ============================================================
+
   nginx:
     image: nginx:alpine
     container_name: gerersci_nginx
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl-params.conf:/etc/nginx/ssl-params.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
       - nginx_logs:/var/log/nginx
     depends_on:
       frontend:
@@ -123,15 +111,124 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - frontend
-      - backend
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:80/nginx-health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  certbot:
+    image: certbot/certbot
+    container_name: gerersci_certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+    networks:
+      - internal
+
+  # ============================================================
+  # ANALYTICS (Matomo)
+  # ============================================================
+
+  matomo-db:
+    image: mariadb:10.11
+    container_name: gerersci_matomo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD:-matomo_root_change_me}
+      MYSQL_DATABASE: matomo
+      MYSQL_USER: ${MATOMO_DB_USER:-matomo}
+      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD:-matomo_change_me}
+    volumes:
+      - matomo_db_data:/var/lib/mysql
+    networks:
+      - matomo
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  matomo:
+    image: matomo:5-apache
+    container_name: gerersci_matomo
+    restart: unless-stopped
+    environment:
+      MATOMO_DATABASE_HOST: matomo-db
+      MATOMO_DATABASE_DBNAME: matomo
+      MATOMO_DATABASE_USERNAME: ${MATOMO_DB_USER:-matomo}
+      MATOMO_DATABASE_PASSWORD: ${MATOMO_DB_PASSWORD:-matomo_change_me}
+      MATOMO_DATABASE_TABLES_PREFIX: matomo_
+    volumes:
+      - matomo_data:/var/www/html
+    depends_on:
+      matomo-db:
+        condition: service_healthy
+    networks:
+      - internal
+      - matomo
+
+  # ============================================================
+  # MONITORING (Uptime Kuma)
+  # ============================================================
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: gerersci_uptime_kuma
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - internal
+
+  # ============================================================
+  # LOGGING (Loki + Grafana)
+  # ============================================================
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: gerersci_loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    networks:
+      - internal
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: gerersci_grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "https://grafana.gerersci.fr"
+      GF_ALERTING_ENABLED: "true"
+      GF_UNIFIED_ALERTING_ENABLED: "true"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+    networks:
+      - internal
 
 volumes:
-  db_data:
+  backend_logs:
+  certbot_conf:
+  certbot_www:
   nginx_logs:
+  matomo_db_data:
+  matomo_data:
+  uptime_kuma_data:
+  loki_data:
+  grafana_data:
 
 networks:
-  frontend:
+  internal:
     driver: bridge
-  backend:
+  matomo:
     driver: bridge

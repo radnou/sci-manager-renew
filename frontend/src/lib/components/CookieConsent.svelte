@@ -3,6 +3,7 @@
 	import { writable } from 'svelte/store';
 	import { Button } from '$lib/components/ui/button';
 	import { Card } from '$lib/components/ui/card';
+	import { grantMatomoConsent, revokeMatomoConsent } from '$lib/matomo';
 
 	const showBanner = writable(false);
 	const consentGiven = writable(false);
@@ -15,6 +16,15 @@
 		if (savedConsent) {
 			consentGiven.set(true);
 			showBanner.set(false);
+			// Restore Matomo consent if analytics was accepted
+			try {
+				const parsed = JSON.parse(savedConsent);
+				if (parsed.analytics) {
+					grantMatomoConsent();
+				}
+			} catch {
+				// ignore parse errors
+			}
 		} else {
 			// Afficher le banner après un court délai pour meilleure UX
 			setTimeout(() => {
@@ -25,15 +35,16 @@
 
 	function acceptAll() {
 		const consent = {
-			necessary: true,  // Toujours true
-			analytics: false,  // Pas d'analytics pour l'instant
-			marketing: false,  // Pas de marketing
+			necessary: true,
+			analytics: true,
+			marketing: false,
 			timestamp: Date.now()
 		};
 
 		localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
 		consentGiven.set(true);
 		showBanner.set(false);
+		grantMatomoConsent();
 	}
 
 	function acceptNecessary() {
@@ -47,6 +58,7 @@
 		localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
 		consentGiven.set(true);
 		showBanner.set(false);
+		revokeMatomoConsent();
 	}
 
 	// Pour debug en dev: permet de réinitialiser le consentement
@@ -75,12 +87,13 @@
 							🍪 Gestion des cookies
 						</h2>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
-							Nous utilisons uniquement des <strong>cookies essentiels</strong> pour votre authentification
-							et le fonctionnement du service. Aucun tracking publicitaire ou analytics.
+							Nous utilisons des <strong>cookies essentiels</strong> pour l'authentification et le
+							fonctionnement du service, ainsi que des <strong>cookies d'analyse</strong> (Matomo,
+							auto-hébergé en France) pour améliorer votre expérience. Aucun tracking publicitaire.
 						</p>
 						<p class="text-xs text-slate-500 dark:text-slate-500">
-							En continuant, vous acceptez l'utilisation de cookies techniques nécessaires au service.
-							<a href="/privacy" class="text-blue-600 dark:text-blue-400 hover:underline ml-1">
+							Vos données d'analyse restent sur nos serveurs en France et ne sont jamais partagées.
+							<a href="/confidentialite" class="text-blue-600 dark:text-blue-400 hover:underline ml-1">
 								En savoir plus →
 							</a>
 						</p>
