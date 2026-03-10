@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import signal
 import threading
 import time
@@ -8,7 +9,19 @@ from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 from typing import Awaitable, Callable
 
+import sentry_sdk
 import structlog
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        integrations=[FastApiIntegration(), StarletteIntegration()],
+        traces_sample_rate=0.2 if os.environ.get("APP_ENV") == "production" else 1.0,
+        environment=os.environ.get("APP_ENV", "development"),
+        send_default_pii=False,
+    )
 from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware

@@ -34,3 +34,25 @@ jobs:
 
       - name: Run quality gate
         run: bash scripts/quality-gate.sh
+
+      - name: Backend security scan (bandit)
+        run: |
+          cd backend
+          pip install bandit
+          bandit -r app -ll -ii --format json --output bandit-report.json || true
+          bandit -r app -ll -ii
+
+      - name: Frontend dependency audit
+        run: |
+          cd frontend
+          npm audit --audit-level=high || true
+
+      - name: Install Playwright browsers
+        run: |
+          cd frontend
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: |
+          cd frontend
+          npx playwright test --project=chromium

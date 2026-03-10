@@ -143,7 +143,7 @@ class Settings(BaseSettings):
                     raise ValueError("Production CORS must not include localhost or 127.0.0.1")
 
             # 3. Secrets ne doivent pas être des placeholders en production
-            placeholder_keywords = ["placeholder", "test", "example", "demo"]
+            placeholder_keywords = ["placeholder", "example", "demo", "changeme", "your_"]
             secrets_to_check = {
                 "STRIPE_SECRET_KEY": self.stripe_secret_key,
                 "STRIPE_WEBHOOK_SECRET": self.stripe_webhook_secret,

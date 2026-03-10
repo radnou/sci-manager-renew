@@ -443,9 +443,11 @@
 							© 2026 GererSCI. Tous droits réservés.
 						</p>
 						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-							<span>🇫🇷 Fait en France</span>
+							<a href="/mentions-legales" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Mentions légales</a>
 							<span>•</span>
-							<span>Conforme RGPD</span>
+							<a href="/confidentialite" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Confidentialité</a>
+							<span>•</span>
+							<a href="/cgu" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGU</a>
 						</div>
 					</div>
 				</div>
@@ -506,9 +508,23 @@
 							</li>
 							<li>
 								<a
-									href="/privacy"
+									href="/confidentialite"
 									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 									>Confidentialité</a
+								>
+							</li>
+							<li>
+								<a
+									href="/mentions-legales"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Mentions légales</a
+								>
+							</li>
+							<li>
+								<a
+									href="/cgu"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>CGU</a
 								>
 							</li>
 						</ul>
@@ -548,9 +564,11 @@
 							© 2026 GererSCI. Tous droits réservés.
 						</p>
 						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-							<span>🇫🇷 Fait en France</span>
+							<a href="/mentions-legales" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Mentions légales</a>
 							<span>•</span>
-							<span>Conforme RGPD</span>
+							<a href="/confidentialite" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Confidentialité</a>
+							<span>•</span>
+							<a href="/cgu" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGU</a>
 						</div>
 					</div>
 				</div>

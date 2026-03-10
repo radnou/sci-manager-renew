@@ -33,7 +33,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      APP_ENV: development
+      APP_ENV: ${APP_ENV:-staging}
       DATABASE_URL: postgresql://${DATABASE_USER:-gerersci}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME:-gerersci}
       SUPABASE_URL: ${SUPABASE_INTERNAL_URL:-${SUPABASE_URL}}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
@@ -48,6 +48,7 @@ services:
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
       CORS_ORIGINS: ${CORS_ORIGINS}
       FRONTEND_URL: ${FRONTEND_URL}
+      SENTRY_DSN: ${SENTRY_DSN}
     depends_on:
       db:
         condition: service_healthy
@@ -59,10 +60,10 @@ services:
       - ./logs:/app/logs
     # Health check configuration
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      test: ["CMD", "curl", "-sf", "--max-time", "10", "http://localhost:8000/health/live"]
       interval: 30s
-      timeout: 5s
-      retries: 3
+      timeout: 15s
+      retries: 5
       start_period: 40s
     # Graceful shutdown configuration
     stop_grace_period: 30s
@@ -79,6 +80,7 @@ services:
         VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
         VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
         PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: ${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
     container_name: gerersci_frontend
     restart: unless-stopped
     ports:
@@ -89,6 +91,7 @@ services:
       VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
       PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: ${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}
+      VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
     depends_on:
       - backend
     networks:
