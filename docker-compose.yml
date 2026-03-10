@@ -58,9 +58,9 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-https://api.gerersci.fr}
-        VITE_SUPABASE_URL: ${SUPABASE_URL}
-        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-        VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-https://api.gerersci.fr}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-${STRIPE_PUBLISHABLE_KEY}}
         PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: ${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
         VITE_MATOMO_URL: ${VITE_MATOMO_URL:-https://analytics.gerersci.fr}
@@ -101,6 +101,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/ssl-params.conf:/etc/nginx/ssl-params.conf:ro
@@ -221,7 +223,11 @@ services:
 volumes:
   backend_logs:
   certbot_conf:
+    external: true
+    name: gerersci_certbot_conf
   certbot_www:
+    external: true
+    name: gerersci_certbot_www
   nginx_logs:
   matomo_db_data:
   matomo_data:
