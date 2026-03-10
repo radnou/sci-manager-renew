@@ -11,7 +11,8 @@ const PROTECTED_ROUTE_PREFIXES = [
 	'/loyers',
 	'/account',
 	'/settings',
-	'/success'
+	'/success',
+	'/admin'
 ];
 
 const GUEST_ONLY_ROUTE_PREFIXES = ['/login', '/register'];

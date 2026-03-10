@@ -40,9 +40,9 @@ jobs:
             docker compose up -d --no-deps backend
             sleep 10
 
-            # Check backend health before continuing
+            # Check backend health via docker exec (port 8000 on host is Supabase Kong)
             for i in $(seq 1 30); do
-              if curl -sf http://localhost:8000/health/live > /dev/null 2>&1; then
+              if docker compose exec -T backend curl -sf http://localhost:8000/health/live > /dev/null 2>&1; then
                 echo "Backend healthy after ${i}s"
                 break
               fi
@@ -64,16 +64,16 @@ jobs:
             echo "=== Final health checks ==="
             sleep 5
 
-            # Backend readiness
-            READY=$(curl -sf http://localhost:8000/health/ready 2>/dev/null || echo '{"status":"FAIL"}')
+            # Backend readiness (via nginx HTTPS)
+            READY=$(curl -sf https://api.gerersci.fr/health/ready 2>/dev/null || echo '{"status":"FAIL"}')
             echo "Backend readiness: $READY"
 
             if echo "$READY" | grep -q '"status":"not_ready"'; then
               echo "WARNING: Backend not fully ready (some services degraded)"
             fi
 
-            # Frontend check
-            if curl -sf http://localhost:4173/ > /dev/null 2>&1; then
+            # Frontend check (via nginx HTTPS)
+            if curl -sf https://app.gerersci.fr/ > /dev/null 2>&1; then
               echo "Frontend: OK"
             else
               echo "Frontend: FAILED"

@@ -90,3 +90,21 @@ async def get_current_user(
         _raise_unauthorized("Invalid bearer token payload")
 
     return user_id
+
+
+async def get_current_admin(
+    user_id: str = Depends(get_current_user),
+) -> str:
+    """Require the current user to be an admin."""
+    from .supabase_client import get_service_client
+
+    client = get_service_client()
+    result = client.table("admins").select("user_id").eq("user_id", user_id).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    return user_id
