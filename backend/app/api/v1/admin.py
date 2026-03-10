@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Depends, Query
 
 from app.core.security import get_current_admin
-from app.core.supabase_client import get_service_client
+from app.core.supabase_client import get_supabase_service_client as get_service_client
 
 logger = logging.getLogger(__name__)
 

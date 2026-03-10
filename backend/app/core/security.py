@@ -96,7 +96,7 @@ async def get_current_admin(
     user_id: str = Depends(get_current_user),
 ) -> str:
     """Require the current user to be an admin."""
-    from .supabase_client import get_service_client
+    from .supabase_client import get_supabase_service_client as get_service_client
 
     client = get_service_client()
     result = client.table("admins").select("user_id").eq("user_id", user_id).execute()
