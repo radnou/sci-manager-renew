@@ -35,6 +35,8 @@ services:
       FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT: ${FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT:-enforce}
     networks:
       - internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - backend_logs:/app/logs
     healthcheck:
