@@ -209,7 +209,9 @@ async function installCoreApiMocks(page: Page) {
 		const scopedBiens = biens.filter((bien) => String(bien.id_sci) === sciId);
 		const scopedLoyers = loyers.filter((loyer) => String(loyer.id_sci) === sciId);
 		const scopedCharges = charges.filter((charge) => String(charge.id_sci || '') === sciId);
-		const scopedFiscalite = exercicesFiscaux.filter((exercice) => String(exercice.id_sci) === sciId);
+		const scopedFiscalite = exercicesFiscaux.filter(
+			(exercice) => String(exercice.id_sci) === sciId
+		);
 		const totalMonthlyRent = scopedBiens.reduce((sum, bien) => sum + Number(bien.loyer_cc || 0), 0);
 		const totalMonthlyPropertyCharges = scopedBiens.reduce(
 			(sum, bien) => sum + Number(bien.charges || 0),
@@ -309,7 +311,15 @@ async function installCoreApiMocks(page: Page) {
 				loyers_count: 0,
 				user_role: 'gerant',
 				user_part: 100,
-				associes: [{ id: 'associe-new', nom: 'Rad Noumane', email: 'rad@sci.local', part: 100, role: 'gerant' }]
+				associes: [
+					{
+						id: 'associe-new',
+						nom: 'Rad Noumane',
+						email: 'rad@sci.local',
+						part: 100,
+						role: 'gerant'
+					}
+				]
 			});
 			await route.fulfill({
 				status: 201,
@@ -497,7 +507,8 @@ async function installCoreApiMocks(page: Page) {
 			const created = {
 				id: `loc-${locataires.length + 1}`,
 				id_bien: payload.id_bien,
-				id_sci: biens.find((bien) => String(bien.id) === String(payload.id_bien))?.id_sci || 'sci-1',
+				id_sci:
+					biens.find((bien) => String(bien.id) === String(payload.id_bien))?.id_sci || 'sci-1',
 				nom: payload.nom,
 				email: payload.email || null,
 				date_debut: payload.date_debut,
@@ -726,22 +737,20 @@ test.describe('Fake user access E2E', () => {
 		await seedFakeUserContext(page, { email: 'fake.user@sci.test', sciId: 'sci-1' });
 
 		await page.goto('/dashboard');
-		await expect(page.getByRole('heading', { level: 1 })).toContainText(
-			'Dashboard de portefeuille'
-		);
-		await expect(page.getByText('Portefeuille multi-SCI')).toBeVisible();
-		await expect(page.getByText(/Cockpit d.ex.cution par cas d.usage/)).toBeVisible();
-		await expect(page.getByText('Patrimoine piloté')).toBeVisible();
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Dashboard');
 		await expect(page.getByText('Mouvements et alertes')).toBeVisible();
-		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
+		await expect(page.getByText('SCI Mosa Belleville').first()).toBeVisible();
 		const sidebar = page.locator('aside').first();
 		await expect(sidebar.getByRole('link', { name: 'Dashboard' })).toBeVisible();
 		await expect(sidebar.getByRole('link', { name: 'Biens' })).toBeVisible();
 		await expect(sidebar.getByRole('link', { name: 'Loyers' })).toBeVisible();
+		await expect(sidebar.getByRole('link', { name: 'Locataires' })).toBeVisible();
+		await expect(sidebar.getByRole('link', { name: 'Charges' })).toBeVisible();
+		await expect(sidebar.getByRole('link', { name: 'Associés' })).toBeVisible();
 		await page.getByRole('button', { name: /SCI Horizon Lyon/i }).click();
-		await expect(page.getByRole('heading', { name: 'SCI Horizon Lyon' }).first()).toBeVisible();
+		await expect(page.getByText('SCI Horizon Lyon').first()).toBeVisible();
 		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
-		await expect(page.getByRole('heading', { name: 'SCI Mosa Belleville' }).first()).toBeVisible();
+		await expect(page.getByText('SCI Mosa Belleville').first()).toBeVisible();
 
 		const accountMenuButton = page.getByRole('button', { name: /Compte/ }).first();
 		await accountMenuButton.click();
@@ -761,6 +770,7 @@ test.describe('Fake user access E2E', () => {
 		await page.goto('/dashboard');
 		await page.getByLabel('SCI active').selectOption('SCI Mosa Belleville');
 		await expect(page.getByText('Journal de la SCI active')).toBeVisible();
+		await page.getByRole('tab', { name: 'Documents' }).click();
 		await page.getByRole('button', { name: 'Générer le PDF' }).click();
 		await expect(page.getByText('Document généré')).toBeVisible();
 		await expect(page.getByRole('link', { name: 'Télécharger', exact: true })).toBeVisible();

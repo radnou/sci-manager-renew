@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { HandCoins } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
+	import { HandCoins, Building2, FileText, Users, BarChart3 } from 'lucide-svelte';
 	import {
 		fetchSciDetail,
 		fetchBiens,
 		fetchLoyers,
 		fetchScis,
+		updateLoyer,
 		type Bien,
 		type Loyer,
 		type SCIDetail,
@@ -14,154 +16,129 @@
 	import BienTable from '$lib/components/BienTable.svelte';
 	import LoyerTable from '$lib/components/LoyerTable.svelte';
 	import QuitusGenerator from '$lib/components/QuitusGenerator.svelte';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
 	import { calculateBienMetrics } from '$lib/high-value/biens';
 	import { calculateLoyerMetrics } from '$lib/high-value/loyers';
 	import { calculatePortfolioMetrics, calculateSciScopeMetrics } from '$lib/high-value/portfolio';
 	import { formatEur, formatPercent } from '$lib/high-value/formatters';
-	import { formatApiErrorMessage, mapAssociateRoleLabel, mapChargeTypeLabel } from '$lib/high-value/presentation';
+	import {
+		formatApiErrorMessage,
+		mapAssociateRoleLabel,
+		mapChargeTypeLabel
+	} from '$lib/high-value/presentation';
 	import { getStoredActiveSciId, setStoredActiveSciId } from '$lib/portfolio/active-sci';
 
 	import PortfolioKPIStrip from '$lib/components/dashboard/PortfolioKPIStrip.svelte';
 	import SCIGrid from '$lib/components/dashboard/SCIGrid.svelte';
 	import PortfolioSummary from '$lib/components/dashboard/PortfolioSummary.svelte';
-	import CockpitHeader from '$lib/components/dashboard/CockpitHeader.svelte';
 	import AssociatesPanel from '$lib/components/dashboard/AssociatesPanel.svelte';
 	import SCIIdentityCard from '$lib/components/dashboard/SCIIdentityCard.svelte';
 	import ChargesFiscalPanel from '$lib/components/dashboard/ChargesFiscalPanel.svelte';
 	import ScopedKPIStrip from '$lib/components/dashboard/ScopedKPIStrip.svelte';
-	import OperatorRituals from '$lib/components/dashboard/OperatorRituals.svelte';
 	import CollectionChart from '$lib/components/charts/CollectionChart.svelte';
 	import RentTrendChart from '$lib/components/charts/RentTrendChart.svelte';
 	import PortfolioAllocationChart from '$lib/components/charts/PortfolioAllocationChart.svelte';
 	import AlertBanner from '$lib/components/AlertBanner.svelte';
 	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
 
-	let biens: Bien[] = [];
-	let loyers: Loyer[] = [];
-	let scis: SCIOverview[] = [];
-	let activeSciDetail: SCIDetail | null = null;
-	let activeSciId = '';
-	let loading = true;
-	let detailLoading = true;
-	let errorMessage = '';
-	let detailErrorMessage = '';
-	let detailLoadedFor = '';
+	let biens = $state<Bien[]>([]);
+	let loyers = $state<Loyer[]>([]);
+	let scis = $state<SCIOverview[]>([]);
+	let activeSciDetail = $state<SCIDetail | null>(null);
+	let activeSciId = $state('');
+	let loading = $state(true);
+	let detailLoading = $state(true);
+	let errorMessage = $state('');
+	let detailErrorMessage = $state('');
+	let detailLoadedFor = $state('');
 	let detailRequestVersion = 0;
+	let activeTab = $state<'flux' | 'patrimoine' | 'documents' | 'gouvernance' | 'analytique'>(
+		'flux'
+	);
 
 	const emptyBienMetrics = calculateBienMetrics([]);
 	const emptyLoyerMetrics = calculateLoyerMetrics([]);
 
-	$: sciSnapshots = scis.map((sci) => ({
-		sci,
-		...calculateSciScopeMetrics(sci.id, biens, loyers)
-	}));
-	$: resolvedActiveSciId =
+	const sciSnapshots = $derived(
+		scis.map((sci) => ({
+			sci,
+			...calculateSciScopeMetrics(sci.id, biens, loyers)
+		}))
+	);
+	const resolvedActiveSciId = $derived(
 		activeSciId && scis.some((sci) => String(sci.id) === activeSciId)
 			? activeSciId
-			: String(scis[0]?.id || '');
-	$: activeSnapshot =
-		sciSnapshots.find((snapshot) => String(snapshot.sci.id) === resolvedActiveSciId) ?? null;
-	$: activeSci = activeSnapshot?.sci ?? null;
-	$: activeSciProfile =
+			: String(scis[0]?.id || '')
+	);
+	const activeSnapshot = $derived(
+		sciSnapshots.find((snapshot) => String(snapshot.sci.id) === resolvedActiveSciId) ?? null
+	);
+	const activeSci = $derived(activeSnapshot?.sci ?? null);
+	const activeSciProfile = $derived(
 		activeSciDetail && String(activeSciDetail.id || '') === resolvedActiveSciId
 			? activeSciDetail
-			: activeSci;
-	$: scopedBiens = activeSnapshot?.biens ?? [];
-	$: scopedLoyers = activeSnapshot?.loyers ?? [];
-	$: bienMetrics = activeSnapshot?.bienMetrics ?? emptyBienMetrics;
-	$: loyerMetrics = activeSnapshot?.loyerMetrics ?? emptyLoyerMetrics;
-	$: portfolioMetrics = calculatePortfolioMetrics(scis, biens, loyers);
-	$: collectionRate = loyerMetrics.collectionRate;
-	$: monthlyPropertyCharges = scopedBiens.reduce((sum, bien) => sum + (bien.charges ?? 0), 0);
-	$: avgAssociateShare =
-		activeSciProfile && activeSciProfile.associes_count && activeSciProfile.associes_count > 0
-			? 100 / activeSciProfile.associes_count
-			: 0;
-	$: associateSummary = activeSciDetail?.associes ?? activeSci?.associes ?? [];
-	$: recentLoyerFeed = [
-		...(activeSciDetail?.recent_loyers?.length ? activeSciDetail.recent_loyers : scopedLoyers)
-	].sort((left, right) => toTimestamp(right.date_loyer) - toTimestamp(left.date_loyer));
-	$: latestLoyer = recentLoyerFeed[0] ?? null;
-	$: recentChargeFeed = [...(activeSciDetail?.recent_charges ?? [])].sort(
-		(left, right) => toTimestamp(right.date_paiement) - toTimestamp(left.date_paiement)
+			: activeSci
 	);
-	$: latestCharge = recentChargeFeed[0] ?? null;
-	$: fiscalTimeline = [...(activeSciDetail?.fiscalite ?? [])].sort(
-		(left, right) => (right.annee ?? 0) - (left.annee ?? 0)
+	const scopedBiens = $derived(activeSnapshot?.biens ?? []);
+	const scopedLoyers = $derived(activeSnapshot?.loyers ?? []);
+	const bienMetrics = $derived(activeSnapshot?.bienMetrics ?? emptyBienMetrics);
+	const loyerMetrics = $derived(activeSnapshot?.loyerMetrics ?? emptyLoyerMetrics);
+	const portfolioMetrics = $derived(calculatePortfolioMetrics(scis, biens, loyers));
+	const collectionRate = $derived(loyerMetrics.collectionRate);
+	const monthlyPropertyCharges = $derived(
+		scopedBiens.reduce((sum, bien) => sum + (bien.charges ?? 0), 0)
 	);
-	$: latestFiscalYear = fiscalTimeline[0] ?? null;
+	const associateSummary = $derived(activeSciDetail?.associes ?? activeSci?.associes ?? []);
+	const recentLoyerFeed = $derived(
+		[
+			...(activeSciDetail?.recent_loyers?.length ? activeSciDetail.recent_loyers : scopedLoyers)
+		].sort((left, right) => toTimestamp(right.date_loyer) - toTimestamp(left.date_loyer))
+	);
+	const recentChargeFeed = $derived(
+		[...(activeSciDetail?.recent_charges ?? [])].sort(
+			(left, right) => toTimestamp(right.date_paiement) - toTimestamp(left.date_paiement)
+		)
+	);
+	const latestFiscalYear = $derived(
+		[...(activeSciDetail?.fiscalite ?? [])].sort(
+			(left, right) => (right.annee ?? 0) - (left.annee ?? 0)
+		)[0] ?? null
+	);
 
-	$: priorities = [
-		{
-			title: scopedBiens.length === 0 ? 'Structurer le patrimoine' : 'Mettre à jour le portefeuille',
-			description: scopedBiens.length === 0
-				? 'Aucun bien n\'est encore rattaché à la SCI active. Commence par documenter le premier actif.'
-				: `${scopedBiens.length} biens rattachés à la SCI active. Vérifie les loyers et charges du mois.`,
-			tone: scopedBiens.length === 0 ? 'warning' : 'default'
-		},
-		{
-			title: loyerMetrics.lateCount > 0 ? 'Traiter les retards' : loyerMetrics.totalOutstanding > 0 ? 'Encaissements à sécuriser' : 'Suivi des encaissements sous contrôle',
-			description: loyerMetrics.lateCount > 0
-				? `${loyerMetrics.lateCount} loyer(s) en retard nécessitent une relance ou un arbitrage.`
-				: loyerMetrics.totalOutstanding > 0
-					? `${loyerMetrics.totalOutstandingLabel} restent en attente d'encaissement sur la SCI active.`
-					: 'Tous les flux saisis sont encaissés. Tu peux préparer les quittances et la revue mensuelle.',
-			tone: loyerMetrics.lateCount > 0 ? 'danger' : loyerMetrics.totalOutstanding > 0 ? 'warning' : 'success'
-		},
-		{
-			title: associateSummary.length > 1 ? 'Coordonner les associés' : 'Gouvernance simple',
-			description: associateSummary.length > 1
-				? `${associateSummary.length} associés sont impliqués. Prépare un point de gouvernance avant les arbitrages.`
-				: 'La SCI est portée par un seul associé référent. Les validations sont fluides.',
-			tone: 'accent'
+	const lateLoyers = $derived(
+		scopedLoyers.filter((l) => l.statut === 'en_retard' || l.statut === 'retard')
+	);
+	const pendingLoyers = $derived(scopedLoyers.filter((l) => l.statut === 'en_attente'));
+
+	$effect(() => {
+		if (resolvedActiveSciId) setStoredActiveSciId(resolvedActiveSciId);
+	});
+
+	$effect(() => {
+		if (!resolvedActiveSciId) {
+			activeSciDetail = null;
+			detailLoading = false;
+			detailErrorMessage = '';
+			detailLoadedFor = '';
+		} else if (detailLoadedFor !== resolvedActiveSciId) {
+			detailLoadedFor = resolvedActiveSciId;
+			void loadSciDetail(resolvedActiveSciId);
 		}
+	});
+
+	const tabs = [
+		{ id: 'flux' as const, label: 'Flux', icon: HandCoins },
+		{ id: 'patrimoine' as const, label: 'Patrimoine', icon: Building2 },
+		{ id: 'documents' as const, label: 'Documents', icon: FileText },
+		{ id: 'gouvernance' as const, label: 'Gouvernance', icon: Users },
+		{ id: 'analytique' as const, label: 'Analytique', icon: BarChart3 }
 	];
-
-	$: commandTracks = [
-		{
-			id: 'dashboard-governance',
-			label: 'Gouvernance',
-			summary: associateSummary.length > 0 ? `${associateSummary.length} associé(s) documenté(s)` : 'Associés à documenter',
-			detail: activeSciProfile?.user_role ? `${mapAssociateRoleLabel(activeSciProfile.user_role)} connecté` : 'Rôle utilisateur à confirmer'
-		},
-		{
-			id: 'dashboard-patrimoine',
-			label: 'Patrimoine',
-			summary: `${activeSciDetail?.biens_count ?? scopedBiens.length} bien(s) actifs`,
-			detail: `Loyer cible ${formatEur(activeSciDetail?.total_monthly_rent ?? bienMetrics.totalMonthlyRent)}`
-		},
-		{
-			id: 'dashboard-execution',
-			label: 'Encaissements',
-			summary: `Recouvrement ${formatPercent(collectionRate, '0%')}`,
-			detail: loyerMetrics.lateCount > 0
-				? `${loyerMetrics.lateCount} retard(s) à traiter`
-				: loyerMetrics.totalOutstanding > 0
-					? `${loyerMetrics.totalOutstandingLabel} à sécuriser`
-					: 'Aucun retard détecté'
-		},
-		{
-			id: 'dashboard-documents',
-			label: 'Documents',
-			summary: latestFiscalYear ? `Exercice ${latestFiscalYear.annee} consolidé` : 'Clôture fiscale à préparer',
-			detail: scopedLoyers.length > 0
-				? `${scopedLoyers.length} loyer(s) saisi(s), quittances générables`
-				: 'Aucun loyer saisi pour produire une quittance'
-		}
-	];
-
-	$: if (resolvedActiveSciId) setStoredActiveSciId(resolvedActiveSciId);
-
-	$: if (!resolvedActiveSciId) {
-		activeSciDetail = null;
-		detailLoading = false;
-		detailErrorMessage = '';
-		detailLoadedFor = '';
-	} else if (detailLoadedFor !== resolvedActiveSciId) {
-		detailLoadedFor = resolvedActiveSciId;
-		void loadSciDetail(resolvedActiveSciId);
-	}
 
 	function toTimestamp(value: string | null | undefined) {
 		if (!value) return 0;
@@ -175,14 +152,20 @@
 		loading = true;
 		errorMessage = '';
 		try {
-			const [nextScis, nextBiens, nextLoyers] = await Promise.all([fetchScis(), fetchBiens(), fetchLoyers()]);
+			const [nextScis, nextBiens, nextLoyers] = await Promise.all([
+				fetchScis(),
+				fetchBiens(),
+				fetchLoyers()
+			]);
 			scis = Array.isArray(nextScis) ? nextScis : [];
 			biens = Array.isArray(nextBiens) ? nextBiens : [];
 			loyers = Array.isArray(nextLoyers) ? nextLoyers : [];
 			const storedActiveSciId = getStoredActiveSciId();
 			const fallbackSci = nextScis[0];
 			activeSciId =
-				(storedActiveSciId && nextScis.some((sci) => String(sci.id) === storedActiveSciId) && storedActiveSciId) ||
+				(storedActiveSciId &&
+					nextScis.some((sci) => String(sci.id) === storedActiveSciId) &&
+					storedActiveSciId) ||
 				String(fallbackSci?.id || '');
 			if (!nextScis.length) {
 				activeSciDetail = null;
@@ -209,7 +192,10 @@
 		} catch (error) {
 			if (requestVersion !== detailRequestVersion) return;
 			activeSciDetail = null;
-			detailErrorMessage = formatApiErrorMessage(error, 'Impossible de charger le dashboard spécifique de la SCI active.');
+			detailErrorMessage = formatApiErrorMessage(
+				error,
+				'Impossible de charger le détail de la SCI.'
+			);
 		} finally {
 			if (requestVersion !== detailRequestVersion) return;
 			detailLoading = false;
@@ -220,150 +206,380 @@
 		activeSciId = id;
 		errorMessage = '';
 	}
+
+	async function markLoyerPaid(loyerId: string | number) {
+		try {
+			await updateLoyer(loyerId, { statut: 'paye' });
+			await loadOverview();
+		} catch (error) {
+			errorMessage = formatApiErrorMessage(error, 'Impossible de marquer le loyer comme payé.');
+		}
+	}
 </script>
 
 <section class="sci-page-shell">
+	<!-- ═══════════════════════════════════════════════════════════ -->
+	<!-- ZONE 1 — Alertes & Actions                                  -->
+	<!-- ═══════════════════════════════════════════════════════════ -->
 	<header class="sci-page-header">
-		<p class="sci-eyebrow">Pilotage SCI • Cockpit exécutif</p>
-		<h1 class="sci-page-title">Dashboard de portefeuille</h1>
-		<p class="sci-page-subtitle">
-			Vue portefeuille de toutes les SCI accessibles. Sélectionnez une SCI active pour la lecture opérationnelle.
-		</p>
+		<p class="sci-eyebrow">Pilotage SCI</p>
+		<h1 class="sci-page-title">Dashboard</h1>
 	</header>
 
 	{#if errorMessage}
 		<p class="sci-inline-alert sci-inline-alert-error">{errorMessage}</p>
 	{/if}
 
-	{#if !loading && loyerMetrics.lateCount > 0}
-		<div class="mb-4">
-			<AlertBanner
-				type="danger"
-				message="{loyerMetrics.lateCount} loyer(s) en retard nécessitent une action immédiate."
-				href="#dashboard-execution"
-			/>
-		</div>
-	{/if}
-
 	{#if !loading}
-		<div class="mb-6">
+		<div class="space-y-3">
 			<OnboardingWizard
 				hasSci={scis.length > 0}
 				hasBien={biens.length > 0}
 				hasLoyer={loyers.length > 0}
 				hasQuittance={loyers.some((l) => l.quitus_genere)}
 			/>
-		</div>
-	{/if}
 
-	<PortfolioKPIStrip metrics={portfolioMetrics} {loading} />
+			{#if lateLoyers.length > 0}
+				<AlertBanner
+					type="danger"
+					message="{lateLoyers.length} loyer(s) en retard nécessitent une action."
+					actions={[
+						{
+							label: 'Traiter les retards',
+							onclick: () => {
+								activeTab = 'flux';
+							}
+						},
+						...(lateLoyers.length === 1
+							? [{ label: 'Marquer payé', onclick: () => markLoyerPaid(lateLoyers[0].id!) }]
+							: [])
+					]}
+				/>
+			{/if}
 
-	<div class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
-		<SCIGrid snapshots={sciSnapshots} activeSciId={resolvedActiveSciId} {loading} onSelect={handleSciSelect} />
-		<PortfolioSummary metrics={portfolioMetrics} />
-	</div>
+			{#if scopedBiens.length === 0 && scis.length > 0}
+				<AlertBanner
+					type="warning"
+					message="Aucun bien rattaché à la SCI active. Documentez votre premier actif."
+					actions={[{ label: 'Ajouter un bien', onclick: () => goto('/biens') }]}
+				/>
+			{/if}
 
-	{#if !loading && loyers.length > 0}
-		<div class="mt-6 grid gap-6 lg:grid-cols-3">
-			<CollectionChart loyers={scopedLoyers} />
-			<RentTrendChart loyers={scopedLoyers} />
-			<PortfolioAllocationChart {biens} {scis} />
-		</div>
-	{/if}
-
-	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
-		<div class="xl:col-span-2">
-			<div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-				<div>
-					<p class="sci-eyebrow">SCI active • Dashboard spécifique</p>
-					<h2 class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-						Cockpit d'exécution par cas d'usage
-					</h2>
-					<p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-						Le portefeuille reste en haut. Ici, la SCI active est organisée par cas d'usage opérateur.
-					</p>
-				</div>
-			</div>
-			{#if detailErrorMessage}
-				<p class="sci-inline-alert sci-inline-alert-error">{detailErrorMessage}</p>
+			{#if pendingLoyers.length > 3}
+				<AlertBanner
+					type="info"
+					message="{pendingLoyers.length} loyers en attente d'encaissement."
+					actions={[
+						{
+							label: 'Voir les loyers',
+							onclick: () => {
+								activeTab = 'flux';
+							}
+						}
+					]}
+				/>
 			{/if}
 		</div>
+	{/if}
 
-		<CockpitHeader
-			{activeSciProfile}
-			{scis}
-			activeSciId={resolvedActiveSciId}
-			{collectionRate}
-			{avgAssociateShare}
-			{loyerMetrics}
-			{commandTracks}
-			{priorities}
-			onSciChange={handleSciSelect}
-		/>
-		<AssociatesPanel associates={associateSummary} />
-	</div>
-
-	<div class="mt-6 grid gap-6 xl:grid-cols-[1.25fr_1fr]">
-		<SCIIdentityCard {activeSciProfile} {activeSciDetail} {scopedBiens} {bienMetrics} {detailLoading} />
-		<ChargesFiscalPanel
-			totalRecordedCharges={activeSciDetail?.total_recorded_charges}
-			chargesCount={activeSciDetail?.charges_count ?? 0}
-			recentCharges={recentChargeFeed}
-			{latestFiscalYear}
-			{detailLoading}
-		/>
-	</div>
-
+	<!-- ═══════════════════════════════════════════════════════════ -->
+	<!-- ZONE 2 — KPIs Situation                                      -->
+	<!-- ═══════════════════════════════════════════════════════════ -->
 	<div class="mt-6">
+		<PortfolioKPIStrip metrics={portfolioMetrics} {loading} />
+	</div>
+
+	{#if scis.length > 1}
+		<div class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
+			<SCIGrid
+				snapshots={sciSnapshots}
+				activeSciId={resolvedActiveSciId}
+				{loading}
+				onSelect={handleSciSelect}
+			/>
+			<PortfolioSummary metrics={portfolioMetrics} />
+		</div>
+	{/if}
+
+	{#if scis.length > 1}
+		<div class="mt-4 flex items-center gap-3">
+			<span class="text-xs font-semibold tracking-wider text-slate-500 uppercase">SCI active</span>
+			<select
+				class="sci-select max-w-xs text-sm"
+				value={resolvedActiveSciId}
+				onchange={(e) => handleSciSelect((e.target as HTMLSelectElement).value)}
+				aria-label="SCI active"
+			>
+				{#each scis as sci (String(sci.id))}
+					<option value={String(sci.id)}>{sci.nom}</option>
+				{/each}
+			</select>
+		</div>
+	{/if}
+
+	<div class="mt-4">
 		<ScopedKPIStrip {bienMetrics} {loyerMetrics} {collectionRate} {loading} />
 	</div>
 
-	<div class="mt-6 grid gap-6 xl:grid-cols-[1.8fr_1fr]">
-		<div class="space-y-6">
-			<div id="dashboard-patrimoine" class="scroll-mt-28">
-				<BienTable
-					biens={scopedBiens.slice(0, 6)}
-					{loading}
-					title="Patrimoine piloté"
-					description="Vue consolidée des biens de la SCI active."
-				/>
-			</div>
+	<!-- ═══════════════════════════════════════════════════════════ -->
+	<!-- ZONE 3 — Onglets détail                                      -->
+	<!-- ═══════════════════════════════════════════════════════════ -->
+	<div class="mt-8">
+		{#if detailErrorMessage}
+			<p class="sci-inline-alert sci-inline-alert-error mb-4">{detailErrorMessage}</p>
+		{/if}
 
-			<Card id="dashboard-execution" class="sci-section-card scroll-mt-28">
-				<CardHeader>
-					<CardTitle class="flex items-center gap-2 text-lg">
-						<HandCoins class="h-5 w-5 text-emerald-600" />
-						Mouvements et alertes
-					</CardTitle>
-					<CardDescription>Trésorerie et production des quittances.</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<LoyerTable
-						loyers={scopedLoyers.slice(0, 8)}
-						biens={scopedBiens}
-						{loading}
-						title="Journal de la SCI active"
-						description="Historique opérationnel."
-					/>
-				</CardContent>
-			</Card>
+		<div
+			role="tablist"
+			class="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800"
+		>
+			{#each tabs as tab (tab.id)}
+				<button
+					type="button"
+					role="tab"
+					aria-selected={activeTab === tab.id}
+					class="flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors {activeTab ===
+					tab.id
+						? 'border-slate-900 text-slate-900 dark:border-slate-100 dark:text-slate-100'
+						: 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200'}"
+					onclick={() => (activeTab = tab.id)}
+				>
+					<tab.icon class="h-4 w-4" />
+					{tab.label}
+					{#if tab.id === 'flux' && lateLoyers.length > 0}
+						<span
+							class="rounded-full bg-rose-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-rose-700 dark:bg-rose-900 dark:text-rose-200"
+							>{lateLoyers.length}</span
+						>
+					{/if}
+				</button>
+			{/each}
 		</div>
 
-		<div class="space-y-6">
-			<div id="dashboard-documents" class="scroll-mt-28">
-				<QuitusGenerator
-					loyers={scopedLoyers}
-					biens={scopedBiens}
-					sciName={activeSciProfile?.nom || activeSci?.nom || ''}
-				/>
-			</div>
-			<OperatorRituals
-				{latestLoyer}
-				{scopedLoyers}
-				{monthlyPropertyCharges}
-				{latestFiscalYear}
-				{latestCharge}
-			/>
+		<div class="mt-6" role="tabpanel">
+			<!-- ─── Tab: Flux ─── -->
+			{#if activeTab === 'flux'}
+				<div class="space-y-6">
+					{#if lateLoyers.length > 0}
+						<Card class="border-rose-200 dark:border-rose-800">
+							<CardHeader>
+								<CardTitle class="text-lg text-rose-700 dark:text-rose-300"
+									>Retards à traiter</CardTitle
+								>
+								<CardDescription
+									>{lateLoyers.length} loyer(s) en retard nécessitent une action immédiate.</CardDescription
+								>
+							</CardHeader>
+							<CardContent>
+								<div class="space-y-2">
+									{#each lateLoyers as loyer}
+										{@const bien = scopedBiens.find((b) => String(b.id) === String(loyer.id_bien))}
+										<div
+											class="flex items-center justify-between rounded-lg border border-rose-100 bg-rose-50/50 px-4 py-3 dark:border-rose-900 dark:bg-rose-950/20"
+										>
+											<div>
+												<p class="text-sm font-medium text-slate-900 dark:text-slate-100">
+													{bien?.adresse ?? 'Bien inconnu'} — {formatEur(loyer.montant)}
+												</p>
+												<p class="text-xs text-slate-500">{loyer.date_loyer}</p>
+											</div>
+											<div class="flex gap-2">
+												<button
+													type="button"
+													class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+													onclick={() => markLoyerPaid(loyer.id!)}
+												>
+													Marquer payé
+												</button>
+											</div>
+										</div>
+									{/each}
+								</div>
+							</CardContent>
+						</Card>
+					{/if}
+
+					<Card id="dashboard-execution" class="sci-section-card scroll-mt-28">
+						<CardHeader>
+							<CardTitle class="flex items-center gap-2 text-lg">
+								<HandCoins class="h-5 w-5 text-emerald-600" />
+								Mouvements et alertes
+							</CardTitle>
+							<CardDescription>Trésorerie et production des quittances.</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<LoyerTable
+								loyers={scopedLoyers.slice(0, 10)}
+								biens={scopedBiens}
+								{loading}
+								title="Journal de la SCI active"
+								description="Historique opérationnel."
+							/>
+						</CardContent>
+					</Card>
+				</div>
+
+				<!-- ─── Tab: Patrimoine ─── -->
+			{:else if activeTab === 'patrimoine'}
+				<div class="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+					<div class="space-y-6">
+						<SCIIdentityCard
+							{activeSciProfile}
+							{activeSciDetail}
+							{scopedBiens}
+							{bienMetrics}
+							{detailLoading}
+						/>
+						<div id="dashboard-patrimoine" class="scroll-mt-28">
+							<BienTable
+								biens={scopedBiens}
+								{loading}
+								title="Patrimoine piloté"
+								description="Vue consolidée des biens de la SCI active."
+							/>
+						</div>
+					</div>
+					<ChargesFiscalPanel
+						totalRecordedCharges={activeSciDetail?.total_recorded_charges}
+						chargesCount={activeSciDetail?.charges_count ?? 0}
+						recentCharges={recentChargeFeed}
+						{latestFiscalYear}
+						{detailLoading}
+					/>
+				</div>
+
+				<!-- ─── Tab: Documents ─── -->
+			{:else if activeTab === 'documents'}
+				<div class="grid gap-6 xl:grid-cols-2">
+					<div id="dashboard-documents" class="scroll-mt-28">
+						<QuitusGenerator
+							loyers={scopedLoyers}
+							biens={scopedBiens}
+							sciName={activeSciProfile?.nom || activeSci?.nom || ''}
+						/>
+					</div>
+					<Card>
+						<CardHeader>
+							<CardTitle class="text-lg">Fiscalité</CardTitle>
+							<CardDescription>Exercices fiscaux de la SCI active.</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{#if latestFiscalYear}
+								<div class="space-y-3">
+									<div
+										class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
+									>
+										<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+											Exercice {latestFiscalYear.annee}
+										</p>
+										<div class="mt-2 grid grid-cols-3 gap-4">
+											<div>
+												<p class="text-xs text-slate-500">Revenus</p>
+												<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+													{formatEur(latestFiscalYear.total_revenus ?? 0)}
+												</p>
+											</div>
+											<div>
+												<p class="text-xs text-slate-500">Charges</p>
+												<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+													{formatEur(latestFiscalYear.total_charges ?? 0)}
+												</p>
+											</div>
+											<div>
+												<p class="text-xs text-slate-500">Résultat</p>
+												<p
+													class="text-sm font-semibold {(latestFiscalYear.resultat_fiscal ?? 0) >= 0
+														? 'text-emerald-600'
+														: 'text-rose-600'}"
+												>
+													{formatEur(latestFiscalYear.resultat_fiscal ?? 0)}
+												</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							{:else}
+								<p class="text-sm text-slate-500">Aucun exercice fiscal documenté.</p>
+							{/if}
+						</CardContent>
+					</Card>
+				</div>
+
+				<!-- ─── Tab: Gouvernance ─── -->
+			{:else if activeTab === 'gouvernance'}
+				<div class="grid gap-6 xl:grid-cols-2">
+					<AssociatesPanel associates={associateSummary} />
+					<Card>
+						<CardHeader>
+							<CardTitle class="text-lg">Informations SCI</CardTitle>
+							<CardDescription>Identité et gouvernance de la SCI active.</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{#if activeSciProfile}
+								<div class="space-y-3">
+									<div
+										class="flex justify-between border-b border-slate-100 pb-2 dark:border-slate-800"
+									>
+										<span class="text-sm text-slate-500">Nom</span>
+										<span class="text-sm font-medium text-slate-900 dark:text-slate-100"
+											>{activeSciProfile.nom}</span
+										>
+									</div>
+									{#if activeSciProfile.siren}
+										<div
+											class="flex justify-between border-b border-slate-100 pb-2 dark:border-slate-800"
+										>
+											<span class="text-sm text-slate-500">SIREN</span>
+											<span class="text-sm font-medium text-slate-900 dark:text-slate-100"
+												>{activeSciProfile.siren}</span
+											>
+										</div>
+									{/if}
+									{#if activeSciProfile.regime_fiscal}
+										<div
+											class="flex justify-between border-b border-slate-100 pb-2 dark:border-slate-800"
+										>
+											<span class="text-sm text-slate-500">Régime fiscal</span>
+											<span class="text-sm font-medium text-slate-900 dark:text-slate-100"
+												>{activeSciProfile.regime_fiscal}</span
+											>
+										</div>
+									{/if}
+									<div class="flex justify-between">
+										<span class="text-sm text-slate-500">Rôle utilisateur</span>
+										<span class="text-sm font-medium text-slate-900 dark:text-slate-100"
+											>{mapAssociateRoleLabel(activeSciProfile.user_role ?? '')}</span
+										>
+									</div>
+								</div>
+							{:else}
+								<p class="text-sm text-slate-500">
+									Sélectionnez une SCI pour afficher ses informations.
+								</p>
+							{/if}
+						</CardContent>
+					</Card>
+				</div>
+
+				<!-- ─── Tab: Analytique ─── -->
+			{:else if activeTab === 'analytique'}
+				{#if loyers.length > 0}
+					<div class="grid gap-6 lg:grid-cols-3">
+						<CollectionChart loyers={scopedLoyers} />
+						<RentTrendChart loyers={scopedLoyers} />
+						<PortfolioAllocationChart {biens} {scis} />
+					</div>
+				{:else}
+					<div
+						class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-16 dark:border-slate-700"
+					>
+						<BarChart3 class="h-10 w-10 text-slate-400" />
+						<p class="mt-3 text-sm text-slate-500">
+							Saisissez des loyers pour visualiser les analytiques.
+						</p>
+					</div>
+				{/if}
+			{/if}
 		</div>
 	</div>
 </section>

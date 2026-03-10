@@ -85,6 +85,10 @@ class BusinessLogicError(GererSCIException):
         super().__init__(message, status_code=422, code="business_logic_error")
 
 
+# Alias for backward compatibility — used by subscription/entitlement exceptions below.
+SCIManagerException = GererSCIException
+
+
 class PlanLimitError(SCIManagerException):
     """Quota métier atteint pour le plan actif."""
 
@@ -92,7 +96,7 @@ class PlanLimitError(SCIManagerException):
         message = f"Le quota {resource} du plan actif est atteint."
         super().__init__(
             message,
-            status_code=422,
+            status_code=402,
             code="plan_limit_reached",
             details={
                 "resource": resource,
@@ -106,12 +110,15 @@ class PlanLimitError(SCIManagerException):
 class UpgradeRequiredError(SCIManagerException):
     """Demande de montée en gamme quand la fonctionnalité n'est pas disponible."""
 
-    def __init__(self, message: str, plan_key: str):
+    def __init__(self, message: str, plan_key: str, feature: str | None = None):
+        details: dict[str, str | None] = {"plan_key": plan_key}
+        if feature is not None:
+            details["feature"] = feature
         super().__init__(
             message,
             status_code=402,
             code="upgrade_required",
-            details={"plan_key": plan_key},
+            details=details,
         )
 
 

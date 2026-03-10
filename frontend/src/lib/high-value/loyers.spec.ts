@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	buildLoyerPayload,
+	buildLoyerUpdatePayload,
 	calculateLoyerMetrics,
 	mapLoyerStatusClass,
 	mapLoyerStatusLabel
@@ -23,6 +24,44 @@ describe('high-value loyers helpers', () => {
 			montant: 1300,
 			statut: 'paye'
 		});
+	});
+
+	it('builds update payload from valid form inputs', () => {
+		const payload = buildLoyerUpdatePayload({
+			idBien: 'BIEN-001',
+			idLocataire: 'LOC-001',
+			dateLoyer: '2026-04-01',
+			montant: '1500',
+			statut: 'paye'
+		});
+
+		expect(payload).toEqual({
+			date_loyer: '2026-04-01',
+			montant: 1500,
+			statut: 'paye'
+		});
+	});
+
+	it('returns null for invalid update payload', () => {
+		expect(
+			buildLoyerUpdatePayload({
+				idBien: 'BIEN-001',
+				idLocataire: '',
+				dateLoyer: '',
+				montant: '1200',
+				statut: 'paye'
+			})
+		).toBeNull();
+
+		expect(
+			buildLoyerUpdatePayload({
+				idBien: 'BIEN-001',
+				idLocataire: '',
+				dateLoyer: '2026-04-01',
+				montant: 'abc',
+				statut: 'paye'
+			})
+		).toBeNull();
 	});
 
 	it('returns null when form data is invalid', () => {
@@ -114,5 +153,86 @@ describe('high-value loyers helpers', () => {
 		expect(metrics.averageRecordedLabel).toBe('—');
 		expect(metrics.lateCount).toBe(0);
 		expect(metrics.collectionRateLabel).toBe('0%');
+	});
+
+	it('builds payload without id_locataire when empty', () => {
+		const payload = buildLoyerPayload({
+			idBien: 'BIEN-001',
+			idLocataire: '',
+			dateLoyer: '2026-03-01',
+			montant: '1000',
+			statut: 'paye'
+		});
+
+		expect(payload).not.toBeNull();
+		expect(payload!.id_locataire).toBeUndefined();
+	});
+
+	it('handles null/undefined montant in metrics with fallback to zero', () => {
+		const metrics = calculateLoyerMetrics([
+			{
+				id_bien: 'A',
+				date_loyer: '2026-03-01',
+				montant: null as unknown as number,
+				statut: 'paye',
+				quitus_genere: false
+			},
+			{
+				id_bien: 'B',
+				date_loyer: '2026-03-01',
+				montant: undefined as unknown as number,
+				statut: 'en_retard',
+				quitus_genere: false
+			}
+		]);
+
+		expect(metrics.totalRecorded).toBe(0);
+		expect(metrics.totalPaid).toBe(0);
+		expect(metrics.totalOutstanding).toBe(0);
+		expect(metrics.count).toBe(2);
+		expect(metrics.collectionRate).toBe(0);
+	});
+
+	it('normalizes "retard" status to "en_retard" in metrics', () => {
+		const metrics = calculateLoyerMetrics([
+			{
+				id_bien: 'A',
+				date_loyer: '2026-03-01',
+				montant: 500,
+				statut: 'retard',
+				quitus_genere: false
+			}
+		]);
+
+		expect(metrics.lateCount).toBe(1);
+		expect(metrics.totalOutstanding).toBe(500);
+		expect(metrics.paidCount).toBe(0);
+	});
+
+	it('handles null/undefined status in metrics as enregistre', () => {
+		const metrics = calculateLoyerMetrics([
+			{
+				id_bien: 'A',
+				date_loyer: '2026-03-01',
+				montant: 800,
+				statut: null as unknown as string,
+				quitus_genere: false
+			}
+		]);
+
+		// null status normalizes to 'enregistre', which is not 'paye'
+		expect(metrics.paidCount).toBe(0);
+		expect(metrics.totalOutstanding).toBe(800);
+		expect(metrics.lateCount).toBe(0);
+	});
+
+	it('maps null/undefined status class to default', () => {
+		expect(mapLoyerStatusClass(null)).toBe('bg-cyan-100 text-cyan-800');
+		expect(mapLoyerStatusClass(undefined)).toBe('bg-cyan-100 text-cyan-800');
+	});
+
+	it('maps "retard" status label to "En retard"', () => {
+		expect(mapLoyerStatusLabel('retard')).toBe('En retard');
+		expect(mapLoyerStatusClass('retard')).toBe('bg-rose-100 text-rose-800');
 	});
 });

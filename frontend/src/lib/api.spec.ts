@@ -14,18 +14,38 @@ import {
 	createBien,
 	createSci,
 	createLoyer,
+	createLocataire,
+	createAssocie,
+	createCharge,
+	createFiscalite,
 	deleteBien,
 	deleteLoyer,
+	deleteLocataire,
+	deleteAssocie,
+	deleteCharge,
+	deleteFiscalite,
 	downloadQuitus,
 	fetchBiens,
 	fetchLoyers,
+	fetchLocataires,
+	fetchAssocies,
+	fetchCharges,
+	fetchFiscalite,
+	fetchNotifications,
+	fetchUnreadCount,
 	fetchSciDetail,
 	fetchScis,
 	fetchSubscriptionEntitlements,
 	generateQuitus,
+	markNotificationRead,
+	markAllNotificationsRead,
 	renderQuitus,
 	updateBien,
-	updateLoyer
+	updateLoyer,
+	updateLocataire,
+	updateAssocie,
+	updateCharge,
+	updateFiscalite
 } from './api';
 
 describe('api helpers', () => {
@@ -391,5 +411,341 @@ describe('api helpers', () => {
 
 		await expect(fetchBiens()).resolves.toBeUndefined();
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('fetchLocataires returns parsed payload', async () => {
+		const payload = [{ id_bien: 'bien-1', nom: 'Jean Dupont', date_debut: '2025-01-01' }];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchLocataires()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/locataires/`);
+	});
+
+	it('fetchAssocies returns parsed payload without filter', async () => {
+		const payload = [{ id: 'a-1', nom: 'Rad', part: 60, role: 'gerant' }];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchAssocies()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/associes/`);
+	});
+
+	it('fetchAssocies appends sci filter when provided', async () => {
+		const payload = [{ id: 'a-1', nom: 'Rad', part: 60, role: 'gerant' }];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchAssocies('sci-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/associes/?id_sci=sci-1`);
+	});
+
+	it('fetchCharges returns parsed payload without filter', async () => {
+		const payload = [{ id_bien: 'bien-1', type_charge: 'assurance', montant: 240, date_paiement: '2026-01-15' }];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchCharges()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/charges/`);
+	});
+
+	it('fetchCharges appends sci filter when provided', async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchCharges('sci-2')).resolves.toEqual([]);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/charges/?id_sci=sci-2`);
+	});
+
+	it('fetchFiscalite returns parsed payload without filter', async () => {
+		const payload = [{ id_sci: 'sci-1', annee: 2025, resultat_fiscal: 15000 }];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchFiscalite()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/fiscalite/`);
+	});
+
+	it('fetchFiscalite appends sci filter when provided', async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchFiscalite('sci-1')).resolves.toEqual([]);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/fiscalite/?id_sci=sci-1`);
+	});
+
+	it('createLocataire posts JSON body', async () => {
+		const payload = { id_bien: 'bien-1', nom: 'Marie Martin', date_debut: '2026-01-01' };
+		const created = { id: 'loc-1', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createLocataire(payload)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/locataires/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('createAssocie posts JSON body', async () => {
+		const payload = { id_sci: 'sci-1', nom: 'Paul Durand', part: 40, role: 'associe' };
+		const created = { id: 'a-2', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createAssocie(payload)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/associes/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('createCharge posts JSON body', async () => {
+		const payload = { id_bien: 'bien-1', type_charge: 'travaux', montant: 500, date_paiement: '2026-03-01' };
+		const created = { id: 'ch-1', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createCharge(payload)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/charges/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('createFiscalite posts JSON body', async () => {
+		const payload = { id_sci: 'sci-1', annee: 2025, total_revenus: 24000, total_charges: 6000 };
+		const created = { id: 'fisc-1', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createFiscalite(payload)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/fiscalite/`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('updateLocataire patches JSON body', async () => {
+		const payload = { nom: 'Marie Martin-Dupont', email: 'marie@test.fr' };
+		const updated = { id: 'loc-1', id_bien: 'bien-1', date_debut: '2026-01-01', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateLocataire('loc-1', payload)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/locataires/loc-1`);
+		expect(options.method).toBe('PATCH');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('updateAssocie patches JSON body', async () => {
+		const payload = { part: 50, role: 'gerant' };
+		const updated = { id: 'a-1', nom: 'Rad', ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateAssocie('a-1', payload)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/associes/a-1`);
+		expect(options.method).toBe('PATCH');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('updateCharge patches JSON body', async () => {
+		const payload = { montant: 600 };
+		const updated = { id: 'ch-1', id_bien: 'bien-1', type_charge: 'travaux', montant: 600, date_paiement: '2026-03-01' };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateCharge('ch-1', payload)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/charges/ch-1`);
+		expect(options.method).toBe('PATCH');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('updateFiscalite patches JSON body', async () => {
+		const payload = { total_revenus: 26000 };
+		const updated = { id: 'fisc-1', id_sci: 'sci-1', annee: 2025, ...payload };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateFiscalite('fisc-1', payload)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/fiscalite/fisc-1`);
+		expect(options.method).toBe('PATCH');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	it('deleteLocataire sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteLocataire('loc-1')).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/locataires/loc-1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	it('deleteAssocie sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteAssocie('a-1')).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/associes/a-1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	it('deleteCharge sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteCharge('ch-1')).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/charges/ch-1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	it('deleteFiscalite sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteFiscalite('fisc-1')).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/fiscalite/fisc-1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	it('fetchNotifications returns parsed payload', async () => {
+		const payload = [{ id: 'n-1', type: 'info', title: 'Test', message: 'Hello', metadata: {}, read_at: null, created_at: '2026-03-01' }];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchNotifications()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/notifications/`);
+	});
+
+	it('fetchNotifications passes unread filter', async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchNotifications(true)).resolves.toEqual([]);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/notifications/?unread_only=true`);
+	});
+
+	it('fetchUnreadCount returns count object', async () => {
+		const payload = { count: 3 };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchUnreadCount()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/notifications/count`);
+	});
+
+	it('markNotificationRead patches notification', async () => {
+		const payload = { id: 'n-1', type: 'info', title: 'Test', message: 'Hello', metadata: {}, read_at: '2026-03-10', created_at: '2026-03-01' };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(markNotificationRead('n-1')).resolves.toEqual(payload);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/notifications/n-1/read`);
+		expect(options.method).toBe('PATCH');
+	});
+
+	it('apiFetchBlob adds auth header when session is available', async () => {
+		getCurrentSessionMock.mockResolvedValue({ access_token: 'blob-token' });
+		const pdfResponse = new Response('pdf-binary', {
+			status: 200,
+			headers: { 'Content-Type': 'application/pdf' }
+		});
+		const fetchMock = vi.fn().mockResolvedValue(pdfResponse);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const blob = await downloadQuitus('/api/v1/quitus/files/doc.pdf');
+		expect(blob.type).toBe('application/pdf');
+		const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const headers = new Headers(options.headers);
+		expect(headers.get('Authorization')).toBe('Bearer blob-token');
+	});
+
+	it('apiFetchBlob continues without auth when session throws', async () => {
+		getCurrentSessionMock.mockRejectedValue(new Error('no session'));
+		const fetchMock = vi.fn().mockResolvedValue(
+			new Response('pdf-binary', {
+				status: 200,
+				headers: { 'Content-Type': 'application/pdf' }
+			})
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const blob = await downloadQuitus('/api/v1/quitus/files/doc.pdf');
+		expect(blob.type).toBe('application/pdf');
+		const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const headers = new Headers(options.headers);
+		expect(headers.get('Authorization')).toBeNull();
+	});
+
+	it('markAllNotificationsRead patches all notifications', async () => {
+		const payload = { updated: 5 };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(markAllNotificationsRead()).resolves.toEqual(payload);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/notifications/read-all`);
+		expect(options.method).toBe('PATCH');
 	});
 });

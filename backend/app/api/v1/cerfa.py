@@ -15,6 +15,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from app.core.config import settings
 from app.core.exceptions import FeatureDisabledError
 from app.core.security import get_current_user
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/cerfa", tags=["cerfa"])
 
@@ -33,7 +34,7 @@ async def generate_cerfa_2044(
     user_id: str = Depends(get_current_user),
 ) -> dict[str, float | int | str]:
     """Simplified CERFA 2044 fiscal calculation (JSON)."""
-    del user_id
+    SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
     if not settings.feature_cerfa_generation:
         raise FeatureDisabledError(
             "La génération Cerfa est désactivée.",
@@ -56,7 +57,7 @@ async def generate_cerfa_2044_pdf(
     user_id: str = Depends(get_current_user),
 ):
     """Generate a simplified CERFA 2044 summary as PDF."""
-    del user_id
+    SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
 
     resultat_fiscal = round(payload.total_revenus - payload.total_charges, 2)
 

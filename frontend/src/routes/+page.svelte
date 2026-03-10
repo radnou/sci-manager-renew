@@ -1,7 +1,6 @@
 <script>
 	import HeroSection from '$lib/components/HeroSection.svelte';
 	import FeatureCard from '$lib/components/FeatureCard.svelte';
-	import TestimonialCard from '$lib/components/TestimonialCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Building2, FileText, TrendingUp, Shield, Users, Calculator } from 'lucide-svelte';
@@ -77,17 +76,20 @@
 		]}
 	/>
 
-	<!-- Social Proof Section -->
+	<!-- Cible produit -->
 	<section class="bg-white py-16 dark:bg-slate-900">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center">
 				<p class="text-lg font-medium text-slate-600 dark:text-slate-400">
-					Utilisé par des gérants SCI indépendants, cabinets comptables et opérateurs patrimoniaux
+					Conçu pour les gérants SCI indépendants, cabinets comptables et opérateurs patrimoniaux
 				</p>
 				<div class="mt-8 flex flex-wrap items-center justify-center gap-4">
-					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Focus cashflow</Badge>
-					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Focus conformité</Badge>
-					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Focus rentabilité</Badge>
+					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Suivi cashflow</Badge>
+					<Badge variant="outline" class="px-4 py-2 text-sm font-medium"
+						>Conformité documentaire</Badge
+					>
+					<Badge variant="outline" class="px-4 py-2 text-sm font-medium">Pilotage rentabilité</Badge
+					>
 				</div>
 			</div>
 		</div>
@@ -196,10 +198,10 @@
 					Offre de lancement
 				</Badge>
 				<h2 class="mb-4 text-3xl font-bold text-white sm:text-4xl">
-					Accès anticipé aux 100 premiers comptes actifs
+					Accès anticipé — lancement en cours
 				</h2>
 				<p class="mx-auto mb-8 max-w-2xl text-xl text-blue-100">
-					Démarrage rapide, feedback produit prioritaire et roadmap partagée en direct.
+					Créez votre compte, testez le produit et contribuez à la roadmap.
 				</p>
 				<a href="/login">
 					<Button
@@ -348,35 +350,101 @@
 				</div>
 			</div>
 
-			<!-- Testimonials -->
+			<!-- Fonctionnalités livrées -->
 			<div class="mb-12 text-center">
 				<h3 class="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-100">
-					Témoignages de clients pilotes
+					Ce que vous pouvez faire aujourd'hui
 				</h3>
+				<p class="mx-auto max-w-2xl text-slate-600 dark:text-slate-400">
+					Fonctionnalités disponibles dans la version actuelle du produit.
+				</p>
 			</div>
 
-			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-				<TestimonialCard
-					quote="Enfin un outil qui comprend les enjeux des SCI familiales. La visibilité sur les cash-flows a transformé notre prise de décision."
-					author="Marie Dubois"
-					role="Gérante SCI"
-					company="SCI Dubois Patrimoine"
-					rating={5}
-				/>
-				<TestimonialCard
-					quote="La génération des quittances en un clic nous simplifie la vie. Le ROI est immédiat et l'outil évolue avec nos besoins."
-					author="Pierre Martin"
-					role="Opérateur immobilier"
-					company="Martin Investissements"
-					rating={5}
-				/>
-				<TestimonialCard
-					quote="Interface intuitive pour gérer notre portefeuille de 15 biens sans complexité. Le cockpit centralise tout ce qu'il faut."
-					author="Sophie Leroy"
-					role="Directrice patrimoniale"
-					company="Cabinet Leroy & Associés"
-					rating={5}
-				/>
+			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+				<article
+					class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+				>
+					<div
+						class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30"
+					>
+						<Building2 class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+					</div>
+					<h4 class="font-semibold text-slate-900 dark:text-slate-100">Gestion multi-SCI</h4>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+						Créez et pilotez plusieurs SCI depuis un seul compte. Biens, loyers, associés et charges
+						par SCI.
+					</p>
+				</article>
+				<article
+					class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+				>
+					<div
+						class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30"
+					>
+						<TrendingUp class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+					</div>
+					<h4 class="font-semibold text-slate-900 dark:text-slate-100">Dashboard action-first</h4>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+						Alertes retards avec actions directes, KPIs temps réel et 5 onglets de détail (Flux,
+						Patrimoine, Documents, Gouvernance, Analytique).
+					</p>
+				</article>
+				<article
+					class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+				>
+					<div
+						class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900/30"
+					>
+						<FileText class="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+					</div>
+					<h4 class="font-semibold text-slate-900 dark:text-slate-100">Quittances PDF</h4>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+						Génération de quittances de loyer en PDF, téléchargeables en un clic depuis le
+						dashboard.
+					</p>
+				</article>
+				<article
+					class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+				>
+					<div
+						class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30"
+					>
+						<Calculator class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+					</div>
+					<h4 class="font-semibold text-slate-900 dark:text-slate-100">Suivi fiscal simplifié</h4>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+						Calcul du résultat foncier (revenus − charges) par exercice. Export CERFA 2044/2072 en
+						préparation.
+					</p>
+				</article>
+				<article
+					class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+				>
+					<div
+						class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/30"
+					>
+						<Shield class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+					</div>
+					<h4 class="font-semibold text-slate-900 dark:text-slate-100">RGPD & sécurité</h4>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+						Hébergement UE, isolation par SCI, espace confidentialité (export données, suppression
+						de compte).
+					</p>
+				</article>
+				<article
+					class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800"
+				>
+					<div
+						class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 dark:bg-rose-900/30"
+					>
+						<Users class="h-5 w-5 text-rose-600 dark:text-rose-400" />
+					</div>
+					<h4 class="font-semibold text-slate-900 dark:text-slate-100">Gouvernance associés</h4>
+					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+						Gestion des associés avec répartition des parts, rôles et suivi de la structure de
+						gouvernance.
+					</p>
+				</article>
 			</div>
 		</div>
 	</section>
@@ -434,8 +502,8 @@
 						Mes données sont-elles sécurisées (RGPD) ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité
-						dédié (résumé des données, export JSON, suppression de compte).
+						Oui. Hébergement UE via Supabase, isolation des données par SCI et espace
+						confidentialité dédié (résumé des données, export JSON, suppression de compte).
 					</p>
 				</article>
 
@@ -476,8 +544,8 @@
 						L'outil gère-t-il la conformité fiscale (2044, 2072) ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Un calcul simplifié du résultat foncier (revenus − charges) est disponible. La génération
-						PDF CERFA 2044/2072 et les exports fiscaux avancés sont en préparation.
+						Un calcul simplifié du résultat foncier (revenus − charges) est disponible. La
+						génération PDF CERFA 2044/2072 et les exports fiscaux avancés sont en préparation.
 					</p>
 				</article>
 
@@ -486,8 +554,8 @@
 						Que se passe-t-il si je veux arrêter ?
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
-						Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander la
-						suppression de votre compte depuis l'espace confidentialité.
+						Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander
+						la suppression de votre compte depuis l'espace confidentialité.
 					</p>
 				</article>
 			</div>

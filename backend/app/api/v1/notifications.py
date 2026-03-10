@@ -42,11 +42,10 @@ class NotificationCreate(BaseModel):
 async def list_notifications(
     unread_only: bool = False,
     limit: int = 50,
-    user: dict = Depends(get_current_user),
+    user_id: str = Depends(get_current_user),
 ):
     """List notifications for the current user."""
     client = _get_client()
-    user_id = user["sub"]
 
     query = (
         client.table("notifications")
@@ -68,10 +67,9 @@ async def list_notifications(
 
 
 @router.get("/count")
-async def unread_count(user: dict = Depends(get_current_user)):
+async def unread_count(user_id: str = Depends(get_current_user)):
     """Get the count of unread notifications."""
     client = _get_client()
-    user_id = user["sub"]
 
     result = (
         client.table("notifications")
@@ -90,11 +88,10 @@ async def unread_count(user: dict = Depends(get_current_user)):
 @router.patch("/{notification_id}/read")
 async def mark_as_read(
     notification_id: str,
-    user: dict = Depends(get_current_user),
+    user_id: str = Depends(get_current_user),
 ):
     """Mark a notification as read."""
     client = _get_client()
-    user_id = user["sub"]
 
     result = (
         client.table("notifications")
@@ -108,16 +105,15 @@ async def mark_as_read(
         raise DatabaseError(str(result.error))
 
     if not result.data:
-        raise ResourceNotFoundError("Notification introuvable.")
+        raise ResourceNotFoundError("Notification", notification_id)
 
     return result.data[0]
 
 
 @router.patch("/read-all")
-async def mark_all_as_read(user: dict = Depends(get_current_user)):
+async def mark_all_as_read(user_id: str = Depends(get_current_user)):
     """Mark all notifications as read for the current user."""
     client = _get_client()
-    user_id = user["sub"]
 
     result = (
         client.table("notifications")

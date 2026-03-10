@@ -163,8 +163,9 @@ class SubscriptionService:
                 )
                 return summary
             raise UpgradeRequiredError(
-                "Le plan actif ne couvre pas cette fonctionnalité.",
+                "Feature not available on your plan",
                 plan_key=plan_key,
+                feature=feature_name,
             )
         return summary
 

@@ -36,4 +36,26 @@ describe('high-value charges helpers', () => {
 		expect(metrics.averageLabel).toBe('—');
 		expect(metrics.latestChargeDate).toBeNull();
 	});
+
+	it('handles null/undefined montant values with fallback to zero', () => {
+		const metrics = calculateChargeMetrics([
+			{ id_bien: 'bien-1', type_charge: 'assurance', montant: null as unknown as number, date_paiement: '2026-01-01' },
+			{ id_bien: 'bien-2', type_charge: 'travaux', montant: undefined as unknown as number, date_paiement: '2026-02-01' }
+		]);
+
+		expect(metrics.total).toBe(0);
+		expect(metrics.count).toBe(2);
+	});
+
+	it('handles null/undefined date_paiement in sorting', () => {
+		const metrics = calculateChargeMetrics([
+			{ id_bien: 'bien-1', type_charge: 'assurance', montant: 100, date_paiement: null as unknown as string },
+			{ id_bien: 'bien-2', type_charge: 'travaux', montant: 200, date_paiement: undefined as unknown as string }
+		]);
+
+		expect(metrics.count).toBe(2);
+		expect(metrics.total).toBe(300);
+		// latestCharge falls back to null when date_paiement is nullish
+		expect(metrics.latestChargeDate).toBeNull();
+	});
 });

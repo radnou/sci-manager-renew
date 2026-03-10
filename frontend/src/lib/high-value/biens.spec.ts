@@ -92,6 +92,23 @@ describe('high-value biens helpers', () => {
 		});
 	});
 
+	it('returns null from update payload when validation fails', () => {
+		const payload = buildBienUpdatePayload({
+			idSci: 'sci-1',
+			adresse: '',
+			ville: 'Paris',
+			codePostal: '75001',
+			typeLocatif: 'nu',
+			loyerCC: '1000',
+			charges: '100',
+			tmi: '30',
+			acquisitionDate: '',
+			prixAcquisition: ''
+		});
+
+		expect(payload).toBeNull();
+	});
+
 	it('calculates portfolio metrics', () => {
 		const metrics = calculateBienMetrics([
 			{
@@ -130,5 +147,125 @@ describe('high-value biens helpers', () => {
 		expect(metrics.totalMonthlyRent).toBe(0);
 		expect(metrics.averageRentLabel).toBe('—');
 		expect(metrics.occupancyRateLabel).toBe('N/A');
+	});
+
+	it('handles null/undefined loyer_cc and charges in metrics', () => {
+		const metrics = calculateBienMetrics([
+			{
+				id_sci: 'sci-1',
+				adresse: 'A',
+				ville: 'Paris',
+				code_postal: '75001',
+				type_locatif: 'nu',
+				loyer_cc: null as unknown as number,
+				charges: undefined as unknown as number,
+				tmi: 30
+			}
+		]);
+
+		expect(metrics.totalMonthlyRent).toBe(0);
+		expect(metrics.totalChargesLabel).toContain('0');
+		expect(metrics.count).toBe(1);
+	});
+
+	it('returns null class for null/undefined type', () => {
+		expect(mapBienTypeClass(null)).toBe('bg-slate-100 text-slate-700');
+		expect(mapBienTypeClass(undefined)).toBe('bg-slate-100 text-slate-700');
+	});
+
+	it('returns null label for null type', () => {
+		expect(mapBienTypeLabel(null)).toBe('Non défini');
+	});
+
+	it('builds create payload without optional acquisition fields', () => {
+		const payload = buildBienPayload({
+			idSci: 'sci-1',
+			adresse: '10 rue Test',
+			ville: 'Paris',
+			codePostal: '75001',
+			typeLocatif: 'nu',
+			loyerCC: '1000',
+			charges: '100',
+			tmi: '30',
+			acquisitionDate: '',
+			prixAcquisition: 'not-a-number'
+		});
+
+		expect(payload).not.toBeNull();
+		expect(payload!.acquisition_date).toBeUndefined();
+		expect(payload!.prix_acquisition).toBeUndefined();
+	});
+
+	it('builds update payload with valid acquisition date and numeric price', () => {
+		const payload = buildBienUpdatePayload({
+			idSci: 'sci-1',
+			adresse: '10 rue Test',
+			ville: 'Paris',
+			codePostal: '75001',
+			typeLocatif: 'nu',
+			loyerCC: '1000',
+			charges: '100',
+			tmi: '30',
+			acquisitionDate: '2024-06-15',
+			prixAcquisition: '250000'
+		});
+
+		expect(payload).not.toBeNull();
+		expect(payload!.acquisition_date).toBe('2024-06-15');
+		expect(payload!.prix_acquisition).toBe(250000);
+	});
+
+	it('returns null from update payload when ville is empty', () => {
+		const payload = buildBienUpdatePayload({
+			idSci: 'sci-1',
+			adresse: '10 rue Test',
+			ville: '',
+			codePostal: '75001',
+			typeLocatif: 'nu',
+			loyerCC: '1000',
+			charges: '100',
+			tmi: '30',
+			acquisitionDate: '',
+			prixAcquisition: ''
+		});
+
+		expect(payload).toBeNull();
+	});
+
+	it('returns null from update payload when code postal is invalid', () => {
+		const payload = buildBienUpdatePayload({
+			idSci: 'sci-1',
+			adresse: '10 rue Test',
+			ville: 'Paris',
+			codePostal: 'ABCDE',
+			typeLocatif: 'nu',
+			loyerCC: '1000',
+			charges: '100',
+			tmi: '30',
+			acquisitionDate: '',
+			prixAcquisition: ''
+		});
+
+		expect(payload).toBeNull();
+	});
+
+	it('handles non-numeric loyerCC/charges/tmi with fallback to 0', () => {
+		const payload = buildBienPayload({
+			idSci: 'sci-1',
+			adresse: '10 rue Test',
+			ville: 'Paris',
+			codePostal: '75001',
+			typeLocatif: 'nu',
+			loyerCC: 'abc',
+			charges: 'xyz',
+			tmi: '',
+			acquisitionDate: '',
+			prixAcquisition: ''
+		});
+
+		expect(payload).not.toBeNull();
+		expect(payload!.loyer_cc).toBe(0);
+		expect(payload!.charges).toBe(0);
+		expect(payload!.tmi).toBe(0);
 	});
 });

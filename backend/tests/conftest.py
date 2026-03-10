@@ -40,9 +40,13 @@ class FakeQuery:
         self._in_filters: list[tuple[str, set[str]]] = []
         self._gte_filters: list[tuple[str, str]] = []
         self._lte_filters: list[tuple[str, str]] = []
+        self._is_filters: list[tuple[str, str]] = []
         self._operation = "select"
         self._payload: list[dict] = []
         self._update_payload: dict = {}
+        self._order_key: str | None = None
+        self._order_desc: bool = False
+        self._limit: int | None = None
 
     def select(self, *_args, **_kwargs) -> "FakeQuery":
         self._operation = "select"
@@ -81,6 +85,19 @@ class FakeQuery:
         self._lte_filters.append((key, str(value)))
         return self
 
+    def is_(self, key: str, value: str) -> "FakeQuery":
+        self._is_filters.append((key, value))
+        return self
+
+    def order(self, key: str, *, desc: bool = False) -> "FakeQuery":
+        self._order_key = key
+        self._order_desc = desc
+        return self
+
+    def limit(self, count: int) -> "FakeQuery":
+        self._limit = count
+        return self
+
     def _matches(self, row: dict) -> bool:
         for key, value in self._filters:
             if str(row.get(key)) != value:
@@ -96,6 +113,13 @@ class FakeQuery:
             candidate = row.get(key)
             if candidate is None or str(candidate) > value:
                 return False
+        for key, value in self._is_filters:
+            if value == "null":
+                if row.get(key) is not None:
+                    return False
+            else:
+                if row.get(key) is None:
+                    return False
         return True
 
     def execute(self) -> FakeResult:
@@ -103,6 +127,13 @@ class FakeQuery:
 
         if self._operation == "select":
             data = [deepcopy(row) for row in rows if self._matches(row)]
+            if self._order_key:
+                data.sort(
+                    key=lambda r: r.get(self._order_key, ""),
+                    reverse=self._order_desc,
+                )
+            if self._limit is not None:
+                data = data[: self._limit]
             return FakeResult(data=data)
 
         if self._operation == "insert":
@@ -230,7 +261,7 @@ def fake_supabase() -> FakeSupabaseClient:
 
 @pytest.fixture(autouse=True)
 def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
-    from app.api.v1 import associes, biens, charges, fiscalite, locataires, loyers, quitus, scis
+    from app.api.v1 import associes, biens, charges, fiscalite, locataires, loyers, notifications, quitus, scis
     from app import main
     from app.api.v1 import gdpr, stripe
     from app.services import subscription_service
@@ -267,6 +298,11 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     )
     monkeypatch.setattr(
         scis,
+        "create_client",
+        lambda *_args, **_kwargs: fake_supabase,
+    )
+    monkeypatch.setattr(
+        notifications,
         "create_client",
         lambda *_args, **_kwargs: fake_supabase,
     )

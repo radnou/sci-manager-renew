@@ -79,3 +79,23 @@ def test_download_quitus_missing_file_returns_structured_404(client, auth_header
     data = response.json()
     assert data["code"] == "resource_not_found"
     assert data["error"] == "Quittance introuvable."
+
+
+def test_quitus_generate_allowed_for_free_plan(client, auth_headers):
+    """Free users CAN generate quitus (quitus_enabled=True for all plans)."""
+    payload = {
+        "id_loyer": "loyer-free",
+        "id_bien": "bien-free",
+        "nom_locataire": "Marie Libre",
+        "periode": "Janvier 2026",
+        "montant": 800.0,
+        "nom_sci": "SCI Test Free",
+        "adresse_bien": "5 rue Gratuite",
+        "ville_bien": "Lyon",
+    }
+
+    response = client.post("/api/v1/quitus/generate", json=payload, headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["filename"].startswith("quitus-")
+    assert data["size_bytes"] > 0

@@ -12,6 +12,7 @@ from app.core.security import get_current_user
 from app.models.quitus import QuitusRequest, QuitusResponse
 from app.services.quitus_service import QuitusService
 from app.services.storage_service import storage_service
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/quitus", tags=["quitus"])
 
@@ -39,6 +40,7 @@ async def generate_quitus(
     request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)
 ):
     del request
+    SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
     pdf_bytes = QuitusService.generate_quitus_pdf(payload)
     filename = f"quitus-{uuid4().hex}.pdf"
     storage_path = f"quitus/{user_id}/{filename}"
@@ -61,7 +63,7 @@ async def generate_quitus(
 @limiter.limit("20/minute")
 async def render_quitus(request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)):
     del request
-    del user_id
+    SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
     if not settings.feature_pdf_render_direct:
         raise FeatureDisabledError(
             "La prévisualisation PDF directe est désactivée.",
@@ -85,6 +87,7 @@ async def render_quitus(request: Request, payload: QuitusRequest, user_id: str =
 @limiter.limit("30/minute")
 async def download_quitus(request: Request, filename: str, user_id: str = Depends(get_current_user)):
     del request
+    SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
     safe_filename = _validate_filename(filename)
     storage_path = f"quitus/{user_id}/{safe_filename}"
 

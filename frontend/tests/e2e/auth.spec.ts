@@ -118,8 +118,6 @@ test.describe('Authentication pages', () => {
 		await seedFakeUserContext(page);
 		await page.goto('/');
 		await page.waitForURL(/\/dashboard$/);
-		await expect(page.getByRole('heading', { level: 1 })).toContainText(
-			'Dashboard de portefeuille'
-		);
+		await expect(page.getByRole('heading', { level: 1 })).toContainText('Dashboard');
 	});
 });

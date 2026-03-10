@@ -6,9 +6,12 @@
 		HandCoins,
 		FileText,
 		Calculator,
+		Users,
+		Receipt,
+		UserCheck,
 		Settings,
 		User,
-		HelpCircle,
+		CreditCard,
 		ChevronsLeft,
 		ChevronsRight
 	} from 'lucide-svelte';
@@ -27,15 +30,18 @@
 	const navItems = [
 		{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
 		{ href: '/biens', label: 'Biens', icon: Building2 },
+		{ href: '/locataires', label: 'Locataires', icon: Users },
 		{ href: '/loyers', label: 'Loyers', icon: HandCoins },
+		{ href: '/charges', label: 'Charges', icon: Receipt },
 		{ href: '/documents', label: 'Documents', icon: FileText },
-		{ href: '/fiscalite', label: 'Fiscalité', icon: Calculator }
+		{ href: '/fiscalite', label: 'Fiscalité', icon: Calculator },
+		{ href: '/associes', label: 'Associés', icon: UserCheck }
 	];
 
 	const utilityItems = [
 		{ href: '/settings', label: 'Paramètres', icon: Settings },
 		{ href: '/account', label: 'Compte', icon: User },
-		{ href: '/pricing', label: 'Tarifs', icon: HelpCircle }
+		{ href: '/pricing', label: 'Abonnement', icon: CreditCard }
 	];
 
 	function isActive(href: string) {
@@ -44,7 +50,9 @@
 </script>
 
 <aside
-	class="hidden flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200 md:flex md:flex-col {$sidebarCollapsed ? 'w-16' : 'w-60'}"
+	class="hidden flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200 md:flex md:flex-col {$sidebarCollapsed
+		? 'w-16'
+		: 'w-60'}"
 >
 	<div class="flex h-14 items-center justify-between border-b border-sidebar-border px-3">
 		{#if !$sidebarCollapsed}
@@ -66,24 +74,23 @@
 
 	{#if scis.length > 0}
 		<div class="border-b border-sidebar-border px-3 py-3">
-			<SidebarSCISwitcher
-				{scis}
-				{activeSciId}
-				collapsed={$sidebarCollapsed}
-				{onSciChange}
-			/>
+			<SidebarSCISwitcher {scis} {activeSciId} collapsed={$sidebarCollapsed} {onSciChange} />
 		</div>
 	{/if}
 
 	<nav class="flex-1 space-y-1 px-2 py-3">
-		<p class="mb-2 px-2 text-[0.6rem] font-semibold tracking-[0.2em] text-sidebar-foreground/50 uppercase">
+		<p
+			class="mb-2 px-2 text-[0.6rem] font-semibold tracking-[0.2em] text-sidebar-foreground/50 uppercase"
+		>
 			{#if !$sidebarCollapsed}Pilotage{/if}
 		</p>
 		{#each navItems as item (item.href)}
 			<a
 				href={item.href}
 				aria-current={isActive(item.href) ? 'page' : undefined}
-				class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors {isActive(item.href)
+				class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors {isActive(
+					item.href
+				)
 					? 'bg-sidebar-primary text-sidebar-primary-foreground'
 					: 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}"
 				title={$sidebarCollapsed ? item.label : undefined}
@@ -97,14 +104,18 @@
 	</nav>
 
 	<div class="border-t border-sidebar-border px-2 py-3">
-		<p class="mb-2 px-2 text-[0.6rem] font-semibold tracking-[0.2em] text-sidebar-foreground/50 uppercase">
+		<p
+			class="mb-2 px-2 text-[0.6rem] font-semibold tracking-[0.2em] text-sidebar-foreground/50 uppercase"
+		>
 			{#if !$sidebarCollapsed}Compte{/if}
 		</p>
 		{#each utilityItems as item (item.href)}
 			<a
 				href={item.href}
 				aria-current={isActive(item.href) ? 'page' : undefined}
-				class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors {isActive(item.href)
+				class="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors {isActive(
+					item.href
+				)
 					? 'bg-sidebar-primary text-sidebar-primary-foreground'
 					: 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}"
 				title={$sidebarCollapsed ? item.label : undefined}
