@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { getCurrentSession } from '$lib/auth/session';
-	import { apiClient } from '$lib/api';
+	import { apiFetch } from '$lib/api';
 
 	let { children } = $props();
 	let authorized = $state(false);
@@ -22,12 +22,8 @@
 		}
 
 		try {
-			const res = await apiClient('/api/v1/admin/stats');
-			if (res.ok) {
-				authorized = true;
-			} else {
-				goto('/dashboard');
-			}
+			await apiFetch('/api/v1/admin/stats');
+			authorized = true;
 		} catch {
 			goto('/dashboard');
 		} finally {

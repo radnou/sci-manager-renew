@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiClient } from '$lib/api';
+	import { apiFetch } from '$lib/api';
 
 	let stats = $state<{
 		total_users: number;
@@ -11,9 +11,10 @@
 	} | null>(null);
 
 	onMount(async () => {
-		const res = await apiClient('/api/v1/admin/stats');
-		if (res.ok) {
-			stats = await res.json();
+		try {
+			stats = await apiFetch('/api/v1/admin/stats');
+		} catch {
+			// handled by layout guard
 		}
 	});
 </script>

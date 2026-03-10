@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiClient } from '$lib/api';
+	import { apiFetch } from '$lib/api';
 
 	type AdminUser = {
 		id: string;
@@ -15,10 +15,13 @@
 	let page = $state(1);
 
 	async function loadUsers() {
-		const res = await apiClient(`/api/v1/admin/users?page=${page}&per_page=50`);
-		if (res.ok) {
-			const data = await res.json();
+		try {
+			const data: { users: AdminUser[] } = await apiFetch(
+				`/api/v1/admin/users?page=${page}&per_page=50`
+			);
 			users = data.users;
+		} catch {
+			// handled by layout guard
 		}
 	}
 
