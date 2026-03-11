@@ -139,6 +139,8 @@
 	}
 </script>
 
+<svelte:head><title>Onboarding | GererSCI</title></svelte:head>
+
 <section class="mx-auto max-w-2xl px-4 py-12">
 	<div class="mb-8 text-center">
 		<h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">

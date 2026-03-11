@@ -88,6 +88,8 @@
 	}
 </script>
 
+<svelte:head><title>Compte | GererSCI</title></svelte:head>
+
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Compte • identité, sécurité, abonnement"

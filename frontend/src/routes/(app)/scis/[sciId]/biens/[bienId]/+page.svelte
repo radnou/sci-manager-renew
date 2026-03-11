@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { getContext } from 'svelte';
 	import type { SCIDetail, FicheBien } from '$lib/api';
+	import { breadcrumbNames } from '$lib/stores/breadcrumb-names';
 	import { fetchFicheBien } from '$lib/api';
 	import FicheBienHeader from '$lib/components/fiche-bien/FicheBienHeader.svelte';
 	import FicheBienIdentite from '$lib/components/fiche-bien/FicheBienIdentite.svelte';
@@ -39,6 +40,9 @@
 		error = null;
 		try {
 			bien = await fetchFicheBien(sciId, bienId);
+			if (bien?.adresse) {
+				breadcrumbNames.update((n) => ({ ...n, [bienId]: bien!.adresse }));
+			}
 		} catch (err: any) {
 			error = err?.message ?? 'Impossible de charger les données du bien.';
 			bien = null;
@@ -47,6 +51,8 @@
 		}
 	}
 </script>
+
+<svelte:head><title>{bien?.adresse ?? 'Bien'} | GererSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	{#if loading}

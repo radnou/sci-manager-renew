@@ -41,6 +41,8 @@
 	};
 </script>
 
+<svelte:head><title>Biens | {sci.nom} | GererSCI</title></svelte:head>
+
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">{sci.nom}</p>

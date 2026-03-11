@@ -71,6 +71,8 @@
 	}
 </script>
 
+<svelte:head><title>Finances | GererSCI</title></svelte:head>
+
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Transversal</p>

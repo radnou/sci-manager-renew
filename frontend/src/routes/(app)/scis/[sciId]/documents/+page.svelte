@@ -58,6 +58,8 @@
 	let totalDocs = $derived(groups.reduce((sum, g) => sum + g.documents.length, 0));
 </script>
 
+<svelte:head><title>Documents | {sci.nom} | GererSCI</title></svelte:head>
+
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">{sci.nom}</p>

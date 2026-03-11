@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { ChevronRight, House } from 'lucide-svelte';
+	import { breadcrumbNames } from '$lib/stores/breadcrumb-names';
 
 	type Crumb = {
 		label: string;
@@ -12,11 +13,17 @@
 		scis: 'Portefeuille',
 		exploitation: 'Exploitation',
 		finance: 'Finance',
+		finances: 'Finances',
 		biens: 'Biens',
 		associes: 'Associés',
 		charges: 'Charges',
 		fiscalite: 'Fiscalité',
 		loyers: 'Loyers',
+		documents: 'Documents',
+		baux: 'Baux',
+		onboarding: 'Onboarding',
+		admin: 'Admin',
+		users: 'Utilisateurs',
 		pricing: 'Offre et facturation',
 		login: 'Connexion',
 		register: 'Inscription',
@@ -25,7 +32,7 @@
 		settings: 'Paramètres'
 	};
 
-	function buildBreadcrumbs(pathname: string): Crumb[] {
+	function buildBreadcrumbs(pathname: string, names: Record<string, string>): Crumb[] {
 		const segments = pathname.split('/').filter(Boolean);
 		const crumbs: Crumb[] = [{ label: 'Accueil', href: '/' }];
 		let currentPath = '';
@@ -33,7 +40,7 @@
 		for (const segment of segments) {
 			currentPath = `${currentPath}/${segment}`;
 			crumbs.push({
-				label: labelMap[segment] ?? segment,
+				label: names[segment] ?? labelMap[segment] ?? segment,
 				href: currentPath
 			});
 		}
@@ -41,7 +48,7 @@
 		return crumbs;
 	}
 
-	const breadcrumbs = $derived(buildBreadcrumbs(page.url.pathname));
+	const breadcrumbs = $derived(buildBreadcrumbs(page.url.pathname, $breadcrumbNames));
 </script>
 
 <nav
