@@ -42,11 +42,13 @@ from app.api.v1 import (
     dashboard,
     export,
     files,
+    finances,
     fiscalite,
     gdpr,
     health,
     locataires,
     loyers,
+    notification_preferences,
     notifications,
     onboarding,
     quitus,
@@ -480,8 +482,10 @@ app.include_router(cerfa.router, prefix="/api/v1")
 app.include_router(stripe.router, prefix="/api/v1")
 app.include_router(gdpr.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(notification_preferences.router, prefix="/api/v1")
 app.include_router(onboarding.router, prefix="/api/v1")
 app.include_router(export.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(finances.router, prefix="/api/v1")
 app.include_router(scis_biens.router, prefix="/api/v1")
 app.include_router(admin.router)

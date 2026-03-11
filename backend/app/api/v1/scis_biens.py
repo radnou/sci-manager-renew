@@ -5,7 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from supabase import create_client
 
 from app.core.config import settings
@@ -16,6 +16,7 @@ from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
 from app.models.loyers import LoyerCreate, LoyerResponse
 from app.schemas.assurance_pno import AssurancePnoCreate, AssurancePnoResponse, AssurancePnoUpdate
 from app.schemas.baux import BailCreate, BailResponse, BailUpdate
+from app.schemas.documents import DocumentBienResponse
 from app.schemas.fiche_bien import FicheBienResponse, RentabiliteCalculee
 from app.schemas.frais_agence import FraisAgenceCreate, FraisAgenceResponse
 from app.services.rentabilite_service import calculate_rentabilite
@@ -973,4 +974,115 @@ async def delete_bien_frais_agence(
         raise DatabaseError(str(result.error))
 
     logger.info("frais_agence_deleted", frais_id=frais_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST documents for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/documents", response_model=list[DocumentBienResponse])
+async def list_bien_documents(
+    sci_id: UUID,
+    bien_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste les documents d'un bien."""
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("documents")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    return result.data or []
+
+
+# ──────────────────────────────────────────────────────────────
+# UPLOAD document for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/documents", response_model=DocumentBienResponse, status_code=status.HTTP_201_CREATED)
+async def upload_document(
+    sci_id: UUID,
+    bien_id: str,
+    file: UploadFile = File(...),
+    nom: str = Form(...),
+    categorie: str = Form("autre"),
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Upload un document pour un bien (gérant uniquement)."""
+    logger.info("uploading_document", bien_id=bien_id, sci_id=str(sci_id), nom=nom, categorie=categorie)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Read file content
+    file_content = await file.read()
+    file_ext = file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "bin"
+    import uuid as _uuid
+    storage_path = f"sci-{sci_id}/bien-{bien_id}/{_uuid.uuid4().hex}.{file_ext}"
+
+    # Upload to Supabase Storage bucket "documents"
+    try:
+        client.storage.from_("documents").upload(
+            storage_path,
+            file_content,
+            file_options={"content-type": file.content_type or "application/octet-stream"},
+        )
+    except Exception as exc:
+        logger.error("document_upload_failed", error=str(exc))
+        raise DatabaseError(f"Upload failed: {exc}")
+
+    # Get public URL
+    url = client.storage.from_("documents").get_public_url(storage_path)
+
+    # Insert record into documents table
+    row = {
+        "id_bien": bien_id,
+        "nom": nom,
+        "categorie": categorie,
+        "url": url,
+    }
+    result = client.table("documents").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create document record")
+
+    created = data[0]
+    logger.info("document_uploaded", doc_id=created.get("id"), bien_id=bien_id)
+    return created
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE document
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    sci_id: UUID,
+    bien_id: str,
+    doc_id: int,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Supprime un document (gérant uniquement)."""
+    logger.info("deleting_document", doc_id=doc_id, bien_id=bien_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = client.table("documents").delete().eq("id", doc_id).eq("id_bien", bien_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("document_deleted", doc_id=doc_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

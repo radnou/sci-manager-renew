@@ -8,6 +8,8 @@
 	import FicheBienBail from '$lib/components/fiche-bien/FicheBienBail.svelte';
 	import FicheBienLoyers from '$lib/components/fiche-bien/FicheBienLoyers.svelte';
 	import FicheBienCharges from '$lib/components/fiche-bien/FicheBienCharges.svelte';
+	import FicheBienRentabilite from '$lib/components/fiche-bien/FicheBienRentabilite.svelte';
+	import FicheBienDocuments from '$lib/components/fiche-bien/FicheBienDocuments.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -77,6 +79,13 @@
 				charges={bien.charges_list}
 				assurancePno={bien.assurance_pno}
 				fraisAgence={bien.frais_agence}
+				{isGerant}
+				sciId={sciId}
+				bienId={String(bien.id)}
+			/>
+			<FicheBienRentabilite rentabilite={bien.rentabilite} />
+			<FicheBienDocuments
+				documents={bien.documents}
 				{isGerant}
 				sciId={sciId}
 				bienId={String(bien.id)}

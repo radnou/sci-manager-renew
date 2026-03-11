@@ -287,7 +287,11 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 	}
 
 	const headers = new Headers(options?.headers);
-	if (!headers.has('Content-Type')) {
+	const isFormData = options?.body instanceof FormData;
+	if (isFormData) {
+		// Let the browser set Content-Type with boundary for FormData
+		headers.delete('Content-Type');
+	} else if (!headers.has('Content-Type')) {
 		headers.set('Content-Type', 'application/json');
 	}
 	if (accessToken) {
@@ -819,4 +823,82 @@ export async function fetchBienFraisAgence(sciId: EntityId, bienId: EntityId): P
 
 export async function fetchSciAssociesList(sciId: EntityId): Promise<any[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/associes`);
+}
+
+// --- Notification Preferences ---
+
+export type NotificationPreference = {
+	type: string;
+	email_enabled: boolean;
+	in_app_enabled: boolean;
+};
+
+export async function fetchNotificationPreferences(): Promise<{
+	preferences: NotificationPreference[];
+}> {
+	return apiFetch('/api/v1/user/notification-preferences');
+}
+
+export async function updateNotificationPreferences(
+	preferences: NotificationPreference[]
+): Promise<{ preferences: NotificationPreference[] }> {
+	return apiFetch('/api/v1/user/notification-preferences', {
+		method: 'PUT',
+		body: JSON.stringify({ preferences })
+	});
+}
+
+// --- Finances ---
+
+export type FinancesData = {
+	revenus_total: number;
+	charges_total: number;
+	cashflow_net: number;
+	taux_recouvrement: number;
+	patrimoine_total: number;
+	rentabilite_moyenne: number;
+	evolution_mensuelle: Array<{ mois: string; revenus: number; charges: number }>;
+	repartition_sci: Array<{ sci_nom: string; revenus: number; charges: number }>;
+};
+
+export async function fetchFinances(period?: string): Promise<FinancesData> {
+	const params = period ? `?period=${period}` : '';
+	return apiFetch(`/api/v1/finances${params}`);
+}
+
+// --- Documents Bien ---
+
+export async function fetchBienDocuments(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<DocumentBienEmbed[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/documents`);
+}
+
+export async function uploadDocumentBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	file: File,
+	nom: string,
+	categorie: string = 'autre'
+): Promise<DocumentBienEmbed> {
+	const formData = new FormData();
+	formData.append('file', file);
+	formData.append('nom', nom);
+	formData.append('categorie', categorie);
+
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/documents`, {
+		method: 'POST',
+		body: formData
+	});
+}
+
+export async function deleteDocumentBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	docId: number
+): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/documents/${docId}`, {
+		method: 'DELETE'
+	});
 }

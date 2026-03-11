@@ -1,4 +1,4 @@
-from . import associes, biens, cerfa, charges, dashboard, fiscalite, locataires, loyers, onboarding, quitus, scis, scis_biens, stripe
+from . import associes, biens, cerfa, charges, dashboard, finances, fiscalite, locataires, loyers, notification_preferences, onboarding, quitus, scis, scis_biens, stripe
 
 __all__ = [
     "associes",
@@ -6,9 +6,11 @@ __all__ = [
     "charges",
     "cerfa",
     "dashboard",
+    "finances",
     "fiscalite",
     "locataires",
     "loyers",
+    "notification_preferences",
     "onboarding",
     "quitus",
     "scis",
