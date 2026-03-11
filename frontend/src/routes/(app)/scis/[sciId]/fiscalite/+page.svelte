@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { SCIDetail, Fiscalite } from '$lib/api';
-	import { fetchFiscalite } from '$lib/api';
+	import { fetchFiscalite, generateCerfa2044Pdf } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
-	import { FileText, Calculator, AlertCircle } from 'lucide-svelte';
+	import { FileText, Calculator, Download } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 
 	let exercices: Fiscalite[] = $state([]);
 	let loading = $state(true);
 	let error: string | null = $state(null);
+	let generatingCerfa = $state(false);
+	let cerfaError = $state('');
 
 	$effect(() => {
 		loadFiscalite();
@@ -24,6 +26,26 @@
 			error = err?.message ?? 'Impossible de charger la fiscalité.';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function handleGenerateCerfa(exercice: Fiscalite) {
+		generatingCerfa = true;
+		cerfaError = '';
+		try {
+			const blob = await generateCerfa2044Pdf({
+				annee: exercice.annee,
+				total_revenus: exercice.total_revenus ?? 0,
+				total_charges: exercice.total_charges ?? 0,
+				sci_nom: sci.nom,
+				siren: sci.siren ?? ''
+			});
+			const url = URL.createObjectURL(blob);
+			window.open(url, '_blank');
+		} catch (err: any) {
+			cerfaError = err?.message ?? 'Erreur lors de la génération du CERFA.';
+		} finally {
+			generatingCerfa = false;
 		}
 	}
 
@@ -82,23 +104,56 @@
 		</div>
 	</div>
 
-	<!-- CERFA 2044 Placeholder -->
+	<!-- CERFA 2044 Generation -->
 	<div
-		class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950/20"
+		class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
 	>
-		<div class="flex items-start gap-3">
-			<AlertCircle class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-			<div>
-				<h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300">
-					Déclaration CERFA 2044
-				</h3>
-				<p class="mt-1 text-sm text-amber-700 dark:text-amber-400">
-					La génération automatique du CERFA 2044 (déclaration des revenus fonciers) sera
-					disponible prochainement. En attendant, vous pouvez consulter vos exercices
-					fiscaux ci-dessous.
-				</p>
-			</div>
+		<div class="flex items-center gap-2">
+			<FileText class="h-5 w-5 text-sky-600 dark:text-sky-400" />
+			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+				Déclaration CERFA 2044
+			</h2>
 		</div>
+		<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+			Générez un résumé simplifié de votre déclaration des revenus fonciers au format PDF.
+		</p>
+
+		{#if exercices.length > 0}
+			<div class="mt-4 space-y-2">
+				{#each exercices as ex (ex.id ?? ex.annee)}
+					<div
+						class="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3 dark:border-slate-800"
+					>
+						<div>
+							<span class="font-semibold text-slate-900 dark:text-slate-100"
+								>{ex.annee}</span
+							>
+							<span class="ml-3 text-sm text-slate-500">
+								Revenus {formatEur(ex.total_revenus ?? 0)} — Charges {formatEur(
+									ex.total_charges ?? 0
+								)}
+							</span>
+						</div>
+						<button
+							class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+							disabled={generatingCerfa}
+							onclick={() => handleGenerateCerfa(ex)}
+						>
+							<Download class="h-3.5 w-3.5" />
+							{generatingCerfa ? 'Génération…' : 'CERFA 2044'}
+						</button>
+					</div>
+				{/each}
+			</div>
+		{:else if !loading}
+			<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+				Ajoutez un exercice fiscal pour pouvoir générer le CERFA 2044.
+			</p>
+		{/if}
+
+		{#if cerfaError}
+			<p class="mt-3 text-sm text-rose-600 dark:text-rose-400">{cerfaError}</p>
+		{/if}
 	</div>
 
 	<!-- Exercices fiscaux -->

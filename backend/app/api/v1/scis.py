@@ -6,9 +6,7 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, ConfigDict, Field
-from supabase import create_client
-
-from app.core.config import settings
+from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.core.security import get_current_user
@@ -83,7 +81,7 @@ class SCIDetail(SCIOverview):
 
 
 def _get_client():
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return get_supabase_service_client()
 
 
 def _execute_select(query):

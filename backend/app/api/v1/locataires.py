@@ -4,9 +4,7 @@ from datetime import date
 
 import structlog
 from fastapi import APIRouter, Depends, Response, status
-from supabase import create_client
-
-from app.core.config import settings
+from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -23,7 +21,7 @@ router = APIRouter(prefix="/locataires", tags=["locataires"])
 
 
 def _get_client():
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return get_supabase_service_client()
 
 
 def _get_user_sci_ids(client, user_id: str) -> list[str]:

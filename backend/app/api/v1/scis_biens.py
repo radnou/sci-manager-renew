@@ -6,9 +6,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
-from supabase import create_client
-
-from app.core.config import settings
+from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.models.biens import BienCreate, BienResponse, BienUpdate
@@ -27,7 +25,7 @@ router = APIRouter(prefix="/scis/{sci_id}/biens", tags=["scis-biens"])
 
 
 def _get_client():
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return get_supabase_service_client()
 
 
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:

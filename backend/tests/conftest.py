@@ -314,13 +314,6 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     from app.services import subscription_service
     from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
-    fake_create = lambda *_args, **_kwargs: fake_supabase
-
-    # Patch create_client in all modules that use it directly
-    for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
-                notifications, dashboard, scis_biens, notification_preferences]:
-        monkeypatch.setattr(mod, "create_client", fake_create)
-
     monkeypatch.setattr(quitus, "storage_service", fake_storage)
 
     # Patch get_supabase_service_client everywhere it's used
@@ -328,6 +321,11 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     def fake_service():
         return fake_supabase
     fake_service.cache_clear = lambda: None
+
+    # Patch all 12 API modules that now use get_supabase_service_client via _get_client()
+    for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
+                notifications, dashboard, scis_biens, notification_preferences]:
+        monkeypatch.setattr(mod, "get_supabase_service_client", fake_service)
 
     def fake_anon():
         return fake_supabase

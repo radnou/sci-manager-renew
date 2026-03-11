@@ -526,6 +526,22 @@ export function downloadQuitus(filePath: string) {
 	return apiFetchBlob(filePath);
 }
 
+export interface Cerfa2044Request {
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+	sci_nom?: string;
+	siren?: string;
+}
+
+export function generateCerfa2044Pdf(payload: Cerfa2044Request): Promise<Blob> {
+	return apiFetchBlob('/api/v1/cerfa/2044/pdf', {
+		method: 'POST',
+		body: JSON.stringify(payload),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
 export function createCheckoutSession(payload: CheckoutSessionRequestPayload) {
 	return apiFetch<CheckoutSessionResponsePayload>('/api/v1/stripe/create-checkout-session', {
 		method: 'POST',

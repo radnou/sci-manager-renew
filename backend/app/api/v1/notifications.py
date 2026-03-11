@@ -6,9 +6,7 @@ from typing import Optional
 import structlog
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
-from supabase import create_client
-
-from app.core.config import settings
+from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError
 from app.core.security import get_current_user
 
@@ -18,7 +16,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 def _get_client():
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return get_supabase_service_client()
 
 
 class NotificationResponse(BaseModel):

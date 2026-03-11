@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import structlog
 from fastapi import APIRouter, Depends, Response, status
-from supabase import create_client
-
-from app.core.config import settings
+from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import AuthorizationError, DatabaseError, ResourceNotFoundError
 from app.core.security import get_current_user
 from app.models.biens import BienCreate, BienResponse, BienUpdate
@@ -17,7 +15,7 @@ router = APIRouter(prefix="/biens", tags=["biens"])
 
 
 def _get_client():
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return get_supabase_service_client()
 
 
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
