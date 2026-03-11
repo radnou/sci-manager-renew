@@ -78,7 +78,7 @@
 	></div>
 
 	<!-- Palette -->
-	<div class="fixed inset-x-0 top-[15vh] z-[101] mx-auto w-full max-w-lg px-4">
+	<div class="fixed inset-x-0 top-[15vh] z-[101] mx-auto w-full max-w-lg px-4" role="dialog" aria-label="Palette de commandes">
 		<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
 			<div class="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
 				<Search class="h-4 w-4 text-slate-400" />
@@ -88,19 +88,27 @@
 					placeholder="Rechercher une page..."
 					class="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none dark:text-slate-100"
 					autofocus
+					role="combobox"
+					aria-expanded={filtered.length > 0}
+					aria-controls="command-palette-listbox"
+					aria-autocomplete="list"
+					aria-activedescendant={filtered[selectedIndex] ? `command-option-${selectedIndex}` : undefined}
 				/>
 				<kbd class="hidden rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline dark:border-slate-700 dark:bg-slate-900">
 					Esc
 				</kbd>
 			</div>
 
-			<div class="max-h-72 overflow-y-auto py-2">
+			<div class="max-h-72 overflow-y-auto py-2" id="command-palette-listbox" role="listbox" aria-label="Résultats de recherche">
 				{#if filtered.length === 0}
 					<p class="px-4 py-6 text-center text-sm text-slate-500">Aucun résultat</p>
 				{:else}
 					{#each filtered as command, i}
 						<button
 							type="button"
+							id="command-option-{i}"
+							role="option"
+							aria-selected={i === selectedIndex}
 							class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors {i === selectedIndex
 								? 'bg-slate-100 dark:bg-slate-900'
 								: 'hover:bg-slate-50 dark:hover:bg-slate-900/50'}"

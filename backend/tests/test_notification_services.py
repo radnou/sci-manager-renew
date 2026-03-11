@@ -451,7 +451,7 @@ class TestCheckExpiringPno:
     async def test_returns_zero_when_no_expiring_pno(self):
         """No PNO policies expiring within 30 days → 0 notifications."""
         client = make_client([])
-        client.store.setdefault("assurance_pno", [])
+        client.store.setdefault("assurances_pno", [])
 
         with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
             from app.services.notification_cron import check_expiring_pno
@@ -467,7 +467,7 @@ class TestCheckExpiringPno:
 
         client = make_client([])
         soon = (datetime.now(timezone.utc) + timedelta(days=15)).strftime("%Y-%m-%d")
-        client.store["assurance_pno"] = [
+        client.store["assurances_pno"] = [
             {
                 "id": "pno-1",
                 "id_bien": "bien-1",
@@ -495,7 +495,7 @@ class TestCheckExpiringPno:
 
         client = make_client([])
         soon = (datetime.now(timezone.utc) + timedelta(days=5)).strftime("%Y-%m-%d")
-        client.store["assurance_pno"] = [
+        client.store["assurances_pno"] = [
             {
                 "id": "pno-orphan",
                 "id_bien": "bien-x",

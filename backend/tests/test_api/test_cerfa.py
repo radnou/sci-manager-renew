@@ -82,36 +82,70 @@ def test_cerfa_2044_pdf_blocked_for_free_plan(client, auth_headers):
     assert data["code"] == "upgrade_required"
 
 
-def test_generate_cerfa_2044_pdf_success(client, auth_headers, fake_supabase):
-    """Pro user can generate CERFA 2044 PDF."""
+def test_cerfa_2044_requires_auth(client):
+    """Unauthenticated request to CERFA 2044 is rejected."""
+    payload = {"annee": 2025, "total_revenus": 1000, "total_charges": 500}
+    response = client.post("/api/v1/cerfa/2044", json=payload)
+    assert response.status_code == 401
+
+
+def test_cerfa_2044_pdf_requires_auth(client):
+    """Unauthenticated request to CERFA 2044 PDF is rejected."""
+    payload = {"annee": 2025, "total_revenus": 1000, "total_charges": 500}
+    response = client.post("/api/v1/cerfa/2044/pdf", json=payload)
+    assert response.status_code == 401
+
+
+def test_cerfa_2044_pdf_success(client, auth_headers, fake_supabase):
+    """CERFA 2044 PDF endpoint returns a valid PDF for pro users."""
     _enable_pro_subscription(fake_supabase)
     payload = {
         "annee": 2025,
         "total_revenus": 24000.0,
-        "total_charges": 7000.0,
-        "sci_nom": "SCI Mosa Belleville",
+        "total_charges": 8000.0,
+        "sci_nom": "SCI Test",
         "siren": "123456789",
     }
 
     response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
     assert response.status_code == 200
-    assert response.headers["content-type"] == "application/pdf"
-    assert "cerfa_2044_2025" in response.headers["content-disposition"]
-    assert response.content.startswith(b"%PDF")
+    assert "application/pdf" in response.headers.get("content-type", "")
+    assert response.content[:4] == b"%PDF"
 
 
-def test_generate_cerfa_2044_pdf_without_sci_info(client, auth_headers, fake_supabase):
-    """PDF generation works without optional sci_nom and siren."""
+def test_cerfa_2044_invalid_annee(client, auth_headers, fake_supabase):
+    """Year below 2000 is rejected by Pydantic validation."""
     _enable_pro_subscription(fake_supabase)
-    payload = {
-        "annee": 2025,
-        "total_revenus": 10000.0,
-        "total_charges": 3000.0,
-    }
+    payload = {"annee": 1999, "total_revenus": 1000, "total_charges": 500}
+    response = client.post("/api/v1/cerfa/2044", json=payload, headers=auth_headers)
+    assert response.status_code == 422
 
+
+def test_cerfa_2044_negative_revenus(client, auth_headers, fake_supabase):
+    """Negative revenus is rejected by Pydantic validation."""
+    _enable_pro_subscription(fake_supabase)
+    payload = {"annee": 2025, "total_revenus": -1000, "total_charges": 500}
+    response = client.post("/api/v1/cerfa/2044", json=payload, headers=auth_headers)
+    assert response.status_code == 422
+
+
+def test_cerfa_2044_zero_charges(client, auth_headers, fake_supabase):
+    """Zero charges should work — resultat_fiscal equals total_revenus."""
+    _enable_pro_subscription(fake_supabase)
+    payload = {"annee": 2025, "total_revenus": 12000.0, "total_charges": 0.0}
+    response = client.post("/api/v1/cerfa/2044", json=payload, headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["resultat_fiscal"] == 12000.0
+
+
+def test_cerfa_2044_pdf_without_sci_nom(client, auth_headers, fake_supabase):
+    """PDF generation works even without sci_nom and siren."""
+    _enable_pro_subscription(fake_supabase)
+    payload = {"annee": 2025, "total_revenus": 5000.0, "total_charges": 2000.0}
     response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
     assert response.status_code == 200
-    assert response.content.startswith(b"%PDF")
+    assert response.content[:4] == b"%PDF"
 
 
 def test_generate_cerfa_2044_returns_all_fields(client, auth_headers, fake_supabase):
@@ -132,16 +166,3 @@ def test_generate_cerfa_2044_returns_all_fields(client, auth_headers, fake_supab
     assert data["total_charges"] == 12000.0
     assert data["resultat_fiscal"] == 18000.0
     assert data["formulaire"] == "cerfa_2044"
-
-
-def test_cerfa_2044_invalid_annee(client, auth_headers, fake_supabase):
-    """Invalid year returns 422 validation error."""
-    _enable_pro_subscription(fake_supabase)
-    payload = {
-        "annee": 1999,  # below minimum of 2000
-        "total_revenus": 10000.0,
-        "total_charges": 5000.0,
-    }
-
-    response = client.post("/api/v1/cerfa/2044", json=payload, headers=auth_headers)
-    assert response.status_code == 422

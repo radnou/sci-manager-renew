@@ -37,6 +37,8 @@
 		class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 		onclick={() => (open = !open)}
 		aria-label="Notifications"
+		aria-haspopup="dialog"
+		aria-expanded={open}
 	>
 		<Bell class="h-4.5 w-4.5" />
 		{#if $notifications.unreadCount > 0}
@@ -66,7 +68,7 @@
 				{/if}
 			</div>
 
-			<div class="max-h-80 overflow-y-auto">
+			<div class="max-h-80 overflow-y-auto" role="list" aria-label="Liste des notifications">
 				{#if $notifications.items.length === 0}
 					<div class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
 						Aucune notification
@@ -75,6 +77,7 @@
 					{#each $notifications.items as notification (notification.id)}
 						<button
 							type="button"
+							role="listitem"
 							class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900 {notification.read_at ? 'opacity-60' : ''}"
 							onclick={() => {
 								if (!notification.read_at) notifications.markRead(notification.id);

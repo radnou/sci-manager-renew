@@ -857,7 +857,7 @@ export async function attachLocataireToBail(
 	bienId: EntityId,
 	bailId: number,
 	locataireId: number
-): Promise<any> {
+): Promise<{ bail_id: number; locataire_id: number }> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires`, {
 		method: 'POST',
 		body: JSON.stringify({ locataire_id: locataireId }),
