@@ -145,3 +145,42 @@ def test_create_sci_creates_membership(client, auth_headers, fake_supabase):
     created_membership = next(row for row in associes if row["id_sci"] == payload["id"])
     assert created_membership["user_id"] == "user-123"
     assert created_membership["role"] == "gerant"
+
+
+def test_update_sci_patch(client, auth_headers):
+    response = client.patch(
+        "/api/v1/scis/sci-1",
+        json={"nom": "SCI Mosa Belleville Renommée"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["nom"] == "SCI Mosa Belleville Renommée"
+
+
+def test_update_sci_empty_payload(client, auth_headers):
+    response = client.patch(
+        "/api/v1/scis/sci-1",
+        json={},
+        headers=auth_headers,
+    )
+    assert response.status_code == 404
+
+
+def test_update_sci_requires_gerant(client, auth_headers):
+    response = client.patch(
+        "/api/v1/scis/sci-2",
+        json={"nom": "Nope"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 403
+
+
+def test_delete_sci(client, auth_headers):
+    response = client.delete("/api/v1/scis/sci-1", headers=auth_headers)
+    assert response.status_code == 204
+
+
+def test_delete_sci_requires_gerant(client, auth_headers):
+    response = client.delete("/api/v1/scis/sci-2", headers=auth_headers)
+    assert response.status_code == 403

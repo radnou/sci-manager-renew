@@ -14,7 +14,7 @@ from app.core.paywall import AssocieMembership, require_gerant_role, require_sci
 from app.core.security import get_current_user
 from app.models.biens import BienResponse
 from app.models.loyers import LoyerResponse
-from app.models.sci import SCICreate, SCIResponse
+from app.models.sci import SCICreate, SCIResponse, SCIUpdate
 from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/scis", tags=["scis"])
@@ -294,6 +294,91 @@ async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user
 
     logger.info("sci_created", user_id=user_id, sci_id=created.get("id"), plan_key=plan_key)
     return created
+
+
+# ──────────────────────────────────────────────────────────────
+# UPDATE a SCI
+# ──────────────────────────────────────────────────────────────
+
+async def _require_gerant_for_sci(sci_id: str, user_id: str = Depends(get_current_user)) -> str:
+    """Verify user is gérant of the given SCI. Returns user_id."""
+    client = _get_client()
+    rows = _execute_select(
+        client.table("associes").select("role").eq("id_sci", sci_id).eq("user_id", user_id)
+    )
+    if not rows:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SCI non trouvée")
+    if rows[0].get("role") != "gerant":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Réservé au gérant")
+    return user_id
+
+
+@router.patch("/{sci_id}", response_model=SCIResponse)
+async def update_sci(
+    sci_id: str,
+    payload: SCIUpdate,
+    user_id: str = Depends(get_current_user),
+):
+    """Met à jour une SCI (gérant uniquement)."""
+    await _require_gerant_for_sci(sci_id, user_id)
+
+    updates = payload.model_dump(exclude_none=True)
+    if not updates:
+        raise ResourceNotFoundError("SCI", sci_id)
+
+    client = _get_client()
+    result = client.table("sci").update(updates).eq("id", sci_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    rows = result.data or []
+    if not rows:
+        raise ResourceNotFoundError("SCI", sci_id)
+
+    logger.info("sci_updated", sci_id=sci_id, fields=list(updates.keys()))
+    return rows[0]
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE a SCI
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{sci_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_sci(
+    sci_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Supprime une SCI et toutes ses données associées (gérant uniquement)."""
+    await _require_gerant_for_sci(sci_id, user_id)
+
+    client = _get_client()
+
+    # Delete biens-linked tables via bien IDs first
+    biens_rows = _execute_select(client.table("biens").select("id").eq("id_sci", sci_id))
+    bien_ids = [str(row["id"]) for row in biens_rows if row.get("id")]
+    if bien_ids:
+        for table in ["charges", "loyers", "baux", "documents", "assurance_pno", "frais_agence"]:
+            for bid in bien_ids:
+                try:
+                    client.table(table).delete().eq("id_bien", bid).execute()
+                except Exception:
+                    pass
+
+    # Delete direct children by id_sci
+    for table in ["biens", "associes", "fiscalite", "notifications"]:
+        try:
+            client.table(table).delete().eq("id_sci", sci_id).execute()
+        except Exception:
+            pass
+
+    # Finally delete the SCI itself
+    result = client.table("sci").delete().eq("id", sci_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("sci_deleted", sci_id=sci_id)
 
 
 # ──────────────────────────────────────────────────────────────
