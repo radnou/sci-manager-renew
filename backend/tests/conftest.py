@@ -273,7 +273,7 @@ def fake_supabase() -> FakeSupabaseClient:
 
 @pytest.fixture(autouse=True)
 def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
-    from app.api.v1 import associes, biens, charges, fiscalite, locataires, loyers, notifications, quitus, scis
+    from app.api.v1 import associes, biens, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
     from app.api.v1 import dashboard, scis_biens, notification_preferences
     from app import main
     from app.api.v1 import auth, gdpr, stripe, onboarding, finances
@@ -283,7 +283,7 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     fake_create = lambda *_args, **_kwargs: fake_supabase
 
     # Patch create_client in all modules that use it directly
-    for mod in [associes, biens, charges, fiscalite, loyers, locataires, scis,
+    for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
                 notifications, dashboard, scis_biens, notification_preferences]:
         monkeypatch.setattr(mod, "create_client", fake_create)
 

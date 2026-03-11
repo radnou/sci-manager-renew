@@ -147,7 +147,7 @@ async def check_expiring_pno(supabase_client) -> int:
     horizon = (datetime.now(timezone.utc) + timedelta(days=30)).strftime("%Y-%m-%d")
 
     result = (
-        supabase_client.table("assurance_pno")
+        supabase_client.table("assurances_pno")
         .select("id, id_bien, assureur, date_fin, biens(id_sci, adresse, ville)")
         .gte("date_fin", now)
         .lte("date_fin", horizon)

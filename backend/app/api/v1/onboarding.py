@@ -21,6 +21,7 @@ logger = structlog.get_logger(__name__)
 class OnboardingStatus(BaseModel):
     completed: bool
     sci_created: bool
+    sci_id: str | None = None
     bien_created: bool
     bail_created: bool
     notifications_set: bool
@@ -54,6 +55,7 @@ def _check_onboarding_progress(user_id: str) -> OnboardingStatus:
         .execute()
     )
     sci_created = bool(sci_result.data)
+    first_sci_id = str(sci_result.data[0]["id_sci"]) if sci_result.data else None
 
     # Check if user has at least one bien (via SCI membership)
     bien_created = False
@@ -108,6 +110,7 @@ def _check_onboarding_progress(user_id: str) -> OnboardingStatus:
     return OnboardingStatus(
         completed=completed,
         sci_created=sci_created,
+        sci_id=first_sci_id,
         bien_created=bien_created,
         bail_created=bail_created,
         notifications_set=notifications_set,

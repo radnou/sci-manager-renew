@@ -571,6 +571,7 @@ export function markAllNotificationsRead(): Promise<{ updated: number }> {
 export type OnboardingStatus = {
 	completed: boolean;
 	sci_created: boolean;
+	sci_id: string | null;
 	bien_created: boolean;
 	bail_created: boolean;
 	notifications_set: boolean;

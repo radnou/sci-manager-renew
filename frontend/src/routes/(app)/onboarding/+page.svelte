@@ -51,8 +51,11 @@
 				goto('/dashboard');
 				return;
 			}
-			// Resume at the right step
-			if (status.sci_created) currentStep = 2;
+			// Resume at the right step, restoring createdSciId from status
+			if (status.sci_created) {
+				currentStep = 2;
+				if (status.sci_id) createdSciId = String(status.sci_id);
+			}
 			if (status.bien_created) currentStep = 3;
 			if (status.bail_created) currentStep = 4;
 			if (status.notifications_set) currentStep = 5;

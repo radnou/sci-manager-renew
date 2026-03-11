@@ -19,10 +19,7 @@
 	const commands = [
 		{ label: 'Dashboard', description: 'Tableau de bord', icon: LayoutDashboard, href: '/dashboard' },
 		{ label: 'SCI', description: 'Gérer les sociétés', icon: Building2, href: '/scis' },
-		{ label: 'Biens', description: 'Patrimoine immobilier', icon: Building2, href: '/biens' },
-		{ label: 'Loyers', description: 'Suivi des encaissements', icon: HandCoins, href: '/loyers' },
-		{ label: 'Documents', description: 'Quittances et CERFA', icon: FileText, href: '/documents' },
-		{ label: 'Fiscalité', description: 'Exercices et résultats', icon: Calculator, href: '/fiscalite' },
+		{ label: 'Finances', description: 'Vue financière consolidée', icon: HandCoins, href: '/finances' },
 		{ label: 'Tarifs', description: 'Plans et abonnements', icon: HandCoins, href: '/pricing' },
 		{ label: 'Paramètres', description: 'Configuration du compte', icon: Settings, href: '/settings' },
 		{ label: 'Compte', description: 'Profil utilisateur', icon: User, href: '/account' }

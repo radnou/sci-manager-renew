@@ -257,7 +257,7 @@ async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)):
 
         logger.info("loyer_deleted", loyer_id=loyer_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except GererSCIException:
+    except SCIManagerException:
         raise
     except Exception as exc:
         logger.error("delete_loyer_failed", user_id=user_id, loyer_id=loyer_id, error=str(exc), exc_info=True)
@@ -267,11 +267,10 @@ async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)):
 @router.get("/stats")
 async def loyer_stats(
     months: int = 12,
-    user: dict = Depends(get_current_user),
+    user_id: str = Depends(get_current_user),
 ):
     """Return monthly aggregated loyer stats for the current user."""
     client = _get_client()
-    user_id = user["sub"]
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if not user_sci_ids:
