@@ -747,7 +747,7 @@ async def create_bien_charge(
 
     row = payload.model_dump(mode="json")
     row["id_bien"] = bien_id
-    row["id_sci"] = str(sci_id)
+    # Note: charges table has no id_sci column — scoping is via id_bien → biens.id_sci
 
     result = client.table("charges").insert(row).execute()
     if getattr(result, "error", None):

@@ -81,7 +81,8 @@ async def create_bien(payload: BienCreate, user_id: str = Depends(get_current_us
     _require_sci_access(user_sci_ids, payload.id_sci)
 
     row = payload.model_dump(mode="json")
-    row.update(SCIService.calculate_rentabilite(row))
+    # Calculate rentabilite for response only (not DB columns)
+    rentabilite = SCIService.calculate_rentabilite(row)
 
     result = client.table("biens").insert(row).execute()
     if getattr(result, "error", None):
@@ -92,6 +93,7 @@ async def create_bien(payload: BienCreate, user_id: str = Depends(get_current_us
         raise DatabaseError("Unable to create bien")
 
     created = data[0]
+    created.update(rentabilite)
     logger.info("bien_created", bien_id=created.get("id"), plan_key=summary.get("plan_key"))
     return created
 
@@ -119,10 +121,11 @@ async def update_bien(bien_id: str, payload: BienUpdate, user_id: str = Depends(
     existing_sci_id = str(existing.get("id_sci") or "")
     _require_sci_access(user_sci_ids, existing_sci_id)
 
-    # Keep derived profitability fields in sync when economic inputs change.
+    # Calculate rentabilite for response only (not DB columns)
+    rentabilite = {}
     if any(key in update_payload for key in ("loyer_cc", "charges", "prix_acquisition")):
         merged = {**existing, **update_payload}
-        update_payload.update(SCIService.calculate_rentabilite(merged))
+        rentabilite = SCIService.calculate_rentabilite(merged)
 
     result = client.table("biens").update(update_payload).eq("id", bien_id).execute()
 
@@ -133,8 +136,11 @@ async def update_bien(bien_id: str, payload: BienUpdate, user_id: str = Depends(
     if not data:
         raise ResourceNotFoundError("Bien", bien_id)
 
+    updated = data[0]
+    if rentabilite:
+        updated.update(rentabilite)
     logger.info("bien_updated", bien_id=bien_id)
-    return data[0]
+    return updated
 
 
 @router.delete("/{bien_id}", status_code=status.HTTP_204_NO_CONTENT)
