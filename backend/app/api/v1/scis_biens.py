@@ -12,8 +12,12 @@ from app.core.config import settings
 from app.core.exceptions import DatabaseError, ResourceNotFoundError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.models.biens import BienCreate, BienResponse, BienUpdate
+from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
 from app.models.loyers import LoyerCreate, LoyerResponse
+from app.schemas.assurance_pno import AssurancePnoCreate, AssurancePnoResponse, AssurancePnoUpdate
+from app.schemas.baux import BailCreate, BailResponse, BailUpdate
 from app.schemas.fiche_bien import FicheBienResponse, RentabiliteCalculee
+from app.schemas.frais_agence import FraisAgenceCreate, FraisAgenceResponse
 from app.services.rentabilite_service import calculate_rentabilite
 
 logger = structlog.get_logger(__name__)
@@ -357,3 +361,616 @@ async def create_bien_loyer(
     created = data[0]
     logger.info("loyer_created_nested", loyer_id=created.get("id"), bien_id=bien_id)
     return created
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST baux for a bien (history)
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/baux", response_model=list[BailResponse])
+async def list_bien_baux(
+    sci_id: UUID,
+    bien_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste tous les baux d'un bien (historique complet)."""
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("baux")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .order("date_debut", desc=True)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    baux = result.data or []
+
+    # Enrich each bail with its locataires via bail_locataires join table
+    for bail in baux:
+        bail_id = bail.get("id")
+        locataires = []
+        if bail_id:
+            loc_result = (
+                client.table("bail_locataires")
+                .select("locataire_id")
+                .eq("bail_id", bail_id)
+                .execute()
+            )
+            if not getattr(loc_result, "error", None) and loc_result.data:
+                loc_ids = [row["locataire_id"] for row in loc_result.data]
+                for loc_id in loc_ids:
+                    loc_detail = (
+                        client.table("locataires")
+                        .select("id, nom, prenom, email, telephone")
+                        .eq("id", loc_id)
+                        .execute()
+                    )
+                    if not getattr(loc_detail, "error", None) and loc_detail.data:
+                        locataires.append(loc_detail.data[0])
+        bail["locataires"] = locataires
+
+    return baux
+
+
+# ──────────────────────────────────────────────────────────────
+# CREATE bail for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/baux", response_model=BailResponse, status_code=status.HTTP_201_CREATED)
+async def create_bien_bail(
+    sci_id: UUID,
+    bien_id: str,
+    payload: BailCreate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Crée un bail pour un bien (gérant uniquement). Expire le bail en_cours existant."""
+    logger.info("creating_bail", bien_id=bien_id, sci_id=str(sci_id))
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # 1. Expire existing en_cours bail
+    existing = (
+        client.table("baux")
+        .select("id")
+        .eq("id_bien", bien_id)
+        .eq("statut", "en_cours")
+        .execute()
+    )
+    if not getattr(existing, "error", None) and existing.data:
+        for old_bail in existing.data:
+            client.table("baux").update({"statut": "expire"}).eq("id", old_bail["id"]).execute()
+            logger.info("bail_expired", bail_id=old_bail["id"])
+
+    # 2. Insert new bail
+    locataire_ids = payload.locataire_ids
+    row = payload.model_dump(mode="json", exclude={"locataire_ids"})
+    row["id_bien"] = bien_id
+    row["statut"] = "en_cours"
+
+    result = client.table("baux").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create bail")
+
+    created = data[0]
+    bail_id = created["id"]
+
+    # 3. Attach locataires via bail_locataires join table
+    locataires = []
+    for loc_id in locataire_ids:
+        join_row = {"bail_id": bail_id, "locataire_id": loc_id}
+        client.table("bail_locataires").insert(join_row).execute()
+        loc_detail = (
+            client.table("locataires")
+            .select("id, nom, prenom, email, telephone")
+            .eq("id", loc_id)
+            .execute()
+        )
+        if not getattr(loc_detail, "error", None) and loc_detail.data:
+            locataires.append(loc_detail.data[0])
+
+    created["locataires"] = locataires
+    logger.info("bail_created", bail_id=bail_id, bien_id=bien_id, locataires_count=len(locataire_ids))
+    return created
+
+
+# ──────────────────────────────────────────────────────────────
+# UPDATE bail
+# ──────────────────────────────────────────────────────────────
+
+@router.patch("/{bien_id}/baux/{bail_id}", response_model=BailResponse)
+async def update_bien_bail(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: int,
+    payload: BailUpdate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Met à jour un bail (gérant uniquement)."""
+    update_payload = payload.model_dump(exclude_unset=True, mode="json")
+    logger.info("updating_bail", bail_id=bail_id, bien_id=bien_id, fields=list(update_payload.keys()))
+
+    if not update_payload:
+        raise DatabaseError("No update fields provided")
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("baux")
+        .update(update_payload)
+        .eq("id", bail_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("Bail", str(bail_id))
+
+    bail = data[0]
+
+    # Fetch locataires
+    loc_result = (
+        client.table("bail_locataires")
+        .select("locataire_id")
+        .eq("bail_id", bail_id)
+        .execute()
+    )
+    locataires = []
+    if not getattr(loc_result, "error", None) and loc_result.data:
+        for row in loc_result.data:
+            loc_detail = (
+                client.table("locataires")
+                .select("id, nom, prenom, email, telephone")
+                .eq("id", row["locataire_id"])
+                .execute()
+            )
+            if not getattr(loc_detail, "error", None) and loc_detail.data:
+                locataires.append(loc_detail.data[0])
+
+    bail["locataires"] = locataires
+    logger.info("bail_updated", bail_id=bail_id)
+    return bail
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE bail
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/baux/{bail_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bien_bail(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: int,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Supprime un bail (gérant uniquement)."""
+    logger.info("deleting_bail", bail_id=bail_id, bien_id=bien_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Delete join table entries first
+    client.table("bail_locataires").delete().eq("bail_id", bail_id).execute()
+
+    result = client.table("baux").delete().eq("id", bail_id).eq("id_bien", bien_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("bail_deleted", bail_id=bail_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# ATTACH locataire to bail
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/baux/{bail_id}/locataires", status_code=status.HTTP_201_CREATED)
+async def attach_locataire_to_bail(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: int,
+    body: dict,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Attache un locataire à un bail (colocation)."""
+    locataire_id = body.get("locataire_id")
+    if not locataire_id:
+        raise DatabaseError("locataire_id is required")
+
+    logger.info("attaching_locataire", bail_id=bail_id, locataire_id=locataire_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Verify bail exists for this bien
+    bail_result = client.table("baux").select("id").eq("id", bail_id).eq("id_bien", bien_id).execute()
+    if not bail_result.data:
+        raise ResourceNotFoundError("Bail", str(bail_id))
+
+    join_row = {"bail_id": bail_id, "locataire_id": locataire_id}
+    result = client.table("bail_locataires").insert(join_row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("locataire_attached", bail_id=bail_id, locataire_id=locataire_id)
+    return {"bail_id": bail_id, "locataire_id": locataire_id}
+
+
+# ──────────────────────────────────────────────────────────────
+# DETACH locataire from bail
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/baux/{bail_id}/locataires/{locataire_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def detach_locataire_from_bail(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: int,
+    locataire_id: int,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Détache un locataire d'un bail."""
+    logger.info("detaching_locataire", bail_id=bail_id, locataire_id=locataire_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("bail_locataires")
+        .delete()
+        .eq("bail_id", bail_id)
+        .eq("locataire_id", locataire_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("locataire_detached", bail_id=bail_id, locataire_id=locataire_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST charges for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/charges", response_model=list[ChargeResponse])
+async def list_bien_charges(
+    sci_id: UUID,
+    bien_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste les charges d'un bien."""
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("charges")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .order("date_paiement", desc=True)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    return result.data or []
+
+
+# ──────────────────────────────────────────────────────────────
+# CREATE charge for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/charges", response_model=ChargeResponse, status_code=status.HTTP_201_CREATED)
+async def create_bien_charge(
+    sci_id: UUID,
+    bien_id: str,
+    payload: ChargeCreate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Crée une charge pour un bien (gérant uniquement)."""
+    logger.info("creating_charge", bien_id=bien_id, sci_id=str(sci_id))
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    row = payload.model_dump(mode="json")
+    row["id_bien"] = bien_id
+    row["id_sci"] = str(sci_id)
+
+    result = client.table("charges").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create charge")
+
+    created = data[0]
+    logger.info("charge_created", charge_id=created.get("id"), bien_id=bien_id)
+    return created
+
+
+# ──────────────────────────────────────────────────────────────
+# UPDATE charge
+# ──────────────────────────────────────────────────────────────
+
+@router.patch("/{bien_id}/charges/{charge_id}", response_model=ChargeResponse)
+async def update_bien_charge(
+    sci_id: UUID,
+    bien_id: str,
+    charge_id: str,
+    payload: ChargeUpdate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Met à jour une charge (gérant uniquement)."""
+    update_payload = payload.model_dump(exclude_unset=True, mode="json")
+    logger.info("updating_charge", charge_id=charge_id, bien_id=bien_id, fields=list(update_payload.keys()))
+
+    if not update_payload:
+        raise DatabaseError("No update fields provided")
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("charges")
+        .update(update_payload)
+        .eq("id", charge_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("Charge", charge_id)
+
+    logger.info("charge_updated", charge_id=charge_id)
+    return data[0]
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE charge
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/charges/{charge_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bien_charge(
+    sci_id: UUID,
+    bien_id: str,
+    charge_id: str,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Supprime une charge (gérant uniquement)."""
+    logger.info("deleting_charge", charge_id=charge_id, bien_id=bien_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = client.table("charges").delete().eq("id", charge_id).eq("id_bien", bien_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("charge_deleted", charge_id=charge_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# GET assurance PNO for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/assurance-pno", response_model=list[AssurancePnoResponse])
+async def list_bien_assurance_pno(
+    sci_id: UUID,
+    bien_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste les assurances PNO d'un bien."""
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("assurances_pno")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .order("date_debut", desc=True)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    return result.data or []
+
+
+# ──────────────────────────────────────────────────────────────
+# CREATE assurance PNO
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/assurance-pno", response_model=AssurancePnoResponse, status_code=status.HTTP_201_CREATED)
+async def create_bien_assurance_pno(
+    sci_id: UUID,
+    bien_id: str,
+    payload: AssurancePnoCreate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Crée une assurance PNO pour un bien (gérant uniquement)."""
+    logger.info("creating_assurance_pno", bien_id=bien_id, sci_id=str(sci_id))
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    row = payload.model_dump(mode="json")
+    row["id_bien"] = bien_id
+
+    result = client.table("assurances_pno").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create assurance PNO")
+
+    created = data[0]
+    logger.info("assurance_pno_created", pno_id=created.get("id"), bien_id=bien_id)
+    return created
+
+
+# ──────────────────────────────────────────────────────────────
+# UPDATE assurance PNO
+# ──────────────────────────────────────────────────────────────
+
+@router.patch("/{bien_id}/assurance-pno/{pno_id}", response_model=AssurancePnoResponse)
+async def update_bien_assurance_pno(
+    sci_id: UUID,
+    bien_id: str,
+    pno_id: int,
+    payload: AssurancePnoUpdate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Met à jour une assurance PNO (gérant uniquement)."""
+    update_payload = payload.model_dump(exclude_unset=True, mode="json")
+    logger.info("updating_assurance_pno", pno_id=pno_id, bien_id=bien_id, fields=list(update_payload.keys()))
+
+    if not update_payload:
+        raise DatabaseError("No update fields provided")
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("assurances_pno")
+        .update(update_payload)
+        .eq("id", pno_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("AssurancePno", str(pno_id))
+
+    logger.info("assurance_pno_updated", pno_id=pno_id)
+    return data[0]
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE assurance PNO
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/assurance-pno/{pno_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bien_assurance_pno(
+    sci_id: UUID,
+    bien_id: str,
+    pno_id: int,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Supprime une assurance PNO (gérant uniquement)."""
+    logger.info("deleting_assurance_pno", pno_id=pno_id, bien_id=bien_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = client.table("assurances_pno").delete().eq("id", pno_id).eq("id_bien", bien_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("assurance_pno_deleted", pno_id=pno_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST frais agence for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/frais-agence", response_model=list[FraisAgenceResponse])
+async def list_bien_frais_agence(
+    sci_id: UUID,
+    bien_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste les frais d'agence d'un bien."""
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("frais_agence")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .order("date_frais", desc=True)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    return result.data or []
+
+
+# ──────────────────────────────────────────────────────────────
+# CREATE frais agence
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/frais-agence", response_model=FraisAgenceResponse, status_code=status.HTTP_201_CREATED)
+async def create_bien_frais_agence(
+    sci_id: UUID,
+    bien_id: str,
+    payload: FraisAgenceCreate,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Crée un frais d'agence pour un bien (gérant uniquement)."""
+    logger.info("creating_frais_agence", bien_id=bien_id, sci_id=str(sci_id))
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    row = payload.model_dump(mode="json")
+    row["id_bien"] = bien_id
+
+    result = client.table("frais_agence").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create frais agence")
+
+    created = data[0]
+    logger.info("frais_agence_created", frais_id=created.get("id"), bien_id=bien_id)
+    return created
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE frais agence
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/frais-agence/{frais_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bien_frais_agence(
+    sci_id: UUID,
+    bien_id: str,
+    frais_id: int,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Supprime un frais d'agence (gérant uniquement)."""
+    logger.info("deleting_frais_agence", frais_id=frais_id, bien_id=bien_id)
+
+    client = _get_client()
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = client.table("frais_agence").delete().eq("id", frais_id).eq("id_bien", bien_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("frais_agence_deleted", frais_id=frais_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

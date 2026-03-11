@@ -10,6 +10,7 @@ from supabase import create_client
 
 from app.core.config import settings
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
+from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.core.security import get_current_user
 from app.models.biens import BienResponse
 from app.models.loyers import LoyerResponse
@@ -293,3 +294,55 @@ async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user
 
     logger.info("sci_created", user_id=user_id, sci_id=created.get("id"), plan_key=plan_key)
     return created
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST associes of a SCI
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{sci_id}/associes", response_model=list[AssocieOverview])
+async def list_sci_associes(
+    sci_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste les associés d'une SCI (membre requis)."""
+    client = _get_client()
+    rows = _execute_select(client.table("associes").select("*").eq("id_sci", sci_id))
+    return [AssocieOverview(**row) for row in rows]
+
+
+# ──────────────────────────────────────────────────────────────
+# INVITE associe to a SCI
+# ──────────────────────────────────────────────────────────────
+
+class InviteAssociePayload(BaseModel):
+    nom: str
+    email: str | None = None
+    part: float = 0
+    role: str = "associe"
+
+
+@router.post("/{sci_id}/associes", response_model=AssocieOverview, status_code=status.HTTP_201_CREATED)
+async def invite_sci_associe(
+    sci_id: str,
+    payload: InviteAssociePayload,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Invite un associé à la SCI (gérant uniquement)."""
+    logger.info("inviting_associe", sci_id=sci_id, nom=payload.nom)
+
+    client = _get_client()
+    row = payload.model_dump(mode="json")
+    row["id_sci"] = sci_id
+
+    result = client.table("associes").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create associe")
+
+    created = data[0]
+    logger.info("associe_invited", associe_id=created.get("id"), sci_id=sci_id)
+    return AssocieOverview(**created)

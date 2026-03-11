@@ -5,13 +5,15 @@
 	import { fetchFicheBien } from '$lib/api';
 	import FicheBienHeader from '$lib/components/fiche-bien/FicheBienHeader.svelte';
 	import FicheBienIdentite from '$lib/components/fiche-bien/FicheBienIdentite.svelte';
+	import FicheBienBail from '$lib/components/fiche-bien/FicheBienBail.svelte';
 	import FicheBienLoyers from '$lib/components/fiche-bien/FicheBienLoyers.svelte';
+	import FicheBienCharges from '$lib/components/fiche-bien/FicheBienCharges.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
 
-	let sciId = $derived(page.params.sciId);
-	let bienId = $derived(page.params.bienId);
+	let sciId = $derived(page.params.sciId!);
+	let bienId = $derived(page.params.bienId!);
 	let isGerant = $derived(userRole === 'gerant');
 
 	let bien: FicheBien | null = $state(null);
@@ -69,7 +71,16 @@
 
 		<div class="mt-6 space-y-6">
 			<FicheBienIdentite {bien} {isGerant} />
+			<FicheBienBail bail={bien.bail_actif} {isGerant} sciId={sciId} bienId={String(bien.id)} />
 			<FicheBienLoyers loyers={bien.loyers_recents} {isGerant} {sciId} {bienId} />
+			<FicheBienCharges
+				charges={bien.charges_list}
+				assurancePno={bien.assurance_pno}
+				fraisAgence={bien.frais_agence}
+				{isGerant}
+				sciId={sciId}
+				bienId={String(bien.id)}
+			/>
 		</div>
 	{/if}
 </section>

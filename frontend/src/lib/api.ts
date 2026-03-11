@@ -644,6 +644,7 @@ export type BailEmbed = {
 	loyer_hc: number;
 	charges_provisions: number;
 	depot_garantie: number;
+	revision_indice: string | null;
 	statut: string;
 	locataires: Array<{
 		id: number;
@@ -739,4 +740,83 @@ export async function createLoyerForBien(
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
 	});
+}
+
+// --- Baux (Leases) ---
+
+export async function fetchBienBaux(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux`);
+}
+
+export async function createBail(sciId: EntityId, bienId: EntityId, data: any): Promise<any> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function updateBail(
+	sciId: EntityId,
+	bienId: EntityId,
+	bailId: number,
+	data: any
+): Promise<any> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function deleteBail(
+	sciId: EntityId,
+	bienId: EntityId,
+	bailId: number
+): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
+		method: 'DELETE'
+	});
+}
+
+export async function attachLocataireToBail(
+	sciId: EntityId,
+	bienId: EntityId,
+	bailId: number,
+	locataireId: number
+): Promise<any> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires`, {
+		method: 'POST',
+		body: JSON.stringify({ locataire_id: locataireId }),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function detachLocataireFromBail(
+	sciId: EntityId,
+	bienId: EntityId,
+	bailId: number,
+	locataireId: number
+): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires/${locataireId}`, {
+		method: 'DELETE'
+	});
+}
+
+// --- Nested Charges / PNO / Frais Agence / Associes ---
+
+export async function fetchBienCharges(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges`);
+}
+
+export async function fetchBienPno(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`);
+}
+
+export async function fetchBienFraisAgence(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`);
+}
+
+export async function fetchSciAssociesList(sciId: EntityId): Promise<any[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/associes`);
 }
