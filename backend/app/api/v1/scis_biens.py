@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
 from supabase import create_client
 
 from app.core.config import settings
-from app.core.exceptions import DatabaseError, ResourceNotFoundError
+from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.models.biens import BienCreate, BienResponse, BienUpdate
 from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
@@ -45,6 +45,68 @@ def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
         raise ResourceNotFoundError("Bien", bien_id)
 
     return bien
+
+
+# ──────────────────────────────────────────────────────────────
+# Upload validation constants
+# ──────────────────────────────────────────────────────────────
+
+_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+_ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "webp", "doc", "docx", "xls", "xlsx", "csv", "txt"}
+_MAGIC_BYTES = {
+    b"%PDF": "pdf",
+    b"\xff\xd8\xff": "jpg",
+    b"\x89PNG": "png",
+    b"RIFF": "webp",  # WebP starts with RIFF
+    b"PK": "docx",    # OOXML (docx, xlsx) are ZIP archives starting with PK
+}
+
+
+def _validate_upload(file_content: bytes, filename: str | None) -> str:
+    """Validate uploaded file. Returns the sanitized extension.
+
+    Raises ValidationError if file is invalid.
+    """
+    # Size check
+    if len(file_content) > _MAX_UPLOAD_SIZE:
+        raise ValidationError(f"Fichier trop volumineux (max {_MAX_UPLOAD_SIZE // (1024 * 1024)} Mo).")
+
+    if len(file_content) == 0:
+        raise ValidationError("Fichier vide.")
+
+    # Extension check
+    ext = ""
+    if filename and "." in filename:
+        ext = filename.rsplit(".", 1)[-1].lower()
+
+    if not ext or ext not in _ALLOWED_EXTENSIONS:
+        raise ValidationError(
+            f"Extension .{ext or '?'} non autorisée. Extensions acceptées: {', '.join(sorted(_ALLOWED_EXTENSIONS))}."
+        )
+
+    # Magic bytes check (basic — verify the file starts with expected bytes for known types)
+    matched_type = None
+    for magic, ftype in _MAGIC_BYTES.items():
+        if file_content[: len(magic)] == magic:
+            matched_type = ftype
+            break
+
+    # If we recognized a magic type, verify it's consistent with the extension
+    if matched_type:
+        consistent = False
+        if matched_type == "docx" and ext in {"docx", "doc", "xlsx", "xls"}:
+            consistent = True
+        elif matched_type == "jpg" and ext in {"jpg", "jpeg"}:
+            consistent = True
+        elif matched_type == ext:
+            consistent = True
+
+        if not consistent:
+            raise ValidationError(
+                f"Le contenu du fichier ne correspond pas à l'extension .{ext}."
+            )
+
+    return ext
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1025,7 +1087,10 @@ async def upload_document(
 
     # Read file content
     file_content = await file.read()
-    file_ext = file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "bin"
+
+    # Validate upload (size, extension, magic bytes)
+    file_ext = _validate_upload(file_content, file.filename)
+
     import uuid as _uuid
     storage_path = f"sci-{sci_id}/bien-{bien_id}/{_uuid.uuid4().hex}.{file_ext}"
 

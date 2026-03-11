@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from jose import jwt
+import jwt
 
 from app.core.config import settings
 from app.core.rate_limit import limiter
@@ -110,6 +110,10 @@ class FakeQuery:
         self._limit = count
         return self
 
+    def maybe_single(self) -> "FakeQuery":
+        self._limit = 1
+        return self
+
     def _matches(self, row: dict) -> bool:
         for key, value in self._filters:
             if str(row.get(key)) != value:
@@ -178,8 +182,34 @@ class FakeQuery:
         return FakeResult(data=[], error="unsupported operation")
 
 
+class FakeAuthAdmin:
+    def list_users(self, page=1, per_page=50):
+        return [
+            type("User", (), {
+                "id": "user-123",
+                "email": "test@sci.local",
+                "created_at": "2026-01-01T00:00:00",
+            })()
+        ]
+
+    def get_user_by_id(self, user_id):
+        return type("UserResponse", (), {
+            "user": type("User", (), {
+                "id": user_id,
+                "email": "test@sci.local",
+                "created_at": "2026-01-01T00:00:00",
+            })()
+        })()
+
+
+class FakeAuth:
+    def __init__(self):
+        self.admin = FakeAuthAdmin()
+
+
 class FakeSupabaseClient:
     def __init__(self):
+        self.auth = FakeAuth()
         self.store: dict[str, list[dict]] = {
             "sci": [
                 {
@@ -200,6 +230,10 @@ class FakeSupabaseClient:
             "loyers": [],
             "charges": [],
             "fiscalite": [],
+            "admins": [
+                {"user_id": "user-123"},
+            ],
+            "subscriptions": [],
             "associes": [
                 {
                     "id": "associe-1",
@@ -276,7 +310,7 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     from app.api.v1 import associes, biens, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
     from app.api.v1 import dashboard, scis_biens, notification_preferences
     from app import main
-    from app.api.v1 import auth, gdpr, stripe, onboarding, finances
+    from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin
     from app.services import subscription_service
     from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
@@ -300,11 +334,13 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     fake_anon.cache_clear = lambda: None
 
     monkeypatch.setattr(auth, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(files, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(gdpr, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(stripe, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(subscription_service, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(onboarding, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(finances, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(admin, "get_service_client", fake_service)
     monkeypatch.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
     monkeypatch.setattr(paywall_mod, "get_supabase_service_client", fake_service)

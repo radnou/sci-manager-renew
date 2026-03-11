@@ -5,8 +5,10 @@ import json
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from jose import JWTError, jwt
-from jose.utils import base64url_encode
+import base64
+
+import jwt
+from jwt.exceptions import PyJWTError
 
 from app.core import security
 from app.core.config import settings
@@ -23,7 +25,7 @@ def _make_es256_keypair() -> tuple[bytes, dict[str, str]]:
     public_numbers = private_key.public_key().public_numbers()
 
     def encode_coord(value: int) -> str:
-        return base64url_encode(value.to_bytes(32, "big")).decode()
+        return base64.urlsafe_b64encode(value.to_bytes(32, "big")).rstrip(b"=").decode()
 
     jwk = {
         "kty": "EC",
@@ -74,10 +76,10 @@ def test_decode_bearer_token_rejects_missing_matching_key(monkeypatch):
 
     try:
         security._decode_bearer_token(token)
-    except JWTError as exc:
+    except PyJWTError as exc:
         assert "No matching bearer token key" in str(exc)
     else:  # pragma: no cover - defensive
-        raise AssertionError("Expected JWTError for missing JWKS key")
+        raise AssertionError("Expected PyJWTError for missing JWKS key")
 
 
 def test_get_supabase_jwks_uses_cache(monkeypatch):

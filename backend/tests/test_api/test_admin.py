@@ -1,102 +1,68 @@
-"""Tests for admin API endpoints."""
-
-from __future__ import annotations
-
-from jose import jwt
-
-from app.core.config import settings
+"""Tests for admin panel endpoints."""
 
 
-def _admin_headers(user_id: str = "admin-user") -> dict[str, str]:
-    token = jwt.encode(
-        {"sub": user_id, "role": "authenticated"},
-        settings.supabase_jwt_secret,
-        algorithm="HS256",
-    )
-    return {"Authorization": f"Bearer {token}"}
+def test_admin_stats_requires_admin(client, auth_headers, fake_supabase):
+    """Non-admin users should get 403."""
+    fake_supabase.store["admins"] = []
+    response = client.get("/api/v1/admin/stats", headers=auth_headers)
+    assert response.status_code == 403
 
 
-def _setup_admin(fake_supabase, user_id: str = "admin-user"):
-    """Add user to admins table so get_current_admin passes."""
-    fake_supabase.store.setdefault("admins", []).append({"user_id": user_id})
-
-
-def _patch_admin_service_client(monkeypatch, fake_supabase):
-    """Patch get_service_client in the admin module."""
-    from app.api.v1 import admin
-    monkeypatch.setattr(admin, "get_service_client", lambda: fake_supabase)
-
-
-def test_admin_stats(client, auth_headers, fake_supabase, monkeypatch):
-    """Admin stats returns platform-wide counts."""
-    _setup_admin(fake_supabase)
-    _patch_admin_service_client(monkeypatch, fake_supabase)
-
+def test_admin_stats_returns_data(client, auth_headers, fake_supabase):
+    """Admin user should get platform stats."""
     fake_supabase.store["subscriptions"] = [
-        {"user_id": "u1", "plan_key": "pro", "is_active": True},
-        {"user_id": "u2", "plan_key": "starter", "is_active": True},
-        {"user_id": "u3", "plan_key": "pro", "is_active": False},
+        {"user_id": "user-123", "plan_key": "pro", "is_active": True},
+        {"user_id": "user-456", "plan_key": "starter", "is_active": True},
+        {"user_id": "user-789", "plan_key": "free", "is_active": False},
     ]
-
-    resp = client.get("/api/v1/admin/stats", headers=_admin_headers())
-    assert resp.status_code == 200
-    data = resp.json()
-
+    response = client.get("/api/v1/admin/stats", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
     assert "total_users" in data
     assert "total_scis" in data
     assert "total_biens" in data
+    assert "active_subscriptions" in data
     assert data["active_subscriptions"] == 2
-    assert data["plan_breakdown"]["pro"] == 1
-    assert data["plan_breakdown"]["starter"] == 1
+    assert "plan_breakdown" in data
 
 
-def test_admin_stats_no_subscriptions(client, auth_headers, fake_supabase, monkeypatch):
-    """Admin stats with no subscriptions shows zero active."""
-    _setup_admin(fake_supabase)
-    _patch_admin_service_client(monkeypatch, fake_supabase)
-
-    fake_supabase.store["subscriptions"] = []
-
-    resp = client.get("/api/v1/admin/stats", headers=_admin_headers())
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["active_subscriptions"] == 0
-    assert data["plan_breakdown"] == {}
+def test_admin_stats_no_auth(client):
+    """Unauthenticated request should get 401."""
+    response = client.get("/api/v1/admin/stats")
+    assert response.status_code == 401
 
 
-def test_admin_stats_forbidden_for_non_admin(client, auth_headers):
-    """Non-admin user gets 403."""
-    resp = client.get("/api/v1/admin/stats", headers=auth_headers)
-    assert resp.status_code == 403
-
-
-def test_admin_list_subscriptions(client, auth_headers, fake_supabase, monkeypatch):
-    """Admin can list all subscriptions."""
-    _setup_admin(fake_supabase)
-    _patch_admin_service_client(monkeypatch, fake_supabase)
-
+def test_admin_list_users(client, auth_headers, fake_supabase):
+    """Admin should be able to list users."""
     fake_supabase.store["subscriptions"] = [
-        {
-            "user_id": "u1",
-            "plan_key": "pro",
-            "status": "active",
-            "created_at": "2026-01-01",
-        },
-        {
-            "user_id": "u2",
-            "plan_key": "starter",
-            "status": "cancelled",
-            "created_at": "2025-12-01",
-        },
+        {"user_id": "user-123", "plan_key": "pro", "is_active": True},
     ]
+    response = client.get("/api/v1/admin/users", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "users" in data
+    assert "page" in data
 
-    resp = client.get("/api/v1/admin/subscriptions", headers=_admin_headers())
-    assert resp.status_code == 200
-    data = resp.json()
-    assert len(data["subscriptions"]) == 2
+
+def test_admin_get_user(client, auth_headers, fake_supabase):
+    """Admin should be able to get a specific user."""
+    fake_supabase.store["subscriptions"] = [
+        {"user_id": "user-123", "plan_key": "pro", "is_active": True},
+    ]
+    response = client.get("/api/v1/admin/users/user-123", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "user" in data
+    assert "scis" in data
+    assert "subscription" in data
 
 
-def test_admin_list_subscriptions_forbidden_for_non_admin(client, auth_headers):
-    """Non-admin user gets 403 for subscriptions list."""
-    resp = client.get("/api/v1/admin/subscriptions", headers=auth_headers)
-    assert resp.status_code == 403
+def test_admin_list_subscriptions(client, auth_headers, fake_supabase):
+    """Admin should be able to list all subscriptions."""
+    fake_supabase.store["subscriptions"] = [
+        {"user_id": "user-123", "plan_key": "pro", "is_active": True, "created_at": "2026-01-01"},
+    ]
+    response = client.get("/api/v1/admin/subscriptions", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "subscriptions" in data

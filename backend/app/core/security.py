@@ -5,7 +5,8 @@ from urllib.request import urlopen
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError
 
 from .config import settings
 
@@ -53,23 +54,24 @@ def _decode_bearer_token(token: str) -> dict:
         )
 
     if algorithm not in {"ES256", "RS256"}:
-        raise JWTError("Unsupported bearer token algorithm")
+        raise PyJWTError("Unsupported bearer token algorithm")
 
     key_id = header.get("kid")
     if not isinstance(key_id, str) or not key_id:
-        raise JWTError("Missing bearer token key id")
+        raise PyJWTError("Missing bearer token key id")
 
     for jwk in _get_supabase_jwks():
         if jwk.get("kid") != key_id:
             continue
+        public_key = jwt.PyJWK(jwk).key
         return jwt.decode(
             token,
-            jwk,
+            public_key,
             algorithms=[algorithm],
             options={"verify_aud": False},
         )
 
-    raise JWTError("No matching bearer token key")
+    raise PyJWTError("No matching bearer token key")
 
 
 async def get_current_user(
@@ -82,7 +84,7 @@ async def get_current_user(
 
     try:
         payload = _decode_bearer_token(token)
-    except (JWTError, URLError, ValueError):
+    except (PyJWTError, URLError, ValueError):
         _raise_unauthorized("Invalid bearer token")
 
     user_id = payload.get("sub")

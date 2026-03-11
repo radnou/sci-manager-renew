@@ -1,22 +1,53 @@
 """File management endpoints"""
+import re
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.exceptions import ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
+from app.core.supabase_client import get_supabase_service_client
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/files", tags=["files"])
 logger = structlog.get_logger(__name__)
+
+_SCI_PATH_RE = re.compile(r"^sci-([a-zA-Z0-9_-]+)/")
 
 
 def _validate_storage_path(path: str) -> str:
     if not path or ".." in path or path.startswith("/") or path.startswith("."):
         raise ValidationError("Chemin de fichier invalide.")
     return path
+
+
+def _verify_user_owns_path(user_id: str, path: str) -> None:
+    """Verify the user is an associe of the SCI referenced in the storage path."""
+    match = _SCI_PATH_RE.match(path)
+    if not match:
+        # Path doesn't follow SCI pattern -- deny by default
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acces non autorise a ce fichier.",
+        )
+
+    sci_id = match.group(1)
+    client = get_supabase_service_client()
+    result = (
+        client.table("associes")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("id_sci", sci_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acces non autorise a ce fichier.",
+        )
 
 
 @router.post("/upload-quitus")
@@ -31,12 +62,13 @@ async def upload_quitus(
     try:
         del request
         safe_path = _validate_storage_path(file_path)
+        _verify_user_owns_path(user_id, safe_path)
         # File should be provided as bytes in request body
         # For now, just return placeholder
         url = await storage_service.get_file_url(safe_path)
         return {"success": True, "url": url, "message": "Quitus uploaded successfully"}
     except Exception as e:
-        if isinstance(e, ValidationError):
+        if isinstance(e, (ValidationError, HTTPException)):
             raise
         logger.error("upload_quitus_failed", user_id=user_id, file_path=file_path, error=str(e))
         raise ExternalServiceError("Storage", "Failed to upload quitus")
@@ -53,12 +85,11 @@ async def download_file(
     try:
         del request
         safe_path = _validate_storage_path(file_path)
-        # Validate ownership (check if user owns this file)
-        # For now, just return URL for client-side download
+        _verify_user_owns_path(user_id, safe_path)
         url = await storage_service.get_file_url(safe_path)
         return {"success": True, "url": url}
     except Exception as e:
-        if isinstance(e, ValidationError):
+        if isinstance(e, (ValidationError, HTTPException)):
             raise
         logger.error("download_file_failed", user_id=user_id, file_path=file_path, error=str(e))
         raise ExternalServiceError("Storage", "Failed to download file")
@@ -75,13 +106,13 @@ async def delete_file(
     try:
         del request
         safe_path = _validate_storage_path(file_path)
-        # Validate ownership before deletion
+        _verify_user_owns_path(user_id, safe_path)
         success = await storage_service.delete_file(safe_path)
         if success:
             return {"success": True, "message": "File deleted successfully"}
         raise ExternalServiceError("Storage", "Failed to delete file")
     except Exception as e:
-        if isinstance(e, (ValidationError, ExternalServiceError)):
+        if isinstance(e, (ValidationError, ExternalServiceError, HTTPException)):
             raise
         logger.error("delete_file_failed", user_id=user_id, file_path=file_path, error=str(e))
         raise ExternalServiceError("Storage", "Failed to delete file")
@@ -98,10 +129,12 @@ async def list_files(
     try:
         del request
         safe_folder = _validate_storage_path(folder) if folder else ""
+        if safe_folder:
+            _verify_user_owns_path(user_id, safe_folder)
         files = await storage_service.list_files(safe_folder)
         return {"success": True, "files": files}
     except Exception as e:
-        if isinstance(e, ValidationError):
+        if isinstance(e, (ValidationError, HTTPException)):
             raise
         logger.error("list_files_failed", user_id=user_id, folder=folder, error=str(e))
         raise ExternalServiceError("Storage", "Failed to list files")
