@@ -579,6 +579,52 @@ export function completeOnboarding() {
 	return apiFetch<{ completed: boolean }>('/api/v1/onboarding/complete', { method: 'POST' });
 }
 
+// --- Dashboard V2 ---
+
+export type DashboardAlerte = {
+	type: 'loyer_retard' | 'bail_expirant' | 'quittance_pending';
+	message: string;
+	severity: 'error' | 'warning' | 'info';
+	sci_nom?: string;
+	bien_adresse?: string;
+	link?: string;
+};
+
+export type DashboardKpis = {
+	sci_count: number;
+	biens_count: number;
+	taux_recouvrement: number;
+	cashflow_net: number;
+};
+
+export type SCICard = {
+	id: number;
+	nom: string;
+	statut: string;
+	biens_count: number;
+	loyer_total: number;
+	recouvrement: number;
+};
+
+export type ActivityItem = {
+	id: string;
+	type: 'loyer' | 'bien' | 'quittance' | 'bail';
+	description: string;
+	created_at: string;
+	sci_nom?: string;
+};
+
+export type DashboardData = {
+	alertes: DashboardAlerte[];
+	kpis: DashboardKpis;
+	scis: SCICard[];
+	activite: ActivityItem[];
+};
+
+export async function fetchDashboard(): Promise<DashboardData> {
+	return apiFetch('/api/v1/dashboard');
+}
+
 // --- Nested SCI/Biens API ---
 
 export function fetchSciBiens(sciId: EntityId) {

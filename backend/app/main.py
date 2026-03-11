@@ -39,6 +39,7 @@ from app.api.v1 import (
     biens,
     cerfa,
     charges,
+    dashboard,
     export,
     files,
     fiscalite,
@@ -480,4 +481,5 @@ app.include_router(gdpr.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(onboarding.router, prefix="/api/v1")
 app.include_router(export.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(admin.router)
