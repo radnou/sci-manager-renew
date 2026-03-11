@@ -19,7 +19,6 @@
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
-	import AppSidebar from '$lib/components/AppSidebar.svelte';
 	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import './layout.css';
@@ -308,29 +307,9 @@
 						>Dashboard</a
 					>
 					<a
-						href="/biens"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/biens') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Biens</a
-					>
-					<a
-						href="/locataires"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/locataires') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Locataires</a
-					>
-					<a
-						href="/loyers"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/loyers') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Loyers</a
-					>
-					<a
-						href="/charges"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/charges') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Charges</a
-					>
-					<a
-						href="/associes"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/associes') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Associés</a
+						href="/scis"
+						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/scis') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
+						>Mes SCI</a
 					>
 
 					<p class="mt-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
@@ -394,12 +373,7 @@
 			</div>
 		</section>
 	{:else if user}
-		<div class="flex">
-			<AppSidebar {user} />
-			<div class="flex-1">
-				{@render children()}
-			</div>
-		</div>
+		{@render children()}
 	{:else}
 		{@render children()}
 	{/if}
@@ -430,9 +404,9 @@
 							>Dashboard</a
 						>
 						<a
-							href="/biens"
+							href="/scis"
 							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
-							>Biens</a
+							>Mes SCI</a
 						>
 						<a
 							href="/account"
@@ -552,16 +526,9 @@
 							</li>
 							<li>
 								<a
-									href="/biens"
+									href="/scis"
 									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Gestion des biens</a
-								>
-							</li>
-							<li>
-								<a
-									href="/loyers"
-									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-									>Suivi des loyers</a
+									>Mes SCI</a
 								>
 							</li>
 						</ul>
