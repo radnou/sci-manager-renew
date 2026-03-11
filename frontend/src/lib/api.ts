@@ -676,6 +676,73 @@ export type FraisAgenceEmbed = {
 	description: string | null;
 };
 
+// --- CRUD Wiring Types ---
+
+export type LoyerEmbed = {
+	id: number;
+	date_loyer: string;
+	montant: number;
+	statut: LoyerStatus;
+	quitus_genere: boolean;
+	date_paiement?: string | null;
+};
+
+export type ChargeEmbed = {
+	id: number;
+	type_charge: string;
+	montant: number;
+	date_paiement: string;
+};
+
+export type ChargeCreate = {
+	type_charge: string;
+	montant: number;
+	date_paiement: string;
+};
+
+export type PnoCreate = {
+	assureur: string;
+	numero_contrat?: string;
+	prime_annuelle: number;
+	date_debut: string;
+	date_fin?: string;
+};
+
+export type PnoUpdate = Partial<PnoCreate>;
+
+export type FraisCreate = {
+	type_frais: string;
+	montant: number;
+	date_frais: string;
+	description?: string;
+};
+
+export type InviteAssociePayload = {
+	nom: string;
+	email?: string | null;
+	part: number;
+	role: string;
+};
+
+export type AssocieEmbed = {
+	id: number | string;
+	nom: string;
+	email: string | null;
+	role: string | null;
+	part: number | null;
+};
+
+export type BailCreate = {
+	date_debut: string;
+	date_fin?: string;
+	loyer_hc: number;
+	charges_provisions?: number;
+	depot_garantie?: number;
+	revision_indice?: string;
+};
+
+export type BailUpdate = Partial<BailCreate>;
+
 export type DocumentBienEmbed = {
 	id: number;
 	nom: string;
@@ -707,8 +774,8 @@ export type FicheBien = {
 	prix_acquisition: number | null;
 	statut: string | null;
 	bail_actif: BailEmbed | null;
-	loyers_recents: Array<any>;
-	charges_list: Array<any>;
+	loyers_recents: LoyerEmbed[];
+	charges_list: ChargeEmbed[];
 	assurance_pno: AssurancePnoEmbed | null;
 	frais_agence: FraisAgenceEmbed[];
 	documents: DocumentBienEmbed[];
@@ -722,11 +789,11 @@ export async function fetchFicheBien(
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}`);
 }
 
-export async function fetchSciBiensList(sciId: EntityId): Promise<any[]> {
+export async function fetchSciBiensList(sciId: EntityId): Promise<Bien[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens`);
 }
 
-export async function createBienForSci(sciId: EntityId, data: any): Promise<any> {
+export async function createBienForSci(sciId: EntityId, data: BienCreatePayload): Promise<Bien> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens`, {
 		method: 'POST',
 		body: JSON.stringify(data),
@@ -737,8 +804,8 @@ export async function createBienForSci(sciId: EntityId, data: any): Promise<any>
 export async function createLoyerForBien(
 	sciId: EntityId,
 	bienId: EntityId,
-	data: any
-): Promise<any> {
+	data: LoyerCreatePayload
+): Promise<LoyerEmbed> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/loyers`, {
 		method: 'POST',
 		body: JSON.stringify(data),
@@ -748,11 +815,11 @@ export async function createLoyerForBien(
 
 // --- Baux (Leases) ---
 
-export async function fetchBienBaux(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+export async function fetchBienBaux(sciId: EntityId, bienId: EntityId): Promise<BailEmbed[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux`);
 }
 
-export async function createBail(sciId: EntityId, bienId: EntityId, data: any): Promise<any> {
+export async function createBail(sciId: EntityId, bienId: EntityId, data: BailCreate): Promise<BailEmbed> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux`, {
 		method: 'POST',
 		body: JSON.stringify(data),
@@ -764,8 +831,8 @@ export async function updateBail(
 	sciId: EntityId,
 	bienId: EntityId,
 	bailId: number,
-	data: any
-): Promise<any> {
+	data: BailUpdate
+): Promise<BailEmbed> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
 		method: 'PATCH',
 		body: JSON.stringify(data),
@@ -809,21 +876,134 @@ export async function detachLocataireFromBail(
 
 // --- Nested Charges / PNO / Frais Agence / Associes ---
 
-export async function fetchBienCharges(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+export async function fetchBienCharges(sciId: EntityId, bienId: EntityId): Promise<ChargeEmbed[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges`);
 }
 
-export async function fetchBienPno(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+export async function fetchBienPno(sciId: EntityId, bienId: EntityId): Promise<AssurancePnoEmbed[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`);
 }
 
-export async function fetchBienFraisAgence(sciId: EntityId, bienId: EntityId): Promise<any[]> {
+export async function fetchBienFraisAgence(sciId: EntityId, bienId: EntityId): Promise<FraisAgenceEmbed[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`);
 }
 
-export async function fetchSciAssociesList(sciId: EntityId): Promise<any[]> {
+export async function fetchSciAssociesList(sciId: EntityId): Promise<AssocieEmbed[]> {
 	return apiFetch(`/api/v1/scis/${sciId}/associes`);
 }
+
+// --- Charge mutations ---
+export async function createChargeForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	data: ChargeCreate
+): Promise<ChargeEmbed> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function deleteChargeForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	chargeId: number
+): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges/${chargeId}`, {
+		method: 'DELETE'
+	});
+}
+
+// --- PNO mutations ---
+export async function createPnoForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	data: PnoCreate
+): Promise<AssurancePnoEmbed> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function updatePnoForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	pnoId: number,
+	data: PnoUpdate
+): Promise<AssurancePnoEmbed> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function deletePnoForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	pnoId: number
+): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
+		method: 'DELETE'
+	});
+}
+
+// --- Frais Agence mutations ---
+export async function createFraisForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	data: FraisCreate
+): Promise<FraisAgenceEmbed> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function deleteFraisForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	fraisId: number
+): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence/${fraisId}`, {
+		method: 'DELETE'
+	});
+}
+
+// --- Associe invite ---
+export async function inviteAssocie(
+	sciId: EntityId,
+	data: InviteAssociePayload
+): Promise<AssocieEmbed> {
+	return apiFetch(`/api/v1/scis/${sciId}/associes`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+// --- SCI mutations ---
+export async function updateSci(
+	sciId: EntityId,
+	data: Partial<SCICreatePayload>
+): Promise<SCIOverview> {
+	return apiFetch(`/api/v1/scis/${sciId}`, {
+		method: 'PATCH',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function deleteSci(sciId: EntityId): Promise<void> {
+	return apiFetch(`/api/v1/scis/${sciId}`, {
+		method: 'DELETE'
+	});
+}
+
 
 // --- Notification Preferences ---
 

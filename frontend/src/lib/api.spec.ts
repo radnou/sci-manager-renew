@@ -859,7 +859,7 @@ describe('api helpers', () => {
 	});
 
 	it('createBienForSci posts JSON body', async () => {
-		const data = { adresse: '5 rue Neuve', ville: 'Paris', code_postal: '75001' };
+		const data = { id_sci: 'sci-1', adresse: '5 rue Neuve', ville: 'Paris', code_postal: '75001', type_locatif: 'nu' as const, loyer_cc: 800, charges: 100, tmi: 30 };
 		const created = { id: 1, ...data };
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
@@ -871,7 +871,7 @@ describe('api helpers', () => {
 	});
 
 	it('createLoyerForBien posts JSON body', async () => {
-		const data = { montant: 1000, date_loyer: '2026-03-01', statut: 'paye' };
+		const data = { id_bien: 'bien-1' as const, montant: 1000, date_loyer: '2026-03-01', statut: 'paye' as const };
 		const created = { id: 1, ...data };
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
