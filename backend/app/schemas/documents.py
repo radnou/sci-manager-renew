@@ -9,8 +9,8 @@ class DocumentBienCreate(BaseModel):
 
 
 class DocumentBienResponse(BaseModel):
-    id: int
-    id_bien: int
+    id: str | int
+    id_bien: str | int
     nom: str
     categorie: str
     url: str

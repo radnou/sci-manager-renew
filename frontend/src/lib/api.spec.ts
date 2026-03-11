@@ -45,7 +45,32 @@ import {
 	updateLocataire,
 	updateAssocie,
 	updateCharge,
-	updateFiscalite
+	updateFiscalite,
+	// Sprint 2-7 additions
+	fetchOnboardingStatus,
+	completeOnboarding,
+	fetchDashboard,
+	fetchSciBiens,
+	fetchSciAssocies,
+	fetchFicheBien,
+	fetchSciBiensList,
+	createBienForSci,
+	createLoyerForBien,
+	fetchBienBaux,
+	createBail,
+	updateBail,
+	deleteBail,
+	attachLocataireToBail,
+	detachLocataireFromBail,
+	fetchBienCharges,
+	fetchBienPno,
+	fetchBienFraisAgence,
+	fetchSciAssociesList,
+	fetchNotificationPreferences,
+	updateNotificationPreferences,
+	fetchFinances,
+	fetchBienDocuments,
+	deleteDocumentBien
 } from './api';
 
 describe('api helpers', () => {
@@ -747,5 +772,283 @@ describe('api helpers', () => {
 		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/notifications/read-all`);
 		expect(options.method).toBe('PATCH');
+	});
+
+	// --- Sprint 2-7: Onboarding ---
+
+	it('fetchOnboardingStatus returns onboarding state', async () => {
+		const payload = { completed: false, sci_created: true, bien_created: false, bail_created: false, notifications_set: false };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchOnboardingStatus()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/onboarding`);
+	});
+
+	it('completeOnboarding posts to complete endpoint', async () => {
+		const payload = { completed: true };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(completeOnboarding()).resolves.toEqual(payload);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/onboarding/complete`);
+		expect(options.method).toBe('POST');
+	});
+
+	// --- Sprint 2: Dashboard ---
+
+	it('fetchDashboard returns dashboard data', async () => {
+		const payload = { alertes: [], kpis: { sci_count: 1, biens_count: 2, taux_recouvrement: 95, cashflow_net: 800 }, scis: [], activite: [] };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchDashboard()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/dashboard`);
+	});
+
+	// --- Sprint 3: Nested SCI/Biens ---
+
+	it('fetchSciBiens returns biens for a SCI', async () => {
+		const payload = [{ id: 1, adresse: '1 rue Test' }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchSciBiens('sci-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens`);
+	});
+
+	it('fetchSciAssocies returns associes for a SCI', async () => {
+		const payload = [{ id: 'a-1', nom: 'Test', part: 100, role: 'gerant' }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchSciAssocies('sci-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/associes`);
+	});
+
+	it('fetchFicheBien returns full fiche bien', async () => {
+		const payload = { id: 1, adresse: '1 rue Test', bail_actif: null, rentabilite: { brute: 6, nette: 4, cashflow_mensuel: 300, cashflow_annuel: 3600 } };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchFicheBien('sci-1', 'bien-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1`);
+	});
+
+	it('fetchSciBiensList returns biens list', async () => {
+		const payload = [{ id: 1 }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchSciBiensList('sci-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens`);
+	});
+
+	it('createBienForSci posts JSON body', async () => {
+		const data = { adresse: '5 rue Neuve', ville: 'Paris', code_postal: '75001' };
+		const created = { id: 1, ...data };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createBienForSci('sci-1', data)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens`);
+		expect(options.method).toBe('POST');
+	});
+
+	it('createLoyerForBien posts JSON body', async () => {
+		const data = { montant: 1000, date_loyer: '2026-03-01', statut: 'paye' };
+		const created = { id: 1, ...data };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createLoyerForBien('sci-1', 'bien-1', data)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/loyers`);
+		expect(options.method).toBe('POST');
+	});
+
+	// --- Sprint 4: Baux ---
+
+	it('fetchBienBaux returns baux list', async () => {
+		const payload = [{ id: 1, date_debut: '2025-01-01' }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBienBaux('sci-1', 'bien-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/baux`);
+	});
+
+	it('createBail posts JSON body', async () => {
+		const data = { date_debut: '2025-01-01', loyer_hc: 800 };
+		const created = { id: 1, ...data };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(createBail('sci-1', 'bien-1', data)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/baux`);
+		expect(options.method).toBe('POST');
+	});
+
+	it('updateBail patches JSON body', async () => {
+		const data = { loyer_hc: 900 };
+		const updated = { id: 1, date_debut: '2025-01-01', ...data };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateBail('sci-1', 'bien-1', 1, data)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/baux/1`);
+		expect(options.method).toBe('PATCH');
+	});
+
+	it('deleteBail sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteBail('sci-1', 'bien-1', 1)).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/baux/1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	it('attachLocataireToBail posts locataire id', async () => {
+		const created = { bail_id: 1, locataire_id: 5 };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(attachLocataireToBail('sci-1', 'bien-1', 1, 5)).resolves.toEqual(created);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/baux/1/locataires`);
+		expect(options.method).toBe('POST');
+	});
+
+	it('detachLocataireFromBail sends DELETE', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(detachLocataireFromBail('sci-1', 'bien-1', 1, 5)).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/baux/1/locataires/5`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	// --- Sprint 5: Charges / PNO / Frais Agence ---
+
+	it('fetchBienCharges returns charges for a bien', async () => {
+		const payload = [{ id: 1, type_charge: 'copropriete', montant: 200 }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBienCharges('sci-1', 'bien-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/charges`);
+	});
+
+	it('fetchBienPno returns PNO data', async () => {
+		const payload = [{ id: 1, assureur: 'AXA', prime_annuelle: 360 }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBienPno('sci-1', 'bien-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/assurance-pno`);
+	});
+
+	it('fetchBienFraisAgence returns agency fees', async () => {
+		const payload = [{ id: 1, type_frais: 'gestion', montant: 100 }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBienFraisAgence('sci-1', 'bien-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/frais-agence`);
+	});
+
+	it('fetchSciAssociesList returns associes for a SCI', async () => {
+		const payload = [{ id: 'a-1', nom: 'Test', part: 100 }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchSciAssociesList('sci-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/associes`);
+	});
+
+	// --- Sprint 6: Notification Preferences ---
+
+	it('fetchNotificationPreferences returns preferences', async () => {
+		const payload = { preferences: [{ type: 'late_payment', email_enabled: true, in_app_enabled: true }] };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchNotificationPreferences()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/user/notification-preferences`);
+	});
+
+	it('updateNotificationPreferences sends PUT', async () => {
+		const prefs = [{ type: 'late_payment', email_enabled: false, in_app_enabled: true }];
+		const payload = { preferences: prefs };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateNotificationPreferences(prefs)).resolves.toEqual(payload);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/user/notification-preferences`);
+		expect(options.method).toBe('PUT');
+	});
+
+	// --- Sprint 7: Finances ---
+
+	it('fetchFinances returns finances overview', async () => {
+		const payload = { revenus_total: 12000, charges_total: 3000, cashflow_net: 9000, taux_recouvrement: 95, patrimoine_total: 200000, rentabilite_moyenne: 6, evolution_mensuelle: [], repartition_sci: [] };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchFinances()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/finances`);
+	});
+
+	it('fetchFinances passes period parameter', async () => {
+		const payload = { revenus_total: 6000, charges_total: 1500, cashflow_net: 4500, taux_recouvrement: 90, patrimoine_total: 200000, rentabilite_moyenne: 5, evolution_mensuelle: [], repartition_sci: [] };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchFinances('6m')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/finances?period=6m`);
+	});
+
+	// --- Sprint 7: Documents ---
+
+	it('fetchBienDocuments returns documents list', async () => {
+		const payload = [{ id: 1, nom: 'bail.pdf', categorie: 'bail', url: '/files/bail.pdf', created_at: '2026-03-01' }];
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchBienDocuments('sci-1', 'bien-1')).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/documents`);
+	});
+
+	it('deleteDocumentBien sends DELETE request', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteDocumentBien('sci-1', 'bien-1', 1)).resolves.toBeUndefined();
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/documents/1`);
+		expect(options.method).toBe('DELETE');
 	});
 });

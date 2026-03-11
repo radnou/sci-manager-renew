@@ -60,6 +60,14 @@ class FakeQuery:
             self._payload = [deepcopy(payload)]
         return self
 
+    def upsert(self, payload: dict | list[dict], **_kwargs) -> "FakeQuery":
+        self._operation = "insert"
+        if isinstance(payload, list):
+            self._payload = [deepcopy(item) for item in payload]
+        else:
+            self._payload = [deepcopy(payload)]
+        return self
+
     def update(self, payload: dict) -> "FakeQuery":
         self._operation = "update"
         self._update_payload = deepcopy(payload)
@@ -262,54 +270,40 @@ def fake_supabase() -> FakeSupabaseClient:
 @pytest.fixture(autouse=True)
 def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
     from app.api.v1 import associes, biens, charges, fiscalite, locataires, loyers, notifications, quitus, scis
+    from app.api.v1 import dashboard, scis_biens, notification_preferences
     from app import main
-    from app.api.v1 import gdpr, stripe
+    from app.api.v1 import gdpr, stripe, onboarding, finances
     from app.services import subscription_service
+    from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
-    monkeypatch.setattr(
-        associes,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        biens,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        charges,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        fiscalite,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        loyers,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        locataires,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        scis,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
-    monkeypatch.setattr(
-        notifications,
-        "create_client",
-        lambda *_args, **_kwargs: fake_supabase,
-    )
+    fake_create = lambda *_args, **_kwargs: fake_supabase
+
+    # Patch create_client in all modules that use it directly
+    for mod in [associes, biens, charges, fiscalite, loyers, locataires, scis,
+                notifications, dashboard, scis_biens, notification_preferences]:
+        monkeypatch.setattr(mod, "create_client", fake_create)
+
     monkeypatch.setattr(quitus, "storage_service", fake_storage)
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_supabase)
-    monkeypatch.setattr(stripe, "get_supabase_service_client", lambda: fake_supabase)
-    monkeypatch.setattr(subscription_service, "get_supabase_service_client", lambda: fake_supabase)
+
+    # Patch get_supabase_service_client everywhere it's used
+    # Must have cache_clear() to satisfy shutdown handler
+    def fake_service():
+        return fake_supabase
+    fake_service.cache_clear = lambda: None
+
+    def fake_anon():
+        return fake_supabase
+    fake_anon.cache_clear = lambda: None
+
+    monkeypatch.setattr(gdpr, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(stripe, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(subscription_service, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(onboarding, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(finances, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
+    monkeypatch.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
+    monkeypatch.setattr(paywall_mod, "get_supabase_service_client", fake_service)
+
     monkeypatch.setattr(main, "shutdown_event", __import__("asyncio").Event())
 
 

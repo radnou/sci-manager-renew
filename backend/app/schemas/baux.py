@@ -26,8 +26,8 @@ class BailUpdate(BaseModel):
 
 
 class BailResponse(BaseModel):
-    id: int
-    id_bien: int
+    id: str | int
+    id_bien: str | int
     date_debut: date
     date_fin: Optional[date] = None
     loyer_hc: float

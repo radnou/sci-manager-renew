@@ -19,8 +19,8 @@ class FraisAgenceUpdate(BaseModel):
 
 
 class FraisAgenceResponse(BaseModel):
-    id: int
-    id_bien: int
+    id: str | int
+    id_bien: str | int
     type_frais: str
     montant: float
     date_frais: date

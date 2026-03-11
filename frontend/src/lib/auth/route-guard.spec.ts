@@ -4,20 +4,20 @@ import { buildLoginRedirect, isGuestOnlyRoute, isProtectedRoute } from './route-
 
 describe('route guard helpers', () => {
 	it('marks operational routes as protected', () => {
-		expect(isProtectedRoute('/dashboard')).toBe(true);
-		expect(isProtectedRoute('/scis')).toBe(true);
-		expect(isProtectedRoute('/exploitation')).toBe(true);
-		expect(isProtectedRoute('/finance')).toBe(true);
-		expect(isProtectedRoute('/biens/123')).toBe(true);
-		expect(isProtectedRoute('/associes')).toBe(true);
-		expect(isProtectedRoute('/charges')).toBe(true);
-		expect(isProtectedRoute('/fiscalite')).toBe(true);
-		expect(isProtectedRoute('/locataires')).toBe(true);
-		expect(isProtectedRoute('/loyers')).toBe(true);
+		// These routes are protected by the route-guard (outside (app) layout)
+		expect(isProtectedRoute('/account')).toBe(true);
 		expect(isProtectedRoute('/account/privacy')).toBe(true);
 		expect(isProtectedRoute('/settings')).toBe(true);
+		expect(isProtectedRoute('/admin')).toBe(true);
+		expect(isProtectedRoute('/onboarding')).toBe(true);
+		expect(isProtectedRoute('/success')).toBe(true);
+		// Public routes
 		expect(isProtectedRoute('/pricing')).toBe(false);
 		expect(isProtectedRoute('/')).toBe(false);
+		expect(isProtectedRoute('/login')).toBe(false);
+		// App routes are protected by (app) layout, not route-guard
+		expect(isProtectedRoute('/dashboard')).toBe(false);
+		expect(isProtectedRoute('/scis')).toBe(false);
 	});
 
 	it('marks auth entry routes as guest-only', () => {
@@ -27,8 +27,8 @@ describe('route guard helpers', () => {
 	});
 
 	it('builds a login redirect with the original target', () => {
-		expect(buildLoginRedirect('/biens', '?tab=portfolio')).toBe(
-			'/login?next=%2Fbiens%3Ftab%3Dportfolio'
+		expect(buildLoginRedirect('/settings', '?tab=notifications')).toBe(
+			'/login?next=%2Fsettings%3Ftab%3Dnotifications'
 		);
 	});
 });

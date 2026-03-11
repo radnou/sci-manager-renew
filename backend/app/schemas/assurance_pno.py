@@ -21,8 +21,8 @@ class AssurancePnoUpdate(BaseModel):
 
 
 class AssurancePnoResponse(BaseModel):
-    id: int
-    id_bien: int
+    id: str | int
+    id_bien: str | int
     assureur: str
     numero_contrat: Optional[str] = None
     prime_annuelle: float = 0

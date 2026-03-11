@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 class BailEmbed(BaseModel):
-    id: int
+    id: str | int
     date_debut: date
     date_fin: Optional[date] = None
     loyer_hc: float
@@ -18,7 +18,7 @@ class BailEmbed(BaseModel):
 
 
 class AssurancePnoEmbed(BaseModel):
-    id: int
+    id: str | int
     assureur: str
     numero_contrat: Optional[str] = None
     prime_annuelle: float = 0
@@ -27,7 +27,7 @@ class AssurancePnoEmbed(BaseModel):
 
 
 class FraisAgenceEmbed(BaseModel):
-    id: int
+    id: str | int
     type_frais: str
     montant: float
     date_frais: date
@@ -35,7 +35,7 @@ class FraisAgenceEmbed(BaseModel):
 
 
 class DocumentBienEmbed(BaseModel):
-    id: int
+    id: str | int
     nom: str
     categorie: str = "autre"
     url: str
@@ -50,8 +50,8 @@ class RentabiliteCalculee(BaseModel):
 
 
 class FicheBienResponse(BaseModel):
-    id: int
-    id_sci: int
+    id: str | int
+    id_sci: str | int
     adresse: str
     ville: str
     code_postal: str
