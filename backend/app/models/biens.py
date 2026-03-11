@@ -15,6 +15,10 @@ class BienBase(BaseModel):
     tmi: float = Field(default=0, ge=0, le=100)
     acquisition_date: date | None = None
     prix_acquisition: float | None = Field(default=None, ge=0)
+    surface_m2: float | None = Field(default=None, ge=0)
+    nb_pieces: int | None = Field(default=None, ge=0)
+    dpe_classe: str | None = Field(default=None, max_length=1, pattern=r"^[A-G]$")
+    photo_url: str | None = Field(default=None, max_length=500)
 
 
 class BienCreate(BienBase):
@@ -31,6 +35,10 @@ class BienUpdate(BaseModel):
     tmi: float | None = Field(default=None, ge=0, le=100)
     acquisition_date: date | None = None
     prix_acquisition: float | None = Field(default=None, ge=0)
+    surface_m2: float | None = Field(default=None, ge=0)
+    nb_pieces: int | None = Field(default=None, ge=0)
+    dpe_classe: str | None = Field(default=None, max_length=1, pattern=r"^[A-G]$")
+    photo_url: str | None = Field(default=None, max_length=500)
 
 
 class BienResponse(BienBase):

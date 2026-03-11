@@ -634,3 +634,109 @@ export function fetchSciBiens(sciId: EntityId) {
 export function fetchSciAssocies(sciId: EntityId) {
 	return apiFetch<Associe[]>(`/api/v1/scis/${sciId}/associes`);
 }
+
+// --- Fiche Bien (Sprint 3) ---
+
+export type BailEmbed = {
+	id: number;
+	date_debut: string;
+	date_fin: string | null;
+	loyer_hc: number;
+	charges_provisions: number;
+	depot_garantie: number;
+	statut: string;
+	locataires: Array<{
+		id: number;
+		nom: string;
+		prenom?: string;
+		email?: string;
+		telephone?: string;
+	}>;
+};
+
+export type AssurancePnoEmbed = {
+	id: number;
+	assureur: string;
+	numero_contrat: string | null;
+	prime_annuelle: number;
+	date_debut: string;
+	date_fin: string | null;
+};
+
+export type FraisAgenceEmbed = {
+	id: number;
+	type_frais: string;
+	montant: number;
+	date_frais: string;
+	description: string | null;
+};
+
+export type DocumentBienEmbed = {
+	id: number;
+	nom: string;
+	categorie: string;
+	url: string;
+	created_at: string;
+};
+
+export type RentabiliteCalculee = {
+	brute: number;
+	nette: number;
+	cashflow_mensuel: number;
+	cashflow_annuel: number;
+};
+
+export type FicheBien = {
+	id: number;
+	id_sci: number;
+	adresse: string;
+	ville: string;
+	code_postal: string;
+	type_bien: string;
+	loyer: number;
+	charges: number;
+	surface_m2: number | null;
+	nb_pieces: number | null;
+	dpe_classe: string | null;
+	photo_url: string | null;
+	prix_acquisition: number | null;
+	statut: string | null;
+	bail_actif: BailEmbed | null;
+	loyers_recents: Array<any>;
+	charges_list: Array<any>;
+	assurance_pno: AssurancePnoEmbed | null;
+	frais_agence: FraisAgenceEmbed[];
+	documents: DocumentBienEmbed[];
+	rentabilite: RentabiliteCalculee;
+};
+
+export async function fetchFicheBien(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<FicheBien> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}`);
+}
+
+export async function fetchSciBiensList(sciId: EntityId): Promise<any[]> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens`);
+}
+
+export async function createBienForSci(sciId: EntityId, data: any): Promise<any> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function createLoyerForBien(
+	sciId: EntityId,
+	bienId: EntityId,
+	data: any
+): Promise<any> {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/loyers`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}

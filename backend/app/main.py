@@ -51,6 +51,7 @@ from app.api.v1 import (
     onboarding,
     quitus,
     scis,
+    scis_biens,
     stripe,
 )
 from app.core.config import Environment, settings
@@ -482,4 +483,5 @@ app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(onboarding.router, prefix="/api/v1")
 app.include_router(export.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(scis_biens.router, prefix="/api/v1")
 app.include_router(admin.router)
