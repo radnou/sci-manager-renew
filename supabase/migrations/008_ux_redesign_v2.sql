@@ -406,4 +406,4 @@ WHERE NOT EXISTS (
 -- 6. EXISTING USERS: bypass onboarding
 -- =============================================================================
 
-UPDATE subscriptions SET onboarding_completed = true WHERE is_active = true;
+UPDATE subscriptions SET onboarding_completed = true WHERE status IN ('active', 'trialing');
