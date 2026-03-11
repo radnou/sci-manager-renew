@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { renderQuitus } from '$lib/api';
-	import type { QuitusRequestPayload } from '$lib/api';
-	import { addToast } from '$lib/components/ui/toast';
 	import { Plus, FileText, Check, Loader2 } from 'lucide-svelte';
+	import LoyerModal from '$lib/components/fiche-bien/modals/LoyerModal.svelte';
+	import DatePopover from '$lib/components/ui/DatePopover.svelte';
+	import { updateLoyer, renderQuitus, type EntityId, type QuitusRequestPayload } from '$lib/api';
+	import { addToast } from '$lib/components/ui/toast/toast-store';
 
 	interface Props {
 		loyers: Array<any>;
@@ -14,11 +15,27 @@
 		nomSci?: string;
 		adresseBien?: string;
 		villeBien?: string;
+		onRefresh: () => void;
 	}
 
-	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '' }: Props = $props();
+	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh }: Props = $props();
 
+	let showLoyerModal = $state(false);
+	let payDateLoyerId: EntityId | null = $state(null);
+	let payDateOpen = $state(false);
 	let generatingQuittanceFor: string | null = $state(null);
+
+	async function handleMarkPaid(date: string) {
+		if (!payDateLoyerId) return;
+		try {
+			await updateLoyer(payDateLoyerId, { statut: 'paye', date_paiement: date });
+			addToast({ title: 'Loyer marqué payé', variant: 'success' });
+			payDateLoyerId = null;
+			onRefresh();
+		} catch (err: any) {
+			addToast({ title: err?.message ?? 'Erreur', variant: 'error' });
+		}
+	}
 
 	const statutConfig: Record<string, { label: string; class: string }> = {
 		paye: {
@@ -82,7 +99,6 @@
 			const url = URL.createObjectURL(blob);
 			window.open(url, '_blank');
 
-			// Clean up blob URL after a delay to allow the browser to load it
 			setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
 			addToast({
@@ -109,6 +125,7 @@
 		{#if isGerant}
 			<button
 				class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+				onclick={() => showLoyerModal = true}
 			>
 				<Plus class="h-4 w-4" />
 				Enregistrer un loyer
@@ -152,6 +169,7 @@
 				<tbody>
 					{#each loyers as loyer (loyer.id ?? loyer.date_loyer)}
 						{@const statut = getStatut(loyer.statut)}
+						{@const isGenerating = generatingQuittanceFor === String(loyer.id)}
 						<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
 							<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">
 								{formatFrDate(loyer.date_loyer)}
@@ -171,15 +189,24 @@
 								<td class="py-3">
 									<div class="flex gap-2">
 										{#if loyer.statut !== 'paye'}
-											<button
-												class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
-												title="Marquer comme payé"
-											>
-												<Check class="h-3 w-3" />
-												Payé
-											</button>
+											<div class="relative">
+												<button
+													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+													title="Marquer comme payé"
+													onclick={() => { payDateLoyerId = loyer.id; payDateOpen = true; }}
+												>
+													<Check class="h-3 w-3" />
+													Payé
+												</button>
+												{#if payDateOpen && payDateLoyerId === loyer.id}
+													<DatePopover
+														bind:open={payDateOpen}
+														onconfirm={(d) => handleMarkPaid(d)}
+														oncancel={() => { payDateOpen = false; payDateLoyerId = null; }}
+													/>
+												{/if}
+											</div>
 										{/if}
-											{@const isGenerating = generatingQuittanceFor === String(loyer.id)}
 										<button
 											onclick={() => handleGenerateQuittance(loyer)}
 											disabled={isGenerating}
@@ -203,4 +230,6 @@
 			</table>
 		</div>
 	{/if}
+
+	<LoyerModal bind:open={showLoyerModal} {sciId} {bienId} defaultMontant={0} onSuccess={onRefresh} />
 </div>

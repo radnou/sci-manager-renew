@@ -1,7 +1,12 @@
 <script lang="ts">
 	import type { AssurancePnoEmbed, FraisAgenceEmbed } from '$lib/api';
+	import { deleteChargeForBien, deletePnoForBien, deleteFraisForBien } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { Plus, Trash2, Shield, Building2 } from 'lucide-svelte';
+	import ChargeModal from '$lib/components/fiche-bien/modals/ChargeModal.svelte';
+	import PnoModal from '$lib/components/fiche-bien/modals/PnoModal.svelte';
+	import FraisModal from '$lib/components/fiche-bien/modals/FraisModal.svelte';
+	import { addToast } from '$lib/components/ui/toast/toast-store';
 
 	interface Props {
 		charges: any[];
@@ -10,9 +15,15 @@
 		isGerant: boolean;
 		sciId: string;
 		bienId: string | number;
+		onRefresh: () => void;
 	}
 
-	let { charges, assurancePno, fraisAgence, isGerant, sciId, bienId }: Props = $props();
+	let { charges, assurancePno, fraisAgence, isGerant, sciId, bienId, onRefresh }: Props = $props();
+
+	let showChargeModal = $state(false);
+	let showPnoModal = $state(false);
+	let showFraisModal = $state(false);
+	let editPno: AssurancePnoEmbed | null = $state(null);
 
 	const typeFraisLabels: Record<string, string> = {
 		gestion_locative: 'Gestion locative',
@@ -22,6 +33,62 @@
 
 	function getFraisLabel(type: string): string {
 		return typeFraisLabels[type] ?? type;
+	}
+
+	function handleDeleteCharge(chargeId: number) {
+		addToast({
+			title: 'Charge supprimée',
+			variant: 'undo',
+			undoCallbacks: {
+				onUndo: () => {},
+				onExpire: async () => {
+					try {
+						await deleteChargeForBien(sciId, bienId, chargeId);
+						onRefresh();
+					} catch (err: any) {
+						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
+					}
+				}
+			}
+		});
+	}
+
+	function handleDeletePno() {
+		if (!assurancePno) return;
+		const pnoId = assurancePno.id;
+		addToast({
+			title: 'Assurance PNO supprimée',
+			variant: 'undo',
+			undoCallbacks: {
+				onUndo: () => {},
+				onExpire: async () => {
+					try {
+						await deletePnoForBien(sciId, bienId, pnoId);
+						onRefresh();
+					} catch (err: any) {
+						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
+					}
+				}
+			}
+		});
+	}
+
+	function handleDeleteFrais(fraisId: number) {
+		addToast({
+			title: 'Frais supprimés',
+			variant: 'undo',
+			undoCallbacks: {
+				onUndo: () => {},
+				onExpire: async () => {
+					try {
+						await deleteFraisForBien(sciId, bienId, fraisId);
+						onRefresh();
+					} catch (err: any) {
+						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
+					}
+				}
+			}
+		});
 	}
 </script>
 
@@ -33,6 +100,7 @@
 			{#if isGerant}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+					onclick={() => showChargeModal = true}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter une charge
@@ -99,6 +167,7 @@
 										<button
 											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
 											title="Supprimer"
+											onclick={() => handleDeleteCharge(charge.id)}
 										>
 											<Trash2 class="h-3 w-3" />
 											Supprimer
@@ -123,6 +192,7 @@
 			{#if isGerant && !assurancePno}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+					onclick={() => { editPno = null; showPnoModal = true; }}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter
@@ -168,11 +238,13 @@
 				<div class="mt-4 flex gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
 					<button
 						class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+						onclick={() => { editPno = assurancePno; showPnoModal = true; }}
 					>
 						Modifier
 					</button>
 					<button
 						class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
+						onclick={() => handleDeletePno()}
 					>
 						<Trash2 class="h-3 w-3" />
 						Supprimer
@@ -201,6 +273,7 @@
 			{#if isGerant}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+					onclick={() => showFraisModal = true}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter
@@ -269,6 +342,7 @@
 										<button
 											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
 											title="Supprimer"
+											onclick={() => handleDeleteFrais(frais.id)}
 										>
 											<Trash2 class="h-3 w-3" />
 											Supprimer
@@ -282,4 +356,7 @@
 			</div>
 		{/if}
 	</div>
+	<ChargeModal bind:open={showChargeModal} {sciId} {bienId} onSuccess={onRefresh} />
+	<PnoModal bind:open={showPnoModal} {sciId} {bienId} editItem={editPno} onSuccess={onRefresh} />
+	<FraisModal bind:open={showFraisModal} {sciId} {bienId} onSuccess={onRefresh} />
 </div>

@@ -5,12 +5,14 @@
 	import { fetchSciAssociesList } from '$lib/api';
 	import RoleGate from '$lib/components/RoleGate.svelte';
 	import { UserPlus } from 'lucide-svelte';
+	import AssocieModal from '$lib/components/fiche-bien/modals/AssocieModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
 
 	let sciId = $derived(page.params.sciId!);
 	let isGerant = $derived(userRole === 'gerant');
+	let showAssocieModal = $state(false);
 
 	let associes: Associe[] = $state([]);
 	let loading = $state(true);
@@ -59,6 +61,7 @@
 			<h1 class="sci-page-title">Associés</h1>
 			{#if isGerant}
 				<button
+					onclick={() => showAssocieModal = true}
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
 				>
 					<UserPlus class="h-4 w-4" />
@@ -133,4 +136,6 @@
 			{/if}
 		</div>
 	{/if}
+
+	<AssocieModal bind:open={showAssocieModal} {sciId} onSuccess={loadAssocies} />
 </section>

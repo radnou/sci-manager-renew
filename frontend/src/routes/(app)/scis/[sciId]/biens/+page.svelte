@@ -4,12 +4,14 @@
 	import { fetchSciBiensList } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { MapPin, Plus } from 'lucide-svelte';
+	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
 	const userRole = getContext<string>('userRole');
 
 	let isGerant = $derived(userRole === 'gerant');
+	let showBienModal = $state(false);
 
 	let biens: Array<any> = $state([]);
 	let loading = $state(true);
@@ -46,6 +48,7 @@
 			<h1 class="sci-page-title">Biens</h1>
 			{#if isGerant}
 				<button
+					onclick={() => showBienModal = true}
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
 				>
 					<Plus class="h-4 w-4" />
@@ -119,4 +122,6 @@
 			{/each}
 		</div>
 	{/if}
+
+	<BienModal bind:open={showBienModal} {sciId} />
 </section>

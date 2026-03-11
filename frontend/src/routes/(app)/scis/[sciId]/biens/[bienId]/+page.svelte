@@ -79,8 +79,8 @@
 
 		<div class="mt-6 space-y-6">
 			<FicheBienIdentite {bien} {isGerant} />
-			<FicheBienBail bail={bien.bail_actif} {isGerant} sciId={sciId} bienId={String(bien.id)} />
-				<FicheBienLoyers
+			<FicheBienBail bail={bien.bail_actif} {isGerant} sciId={sciId} bienId={String(bien.id)} onRefresh={loadFicheBien} />
+			<FicheBienLoyers
 				loyers={bien.loyers_recents}
 				{isGerant}
 				{sciId}
@@ -89,6 +89,7 @@
 				nomSci={sci.nom}
 				adresseBien={bien.adresse}
 				villeBien={bien.ville}
+				onRefresh={loadFicheBien}
 			/>
 			<FicheBienCharges
 				charges={bien.charges_list}
@@ -97,6 +98,7 @@
 				{isGerant}
 				sciId={sciId}
 				bienId={String(bien.id)}
+				onRefresh={loadFicheBien}
 			/>
 			<FicheBienRentabilite rentabilite={bien.rentabilite} />
 			<FicheBienDocuments

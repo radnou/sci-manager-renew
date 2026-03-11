@@ -3,6 +3,7 @@
 	import { uploadDocumentBien, deleteDocumentBien } from '$lib/api';
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { FileText, Upload, Trash2, Download } from 'lucide-svelte';
+	import { addToast } from '$lib/components/ui/toast/toast-store';
 
 	interface Props {
 		documents: DocumentBienEmbed[];
@@ -67,20 +68,28 @@
 			uploadCategorie = 'autre';
 			uploadFile = null;
 		} catch (err: any) {
-			uploadError = err?.message ?? "Erreur lors de l'upload.";
+			addToast({ title: err?.message ?? "Erreur lors de l'upload", variant: 'error' });
 		} finally {
 			uploading = false;
 		}
 	}
 
-	async function handleDelete(docId: number) {
-		if (!confirm('Supprimer ce document ?')) return;
-		try {
-			await deleteDocumentBien(sciId, bienId, docId);
-			documents = documents.filter((d) => d.id !== docId);
-		} catch (err: any) {
-			alert(err?.message ?? 'Erreur lors de la suppression.');
-		}
+	function handleDelete(docId: number) {
+		addToast({
+			title: 'Document supprimé',
+			variant: 'undo',
+			undoCallbacks: {
+				onUndo: () => {},
+				onExpire: async () => {
+					try {
+						await deleteDocumentBien(sciId, bienId, docId);
+						documents = documents.filter((d) => d.id !== docId);
+					} catch (err: any) {
+						addToast({ title: err?.message ?? 'Erreur lors de la suppression', variant: 'error' });
+					}
+				}
+			}
+		});
 	}
 </script>
 

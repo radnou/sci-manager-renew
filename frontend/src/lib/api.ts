@@ -220,6 +220,7 @@ export type LoyerUpdatePayload = {
 	date_loyer?: string;
 	montant?: number;
 	statut?: LoyerStatus;
+	date_paiement?: string;
 	quitus_genere?: boolean;
 };
 

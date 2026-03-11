@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { Building2, Plus, Landmark } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { fetchScis, type SCIOverview } from '$lib/api';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import SciModal from '$lib/components/fiche-bien/modals/SciModal.svelte';
 
+	let showSciModal = $state(false);
 	let scis = $state<SCIOverview[]>([]);
 	let loading = $state(true);
 	let error = $state('');
@@ -26,7 +27,7 @@
 		<p class="sci-eyebrow">Gestion</p>
 		<div class="flex items-center justify-between">
 			<h1 class="sci-page-title">Mes SCI</h1>
-			<Button onclick={() => goto('/scis')} size="sm">
+			<Button onclick={() => showSciModal = true} size="sm">
 				<Plus class="mr-1 h-4 w-4" /> Nouvelle SCI
 			</Button>
 		</div>
@@ -42,8 +43,8 @@
 		<EmptyState
 			icon={Landmark}
 			title="Bienvenue dans votre espace SCI"
-			description="Commencez par creer votre premiere Societe Civile Immobiliere. Vous pourrez ensuite y rattacher vos biens, associes et documents."
-			ctaText="Creer ma premiere SCI"
+			description="Commencez par créer votre première Société Civile Immobilière. Vous pourrez ensuite y rattacher vos biens, associés et documents."
+			ctaText="Créer ma première SCI"
 			ctaHref="/onboarding"
 		/>
 	{:else}
@@ -74,4 +75,6 @@
 			{/each}
 		</div>
 	{/if}
+
+	<SciModal bind:open={showSciModal} />
 </section>
