@@ -3,6 +3,7 @@ const PROTECTED_ROUTE_PREFIXES = [
 	'/scis',
 	'/exploitation',
 	'/finance',
+	'/finances',
 	'/biens',
 	'/associes',
 	'/charges',
@@ -12,7 +13,8 @@ const PROTECTED_ROUTE_PREFIXES = [
 	'/account',
 	'/settings',
 	'/success',
-	'/admin'
+	'/admin',
+	'/onboarding'
 ];
 
 const GUEST_ONLY_ROUTE_PREFIXES = ['/login', '/register'];

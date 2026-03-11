@@ -127,7 +127,22 @@ def _handle_event(event: Any) -> None:
 @router.get("/subscription", response_model=SubscriptionEntitlementsResponse)
 async def get_subscription(user_id: str = Depends(get_current_user)) -> SubscriptionEntitlementsResponse:
     logger.info("fetching_subscription_entitlements", user_id=user_id)
-    return SubscriptionEntitlementsResponse(**SubscriptionService.get_subscription_summary(user_id))
+    summary = SubscriptionService.get_subscription_summary(user_id)
+
+    # Load onboarding_completed from subscriptions table
+    client = get_supabase_service_client()
+    result = (
+        client.table("subscriptions")
+        .select("onboarding_completed")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    onboarding_completed = False
+    if result.data:
+        onboarding_completed = bool(result.data[0].get("onboarding_completed", False))
+
+    summary["onboarding_completed"] = onboarding_completed
+    return SubscriptionEntitlementsResponse(**summary)
 
 
 @router.post(

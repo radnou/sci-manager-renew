@@ -34,3 +34,4 @@ class SubscriptionEntitlementsResponse(BaseModel):
     remaining_biens: int | None = None
     over_limit: bool = False
     features: dict[str, Any] = Field(default_factory=dict)
+    onboarding_completed: bool = False

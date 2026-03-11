@@ -267,6 +267,7 @@ export type SubscriptionEntitlements = {
 	remaining_biens?: number | null;
 	over_limit: boolean;
 	features: Record<string, boolean>;
+	onboarding_completed: boolean;
 };
 
 type ApiErrorPayload = {
@@ -558,4 +559,32 @@ export function markNotificationRead(id: string): Promise<Notification> {
 
 export function markAllNotificationsRead(): Promise<{ updated: number }> {
 	return apiFetch<{ updated: number }>('/api/v1/notifications/read-all', { method: 'PATCH' });
+}
+
+// --- Onboarding ---
+
+export type OnboardingStatus = {
+	completed: boolean;
+	sci_created: boolean;
+	bien_created: boolean;
+	bail_created: boolean;
+	notifications_set: boolean;
+};
+
+export function fetchOnboardingStatus() {
+	return apiFetch<OnboardingStatus>('/api/v1/onboarding');
+}
+
+export function completeOnboarding() {
+	return apiFetch<{ completed: boolean }>('/api/v1/onboarding/complete', { method: 'POST' });
+}
+
+// --- Nested SCI/Biens API ---
+
+export function fetchSciBiens(sciId: EntityId) {
+	return apiFetch<Bien[]>(`/api/v1/scis/${sciId}/biens`);
+}
+
+export function fetchSciAssocies(sciId: EntityId) {
+	return apiFetch<Associe[]>(`/api/v1/scis/${sciId}/associes`);
 }

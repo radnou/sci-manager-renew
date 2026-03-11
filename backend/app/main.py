@@ -47,6 +47,7 @@ from app.api.v1 import (
     locataires,
     loyers,
     notifications,
+    onboarding,
     quitus,
     scis,
     stripe,
@@ -477,5 +478,6 @@ app.include_router(cerfa.router, prefix="/api/v1")
 app.include_router(stripe.router, prefix="/api/v1")
 app.include_router(gdpr.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(onboarding.router, prefix="/api/v1")
 app.include_router(export.router, prefix="/api/v1")
 app.include_router(admin.router)
