@@ -82,7 +82,7 @@ async def test_email_service_raises_external_service_error_on_welcome_failure():
         mock_send.side_effect = Exception("Rate limit exceeded")
 
         with pytest.raises(ExternalServiceError) as exc_info:
-            await service.send_welcome("test@example.com", "John Doe")
+            await service.send_welcome("test@example.com", "Pro")
 
         assert "Resend" in str(exc_info.value)
         assert exc_info.value.status_code == 503

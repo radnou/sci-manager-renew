@@ -1,7 +1,9 @@
-"""Email service using Resend API"""
-from jinja2 import Template
+"""Email service using Resend API with Jinja2 file-based templates"""
+from pathlib import Path
+
 import structlog
 import resend
+from jinja2 import Environment, FileSystemLoader
 
 from app.core.config import settings
 from app.core.external_services import run_with_retry
@@ -9,13 +11,26 @@ from app.core.exceptions import ExternalServiceError
 
 logger = structlog.get_logger(__name__)
 
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates" / "emails"
+_jinja_env = Environment(
+    loader=FileSystemLoader(str(TEMPLATES_DIR)),
+    autoescape=True,
+)
+
+
+def _render_template(template_name: str, **kwargs: object) -> str:
+    """Render an email template with the given context variables."""
+    template = _jinja_env.get_template(template_name)
+    return template.render(**kwargs)
+
 
 class EmailService:
     """Service for sending emails via Resend"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         resend.api_key = settings.resend_api_key
         self.from_email = settings.resend_from_email
+        self.frontend_url = settings.frontend_url
 
     async def send_magic_link(self, email: str, magic_link: str) -> dict:
         """Send magic link for authentication
@@ -26,16 +41,11 @@ class EmailService:
         logger.info("sending_magic_link", email=email)
 
         try:
-            template = Template(
-                """
-            <h1>Connexion à GererSCI</h1>
-            <p>Cliquez sur le lien ci-dessous pour vous connecter:</p>
-            <a href="{{ link }}">Se connecter</a>
-            <p>Ce lien expire dans 24h.</p>
-            """
+            html = _render_template(
+                "magic_link.html",
+                cta_url=magic_link,
+                cta_text="Se connecter",
             )
-
-            html = template.render(link=magic_link)
 
             payload = {
                 "from": self.from_email,
@@ -55,7 +65,7 @@ class EmailService:
             logger.error("magic_link_send_failed", email=email, error=str(e), exc_info=True)
             raise ExternalServiceError("Resend", f"Magic link send failed: {str(e)}")
 
-    async def send_welcome(self, email: str, user_name: str) -> dict:
+    async def send_welcome(self, email: str, plan_name: str) -> dict:
         """Send welcome email
 
         Raises:
@@ -64,21 +74,12 @@ class EmailService:
         logger.info("sending_welcome_email", email=email)
 
         try:
-            template = Template(
-                """
-            <h1>Bienvenue sur GererSCI, {{ name }}!</h1>
-            <p>Votre compte a été créé avec succès.</p>
-            <p>Vous pouvez maintenant:</p>
-            <ul>
-                <li>Ajouter vos biens immobiliers</li>
-                <li>Gérer vos loyers et charges</li>
-                <li>Générer automatiquement vos quitus</li>
-                <li>Exporter vos données fiscales (Cerfa 2044)</li>
-            </ul>
-            """
+            html = _render_template(
+                "welcome.html",
+                plan_name=plan_name,
+                cta_url=f"{self.frontend_url}/dashboard",
+                cta_text="Accéder à mon espace",
             )
-
-            html = template.render(name=user_name)
 
             payload = {
                 "from": self.from_email,
@@ -98,7 +99,15 @@ class EmailService:
             logger.error("welcome_email_send_failed", email=email, error=str(e), exc_info=True)
             raise ExternalServiceError("Resend", f"Welcome email send failed: {str(e)}")
 
-    async def send_quitus_generated(self, email: str, bien_name: str) -> dict:
+    async def send_quitus_generated(
+        self,
+        email: str,
+        bien_name: str,
+        locataire_name: str = "",
+        mois: str = "",
+        bien_adresse: str = "",
+        download_url: str = "",
+    ) -> dict:
         """Notify when quitus is generated
 
         Raises:
@@ -107,15 +116,14 @@ class EmailService:
         logger.info("sending_quitus_notification", email=email, bien=bien_name)
 
         try:
-            template = Template(
-                """
-            <h1>Quitus généré</h1>
-            <p>Le quitus pour {{ bien }} a été généré avec succès.</p>
-            <p>Vous pouvez le télécharger depuis votre dashboard.</p>
-            """
+            html = _render_template(
+                "quittance.html",
+                locataire_name=locataire_name or bien_name,
+                mois=mois,
+                bien_adresse=bien_adresse or bien_name,
+                cta_url=download_url or f"{self.frontend_url}/dashboard",
+                cta_text="Télécharger la quittance",
             )
-
-            html = template.render(bien=bien_name)
 
             payload = {
                 "from": self.from_email,
@@ -144,15 +152,12 @@ class EmailService:
         logger.info("sending_subscription_confirmation", email=email, plan=plan)
 
         try:
-            template = Template(
-                """
-            <h1>Abonnement activé</h1>
-            <p>Votre abonnement au plan <strong>{{ plan }}</strong> est maintenant actif.</p>
-            <p>Merci de votre confiance!</p>
-            """
+            html = _render_template(
+                "subscription.html",
+                plan_name=plan,
+                cta_url=f"{self.frontend_url}/dashboard",
+                cta_text="Accéder à mon espace",
             )
-
-            html = template.render(plan=plan)
 
             payload = {
                 "from": self.from_email,
@@ -171,6 +176,39 @@ class EmailService:
         except Exception as e:
             logger.error("subscription_confirmation_send_failed", email=email, plan=plan, error=str(e), exc_info=True)
             raise ExternalServiceError("Resend", f"Subscription confirmation send failed: {str(e)}")
+
+    async def send_reset_password(self, email: str, reset_link: str) -> dict:
+        """Send password reset email
+
+        Raises:
+            ExternalServiceError: Si l'envoi échoue
+        """
+        logger.info("sending_reset_password", email=email)
+
+        try:
+            html = _render_template(
+                "reset_password.html",
+                cta_url=reset_link,
+                cta_text="Réinitialiser mon mot de passe",
+            )
+
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": "Réinitialisation de votre mot de passe - GererSCI",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_reset_password",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email},
+            )
+
+            logger.info("reset_password_sent", email=email)
+            return result
+        except Exception as e:
+            logger.error("reset_password_send_failed", email=email, error=str(e), exc_info=True)
+            raise ExternalServiceError("Resend", f"Reset password email send failed: {str(e)}")
 
 
 # Singleton instance

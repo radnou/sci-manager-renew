@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
+        <tr><td style="background:#2563eb;padding:24px;text-align:center;">
+          <span style="color:#fff;font-size:24px;font-weight:700;">GererSCI</span>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="color:#374151;font-size:16px;line-height:1.6;">Bonjour,</p>
+          {% block content %}{% endblock %}
+          {% if cta_url and cta_text %}
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+            <tr><td align="center">
+              <a href="{{ cta_url }}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 32px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">{{ cta_text }}</a>
+            </td></tr>
+          </table>
+          <p style="color:#9ca3af;font-size:13px;">Si le bouton ne fonctionne pas, copiez ce lien : <a href="{{ cta_url }}" style="color:#2563eb;">{{ cta_url }}</a></p>
+          {% endif %}
+        </td></tr>
+        <tr><td style="background:#f9fafb;padding:16px;text-align:center;border-top:1px solid #e5e7eb;">
+          <p style="color:#9ca3af;font-size:12px;margin:0;">GererSCI &middot; gerersci.fr</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
