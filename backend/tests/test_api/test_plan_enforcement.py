@@ -44,12 +44,12 @@ def enforce_mode(monkeypatch):
 
 
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """FREE plan: max_biens=1, user already has 1 bien -> 402 PlanLimitError."""
+    """FREE plan: max_biens=2, user already has 2 biens -> 402 PlanLimitError."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
-    # Put one existing bien so the user is at the limit.
+    # Put two existing biens so the user is at the limit.
     fake_supabase.store["biens"] = [
         {
-            "id": "bien-existing",
+            "id": "bien-existing-1",
             "id_sci": "sci-1",
             "adresse": "1 rue Existante",
             "ville": "Lyon",
@@ -59,8 +59,19 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "charges": 0,
             "tmi": 0,
         },
+        {
+            "id": "bien-existing-2",
+            "id_sci": "sci-1",
+            "adresse": "2 rue Existante",
+            "ville": "Lyon",
+            "code_postal": "69001",
+            "type_locatif": "nu",
+            "loyer_cc": 800,
+            "charges": 0,
+            "tmi": 0,
+        },
     ]
-    # No subscription row -> defaults to FREE (max_biens=1).
+    # No subscription row -> defaults to FREE (max_biens=2).
     fake_supabase.store["subscriptions"] = []
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
@@ -76,13 +87,24 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
     """Verify the full error response structure for biens quota enforcement."""
     fake_supabase.store["biens"] = [
         {
-            "id": "bien-existing",
+            "id": "bien-existing-1",
             "id_sci": "sci-1",
             "adresse": "1 rue Existante",
             "ville": "Lyon",
             "code_postal": "69001",
             "type_locatif": "nu",
             "loyer_cc": 900,
+            "charges": 0,
+            "tmi": 0,
+        },
+        {
+            "id": "bien-existing-2",
+            "id_sci": "sci-1",
+            "adresse": "2 rue Existante",
+            "ville": "Lyon",
+            "code_postal": "69001",
+            "type_locatif": "nu",
+            "loyer_cc": 800,
             "charges": 0,
             "tmi": 0,
         },
@@ -97,8 +119,8 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
-    assert body["details"]["limit"] == 1
-    assert body["details"]["current"] == 1
+    assert body["details"]["limit"] == 2
+    assert body["details"]["current"] == 2
     assert body["details"]["plan_key"] == "free"
     assert "request_id" in body
 

@@ -30,6 +30,12 @@ class PlanEntitlements:
     checkout_mode: str
     entitlements_version: int = 1
     is_public: bool = True
+    documents_enabled: bool = False
+    notifications_enabled: bool = False
+    associes_enabled: bool = False
+    pno_frais_enabled: bool = False
+    rentabilite_enabled: bool = False
+    dashboard_complet: bool = False
 
     def features_payload(self) -> dict[str, bool]:
         return {
@@ -39,6 +45,12 @@ class PlanEntitlements:
             "quitus_enabled": self.quitus_enabled,
             "cerfa_enabled": self.cerfa_enabled,
             "priority_support": self.priority_support,
+            "documents_enabled": self.documents_enabled,
+            "notifications_enabled": self.notifications_enabled,
+            "associes_enabled": self.associes_enabled,
+            "pno_frais_enabled": self.pno_frais_enabled,
+            "rentabilite_enabled": self.rentabilite_enabled,
+            "dashboard_complet": self.dashboard_complet,
         }
 
     def metadata_payload(self) -> dict[str, str]:
@@ -58,10 +70,10 @@ class PlanEntitlements:
 PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     PlanKey.FREE: PlanEntitlements(
         plan_key=PlanKey.FREE,
-        display_name="Free",
+        display_name="Essentiel",
         billing_period="none",
         max_scis=1,
-        max_biens=1,
+        max_biens=2,
         multi_sci_enabled=False,
         charges_enabled=False,
         fiscalite_enabled=False,
@@ -69,40 +81,30 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
         cerfa_enabled=False,
         priority_support=False,
         checkout_mode="subscription",
-        is_public=False,
+        is_public=True,
     ),
     PlanKey.STARTER: PlanEntitlements(
         plan_key=PlanKey.STARTER,
-        display_name="Starter",
+        display_name="Gestion",
         billing_period="month",
-        max_scis=1,
-        max_biens=5,
-        multi_sci_enabled=False,
+        max_scis=3,
+        max_biens=10,
+        multi_sci_enabled=True,
         charges_enabled=True,
         fiscalite_enabled=False,
         quitus_enabled=True,
         cerfa_enabled=False,
         priority_support=False,
         checkout_mode="subscription",
+        is_public=True,
+        documents_enabled=True,
+        notifications_enabled=True,
+        dashboard_complet=True,
     ),
     PlanKey.PRO: PlanEntitlements(
         plan_key=PlanKey.PRO,
-        display_name="Pro",
+        display_name="Fiscal",
         billing_period="month",
-        max_scis=10,
-        max_biens=20,
-        multi_sci_enabled=True,
-        charges_enabled=True,
-        fiscalite_enabled=True,
-        quitus_enabled=True,
-        cerfa_enabled=True,
-        priority_support=True,
-        checkout_mode="subscription",
-    ),
-    PlanKey.LIFETIME: PlanEntitlements(
-        plan_key=PlanKey.LIFETIME,
-        display_name="Lifetime",
-        billing_period="once",
         max_scis=None,
         max_biens=None,
         multi_sci_enabled=True,
@@ -111,13 +113,22 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
         quitus_enabled=True,
         cerfa_enabled=True,
         priority_support=True,
-        checkout_mode="payment",
+        checkout_mode="subscription",
+        is_public=True,
+        documents_enabled=True,
+        notifications_enabled=True,
+        associes_enabled=True,
+        pno_frais_enabled=True,
+        rentabilite_enabled=True,
+        dashboard_complet=True,
     ),
 }
 
 
 def get_plan(plan_key: PlanKey | str) -> PlanEntitlements:
     normalized = plan_key if isinstance(plan_key, PlanKey) else PlanKey(str(plan_key))
+    if normalized == PlanKey.LIFETIME:
+        normalized = PlanKey.PRO
     return PLAN_CATALOG[normalized]
 
 

@@ -236,7 +236,7 @@ def test_get_subscription_returns_free_fallback(client, auth_headers):
     payload = response.json()
     assert payload["plan_key"] == "free"
     assert payload["max_scis"] == 1
-    assert payload["max_biens"] == 1
+    assert payload["max_biens"] == 2
 
 
 def test_create_checkout_session_feature_disabled(client, auth_headers, monkeypatch):
