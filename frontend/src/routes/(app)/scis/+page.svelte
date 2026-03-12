@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { Building2, Plus } from 'lucide-svelte';
+	import { Building2, Plus, Landmark } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { fetchScis, type SCIOverview } from '$lib/api';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let scis = $state<SCIOverview[]>([]);
 	let loading = $state(true);
@@ -38,10 +39,13 @@
 	{:else if error}
 		<p class="text-sm text-rose-600">{error}</p>
 	{:else if scis.length === 0}
-		<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-16 dark:border-slate-700">
-			<Building2 class="h-10 w-10 text-slate-400" />
-			<p class="mt-3 text-sm text-slate-500">Aucune SCI. Créez votre première SCI.</p>
-		</div>
+		<EmptyState
+			icon={Landmark}
+			title="Bienvenue dans votre espace SCI"
+			description="Commencez par creer votre premiere Societe Civile Immobiliere. Vous pourrez ensuite y rattacher vos biens, associes et documents."
+			ctaText="Creer ma premiere SCI"
+			ctaHref="/onboarding"
+		/>
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each scis as sci (String(sci.id))}

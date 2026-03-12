@@ -199,3 +199,131 @@ def test_ensure_feature_enabled_warn_mode_allows(monkeypatch):
 
     summary = SubscriptionService.ensure_feature_enabled("user-123", "multi_sci_enabled")
     assert summary["plan_key"] == "starter"
+
+
+def test_count_query_fallback_to_len(monkeypatch):
+    """_count_query falls back to len(rows) when result.count is not int."""
+
+    class _Result:
+        count = None
+        data = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
+
+    class _Query:
+        def execute(self):
+            return _Result()
+
+    assert SubscriptionService._count_query(_Query()) == 3
+
+
+def test_get_usage_counts_empty_sci_ids(monkeypatch):
+    """get_usage_counts returns 0 biens when user has no SCIs."""
+    store = {
+        "subscriptions": [],
+        "associes": [],
+        "biens": [],
+    }
+    patch_client(monkeypatch, store)
+
+    usage = SubscriptionService.get_usage_counts("user-no-sci")
+    assert usage["current_scis"] == 0
+    assert usage["current_biens"] == 0
+
+
+def test_enforce_limit_within_limits_returns_summary(monkeypatch):
+    """enforce_limit returns summary when under limit (happy path)."""
+    store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "pro",
+            "status": "active",
+            "is_active": True,
+            "max_scis": 10,
+            "max_biens": 20,
+            "features": {"multi_sci_enabled": True},
+        }
+    ]
+    patch_client(monkeypatch, store)
+    monkeypatch.setattr(
+        "app.services.subscription_service.settings.feature_plan_entitlements_enforcement",
+        "enforce",
+    )
+
+    summary = SubscriptionService.enforce_limit("user-123", "biens")
+    assert summary["plan_key"] == "pro"
+    assert summary["current_biens"] == 2
+    assert summary["over_limit"] is False
+
+
+def test_ensure_feature_enabled_happy_path(monkeypatch):
+    """ensure_feature_enabled returns summary when feature is enabled."""
+    store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "pro",
+            "status": "active",
+            "is_active": True,
+            "max_scis": 10,
+            "max_biens": 20,
+            "features": {"multi_sci_enabled": True},
+        }
+    ]
+    patch_client(monkeypatch, store)
+    monkeypatch.setattr(
+        "app.services.subscription_service.settings.feature_plan_entitlements_enforcement",
+        "enforce",
+    )
+
+    summary = SubscriptionService.ensure_feature_enabled("user-123", "multi_sci_enabled")
+    assert summary["plan_key"] == "pro"
+
+
+def test_build_subscription_payload_resolves_plan_key(monkeypatch):
+    """build_subscription_payload resolves plan_key from price_id when None."""
+    payload = SubscriptionService.build_subscription_payload(
+        session_data={
+            "client_reference_id": "uid-1",
+            "customer": "cus_1",
+            "subscription": "sub_1",
+            "price_id": None,
+            "mode": "subscription",
+        },
+        status_value="active",
+        plan_key=None,
+    )
+    # Falls back to FREE when no price_id and no plan_key
+    assert payload["plan_key"] == "free"
+    assert payload["is_active"] is True
+
+
+def test_enforce_limit_reached_warn_mode(monkeypatch):
+    """enforce_limit allows when limit reached in warn mode."""
+    store = {
+        "subscriptions": [
+            {
+                "user_id": "user-123",
+                "plan_key": "free",
+                "status": "free",
+                "is_active": True,
+                "max_scis": 1,
+                "max_biens": 2,
+                "features": {},
+            }
+        ],
+        "associes": [{"id_sci": "sci-1", "user_id": "user-123"}],
+        "biens": [
+            {"id": "b1", "id_sci": "sci-1"},
+            {"id": "b2", "id_sci": "sci-1"},
+        ],
+    }
+    patch_client(monkeypatch, store)
+    monkeypatch.setattr(
+        "app.services.subscription_service.settings.feature_plan_entitlements_enforcement",
+        "warn",
+    )
+
+    # current_biens (2) >= max_biens (2) but warn mode allows
+    summary = SubscriptionService.enforce_limit("user-123", "biens")
+    assert summary["plan_key"] == "free"
+    assert summary["current_biens"] == 2

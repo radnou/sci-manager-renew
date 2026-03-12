@@ -17,7 +17,7 @@
 	let selectedIndex = $state(0);
 
 	const commands = [
-		{ label: 'Dashboard', description: 'Cockpit exécutif', icon: LayoutDashboard, href: '/dashboard' },
+		{ label: 'Dashboard', description: 'Tableau de bord', icon: LayoutDashboard, href: '/dashboard' },
 		{ label: 'SCI', description: 'Gérer les sociétés', icon: Building2, href: '/scis' },
 		{ label: 'Biens', description: 'Patrimoine immobilier', icon: Building2, href: '/biens' },
 		{ label: 'Loyers', description: 'Suivi des encaissements', icon: HandCoins, href: '/loyers' },

@@ -56,7 +56,7 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				errorMessage = data.error || 'Erreur lors de l\u2019activation du compte.';
+				errorMessage = data.error || 'Erreur lors de l'activation du compte.';
 				step = 'error';
 				return;
 			}
@@ -70,14 +70,14 @@
 			});
 
 			if (otpError) {
-				errorMessage = 'Erreur d\u2019authentification. Veuillez r\u00e9essayer ou contacter le support.';
+				errorMessage = 'Erreur d'authentification. Veuillez réessayer ou contacter le support.';
 				step = 'error';
 				return;
 			}
 
 			step = 'set-password';
 		} catch {
-			errorMessage = 'Impossible de contacter le serveur. V\u00e9rifiez votre connexion.';
+			errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
 			step = 'error';
 		}
 	});
@@ -92,7 +92,7 @@
 		}
 
 		if (password.length < passwordMinLength) {
-			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caract\u00e8res.`;
+			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caractères.`;
 			return;
 		}
 
@@ -101,14 +101,14 @@
 		const { error } = await supabase.auth.updateUser({ password });
 
 		if (error) {
-			errorMessage = 'Erreur lors de la d\u00e9finition du mot de passe. Veuillez r\u00e9essayer.';
+			errorMessage = 'Erreur lors de la définition du mot de passe. Veuillez réessayer.';
 			isLoading = false;
 			return;
 		}
 
 		addToast({
 			title: 'Bienvenue !',
-			description: `Votre compte ${planLabels[planKey] || planKey} est activ\u00e9.`,
+			description: `Votre compte ${planLabels[planKey] || planKey} est activé.`,
 			variant: 'success'
 		});
 
@@ -126,7 +126,7 @@
 			<Card class="sci-section-card">
 				<CardHeader>
 					<p class="sci-eyebrow">Activation en cours</p>
-					<CardTitle class="text-2xl">Pr\u00e9paration de votre espace</CardTitle>
+					<CardTitle class="text-2xl">Préparation de votre espace</CardTitle>
 					<CardDescription>Veuillez patienter quelques instants...</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -140,10 +140,10 @@
 		{:else if step === 'set-password'}
 			<Card class="sci-section-card">
 				<CardHeader>
-					<p class="sci-eyebrow">Plan {planLabels[planKey] || planKey} activ\u00e9</p>
-					<CardTitle class="text-2xl">D\u00e9finissez votre mot de passe</CardTitle>
+					<p class="sci-eyebrow">Plan {planLabels[planKey] || planKey} activé</p>
+					<CardTitle class="text-2xl">Définissez votre mot de passe</CardTitle>
 					<CardDescription>
-						Choisissez un mot de passe pour acc\u00e9der \u00e0 votre espace de gestion.
+						Choisissez un mot de passe pour accéder à votre espace de gestion.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -155,13 +155,13 @@
 								bind:value={password}
 								required
 								minlength={passwordMinLength}
-								placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
 							/>
 							{#if passwordTooShort}
 								<span class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-									{passwordMinLength} caract\u00e8res minimum
+									{passwordMinLength} caractères minimum
 								</span>
 							{/if}
 						</label>
@@ -173,7 +173,7 @@
 								bind:value={passwordConfirm}
 								required
 								minlength={passwordMinLength}
-								placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
 							/>
@@ -206,7 +206,7 @@
 		{:else}
 			<Card class="sci-section-card">
 				<CardHeader>
-					<p class="sci-eyebrow">Probl\u00e8me d'activation</p>
+					<p class="sci-eyebrow">Problème d'activation</p>
 					<CardTitle class="text-2xl">Une erreur est survenue</CardTitle>
 				</CardHeader>
 				<CardContent>

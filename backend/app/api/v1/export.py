@@ -30,10 +30,10 @@ def _get_user_sci_ids(client, user_id: str) -> list[str]:
 
 
 @router.get("/loyers/csv")
-async def export_loyers_csv(user: dict = Depends(get_current_user)):
+async def export_loyers_csv(user: str = Depends(get_current_user)):
     """Export all loyers as CSV for the current user."""
     client = _get_client()
-    user_id = user["sub"]
+    user_id = user
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if not user_sci_ids:
@@ -81,10 +81,10 @@ async def export_loyers_csv(user: dict = Depends(get_current_user)):
 
 
 @router.get("/biens/csv")
-async def export_biens_csv(user: dict = Depends(get_current_user)):
+async def export_biens_csv(user: str = Depends(get_current_user)):
     """Export all biens as CSV for the current user."""
     client = _get_client()
-    user_id = user["sub"]
+    user_id = user
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if not user_sci_ids:

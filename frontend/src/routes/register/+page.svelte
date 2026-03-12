@@ -40,7 +40,7 @@
 		}
 
 		if (password.length < passwordMinLength) {
-			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caract\u00e8res.`;
+			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caractères.`;
 			return;
 		}
 
@@ -56,15 +56,15 @@
 
 		if (error) {
 			if (error.message.includes('already registered')) {
-				errorMessage = 'Un compte existe d\u00e9j\u00e0 avec cet email. Essayez de vous connecter.';
+				errorMessage = 'Un compte existe déjà avec cet email. Essayez de vous connecter.';
 			} else {
 				errorMessage = formatApiErrorMessage(error, "Erreur lors de l'inscription.");
 			}
 		} else {
 			showConfirmEmail = true;
 			addToast({
-				title: 'Inscription r\u00e9ussie',
-				description: 'V\u00e9rifiez votre bo\u00eete mail pour confirmer votre compte.',
+				title: 'Inscription réussie',
+				description: 'Vérifiez votre boîte mail pour confirmer votre compte.',
 				variant: 'success'
 			});
 		}
@@ -82,9 +82,9 @@
 		<Card class="sci-section-card">
 			<CardHeader>
 				<p class="sci-eyebrow">Plan Essentiel — Gratuit</p>
-				<CardTitle class="text-2xl">Cr\u00e9er un compte</CardTitle>
+				<CardTitle class="text-2xl">Créer un compte</CardTitle>
 				<CardDescription>
-					G\u00e9rez jusqu'\u00e0 1 SCI et 2 biens gratuitement. Passez \u00e0 un plan sup\u00e9rieur quand vous voulez.
+					Gérez jusqu'à 1 SCI et 2 biens gratuitement. Passez à un plan supérieur quand vous voulez.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -92,14 +92,14 @@
 					<div
 						class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
 					>
-						<p class="font-semibold">V\u00e9rifiez votre email</p>
+						<p class="font-semibold">Vérifiez votre email</p>
 						<p class="mt-2 text-sm">
-							Un email de confirmation a \u00e9t\u00e9 envoy\u00e9 \u00e0 <strong>{email}</strong>.
+							Un email de confirmation a été envoyé à <strong>{email}</strong>.
 							Cliquez sur le lien pour activer votre compte.
 						</p>
 					</div>
 
-					<Button href="/login" variant="outline" class="w-full">Aller \u00e0 la connexion</Button>
+					<Button href="/login" variant="outline" class="w-full">Aller à la connexion</Button>
 				{:else}
 					<form class="space-y-4" onsubmit={handleRegister}>
 						<label class="sci-field">
@@ -121,13 +121,13 @@
 								bind:value={password}
 								required
 								minlength={passwordMinLength}
-								placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
 							/>
 							{#if passwordTooShort}
 								<span class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-									{passwordMinLength} caract\u00e8res minimum
+									{passwordMinLength} caractères minimum
 								</span>
 							{/if}
 						</label>
@@ -139,7 +139,7 @@
 								bind:value={passwordConfirm}
 								required
 								minlength={passwordMinLength}
-								placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
 							/>
@@ -169,7 +169,7 @@
 					</form>
 
 					<p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-						D\u00e9j\u00e0 un compte ?
+						Déjà un compte ?
 						<a
 							href="/login"
 							class="font-medium text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -182,7 +182,7 @@
 						En vous inscrivant, vous acceptez nos
 						<a href="/cgu" class="underline hover:text-slate-700 dark:hover:text-slate-300">CGU</a>
 						et notre
-						<a href="/confidentialite" class="underline hover:text-slate-700 dark:hover:text-slate-300">politique de confidentialit\u00e9</a>.
+						<a href="/confidentialite" class="underline hover:text-slate-700 dark:hover:text-slate-300">politique de confidentialité</a>.
 					</p>
 				{/if}
 			</CardContent>

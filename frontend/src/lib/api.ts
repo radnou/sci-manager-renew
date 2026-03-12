@@ -902,3 +902,126 @@ export async function deleteDocumentBien(
 		method: 'DELETE'
 	});
 }
+
+// --- Export CSV ---
+
+export function exportLoyersCsv(): Promise<Blob> {
+	return apiFetchBlob('/api/v1/export/loyers/csv');
+}
+
+export function exportBiensCsv(): Promise<Blob> {
+	return apiFetchBlob('/api/v1/export/biens/csv');
+}
+
+// --- CERFA 2044 ---
+
+export type Cerfa2044RequestPayload = {
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+	sci_nom?: string;
+	siren?: string;
+};
+
+export type Cerfa2044ResponsePayload = {
+	status: string;
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+	resultat_fiscal: number;
+	formulaire: string;
+};
+
+export function generateCerfa2044(payload: Cerfa2044RequestPayload) {
+	return apiFetch<Cerfa2044ResponsePayload>('/api/v1/cerfa/2044', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+}
+
+export function generateCerfa2044Pdf(payload: Cerfa2044RequestPayload): Promise<Blob> {
+	return apiFetchBlob('/api/v1/cerfa/2044/pdf', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+}
+
+// --- Files / Storage ---
+
+export type FileUploadResponse = {
+	success: boolean;
+	url: string;
+	message: string;
+};
+
+export type FileDownloadResponse = {
+	success: boolean;
+	url: string;
+};
+
+export type FileListResponse = {
+	success: boolean;
+	files: Array<Record<string, unknown>>;
+};
+
+export function uploadQuitusFile(filePath: string) {
+	return apiFetch<FileUploadResponse>(`/api/v1/files/upload-quitus?file_path=${encodeURIComponent(filePath)}`, {
+		method: 'POST'
+	});
+}
+
+export function downloadFile(filePath: string) {
+	return apiFetch<FileDownloadResponse>(`/api/v1/files/download/${encodeURIComponent(filePath)}`);
+}
+
+export function deleteFile(filePath: string) {
+	return apiFetch<{ success: boolean; message: string }>(`/api/v1/files/delete/${encodeURIComponent(filePath)}`, {
+		method: 'DELETE'
+	});
+}
+
+export function listFiles(folder: string) {
+	return apiFetch<FileListResponse>(`/api/v1/files/list/${encodeURIComponent(folder)}`);
+}
+
+// --- GDPR / Privacy ---
+
+export type DataExportResponse = {
+	success: boolean;
+	message: string;
+	export_url: string | null;
+	expires_at: string | null;
+};
+
+export type DataSummaryResponse = {
+	user_id: string;
+	email: string;
+	created_at: string;
+	data_summary: {
+		sci_count: number;
+		biens_count: number;
+		loyers_count: number;
+		associes_count: number;
+		account_created: string;
+		last_sign_in: string;
+	};
+};
+
+export type AccountDeleteResponse = {
+	success: boolean;
+	message: string;
+};
+
+export function exportUserData() {
+	return apiFetch<DataExportResponse>('/api/v1/gdpr/data-export');
+}
+
+export function fetchDataSummary() {
+	return apiFetch<DataSummaryResponse>('/api/v1/gdpr/data-summary');
+}
+
+export function deleteAccount() {
+	return apiFetch<AccountDeleteResponse>('/api/v1/gdpr/account', {
+		method: 'DELETE'
+	});
+}

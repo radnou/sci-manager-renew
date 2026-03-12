@@ -30,7 +30,7 @@
 	const passwordMinLength = 8;
 
 	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
-	$: activeSciDetail = activeSciId ? 'Le cockpit reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
+	$: activeSciDetail = activeSciId ? 'L'interface reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
 	$: capacityLabel = subscription
 		? subscription.max_scis == null
 			? 'SCI et biens illimités'
@@ -91,7 +91,7 @@
 <section class="sci-page-shell">
 	<WorkspaceHeader
 		eyebrow="Compte • identité, sécurité, abonnement"
-		title="Compte opérateur"
+		title="Mon compte"
 		subtitle="Le compte concentre l’identité de connexion, l’offre active, les quotas et les zones de conformité. Les préférences d’interface restent isolées dans Paramètres."
 		contextLabel="Session active"
 		contextValue={email}
@@ -132,14 +132,14 @@
 		{#snippet aside()}
 			<WorkspaceRailCard
 				title="Actions rapides"
-				description="Les sujets récurrents du compte restent peu nombreux: offre, confidentialité, retour au pilotage."
+				description="Les sujets récurrents du compte restent peu nombreux: offre, confidentialité, retour au tableau de bord."
 			>
 				<div class="grid gap-2">
 					<Button href="/account/privacy" variant="outline" class="w-full justify-start">
 						Mes données et confidentialité
 					</Button>
 					<Button href="/dashboard" variant="outline" class="w-full justify-start">
-						Retour au cockpit
+						Retour au tableau de bord
 					</Button>
 				</div>
 			</WorkspaceRailCard>
@@ -199,7 +199,7 @@
 				<div class="grid gap-2">
 					<Button href="/pricing" class="justify-start">Voir les offres et upgrader</Button>
 					<Button href="/account/privacy" variant="outline" class="justify-start">Mes données et confidentialité</Button>
-					<Button href="/dashboard" variant="outline" class="justify-start">Retour au cockpit</Button>
+					<Button href="/dashboard" variant="outline" class="justify-start">Retour au tableau de bord</Button>
 				</div>
 			</CardContent>
 		</Card>

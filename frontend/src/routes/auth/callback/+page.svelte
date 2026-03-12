@@ -18,7 +18,7 @@
 				error = true;
 				addToast({
 					title: 'Erreur de connexion',
-					description: 'Le lien est invalide ou a expir\u00e9.',
+					description: 'Le lien est invalide ou a expiré.',
 					variant: 'error'
 				});
 				setTimeout(() => goto('/login'), 3000);
@@ -35,8 +35,8 @@
 			}
 
 			addToast({
-				title: 'Connexion r\u00e9ussie',
-				description: 'Bienvenue dans votre cockpit SCI.',
+				title: 'Connexion réussie',
+				description: 'Bienvenue dans votre espace de gestion.',
 				variant: 'success'
 			});
 
@@ -45,7 +45,7 @@
 			error = true;
 			addToast({
 				title: 'Erreur',
-				description: 'Une erreur est survenue. Veuillez r\u00e9essayer.',
+				description: 'Une erreur est survenue. Veuillez réessayer.',
 				variant: 'error'
 			});
 		} finally {
@@ -62,20 +62,20 @@
 					class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-500 dark:border-slate-600"
 				></div>
 				<p class="text-slate-500 dark:text-slate-400">
-					V\u00e9rification de votre lien de connexion...
+					Vérification de votre lien de connexion...
 				</p>
 			</div>
 		{:else if error}
 			<div class="space-y-4">
-				<p class="font-semibold text-red-600 dark:text-red-400">Lien invalide ou expir\u00e9</p>
+				<p class="font-semibold text-red-600 dark:text-red-400">Lien invalide ou expiré</p>
 				<p class="text-sm text-slate-500 dark:text-slate-400">
-					Veuillez r\u00e9essayer. Redirection en cours...
+					Veuillez réessayer. Redirection en cours...
 				</p>
-				<Button href="/login" class="w-full">Retourner \u00e0 la connexion</Button>
+				<Button href="/login" class="w-full">Retourner à la connexion</Button>
 			</div>
 		{:else}
 			<div class="space-y-4">
-				<p class="font-semibold text-emerald-600 dark:text-emerald-400">Connexion r\u00e9ussie</p>
+				<p class="font-semibold text-emerald-600 dark:text-emerald-400">Connexion réussie</p>
 				<p class="text-slate-500 dark:text-slate-400">
 					Redirection vers votre tableau de bord...
 				</p>

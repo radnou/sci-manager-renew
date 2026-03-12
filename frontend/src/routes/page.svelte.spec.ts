@@ -9,12 +9,12 @@ describe('/+page.svelte', () => {
 
 		const heading = page.getByRole('heading', { level: 1 });
 		await expect.element(heading).toBeInTheDocument();
-		await expect.element(heading).toHaveTextContent(/Pilotez votre SCI/);
+		await expect.element(heading).toHaveTextContent(/Votre SCI mérite mieux/);
 		await expect.element(
-			page.getByRole('link', { name: /Créer un compte/ })
+			page.getByRole('link', { name: /Essayer gratuitement/ })
 		).toHaveAttribute('href', '/register');
 		await expect.element(
-			page.getByRole('link', { name: /Voir les tarifs/ })
+			page.getByRole('link', { name: /Démarrer à 19€/ })
 		).toHaveAttribute('href', '#pricing');
 	});
 });

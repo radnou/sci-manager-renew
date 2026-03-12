@@ -64,9 +64,14 @@
 	</div>
 
 	{#if displayed.length === 0}
-		<div class="flex flex-col items-center justify-center py-10">
-			<Clock class="h-8 w-8 text-slate-300 dark:text-slate-600" />
-			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Aucune activite recente.</p>
+		<div class="flex flex-col items-center justify-center px-6 py-10 text-center">
+			<div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+				<Clock class="h-6 w-6 text-slate-400 dark:text-slate-500" />
+			</div>
+			<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Aucune activite recente</p>
+			<p class="mt-1.5 max-w-xs text-sm text-slate-500 dark:text-slate-400">
+				Vos actions apparaitront ici : creation de SCI, ajout de biens, enregistrement de loyers.
+			</p>
 		</div>
 	{:else}
 		<div class="divide-y divide-slate-100 dark:divide-slate-800">

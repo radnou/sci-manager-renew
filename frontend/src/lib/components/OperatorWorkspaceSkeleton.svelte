@@ -1,8 +1,8 @@
 <script lang="ts">
 	let {
 		eyebrow = 'Chargement',
-		title = 'Préparation de l’espace',
-		description = 'Les données opérateur arrivent…',
+		title = 'Préparation de votre espace',
+		description = 'Chargement des données…',
 		showRail = false
 	}: {
 		eyebrow?: string;

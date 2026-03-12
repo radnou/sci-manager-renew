@@ -34,7 +34,7 @@ export function buildOperatorOnboardingSteps(
 					? `${metrics.sciCount} SCI disponible(s). ${
 							metrics.activeSciLabel ? `SCI active: ${metrics.activeSciLabel}.` : ''
 						}`
-					: 'Commence par le portefeuille pour cadrer la société, son régime fiscal et son contexte de pilotage.',
+					: 'Commence par le portefeuille pour cadrer la société, son régime fiscal et son suivi de gestion.',
 			href: '/scis',
 			actionLabel:
 				metrics.sciCount > 0 ? 'Ouvrir le portefeuille' : 'Créer ma première SCI',
@@ -104,8 +104,8 @@ export function buildOperatorOnboardingSteps(
 				metrics.chargeCount > 0 ? 'Charges documentées' : 'Documenter la première charge',
 			description:
 				metrics.chargeCount > 0
-					? `${metrics.chargeCount} charge(s) journalisée(s) pour piloter les sorties réelles.`
-					: 'Renseigne la première charge pour sortir du pilotage purement théorique du patrimoine.',
+					? `${metrics.chargeCount} charge(s) journalisée(s) pour suivre les sorties réelles.`
+					: 'Renseigne la première charge pour documenter les dépenses réelles du patrimoine.',
 			href: '/charges',
 			actionLabel:
 				metrics.chargeCount > 0 ? 'Contrôler les charges' : 'Ajouter ma première charge',

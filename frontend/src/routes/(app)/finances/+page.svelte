@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { FinancesData } from '$lib/api';
-	import { fetchFinances } from '$lib/api';
+	import { fetchFinances, exportLoyersCsv } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import {
 		TrendingUp,
@@ -9,13 +9,38 @@
 		Building,
 		BarChart3,
 		Percent,
-		RefreshCw
+		RefreshCw,
+		Download
 	} from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import { addToast } from '$lib/components/ui/toast';
 
 	let data: FinancesData | null = $state(null);
 	let loading = $state(true);
 	let error: string | null = $state(null);
 	let period = $state('12m');
+	let exportingLoyers = $state(false);
+
+	async function handleExportLoyers() {
+		exportingLoyers = true;
+		try {
+			const blob = await exportLoyersCsv();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `loyers_export_${new Date().toISOString().slice(0, 10)}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+			addToast({ title: 'Export termine', description: 'Le fichier CSV des loyers a ete telecharge.', variant: 'success' });
+		} catch (err: any) {
+			addToast({ title: 'Erreur export', description: err?.message ?? "Impossible d'exporter les loyers.", variant: 'error' });
+		} finally {
+			exportingLoyers = false;
+		}
+	}
 
 	$effect(() => {
 		loadFinances(period);
@@ -52,18 +77,24 @@
 		<h1 class="sci-page-title">Finances</h1>
 	</header>
 
-	<!-- Period selector -->
-	<div class="mt-4 flex items-center gap-2">
-		{#each ['6m', '12m', '24m'] as p}
-			<button
-				onclick={() => (period = p)}
-				class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {period === p
-					? 'bg-sky-600 text-white'
-					: 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'}"
-			>
-				{p === '6m' ? '6 mois' : p === '12m' ? '12 mois' : '24 mois'}
-			</button>
-		{/each}
+	<!-- Period selector + export -->
+	<div class="mt-4 flex items-center justify-between gap-4">
+		<div class="flex items-center gap-2">
+			{#each ['6m', '12m', '24m'] as p}
+				<button
+					onclick={() => (period = p)}
+					class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {period === p
+						? 'bg-sky-600 text-white'
+						: 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'}"
+				>
+					{p === '6m' ? '6 mois' : p === '12m' ? '12 mois' : '24 mois'}
+				</button>
+			{/each}
+		</div>
+		<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="shrink-0">
+			<Download class="mr-2 h-4 w-4" />
+			{exportingLoyers ? 'Export...' : 'Exporter les loyers (CSV)'}
+		</Button>
 	</div>
 
 	{#if loading}
@@ -87,6 +118,16 @@
 				<RefreshCw class="h-4 w-4" />
 				Réessayer
 			</button>
+		</div>
+	{:else if data && data.revenus_total === 0 && data.charges_total === 0 && data.repartition_sci.length === 0}
+		<div class="mt-6">
+			<EmptyState
+				icon={Wallet}
+				title="Aucune donnee financiere"
+				description="Enregistrez des loyers et des charges sur vos biens pour voir apparaitre vos revenus, cashflow et graphiques d'evolution."
+				ctaText="Aller au dashboard"
+				ctaHref="/dashboard"
+			/>
 		</div>
 	{:else if data}
 		<!-- KPI cards -->

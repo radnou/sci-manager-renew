@@ -18,6 +18,12 @@
 	let bienId = $derived(page.params.bienId!);
 	let isGerant = $derived(userRole === 'gerant');
 
+	let nomLocataire = $derived.by(() => {
+		if (!bien?.bail_actif?.locataires?.length) return '';
+		const loc = bien.bail_actif.locataires[0];
+		return [loc.prenom, loc.nom].filter(Boolean).join(' ');
+	});
+
 	let bien: FicheBien | null = $state(null);
 	let loading = $state(true);
 	let error: string | null = $state(null);
@@ -74,7 +80,16 @@
 		<div class="mt-6 space-y-6">
 			<FicheBienIdentite {bien} {isGerant} />
 			<FicheBienBail bail={bien.bail_actif} {isGerant} sciId={sciId} bienId={String(bien.id)} />
-			<FicheBienLoyers loyers={bien.loyers_recents} {isGerant} {sciId} {bienId} />
+				<FicheBienLoyers
+				loyers={bien.loyers_recents}
+				{isGerant}
+				{sciId}
+				{bienId}
+				{nomLocataire}
+				nomSci={sci.nom}
+				adresseBien={bien.adresse}
+				villeBien={bien.ville}
+			/>
 			<FicheBienCharges
 				charges={bien.charges_list}
 				assurancePno={bien.assurance_pno}

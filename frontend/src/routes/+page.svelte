@@ -79,7 +79,7 @@
 			url: 'https://e-immobilier.credit-agricole.fr/conseils/reglementation/bailleurs-locataires-coproprietaires-les-nouveautes-de-la-loi-elan'
 		},
 		{
-			title: 'KPI de pilotage locatif',
+			title: 'KPI de gestion locative',
 			finding:
 				'Recouvrement >98%, vacance proche de 5% et suivi du délai de paiement sont les standards les plus suivis sur le marché.',
 			source: 'Lockimmo / CAFPI / Manda',
@@ -89,46 +89,32 @@
 
 	const features = [
 		{
-			icon: Building2,
-			title: 'Gestion multi-SCI',
-			description:
-				'Créez et pilotez plusieurs SCI depuis un seul compte. Biens, loyers, associés et charges par SCI.',
-			color: 'emerald'
-		},
-		{
-			icon: BarChart3,
-			title: 'Dashboard action-first',
-			description:
-				'Alertes retards avec actions directes, KPIs temps réel et 5 onglets de détail par SCI.',
-			color: 'blue'
-		},
-		{
 			icon: FileText,
-			title: 'Quittances PDF',
+			title: 'Quittances PDF automatiques',
 			description:
-				'Génération de quittances de loyer en PDF, téléchargeables en un clic depuis le dashboard.',
+				'Générez vos quittances de loyer en PDF, téléchargeables immédiatement. Fini les modèles Word bricolés.',
 			color: 'cyan'
 		},
 		{
 			icon: Calculator,
-			title: 'Suivi fiscal simplifié',
+			title: 'Résumé fiscal par exercice',
 			description:
-				'Calcul du résultat foncier (revenus - charges) par exercice. Export CERFA 2044 disponible.',
+				'Calcul automatique du résultat foncier (revenus − charges). Export PDF simplifié pour préparer votre déclaration.',
 			color: 'amber'
 		},
 		{
-			icon: Shield,
-			title: 'RGPD & sécurité',
+			icon: BarChart3,
+			title: 'Suivi des retards de paiement',
 			description:
-				'Hébergement UE, isolation par SCI, espace confidentialité (export données, suppression de compte).',
-			color: 'violet'
+				'Visualisez les loyers impayés depuis votre tableau de bord. Ne laissez plus un retard passer inaperçu.',
+			color: 'blue'
 		},
 		{
-			icon: Users,
-			title: 'Gouvernance associés',
+			icon: Building2,
+			title: 'Toutes vos SCI en un seul compte',
 			description:
-				'Gestion des associés avec répartition des parts, rôles et suivi de la structure de gouvernance.',
-			color: 'rose'
+				'Gérez plusieurs SCI depuis une seule interface. Biens, loyers, associés et charges centralisés par structure.',
+			color: 'emerald'
 		}
 	];
 
@@ -155,7 +141,7 @@
 			name: 'Gestion',
 			description: 'Pour les gérants actifs avec plusieurs biens',
 			monthlyPrice: 19,
-			yearlyPrice: 190,
+			yearlyPrice: 180,
 			popular: false,
 			features: [
 				'3 SCI',
@@ -172,16 +158,16 @@
 		{
 			key: 'pro',
 			name: 'Fiscal',
-			description: 'Pour les opérateurs patrimoniaux exigeants',
+			description: 'Pour les gestionnaires patrimoniaux exigeants',
 			monthlyPrice: 39,
-			yearlyPrice: 390,
+			yearlyPrice: 348,
 			popular: true,
 			features: [
 				'SCI illimitées',
 				'Biens illimités',
 				'Calcul de rentabilité avancé',
 				'Dashboard complet multi-SCI',
-				'Export CERFA 2044',
+				'Résumé fiscal PDF (CERFA 2044)',
 				'Tout Gestion inclus',
 				'Support prioritaire dédié'
 			],
@@ -195,7 +181,7 @@
 			icon: Building2,
 			title: 'Gérant SCI indépendant',
 			description:
-				'Vous pilotez 1 à 3 SCI et cherchez un outil simple pour centraliser loyers, charges et documents sans tableur.',
+				'Vous gérez 1 à 3 SCI et cherchez un outil simple pour centraliser loyers, charges et documents sans tableur.',
 			badge: 'Particulier'
 		},
 		{
@@ -207,9 +193,9 @@
 		},
 		{
 			icon: TrendingUp,
-			title: 'Opérateur patrimonial',
+			title: 'Investisseur patrimonial',
 			description:
-				'Vous optimisez un portefeuille immobilier et voulez un cockpit avec KPIs, alertes et vision consolidée.',
+				'Vous optimisez un portefeuille immobilier et voulez des KPIs, alertes et une vision consolidée de vos SCI.',
 			badge: 'Investisseur'
 		}
 	];
@@ -223,7 +209,7 @@
 		{
 			question: 'Puis-je l\'utiliser avec mon expert-comptable actuel ?',
 			answer:
-				'Oui. Les données sont structurées dans le cockpit pour faciliter les échanges avec votre comptable. Les exports avancés (CERFA 2044) sont disponibles.'
+				'Oui. Les données sont structurées pour faciliter les échanges avec votre comptable. Un résumé fiscal PDF par exercice est disponible sur le plan Fiscal.'
 		},
 		{
 			question: 'Mes données sont-elles sécurisées (RGPD) ?',
@@ -238,7 +224,7 @@
 		{
 			question: "L'outil gère-t-il la conformité fiscale (2044, 2072) ?",
 			answer:
-				'Un calcul simplifié du résultat foncier (revenus - charges) est disponible. La génération PDF CERFA 2044 est opérationnelle, le CERFA 2072 est en préparation.'
+				'Un calcul simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. Le CERFA 2072 (SCI à l\'IS) est prévu dans une version future.'
 		},
 		{
 			question: 'Que se passe-t-il si je veux arrêter ?',
@@ -267,8 +253,8 @@
 
 	function formatPrice(plan: (typeof plans)[0]): string {
 		if (plan.monthlyPrice === 0) return 'Gratuit';
-		if (billingPeriod === 'month') return `${plan.monthlyPrice}\u20AC`;
-		return `${plan.yearlyPrice}\u20AC`;
+		if (billingPeriod === 'month') return `${plan.monthlyPrice}€`;
+		return `${plan.yearlyPrice}€`;
 	}
 
 	function formatPeriod(plan: (typeof plans)[0]): string {
@@ -276,13 +262,21 @@
 		if (billingPeriod === 'month') return '/mois';
 		return '/an';
 	}
+
+	function formatPriceTTC(plan: (typeof plans)[0]): string | null {
+		if (plan.monthlyPrice === 0) return null;
+		const ht = billingPeriod === 'month' ? plan.monthlyPrice : plan.yearlyPrice;
+		const ttc = (ht * 1.2).toFixed(2).replace('.', ',');
+		const period = billingPeriod === 'month' ? '/mois' : '/an';
+		return `(${ttc}\u202F\u20AC TTC${period})`;
+	}
 </script>
 
 <svelte:head>
-	<title>GererSCI | Pilotez votre SCI comme un opérateur</title>
+	<title>GererSCI | Votre SCI mérite mieux qu'un tableur</title>
 	<meta
 		name="description"
-		content="GererSCI centralise biens, loyers et documents en un cockpit unique pour accélérer la gestion et sécuriser vos revenus locatifs."
+		content="GererSCI centralise biens, loyers et documents pour accélérer la gestion de vos SCI et sécuriser vos revenus locatifs."
 	/>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="canonical" href="https://gerersci.fr" />
@@ -304,15 +298,15 @@
 				<h1
 					class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
 				>
-					Pilotez votre SCI
+					Votre SCI mérite mieux
 					<span
 						class="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent"
 					>
-						comme un opérateur
+						qu'un tableur Excel
 					</span>
 				</h1>
 				<p class="mt-6 text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-400">
-					Centralisez biens, loyers et documents dans un cockpit unique. Moins
+					Centralisez biens, loyers et documents en un seul endroit. Moins
 					d'administratif, plus de visibilité sur vos revenus, retards et la performance de
 					chaque bien.
 				</p>
@@ -322,37 +316,27 @@
 							size="lg"
 							class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
 						>
-							Voir les tarifs
+							Démarrer à 19€/mois
 							<ArrowRight class="ml-2 h-5 w-5" />
 						</Button>
 					</a>
 					<a href="/register">
 						<Button variant="outline" size="lg" class="px-8 text-lg font-semibold">
-							Créer un compte
+							Essayer gratuitement
 						</Button>
 					</a>
 				</div>
 			</div>
 
-			<div class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-3">
-				<div class="rounded-2xl bg-slate-50 p-6 text-center dark:bg-slate-800">
-					<div class="text-3xl font-bold text-blue-600 dark:text-blue-400">1</div>
-					<div class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-						cockpit unique pour centraliser biens, loyers et documents
-					</div>
-				</div>
-				<div class="rounded-2xl bg-slate-50 p-6 text-center dark:bg-slate-800">
-					<div class="text-3xl font-bold text-blue-600 dark:text-blue-400">100%</div>
-					<div class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-						des retards visibles dans votre tableau de bord
-					</div>
-				</div>
-				<div class="rounded-2xl bg-slate-50 p-6 text-center dark:bg-slate-800">
-					<div class="text-3xl font-bold text-blue-600 dark:text-blue-400">50%</div>
-					<div class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-						de temps administratif libéré par l'automatisation
-					</div>
-				</div>
+			<!-- Trust bar -->
+			<div class="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+				<span>Hébergé en UE</span>
+				<span class="text-slate-300 dark:text-slate-600">·</span>
+				<span>RGPD</span>
+				<span class="text-slate-300 dark:text-slate-600">·</span>
+				<span>Sans engagement</span>
+				<span class="text-slate-300 dark:text-slate-600">·</span>
+				<span>Annulez à tout moment</span>
 			</div>
 		</div>
 	</section>
@@ -401,7 +385,7 @@
 					>Fonctionnalités</Badge
 				>
 				<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
-					Tout ce dont vous avez besoin pour piloter vos SCI
+					Tout ce dont vous avez besoin pour gérer vos SCI
 				</h2>
 				<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
 					Des outils concrets pour gagner du temps, réduire les erreurs et prendre de meilleures
@@ -409,7 +393,7 @@
 				</p>
 			</div>
 
-			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+			<div class="grid gap-8 md:grid-cols-2">
 				{#each features as feature}
 					{@const colors = colorMap[feature.color] ?? colorMap.blue}
 					<article
@@ -499,10 +483,15 @@
 								{formatPrice(plan)}
 							</span>
 							{#if plan.monthlyPrice > 0}
-								<span class="text-slate-500 dark:text-slate-400">{formatPeriod(plan)}</span>
+								<span class="text-slate-500 dark:text-slate-400">
+									HT{formatPeriod(plan)}
+								</span>
+								<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
+									{formatPriceTTC(plan)}
+								</div>
 								{#if billingPeriod === 'year'}
 									<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-										Economisez 2 mois par rapport au mensuel
+										Économisez 2 mois par rapport au mensuel
 									</div>
 								{/if}
 							{/if}
@@ -603,7 +592,7 @@
 			<!-- KPI Section -->
 			<div class="mb-16 rounded-2xl bg-slate-50 p-8 dark:bg-slate-800">
 				<h3 class="mb-8 text-center text-2xl font-bold text-slate-900 dark:text-slate-100">
-					KPI critiques a suivre (standards sectoriels)
+					KPI critiques à suivre (standards sectoriels)
 				</h3>
 				<div class="grid gap-6 md:grid-cols-3">
 					<div class="text-center">
@@ -633,7 +622,7 @@
 						<FileText class="h-6 w-6 text-blue-600 dark:text-blue-400" />
 					</div>
 					<h3 class="mb-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-						Etudes détaillées consultées
+						Études détaillées consultées
 					</h3>
 					<p class="text-slate-600 dark:text-slate-400">
 						Synthèse issue des études documentées.
@@ -721,8 +710,7 @@
 					Créez votre compte gratuitement
 				</h2>
 				<p class="mx-auto mb-8 max-w-2xl text-lg text-blue-100">
-					Commencez avec le plan Essentiel, sans carte bancaire. Passez au plan supérieur
-					quand vous en avez besoin.
+					Sans engagement. Annulez quand vous voulez.
 				</p>
 				<div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
 					<a href="/register">

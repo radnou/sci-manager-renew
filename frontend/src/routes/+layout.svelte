@@ -151,7 +151,7 @@
 					<span
 						class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-slate-600 uppercase lg:inline-flex dark:bg-slate-800 dark:text-slate-300"
 					>
-						Espace de pilotage
+						Espace de gestion
 					</span>
 				{/if}
 			</div>
@@ -206,7 +206,7 @@
 									<p
 										class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
 									>
-										Espace opérateur
+										Mon espace
 									</p>
 									<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
 										{user.email}
@@ -356,10 +356,10 @@
 					Espace connecté
 				</p>
 				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-					Ouverture du cockpit
+					Chargement en cours
 				</h1>
 				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
-					Redirection vers votre dashboard opérateur.
+					Redirection vers votre tableau de bord.
 				</p>
 			</div>
 		</section>
@@ -394,11 +394,10 @@
 				<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 					<div class="space-y-2">
 						<h3 class="font-semibold text-slate-900 dark:text-slate-100">
-							Environnement opérateur
+							Espace de gestion
 						</h3>
 						<p class="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-							Shell connecté recentré sur le portefeuille, l’exploitation, la finance et le cadrage
-							du compte.
+							Gérez votre portefeuille SCI, vos biens, loyers et documents depuis un seul endroit.
 						</p>
 					</div>
 
@@ -437,6 +436,8 @@
 							<a href="/confidentialite" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Confidentialité</a>
 							<span>•</span>
 							<a href="/cgu" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGU</a>
+							<span>•</span>
+							<a href="/cgv" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGV</a>
 						</div>
 					</div>
 				</div>
@@ -447,7 +448,7 @@
 					<div class="space-y-4">
 						<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
-							Pilotez votre SCI comme un opérateur avec des outils professionnels.
+							Plateforme de gestion et d’intelligence fiscale pour SCI.
 						</p>
 					</div>
 
@@ -516,6 +517,13 @@
 									>CGU</a
 								>
 							</li>
+							<li>
+								<a
+									href="/cgv"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>CGV</a
+								>
+							</li>
 						</ul>
 					</div>
 
@@ -551,6 +559,8 @@
 							<a href="/confidentialite" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Confidentialité</a>
 							<span>•</span>
 							<a href="/cgu" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGU</a>
+							<span>•</span>
+							<a href="/cgv" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGV</a>
 						</div>
 					</div>
 				</div>

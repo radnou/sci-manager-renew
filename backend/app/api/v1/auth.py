@@ -96,6 +96,34 @@ async def activate_session(
     return ActivateResponse(token_hash=token_hash, plan_key=plan_key)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+@router.post("/forgot-password", response_model=MagicLinkResponse)
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, payload: ForgotPasswordRequest) -> MagicLinkResponse:
+    """Send password reset email via Supabase Auth.
+
+    Always returns success to prevent email enumeration.
+    """
+    del request  # required by limiter but unused
+    logger.info("forgot_password_requested", email=payload.email)
+    try:
+        client = get_supabase_service_client()
+        client.auth.reset_password_email(
+            payload.email,
+            {"redirect_to": f"{settings.frontend_url}/reset-password"},
+        )
+    except Exception as e:
+        logger.error("forgot_password_error", email=payload.email, error=str(e))
+    # Always return success to avoid email enumeration
+    return MagicLinkResponse(
+        success=True,
+        message="If this email exists, a reset link has been sent.",
+    )
+
+
 @router.post("/magic-link/send", response_model=MagicLinkResponse)
 @limiter.limit("5/minute")
 async def send_magic_link(request: Request, payload: MagicLinkRequest) -> MagicLinkResponse:

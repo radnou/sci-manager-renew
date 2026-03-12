@@ -62,8 +62,12 @@
 						</div>
 					{/each}
 				{:else}
-					<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-						Aucune charge récente documentée pour cette SCI.
+					<div class="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center dark:border-slate-700 dark:bg-slate-900">
+						<FileText class="h-5 w-5 text-slate-400 dark:text-slate-500" />
+						<p class="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300">Aucune charge recente</p>
+						<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+							Documentez vos charges (copropriete, taxe fonciere, assurance) pour un suivi complet.
+						</p>
 					</div>
 				{/if}
 			</div>

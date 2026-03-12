@@ -4,7 +4,7 @@
 	let {
 		eyebrow = 'Chargement',
 		title = 'Préparation du workspace',
-		description = 'Les données opérateur sont en cours de consolidation.',
+		description = 'Les données sont en cours de chargement.',
 		showRail = true,
 		mode = 'workspace'
 	}: {

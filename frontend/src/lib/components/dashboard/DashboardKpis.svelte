@@ -1,12 +1,17 @@
 <script lang="ts">
-	import { Building2, Landmark, TrendingUp, Wallet } from 'lucide-svelte';
+	import { Building2, Landmark, TrendingUp, Wallet, BarChart3 } from 'lucide-svelte';
 	import type { DashboardKpis } from '$lib/api';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	interface Props {
 		kpis: DashboardKpis;
 	}
 
 	let { kpis }: Props = $props();
+
+	const isEmpty = $derived(
+		kpis.sci_count === 0 && kpis.biens_count === 0 && kpis.taux_recouvrement === 0 && kpis.cashflow_net === 0
+	);
 
 	function formatEur(value: number): string {
 		return new Intl.NumberFormat('fr-FR', {
@@ -68,20 +73,30 @@
 	]);
 </script>
 
-<div class="grid gap-4 grid-cols-2 md:grid-cols-4">
-	{#each cards as card (card.label)}
-		<div
-			class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
-		>
-			<div class="flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg {card.bgIcon}">
-					<card.icon class="h-5 w-5 {card.iconColor}" />
-				</div>
-				<div class="min-w-0">
-					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
-					<p class="text-xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
+{#if isEmpty}
+	<EmptyState
+		icon={BarChart3}
+		title="Vos indicateurs apparaitront ici"
+		description="Enregistrez votre premiere SCI et un loyer pour voir vos KPIs : nombre de biens, taux de recouvrement, cashflow net."
+		ctaText="Creer une SCI"
+		ctaHref="/scis"
+	/>
+{:else}
+	<div class="grid gap-4 grid-cols-2 md:grid-cols-4">
+		{#each cards as card (card.label)}
+			<div
+				class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+			>
+				<div class="flex items-center gap-3">
+					<div class="flex h-10 w-10 items-center justify-center rounded-lg {card.bgIcon}">
+						<card.icon class="h-5 w-5 {card.iconColor}" />
+					</div>
+					<div class="min-w-0">
+						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
+						<p class="text-xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
+					</div>
 				</div>
 			</div>
-		</div>
-	{/each}
-</div>
+		{/each}
+	</div>
+{/if}

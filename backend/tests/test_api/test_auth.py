@@ -210,3 +210,38 @@ def test_logout_failure(client, monkeypatch):
     payload = response.json()
     assert payload["code"] == "validation_error"
     assert payload["error"] == "logout failed"
+
+
+# ── /forgot-password endpoint tests ──────────────────────────────────────
+
+
+def test_forgot_password_requires_email(client):
+    response = client.post("/api/v1/auth/forgot-password", json={})
+    assert response.status_code == 422
+
+
+def test_forgot_password_returns_success_always(client):
+    """Always returns success to prevent email enumeration."""
+    fake_client = MagicMock()
+    with patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client):
+        response = client.post("/api/v1/auth/forgot-password", json={"email": "anyone@test.com"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert "reset link" in data["message"].lower()
+
+
+def test_forgot_password_returns_success_even_on_error(client):
+    """Anti-enumeration: returns 200 even when Supabase raises an error."""
+    fake_client = MagicMock()
+    fake_client.auth.reset_password_email.side_effect = Exception("user not found")
+    with patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client):
+        response = client.post("/api/v1/auth/forgot-password", json={"email": "unknown@test.com"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+
+
+def test_forgot_password_invalid_email_format(client):
+    response = client.post("/api/v1/auth/forgot-password", json={"email": "not-an-email"})
+    assert response.status_code == 422

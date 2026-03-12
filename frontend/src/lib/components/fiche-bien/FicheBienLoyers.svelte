@@ -1,15 +1,24 @@
 <script lang="ts">
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { Plus, FileText, Check } from 'lucide-svelte';
+	import { renderQuitus } from '$lib/api';
+	import type { QuitusRequestPayload } from '$lib/api';
+	import { addToast } from '$lib/components/ui/toast';
+	import { Plus, FileText, Check, Loader2 } from 'lucide-svelte';
 
 	interface Props {
 		loyers: Array<any>;
 		isGerant: boolean;
 		sciId: string | number;
 		bienId: string | number;
+		nomLocataire?: string;
+		nomSci?: string;
+		adresseBien?: string;
+		villeBien?: string;
 	}
 
-	let { loyers, isGerant, sciId, bienId }: Props = $props();
+	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '' }: Props = $props();
+
+	let generatingQuittanceFor: string | null = $state(null);
 
 	const statutConfig: Record<string, { label: string; class: string }> = {
 		paye: {
@@ -33,6 +42,64 @@
 	function getStatut(statut: string | null | undefined) {
 		if (!statut) return statutConfig['en_attente'];
 		return statutConfig[statut] ?? { label: statut, class: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
+	}
+
+	function buildPeriodeLabel(dateLoyer: string): string {
+		try {
+			const date = new Date(dateLoyer);
+			return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+		} catch {
+			return dateLoyer;
+		}
+	}
+
+	async function handleGenerateQuittance(loyer: any) {
+		if (!loyer.id || !nomLocataire) {
+			addToast({
+				title: 'Données manquantes',
+				description: 'Le locataire ou le loyer est introuvable. Vérifiez le bail actif.',
+				variant: 'error'
+			});
+			return;
+		}
+
+		const loyerId = String(loyer.id);
+		generatingQuittanceFor = loyerId;
+
+		try {
+			const payload: QuitusRequestPayload = {
+				id_loyer: loyerId,
+				id_bien: String(bienId),
+				nom_locataire: nomLocataire,
+				periode: buildPeriodeLabel(loyer.date_loyer),
+				montant: loyer.montant,
+				nom_sci: nomSci || undefined,
+				adresse_bien: adresseBien || undefined,
+				ville_bien: villeBien || undefined
+			};
+
+			const blob = await renderQuitus(payload);
+			const url = URL.createObjectURL(blob);
+			window.open(url, '_blank');
+
+			// Clean up blob URL after a delay to allow the browser to load it
+			setTimeout(() => URL.revokeObjectURL(url), 30_000);
+
+			addToast({
+				title: 'Quittance générée',
+				description: `Quittance pour ${buildPeriodeLabel(loyer.date_loyer)} ouverte dans un nouvel onglet.`,
+				variant: 'success'
+			});
+		} catch (err: any) {
+			const message = err?.message ?? 'Impossible de générer la quittance.';
+			addToast({
+				title: 'Erreur de génération',
+				description: message,
+				variant: 'error'
+			});
+		} finally {
+			generatingQuittanceFor = null;
+		}
 	}
 </script>
 
@@ -112,12 +179,20 @@
 												Payé
 											</button>
 										{/if}
+											{@const isGenerating = generatingQuittanceFor === String(loyer.id)}
 										<button
-											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+											onclick={() => handleGenerateQuittance(loyer)}
+											disabled={isGenerating}
+											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
 											title="Générer la quittance"
 										>
-											<FileText class="h-3 w-3" />
-											Quittance
+											{#if isGenerating}
+												<Loader2 class="h-3 w-3 animate-spin" />
+												Génération…
+											{:else}
+												<FileText class="h-3 w-3" />
+												Quittance
+											{/if}
 										</button>
 									</div>
 								</td>

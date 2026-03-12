@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Building2 } from 'lucide-svelte';
 	import type { SCICard } from '$lib/api';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	interface Props {
 		scis: SCICard[];
@@ -33,20 +34,13 @@
 </script>
 
 {#if scis.length === 0}
-	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-12 dark:border-slate-700"
-	>
-		<Building2 class="h-10 w-10 text-slate-400" />
-		<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-			Aucune SCI enregistrée.
-		</p>
-		<a
-			href="/scis"
-			class="mt-3 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
-		>
-			Créer une SCI
-		</a>
-	</div>
+	<EmptyState
+		icon={Building2}
+		title="Aucune SCI enregistree"
+		description="Creez votre premiere SCI pour suivre vos biens, loyers et charges depuis le dashboard."
+		ctaText="Creer une SCI"
+		ctaHref="/scis"
+	/>
 {:else}
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each scis as sci (sci.id)}

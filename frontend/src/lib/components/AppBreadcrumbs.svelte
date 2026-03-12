@@ -8,7 +8,7 @@
 	};
 
 	const labelMap: Record<string, string> = {
-		dashboard: 'Cockpit',
+		dashboard: 'Tableau de bord',
 		scis: 'Portefeuille',
 		exploitation: 'Exploitation',
 		finance: 'Finance',
