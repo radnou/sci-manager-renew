@@ -71,8 +71,8 @@
 		} else {
 			showCheckEmail = true;
 			addToast({
-				title: 'Email envoy\u00e9',
-				description: `V\u00e9rifiez votre bo\u00eete mail \u00e0 ${email}`,
+				title: 'Email envoyé',
+				description: `Vérifiez votre boîte mail à ${email}`,
 				variant: 'success'
 			});
 		}
@@ -98,23 +98,23 @@
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">
 			<CardHeader>
-				<p class="sci-eyebrow">Espace op\u00e9rateur</p>
+				<p class="sci-eyebrow">Espace de gestion</p>
 				<CardTitle class="text-2xl">Connexion</CardTitle>
-				<CardDescription>Acc\u00e9dez \u00e0 votre espace de gestion SCI.</CardDescription>
+				<CardDescription>Accédez à votre espace de gestion SCI.</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{#if showCheckEmail}
 					<div
 						class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
 					>
-						<p class="font-semibold">Lien envoy\u00e9</p>
+						<p class="font-semibold">Lien envoyé</p>
 						<p class="mt-2 text-sm">
-							Consultez votre bo\u00eete mail \u00e0 <strong>{email}</strong> et cliquez sur le lien
+							Consultez votre boîte mail à <strong>{email}</strong> et cliquez sur le lien
 							pour vous connecter.
 						</p>
 					</div>
 
-					<Button href="/" variant="outline" class="w-full">Retour \u00e0 l'accueil</Button>
+					<Button href="/" variant="outline" class="w-full">Retour à l'accueil</Button>
 				{:else}
 					<form class="space-y-4" onsubmit={handleSubmit}>
 						<label class="sci-field">
@@ -136,7 +136,7 @@
 									type="password"
 									bind:value={password}
 									required
-									placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+									placeholder="••••••••"
 									disabled={isLoading}
 									autocomplete="current-password"
 								/>
@@ -147,7 +147,7 @@
 									href="/forgot-password"
 									class="text-sm text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 								>
-									Mot de passe oubli\u00e9 ?
+									Mot de passe oublié ?
 								</a>
 							</div>
 						{/if}
@@ -221,7 +221,7 @@
 							href="/register"
 							class="font-medium text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 						>
-							Cr\u00e9er un compte gratuit
+							Créer un compte gratuit
 						</a>
 					</p>
 				{/if}

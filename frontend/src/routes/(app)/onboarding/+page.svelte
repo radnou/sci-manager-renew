@@ -376,7 +376,7 @@
 						Tout est prêt !
 					</h2>
 					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-						Votre SCI est configurée. Accédez à votre tableau de bord pour commencer à piloter
+						Votre SCI est configurée. Accédez à votre tableau de bord pour commencer à gérer
 						votre patrimoine.
 					</p>
 					<div class="mt-6">

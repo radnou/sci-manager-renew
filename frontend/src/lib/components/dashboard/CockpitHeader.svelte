@@ -79,9 +79,9 @@
 						</h2>
 						<p class="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 							{#if activeSciProfile}
-								Lecture d'exécution de la SCI sélectionnée: identité, gouvernance, encaissements et documents à produire.
+								Vue d'ensemble de la SCI sélectionnée : identité, gouvernance, encaissements et documents à produire.
 							{:else}
-								Sélectionnez une SCI depuis la vue portefeuille pour ouvrir le détail d'exécution.
+								Sélectionnez une SCI depuis la vue portefeuille pour ouvrir le vue détaillée.
 							{/if}
 						</p>
 					</div>
@@ -154,10 +154,10 @@
 			<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-700 dark:bg-slate-900">
 				<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 					<TriangleAlert class="h-4 w-4" />
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Postes de pilotage</p>
+					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Points de suivi</p>
 				</div>
 				<p class="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-					Chaque bloc ci-dessous renvoie vers une zone du cockpit.
+					Chaque bloc ci-dessous renvoie vers une section de votre espace.
 				</p>
 				<div class="mt-4 space-y-3">
 					{#each commandTracks as track}

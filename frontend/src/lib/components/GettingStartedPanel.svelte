@@ -94,10 +94,10 @@
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
 				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
-					{compact ? 'Cap suivant • parcours opérateur' : 'Première connexion • prise en main guidée'}
+					{compact ? 'Cap suivant • parcours guidé' : 'Première connexion • prise en main guidée'}
 				</p>
 				<CardTitle class="mt-2 text-2xl">
-					{compact ? 'Priorités de mise en route' : 'Démarrer le cockpit sans tâtonner'}
+					{compact ? 'Priorités de mise en route' : 'Débuter la gestion sans tâtonner'}
 				</CardTitle>
 				<CardDescription class="mt-2 max-w-3xl text-sm leading-7">
 					{#if compact}

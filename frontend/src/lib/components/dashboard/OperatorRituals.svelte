@@ -27,7 +27,7 @@
 	<CardHeader>
 		<CardTitle class="flex items-center gap-2 text-lg">
 			<FileText class="h-5 w-5 text-sky-600" />
-			Rituels opérateur
+			Points de suivi
 		</CardTitle>
 		<CardDescription>
 			Repères desktop pour la revue hebdomadaire, la quittance et la clôture.

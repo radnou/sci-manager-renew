@@ -69,7 +69,7 @@
 			</h2>
 			<p class="mt-3 text-sm">Vos donnees sont traitees pour les finalites suivantes :</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
-				<li>Fourniture et gestion du service de pilotage de SCI</li>
+				<li>Fourniture et gestion du service de gestion de SCI</li>
 				<li>Authentification et securisation de l'acces a votre compte</li>
 				<li>Generation de documents (quittances de loyer, declarations fiscales)</li>
 				<li>Gestion des abonnements et des paiements</li>

@@ -70,7 +70,14 @@ import {
 	updateNotificationPreferences,
 	fetchFinances,
 	fetchBienDocuments,
-	deleteDocumentBien
+	deleteDocumentBien,
+	// Export / CERFA / GDPR additions
+	exportLoyersCsv,
+	exportBiensCsv,
+	generateCerfa2044Pdf,
+	fetchDataSummary,
+	exportUserData,
+	deleteAccount
 } from './api';
 
 describe('api helpers', () => {
@@ -1049,6 +1056,94 @@ describe('api helpers', () => {
 		await expect(deleteDocumentBien('sci-1', 'bien-1', 1)).resolves.toBeUndefined();
 		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/documents/1`);
+		expect(options.method).toBe('DELETE');
+	});
+
+	// --- Export CSV ---
+
+	it('exportLoyersCsv fetches CSV blob', async () => {
+		const csvResponse = new Response('id,montant\n1,1200', {
+			status: 200,
+			headers: { 'Content-Type': 'text/csv' }
+		});
+		const fetchMock = vi.fn().mockResolvedValue(csvResponse);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const blob = await exportLoyersCsv();
+		expect(blob).toBeInstanceOf(Blob);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/export/loyers/csv`);
+	});
+
+	it('exportBiensCsv fetches CSV blob', async () => {
+		const csvResponse = new Response('id,adresse\n1,rue Test', {
+			status: 200,
+			headers: { 'Content-Type': 'text/csv' }
+		});
+		const fetchMock = vi.fn().mockResolvedValue(csvResponse);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const blob = await exportBiensCsv();
+		expect(blob).toBeInstanceOf(Blob);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/export/biens/csv`);
+	});
+
+	// --- CERFA 2044 PDF ---
+
+	it('generateCerfa2044Pdf posts JSON and returns PDF blob', async () => {
+		const pdfResponse = new Response('pdf-binary', {
+			status: 200,
+			headers: { 'Content-Type': 'application/pdf' }
+		});
+		const fetchMock = vi.fn().mockResolvedValue(pdfResponse);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const payload = {
+			annee: 2025,
+			total_revenus: 24000,
+			total_charges: 6000,
+			sci_nom: 'SCI Test'
+		};
+
+		const blob = await generateCerfa2044Pdf(payload);
+		expect(blob.type).toBe('application/pdf');
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/cerfa/2044/pdf`);
+		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(payload));
+	});
+
+	// --- GDPR ---
+
+	it('fetchDataSummary returns data summary', async () => {
+		const payload = { tables: { sci: 2, biens: 5, loyers: 20 }, total_records: 27, storage_used_bytes: 1024 };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(fetchDataSummary()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/gdpr/data-summary`);
+	});
+
+	it('exportUserData returns data export response', async () => {
+		const payload = { download_url: '/api/v1/gdpr/download/export-123.zip', expires_at: '2026-03-12T00:00:00Z' };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(exportUserData()).resolves.toEqual(payload);
+		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/gdpr/data-export`);
+	});
+
+	it('deleteAccount sends DELETE request', async () => {
+		const payload = { success: true, message: 'Account deleted' };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(deleteAccount()).resolves.toEqual(payload);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/gdpr/account`);
 		expect(options.method).toBe('DELETE');
 	});
 });

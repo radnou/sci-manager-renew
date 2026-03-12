@@ -20,7 +20,7 @@
 	<CardHeader>
 		<CardTitle class="text-lg">Vue portefeuille</CardTitle>
 		<CardDescription>
-			Le cockpit global pour arbitrer entre structuration, trésorerie et priorité d'exécution.
+			Vue consolidée pour arbitrer entre structuration, trésorerie et priorités.
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-4 pt-0">

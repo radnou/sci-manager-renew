@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Loader2 } from 'lucide-svelte';
+	import { Loader2, Rocket, Building2, HandCoins, FileText } from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import {
 		fetchDashboard,
 		type DashboardData,
@@ -26,6 +27,10 @@
 	let scis = $state<SCICard[]>([]);
 	let activite = $state<ActivityItem[]>([]);
 
+	const isBrandNew = $derived(
+		scis.length === 0 && activite.length === 0 && alertes.length === 0 && kpis.sci_count === 0
+	);
+
 	$effect(() => {
 		loadDashboard();
 	});
@@ -51,7 +56,7 @@
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">
-		<p class="sci-eyebrow">Pilotage SCI</p>
+		<p class="sci-eyebrow">Gestion SCI</p>
 		<h1 class="sci-page-title">Dashboard</h1>
 	</header>
 
@@ -72,6 +77,41 @@
 			>
 				Reessayer
 			</button>
+		</div>
+	{:else if isBrandNew}
+		<!-- Welcome state for brand new users -->
+		<div class="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
+			<div class="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-950/40">
+				<Rocket class="h-7 w-7 text-indigo-500 dark:text-indigo-400" />
+			</div>
+			<h2 class="mt-5 text-lg font-semibold text-slate-900 dark:text-slate-100">
+				Bienvenue sur GererSCI
+			</h2>
+			<p class="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
+				Votre tableau de bord prendra vie dès votre première SCI. En quelques minutes, suivez vos biens, loyers et charges depuis une interface consolidée.
+			</p>
+
+			<div class="mt-8 grid w-full max-w-lg gap-4 sm:grid-cols-3">
+				<div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+					<Building2 class="mx-auto h-6 w-6 text-sky-500" />
+					<p class="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">1. Créez une SCI</p>
+					<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Identité, SIREN, régime fiscal</p>
+				</div>
+				<div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+					<HandCoins class="mx-auto h-6 w-6 text-emerald-500" />
+					<p class="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">2. Ajoutez un bien</p>
+					<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Adresse, bail, locataire</p>
+				</div>
+				<div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+					<FileText class="mx-auto h-6 w-6 text-violet-500" />
+					<p class="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">3. Suivez vos loyers</p>
+					<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Encaissements, quittances</p>
+				</div>
+			</div>
+
+			<a href="/onboarding" class="mt-8">
+				<Button size="lg">Commencer la mise en route</Button>
+			</a>
 		</div>
 	{:else}
 		<!-- Alertes -->

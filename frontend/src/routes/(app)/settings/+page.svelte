@@ -23,7 +23,7 @@
 	} from '$lib/settings/application-preferences';
 
 	const landingRouteOptions: Array<{ value: ApplicationLandingRoute; label: string }> = [
-		{ value: '/dashboard', label: 'Cockpit' },
+		{ value: '/dashboard', label: 'Tableau de bord' },
 		{ value: '/scis', label: 'Portefeuille' },
 		{ value: '/exploitation', label: 'Exploitation' },
 		{ value: '/finance', label: 'Finance' },
@@ -51,7 +51,7 @@
 
 	let landingRouteLabel = $derived(
 		landingRouteOptions.find((option) => option.value === preferences.defaultLandingRoute)?.label ??
-		'Cockpit'
+		'Tableau de bord'
 	);
 	let densityLabel = $derived(preferences.density === 'compact' ? 'Compacte' : 'Confortable');
 
@@ -131,21 +131,21 @@
 
 <section class="sci-page-shell">
 	<WorkspaceHeader
-		eyebrow="Parametres - experience operateur"
+		eyebrow="Paramètres d'affichage"
 		title="Preferences de l'application"
-		subtitle="Les parametres pilotent uniquement l'experience locale du navigateur: point d'entree, densite, PDF et signaux. L'identite et l'offre restent dans Compte."
+		subtitle="Les parametres ajustent uniquement l'experience locale du navigateur: point d'entree, densite, PDF et signaux. L'identite et l'offre restent dans Compte."
 		contextLabel="Configuration active"
 		contextValue={`${landingRouteLabel} - ${densityLabel}`}
 		contextDetail={preferences.showPdfPreview ? 'Previsualisation PDF active.' : 'Previsualisation PDF desactivee.'}
 	>
 		<Button href="/account">Ouvrir le compte</Button>
-		<Button href="/dashboard" variant="outline">Retour au cockpit</Button>
+		<Button href="/dashboard" variant="outline">Retour au tableau de bord</Button>
 	</WorkspaceHeader>
 
 	<WorkspaceActionBar
 		eyebrow="Cadre des preferences"
 		title="Reglages locaux, pas decisions metier"
-		description="On ajuste ici la facon dont l'espace de pilotage s'ouvre et se lit sur ce navigateur. Les parametres ne doivent pas concurrencer les ecrans metier."
+		description="On ajuste ici la façon dont l'interface s'ouvre et se lit sur ce navigateur. Les parametres ne doivent pas concurrencer les ecrans metier."
 	>
 		<div class="sci-action-grid">
 			<div class="sci-action-card">
@@ -354,8 +354,8 @@
 					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{densityLabel}</p>
 					<p class="mt-1 text-slate-500 dark:text-slate-400">
 						{preferences.density === 'compact'
-							? "Priorise la densite d'information pour les revues operateur."
-							: "Laisse davantage d'air entre les blocs pour un pilotage confortable."}
+							? "Priorise la densite d'information pour une consultation rapide."
+							: "Laisse davantage d'air entre les blocs pour une lecture confortable."}
 					</p>
 				</div>
 				<div class="grid gap-3 md:grid-cols-2">

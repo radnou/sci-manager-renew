@@ -36,7 +36,7 @@
 		checking = false;
 
 		if (!hasSession) {
-			errorMessage = "Session expir\u00e9e. Veuillez redemander un lien de r\u00e9initialisation.";
+			errorMessage = "Session expirée. Veuillez redemander un lien de réinitialisation.";
 		}
 	});
 
@@ -50,7 +50,7 @@
 		}
 
 		if (password.length < passwordMinLength) {
-			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caract\u00e8res.`;
+			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caractères.`;
 			return;
 		}
 
@@ -59,13 +59,13 @@
 		const { error } = await supabase.auth.updateUser({ password });
 
 		if (error) {
-			errorMessage = 'Erreur lors de la mise \u00e0 jour du mot de passe. Veuillez r\u00e9essayer.';
+			errorMessage = 'Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.';
 			isLoading = false;
 			return;
 		}
 
 		addToast({
-			title: 'Mot de passe mis \u00e0 jour',
+			title: 'Mot de passe mis à jour',
 			description: 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.',
 			variant: 'success'
 		});
@@ -75,14 +75,14 @@
 </script>
 
 <svelte:head>
-	<title>R\u00e9initialiser le mot de passe — GererSCI</title>
+	<title>Réinitialiser le mot de passe — GererSCI</title>
 </svelte:head>
 
 <section class="sci-page-shell">
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">
 			<CardHeader>
-				<p class="sci-eyebrow">S\u00e9curit\u00e9 du compte</p>
+				<p class="sci-eyebrow">Sécurité du compte</p>
 				<CardTitle class="text-2xl">Nouveau mot de passe</CardTitle>
 				<CardDescription>
 					Choisissez un nouveau mot de passe pour votre compte.
@@ -114,13 +114,13 @@
 								bind:value={password}
 								required
 								minlength={passwordMinLength}
-								placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
 							/>
 							{#if passwordTooShort}
 								<span class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-									{passwordMinLength} caract\u00e8res minimum
+									{passwordMinLength} caractères minimum
 								</span>
 							{/if}
 						</label>
@@ -132,7 +132,7 @@
 								bind:value={passwordConfirm}
 								required
 								minlength={passwordMinLength}
-								placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
 							/>
@@ -157,7 +157,7 @@
 							class="w-full"
 							disabled={isLoading || !password || !passwordConfirm || passwordMismatch || passwordTooShort}
 						>
-							{isLoading ? 'Mise \u00e0 jour...' : 'Mettre \u00e0 jour le mot de passe'}
+							{isLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
 						</Button>
 					</form>
 				{/if}

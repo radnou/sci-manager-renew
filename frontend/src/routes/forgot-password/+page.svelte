@@ -34,17 +34,17 @@
 </script>
 
 <svelte:head>
-	<title>Mot de passe oubli\u00e9 — GererSCI</title>
+	<title>Mot de passe oublié — GererSCI</title>
 </svelte:head>
 
 <section class="sci-page-shell">
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">
 			<CardHeader>
-				<p class="sci-eyebrow">R\u00e9cup\u00e9ration de compte</p>
-				<CardTitle class="text-2xl">Mot de passe oubli\u00e9</CardTitle>
+				<p class="sci-eyebrow">Récupération de compte</p>
+				<CardTitle class="text-2xl">Mot de passe oublié</CardTitle>
 				<CardDescription>
-					Entrez votre adresse email pour recevoir un lien de r\u00e9initialisation.
+					Entrez votre adresse email pour recevoir un lien de réinitialisation.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -52,15 +52,15 @@
 					<div
 						class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
 					>
-						<p class="font-semibold">Email envoy\u00e9</p>
+						<p class="font-semibold">Email envoyé</p>
 						<p class="mt-2 text-sm">
 							Si un compte existe pour <strong>{email}</strong>, vous recevrez un lien de
-							r\u00e9initialisation dans quelques instants. Pensez \u00e0 v\u00e9rifier vos spams.
+							réinitialisation dans quelques instants. Pensez à vérifier vos spams.
 						</p>
 					</div>
 
 					<div class="space-y-3">
-						<Button href="/login" class="w-full">Retour \u00e0 la connexion</Button>
+						<Button href="/login" class="w-full">Retour à la connexion</Button>
 					</div>
 				{:else}
 					<form class="space-y-4" onsubmit={handleSubmit}>
@@ -77,7 +77,7 @@
 						</label>
 
 						<Button type="submit" class="w-full" disabled={isLoading || !email}>
-							{isLoading ? 'Envoi en cours...' : 'Envoyer le lien de r\u00e9initialisation'}
+							{isLoading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
 						</Button>
 					</form>
 

@@ -445,3 +445,338 @@ def test_webhook_ignored_when_stripe_disabled(client, monkeypatch):
     )
     assert response.status_code == 200
     assert response.json() == {"status": "ignored"}
+
+
+# ---------------------------------------------------------------------------
+# Helper function unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_find_user_by_email_found(monkeypatch):
+    """_find_user_by_email returns user id when email matches."""
+
+    class _User:
+        email = "found@example.com"
+        id = "uid-42"
+
+    class _ListResult:
+        users = [_User()]
+
+    class _Admin:
+        def list_users(self):
+            return _ListResult()
+
+    class _Auth:
+        admin = _Admin()
+
+    class _Client:
+        auth = _Auth()
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
+    assert stripe_api._find_user_by_email("found@example.com") == "uid-42"
+
+
+def test_find_user_by_email_not_found(monkeypatch):
+    """_find_user_by_email returns None when no user matches."""
+
+    class _User:
+        email = "other@example.com"
+        id = "uid-99"
+
+    class _ListResult:
+        users = [_User()]
+
+    class _Admin:
+        def list_users(self):
+            return _ListResult()
+
+    class _Auth:
+        admin = _Admin()
+
+    class _Client:
+        auth = _Auth()
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
+    assert stripe_api._find_user_by_email("missing@example.com") is None
+
+
+def test_find_user_by_email_exception(monkeypatch):
+    """_find_user_by_email returns None on exception."""
+
+    def _boom():
+        raise RuntimeError("auth down")
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
+    assert stripe_api._find_user_by_email("x@example.com") is None
+
+
+def test_create_or_get_user_existing(monkeypatch):
+    """_create_or_get_user returns existing user id."""
+    monkeypatch.setattr(stripe_api, "_find_user_by_email", lambda _email: "existing-uid")
+    assert stripe_api._create_or_get_user("x@example.com") == "existing-uid"
+
+
+def test_create_or_get_user_creates_new(monkeypatch):
+    """_create_or_get_user creates a new user when not found."""
+    monkeypatch.setattr(stripe_api, "_find_user_by_email", lambda _email: None)
+
+    class _User:
+        id = "new-uid-77"
+
+    class _Result:
+        user = _User()
+
+    class _Admin:
+        def create_user(self, payload):
+            return _Result()
+
+    class _Auth:
+        admin = _Admin()
+
+    class _Client:
+        auth = _Auth()
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
+    assert stripe_api._create_or_get_user("new@example.com") == "new-uid-77"
+
+
+def test_create_or_get_user_create_fails(monkeypatch):
+    """_create_or_get_user returns None when creation fails."""
+    monkeypatch.setattr(stripe_api, "_find_user_by_email", lambda _email: None)
+
+    def _boom():
+        raise RuntimeError("create failed")
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
+    assert stripe_api._create_or_get_user("fail@example.com") is None
+
+
+def test_create_or_get_user_no_user_attr(monkeypatch):
+    """_create_or_get_user returns None when result has no user."""
+    monkeypatch.setattr(stripe_api, "_find_user_by_email", lambda _email: None)
+
+    class _Result:
+        user = None
+
+    class _Admin:
+        def create_user(self, payload):
+            return _Result()
+
+    class _Auth:
+        admin = _Admin()
+
+    class _Client:
+        auth = _Auth()
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
+    assert stripe_api._create_or_get_user("no-user@example.com") is None
+
+
+def test_update_subscription_metadata_success(monkeypatch):
+    """_update_subscription_metadata calls Stripe modify."""
+    captured = {}
+
+    def fake_modify(sub_id, metadata=None):
+        captured["sub_id"] = sub_id
+        captured["metadata"] = metadata
+
+    monkeypatch.setattr("app.api.v1.stripe.stripe.Subscription.modify", fake_modify)
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test")
+
+    stripe_api._update_subscription_metadata("sub_1", "uid_1", "pro")
+    assert captured["sub_id"] == "sub_1"
+    assert captured["metadata"]["user_id"] == "uid_1"
+    assert captured["metadata"]["plan_key"] == "pro"
+
+
+def test_update_subscription_metadata_no_plan_key(monkeypatch):
+    """_update_subscription_metadata omits plan_key when None."""
+    captured = {}
+
+    def fake_modify(sub_id, metadata=None):
+        captured["metadata"] = metadata
+
+    monkeypatch.setattr("app.api.v1.stripe.stripe.Subscription.modify", fake_modify)
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test")
+
+    stripe_api._update_subscription_metadata("sub_2", "uid_2", None)
+    assert "plan_key" not in captured["metadata"]
+    assert captured["metadata"]["user_id"] == "uid_2"
+
+
+def test_update_subscription_metadata_exception(monkeypatch):
+    """_update_subscription_metadata swallows exceptions."""
+
+    def fake_modify(sub_id, metadata=None):
+        raise RuntimeError("stripe down")
+
+    monkeypatch.setattr("app.api.v1.stripe.stripe.Subscription.modify", fake_modify)
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test")
+
+    # Should not raise
+    stripe_api._update_subscription_metadata("sub_3", "uid_3", "starter")
+
+
+def test_sync_subscription_exception_path(monkeypatch):
+    """_sync_subscription logs warning when DB fails."""
+
+    def _boom():
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
+
+    # Should not raise
+    stripe_api._sync_subscription(
+        {"client_reference_id": "user-1", "customer": "cus_1"},
+        "active",
+    )
+
+
+def test_sync_subscription_deleted_exception_path(monkeypatch):
+    """_sync_subscription_deleted logs warning when DB fails."""
+
+    def _boom():
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
+
+    # Should not raise
+    stripe_api._sync_subscription_deleted({"id": "sub_99", "customer": "cus_99"})
+
+
+def test_sync_subscription_no_user_id_returns_early(monkeypatch):
+    """_sync_subscription returns early when client_reference_id is None."""
+    called = {"sync": False}
+
+    def fake_client():
+        called["sync"] = True
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", fake_client)
+
+    stripe_api._sync_subscription({"client_reference_id": None}, "active")
+    assert not called["sync"]
+
+
+def test_sync_subscription_deleted_no_ids_returns_early(monkeypatch):
+    """_sync_subscription_deleted returns early when no customer or sub id."""
+    called = {"sync": False}
+
+    def fake_client():
+        called["sync"] = True
+
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", fake_client)
+
+    stripe_api._sync_subscription_deleted({})
+    assert not called["sync"]
+
+
+def test_handle_event_unknown_type(monkeypatch):
+    """_handle_event ignores unknown event types."""
+    captured = {}
+
+    def fake_sync(session_data, status_value, **_kwargs):
+        captured["called"] = True
+
+    monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
+
+    stripe_api._handle_event({"type": "charge.refunded", "data": {"object": {}}})
+    assert "called" not in captured
+
+
+def test_handle_event_non_dict_obj(monkeypatch):
+    """_handle_event handles dict-like object via dict() conversion."""
+    captured = {}
+
+    def fake_sync(session_data, status_value, **_kwargs):
+        captured["status_value"] = status_value
+
+    monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
+
+    # Use a class that supports dict() conversion (iterable of key-value pairs)
+    class DictLikeObj:
+        def __init__(self):
+            self._data = {
+                "payment_status": "paid",
+                "client_reference_id": "user-ns",
+            }
+
+        def __iter__(self):
+            return iter(self._data.items())
+
+        def keys(self):
+            return self._data.keys()
+
+        def __getitem__(self, key):
+            return self._data[key]
+
+    stripe_api._handle_event(
+        {
+            "type": "checkout.session.completed",
+            "data": {"object": DictLikeObj()},
+        }
+    )
+    assert captured["status_value"] == "active"
+
+
+def test_webhook_valid_event_processed(client, monkeypatch):
+    """Webhook with valid signature processes event and returns success."""
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.Webhook.construct_event",
+        lambda **_kwargs: {"type": "invoice.payment_succeeded", "data": {"object": {}}},
+    )
+
+    response = client.post(
+        "/api/v1/stripe/webhook",
+        data=b'{"type": "invoice.payment_succeeded"}',
+        headers={"stripe-signature": "valid_sig"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+
+
+def test_guest_checkout_stripe_error(client, monkeypatch):
+    """Guest checkout returns 503 on Stripe error."""
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+
+    def fake_create(**_kwargs):
+        raise stripe.error.StripeError("boom")
+
+    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
+
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "starter", "billing_period": "month"},
+    )
+    assert response.status_code == 503
+    assert "Checkout session creation failed" in response.json()["error"]
+
+
+def test_guest_checkout_no_url(client, monkeypatch):
+    """Guest checkout returns 503 when session has no URL."""
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.checkout.Session.create",
+        lambda **_kwargs: SimpleNamespace(url=None, id="cs_no_url"),
+    )
+
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "starter", "billing_period": "month"},
+    )
+    assert response.status_code == 503
+    assert "Checkout session URL unavailable" in response.json()["error"]
+
+
+def test_checkout_catalog_disabled(client, auth_headers, monkeypatch):
+    """Checkout fails when catalog feature flag is disabled."""
+    monkeypatch.setattr(settings, "feature_stripe_payments", True)
+    monkeypatch.setattr(settings, "feature_new_checkout_catalog", False)
+
+    response = client.post(
+        "/api/v1/stripe/create-checkout-session",
+        json={"plan_key": "starter"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 503
+    assert response.json()["code"] == "feature_disabled"

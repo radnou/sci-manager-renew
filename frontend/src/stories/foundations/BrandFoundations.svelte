@@ -33,7 +33,7 @@
 	<div class="grid gap-4 md:grid-cols-[2fr_1fr]">
 		<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
 			<p class="sci-eyebrow">Typography</p>
-			<h3 class="mt-2 text-3xl font-semibold text-slate-900">Pilotage immobilier structuré</h3>
+			<h3 class="mt-2 text-3xl font-semibold text-slate-900">Gestion immobilière structurée</h3>
 			<p class="mt-2 text-base text-slate-600">
 				Le titre utilise une police serif expressive, le corps reste en sans-serif pour le confort de lecture des
 				données.

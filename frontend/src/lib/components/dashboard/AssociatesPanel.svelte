@@ -3,6 +3,7 @@
 	import { Users } from 'lucide-svelte';
 	import { formatPercent } from '$lib/high-value/formatters';
 	import { mapAssociateRoleLabel } from '$lib/high-value/presentation';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import {
 		Card,
 		CardContent,
@@ -30,9 +31,13 @@
 	</CardHeader>
 	<CardContent class="space-y-3">
 		{#if associates.length === 0}
-			<p class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-				Aucun associé disponible sur la SCI active.
-			</p>
+			<EmptyState
+				icon={Users}
+				title="Aucun associe renseigne"
+				description="Ajoutez les associes de cette SCI pour suivre la repartition du capital et les roles de gouvernance."
+				ctaText="Gerer les associes"
+				ctaHref="/scis"
+			/>
 		{:else}
 			{#each associates as associe (String(associe.id))}
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
