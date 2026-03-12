@@ -1,4 +1,126 @@
+from unittest.mock import MagicMock, patch
+
+import stripe
+
 from app.api.v1 import auth
+
+
+# ── /activate endpoint tests ──────────────────────────────────────────────
+
+
+def test_activate_missing_session_id(client):
+    response = client.get("/api/v1/auth/activate")
+    assert response.status_code == 400
+
+
+def test_activate_invalid_session_id(client):
+    response = client.get("/api/v1/auth/activate?session_id=invalid")
+    assert response.status_code == 400
+
+
+def test_activate_unpaid_session(client, monkeypatch):
+    """Stripe session exists but payment_status != paid."""
+    fake_session = MagicMock()
+    fake_session.payment_status = "unpaid"
+
+    with patch("stripe.checkout.Session.retrieve", return_value=fake_session):
+        response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
+    assert response.status_code == 400
+    assert "Payment not completed" in response.json()["error"]
+
+
+def test_activate_no_email_in_session(client):
+    """Paid session but no customer email."""
+    fake_session = MagicMock()
+    fake_session.payment_status = "paid"
+    fake_session.customer_details = None
+    fake_session.metadata = {}
+
+    with patch("stripe.checkout.Session.retrieve", return_value=fake_session):
+        response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
+    assert response.status_code == 400
+    assert "No email" in response.json()["error"]
+
+
+def test_activate_user_not_found(client):
+    """Paid session with email but user not yet created in Supabase."""
+    fake_session = MagicMock()
+    fake_session.payment_status = "paid"
+    fake_session.customer_details.email = "buyer@example.com"
+    fake_session.metadata = {"plan_key": "pro"}
+
+    with (
+        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("app.api.v1.auth._find_user_by_email", return_value=None),
+    ):
+        response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
+    assert response.status_code == 503
+    assert "not yet created" in response.json()["error"]
+
+
+def test_activate_replay_blocked(client):
+    """Anti-replay: second activation of same session_id is rejected."""
+    fake_session = MagicMock()
+    fake_session.payment_status = "paid"
+    fake_session.customer_details.email = "buyer@example.com"
+    fake_session.metadata = {"plan_key": "starter"}
+
+    fake_upsert_result = MagicMock()
+    fake_upsert_result.data = []  # empty = duplicate ignored
+
+    fake_table = MagicMock()
+    fake_table.upsert.return_value.execute.return_value = fake_upsert_result
+
+    fake_client = MagicMock()
+    fake_client.table.return_value = fake_table
+
+    with (
+        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("app.api.v1.auth._find_user_by_email", return_value="user-uuid-123"),
+        patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client),
+    ):
+        response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
+    assert response.status_code == 401
+    assert "already been used" in response.json()["error"]
+
+
+def test_activate_success(client):
+    """Happy path: valid paid session, user found, first activation."""
+    fake_session = MagicMock()
+    fake_session.payment_status = "paid"
+    fake_session.customer_details.email = "buyer@example.com"
+    fake_session.metadata = {"plan_key": "pro"}
+
+    fake_upsert_result = MagicMock()
+    fake_upsert_result.data = [{"session_id": "cs_test_123", "user_id": "user-uuid-123"}]
+
+    fake_table = MagicMock()
+    fake_table.upsert.return_value.execute.return_value = fake_upsert_result
+
+    fake_link_props = MagicMock()
+    fake_link_props.hashed_token = "hashed-token-abc"
+    fake_link_result = MagicMock()
+    fake_link_result.properties = fake_link_props
+
+    fake_client = MagicMock()
+    fake_client.table.return_value = fake_table
+    fake_client.auth.admin.generate_link.return_value = fake_link_result
+
+    with (
+        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("app.api.v1.auth._find_user_by_email", return_value="user-uuid-123"),
+        patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client),
+    ):
+        response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["token_hash"] == "hashed-token-abc"
+    assert payload["type"] == "magiclink"
+    assert payload["plan_key"] == "pro"
+
+
+# ── Magic link endpoint tests ─────────────────────────────────────────────
 
 
 def test_send_magic_link_success(client, monkeypatch):

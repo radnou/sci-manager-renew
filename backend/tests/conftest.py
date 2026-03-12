@@ -8,10 +8,14 @@ from fastapi.testclient import TestClient
 from jose import jwt
 
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.main import app
 
 # Override settings for tests
 settings.cors_origins = ["http://testserver"]
+
+# Disable rate limiting in tests to avoid 429 errors
+limiter.enabled = False
 
 
 @pytest.fixture
@@ -272,7 +276,7 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     from app.api.v1 import associes, biens, charges, fiscalite, locataires, loyers, notifications, quitus, scis
     from app.api.v1 import dashboard, scis_biens, notification_preferences
     from app import main
-    from app.api.v1 import gdpr, stripe, onboarding, finances
+    from app.api.v1 import auth, gdpr, stripe, onboarding, finances
     from app.services import subscription_service
     from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
@@ -295,6 +299,7 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
         return fake_supabase
     fake_anon.cache_clear = lambda: None
 
+    monkeypatch.setattr(auth, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(gdpr, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(stripe, "get_supabase_service_client", fake_service)
     monkeypatch.setattr(subscription_service, "get_supabase_service_client", fake_service)

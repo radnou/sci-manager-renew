@@ -1,11 +1,19 @@
-"""Authentication endpoints - Magic Link"""
+"""Authentication endpoints - Magic Link + Activate (post-checkout)"""
+import asyncio
+
+import stripe
 import structlog
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, EmailStr
 
+from app.core.config import settings
 from app.core.exceptions import AuthenticationError, ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
+from app.core.supabase_client import get_supabase_service_client
 from app.services.auth_service import magic_link_service
+
+# Re-export so tests can patch at module level
+from app.api.v1.stripe import _find_user_by_email  # noqa: F401
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = structlog.get_logger(__name__)
@@ -18,6 +26,74 @@ class MagicLinkRequest(BaseModel):
 class MagicLinkResponse(BaseModel):
     success: bool
     message: str
+
+
+class ActivateResponse(BaseModel):
+    token_hash: str
+    type: str = "magiclink"
+    plan_key: str | None = None
+
+
+@router.get("/activate", response_model=ActivateResponse)
+@limiter.limit("5/minute")
+async def activate_session(
+    request: Request, session_id: str | None = None
+) -> ActivateResponse:
+    """Auto-login after Stripe checkout — returns OTP token for frontend verifyOtp."""
+    del request  # required by limiter but unused
+
+    if not session_id:
+        raise ValidationError("session_id is required")
+
+    # 1. Validate with Stripe
+    stripe.api_key = settings.stripe_secret_key
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except stripe.error.StripeError:
+        raise ValidationError("Invalid or expired session")
+
+    if session.payment_status != "paid":
+        raise ValidationError("Payment not completed")
+
+    # 2. Extract email + plan_key
+    email = session.customer_details.email if session.customer_details else None
+    if not email:
+        raise ValidationError("No email found in session")
+    plan_key = session.metadata.get("plan_key") if session.metadata else None
+
+    # 3. Find user (webhook should have created them — retry up to 3 times)
+    user_id: str | None = None
+    for _attempt in range(3):
+        user_id = _find_user_by_email(email)
+        if user_id:
+            break
+        await asyncio.sleep(2)
+
+    if not user_id:
+        raise ExternalServiceError("Supabase", "Account not yet created — please retry")
+
+    # 4. Anti-replay: upsert with ignore_duplicates
+    client = get_supabase_service_client()
+    result = client.table("activated_sessions").upsert(
+        {"session_id": session_id, "user_id": user_id},
+        on_conflict="session_id",
+        ignore_duplicates=True,
+    ).execute()
+    if not result.data:
+        raise AuthenticationError("This activation link has already been used")
+
+    # 5. Generate magic link for auto-login
+    link_result = client.auth.admin.generate_link({
+        "type": "magiclink",
+        "email": email,
+    })
+
+    token_hash = ""
+    if hasattr(link_result, "properties"):
+        token_hash = getattr(link_result.properties, "hashed_token", "")
+
+    logger.info("session_activated", session_id=session_id, user_id=user_id)
+    return ActivateResponse(token_hash=token_hash, plan_key=plan_key)
 
 
 @router.post("/magic-link/send", response_model=MagicLinkResponse)
