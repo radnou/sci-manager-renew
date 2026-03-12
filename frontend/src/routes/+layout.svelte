@@ -12,7 +12,12 @@
 		getCurrentSession,
 		subscribeToSessionChanges
 	} from '$lib/auth/session';
-	import { buildLoginRedirect, isGuestOnlyRoute, isProtectedRoute } from '$lib/auth/route-guard';
+	import {
+		buildLoginRedirect,
+		isGuestOnlyRoute,
+		isProtectedRoute,
+		isPublicRoute
+	} from '$lib/auth/route-guard';
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
 	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
@@ -340,7 +345,9 @@
 		<AppBreadcrumbs />
 	{/if}
 
-	{#if authResolved && user && page.url.pathname === '/'}
+	{#if isPublicRoute(page.url.pathname) && !user}
+		{@render children()}
+	{:else if authResolved && user && page.url.pathname === '/'}
 		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
 			<div
 				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
@@ -372,9 +379,7 @@
 				</p>
 			</div>
 		</section>
-	{:else if user}
-		{@render children()}
-	{:else}
+	{:else if authResolved}
 		{@render children()}
 	{/if}
 
