@@ -33,7 +33,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = "whsec_placeholder"
     stripe_starter_price_id: str = "price_starter_placeholder"
     stripe_pro_price_id: str = "price_pro_placeholder"
-    stripe_lifetime_price_id: str = "price_lifetime_placeholder"
+    stripe_starter_annual_price_id: str = "price_starter_annual_placeholder"
+    stripe_pro_annual_price_id: str = "price_pro_annual_placeholder"
+    stripe_lifetime_price_id: str = "price_lifetime_placeholder"  # DEPRECATED: kept for grandfathered users
 
     # Email
     resend_api_key: str = "re_placeholder"

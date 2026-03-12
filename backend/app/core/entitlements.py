@@ -136,14 +136,16 @@ def list_public_plans() -> list[PlanEntitlements]:
     return [plan for plan in PLAN_CATALOG.values() if plan.is_public]
 
 
-def resolve_price_id_for_plan(plan_key: PlanKey | str) -> str | None:
+def resolve_price_id_for_plan(plan_key: PlanKey | str, billing_period: str = "month") -> str | None:
     normalized = plan_key if isinstance(plan_key, PlanKey) else PlanKey(str(plan_key))
     if normalized == PlanKey.STARTER:
+        if billing_period == "year":
+            return settings.stripe_starter_annual_price_id
         return settings.stripe_starter_price_id
     if normalized == PlanKey.PRO:
+        if billing_period == "year":
+            return settings.stripe_pro_annual_price_id
         return settings.stripe_pro_price_id
-    if normalized == PlanKey.LIFETIME:
-        return settings.stripe_lifetime_price_id
     return None
 
 
@@ -153,8 +155,9 @@ def resolve_plan_key_from_price_id(price_id: str | None) -> PlanKey | None:
 
     price_mapping = {
         settings.stripe_starter_price_id: PlanKey.STARTER,
+        settings.stripe_starter_annual_price_id: PlanKey.STARTER,
         settings.stripe_pro_price_id: PlanKey.PRO,
-        settings.stripe_lifetime_price_id: PlanKey.LIFETIME,
+        settings.stripe_pro_annual_price_id: PlanKey.PRO,
     }
     return price_mapping.get(price_id)
 

@@ -1,6 +1,12 @@
 """Tests for plan entitlements catalog and helper functions."""
 
-from app.core.entitlements import PlanKey, get_plan, list_public_plans
+from app.core.entitlements import (
+    PlanKey,
+    get_plan,
+    list_public_plans,
+    resolve_plan_key_from_price_id,
+    resolve_price_id_for_plan,
+)
 
 
 def test_free_plan_is_public():
@@ -59,3 +65,29 @@ def test_list_public_plans_includes_all_three():
     plans = list_public_plans()
     keys = {p.plan_key for p in plans}
     assert keys == {PlanKey.FREE, PlanKey.STARTER, PlanKey.PRO}
+
+
+def test_resolve_price_id_annual_starter(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_starter_annual_price_id", "price_starter_annual")
+    result = resolve_price_id_for_plan(PlanKey.STARTER, billing_period="year")
+    assert result == "price_starter_annual"
+
+
+def test_resolve_price_id_monthly_default(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_starter_monthly")
+    result = resolve_price_id_for_plan(PlanKey.STARTER)
+    assert result == "price_starter_monthly"
+
+
+def test_resolve_plan_key_from_annual_price(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_pro_annual_price_id", "price_pro_annual")
+    result = resolve_plan_key_from_price_id("price_pro_annual")
+    assert result == PlanKey.PRO
+
+
+def test_resolve_price_id_lifetime_returns_none():
+    result = resolve_price_id_for_plan(PlanKey.LIFETIME)
+    assert result is None
