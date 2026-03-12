@@ -15,6 +15,7 @@ from app.core.supabase_client import get_supabase_service_client
 from app.models.stripe import (
     CheckoutSessionCreateRequest,
     CheckoutSessionCreateResponse,
+    GuestCheckoutRequest,
     SubscriptionEntitlementsResponse,
     StripeWebhookResponse,
 )
@@ -198,8 +199,8 @@ async def create_checkout_session(
                 }
             ],
             mode=checkout_mode,
-            success_url=f"{settings.frontend_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{settings.frontend_url}/pricing",
+            success_url=f"{settings.frontend_url}/dashboard?upgraded=true",
+            cancel_url=f"{settings.frontend_url}/#pricing",
             client_reference_id=user_id,
             metadata={"user_id": user_id, "plan_key": payload.plan_key.value},
         )
@@ -228,6 +229,84 @@ async def create_checkout_session(
         session_url=session_url,
     )
     return CheckoutSessionCreateResponse(url=session_url)
+
+
+@router.post(
+    "/create-guest-checkout",
+    response_model=CheckoutSessionCreateResponse,
+)
+@limiter.limit("5/minute")
+async def create_guest_checkout(
+    request: Request,
+    payload: GuestCheckoutRequest,
+) -> CheckoutSessionCreateResponse:
+    del request
+    if not settings.feature_stripe_payments:
+        raise FeatureDisabledError(
+            "Les paiements Stripe sont désactivés.",
+            flag_name="feature_stripe_payments",
+        )
+
+    if payload.plan_key not in ("starter", "pro"):
+        raise ValidationError("plan_key must be 'starter' or 'pro'.")
+
+    if payload.billing_period not in ("month", "year"):
+        raise ValidationError("billing_period must be 'month' or 'year'.")
+
+    price_id = resolve_price_id_for_plan(payload.plan_key, billing_period=payload.billing_period)
+    if not price_id:
+        raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
+
+    logger.info(
+        "creating_guest_checkout_session",
+        plan_key=payload.plan_key,
+        billing_period=payload.billing_period,
+        price_id=price_id,
+    )
+
+    stripe.api_key = settings.stripe_secret_key
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price": price_id,
+                    "quantity": 1,
+                }
+            ],
+            mode="subscription",
+            success_url=f"{settings.frontend_url}/welcome?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{settings.frontend_url}/#pricing",
+            metadata={"plan_key": payload.plan_key, "billing_period": payload.billing_period},
+        )
+    except stripe.error.StripeError as exc:
+        logger.error(
+            "stripe_guest_checkout_session_failed",
+            plan_key=payload.plan_key,
+            error=str(exc),
+            exc_info=True,
+        )
+        raise ExternalServiceError("Stripe", f"Checkout session creation failed: {str(exc)}")
+
+    session_url = _to_str(getattr(session, "url", None))
+    if not session_url and hasattr(session, "get"):
+        session_url = _to_str(session.get("url"))
+
+    if not session_url:
+        logger.error("stripe_guest_session_url_missing")
+        raise ExternalServiceError("Stripe", "Checkout session URL unavailable")
+
+    session_id = _to_str(getattr(session, "id", None))
+    if not session_id and hasattr(session, "get"):
+        session_id = _to_str(session.get("id"))
+
+    logger.info(
+        "guest_checkout_session_created",
+        plan_key=payload.plan_key,
+        session_url=session_url,
+    )
+    return CheckoutSessionCreateResponse(url=session_url, session_id=session_id or "")
 
 
 @router.post("/webhook", response_model=StripeWebhookResponse)

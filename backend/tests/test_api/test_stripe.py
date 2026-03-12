@@ -24,7 +24,9 @@ def test_create_checkout_session(client, auth_headers, monkeypatch):
         headers=auth_headers,
     )
     assert response.status_code == 200
-    assert response.json() == {"url": "https://checkout.stripe.com/c/pay_test"}
+    data = response.json()
+    assert data["url"] == "https://checkout.stripe.com/c/pay_test"
+    assert "session_id" in data
 
 
 def test_create_checkout_session_without_url_fails(client, auth_headers, monkeypatch):
@@ -251,6 +253,63 @@ def test_create_checkout_session_feature_disabled(client, auth_headers, monkeypa
     payload = response.json()
     assert payload["code"] == "feature_disabled"
     assert payload["details"]["flag"] == "feature_stripe_payments"
+
+
+def test_guest_checkout_rejects_free_plan(client):
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "free", "billing_period": "month"},
+    )
+    assert response.status_code == 400
+
+
+def test_guest_checkout_rejects_invalid_plan(client):
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "invalid", "billing_period": "month"},
+    )
+    assert response.status_code in (400, 422)
+
+
+def test_guest_checkout_rejects_invalid_billing_period(client):
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "starter", "billing_period": "weekly"},
+    )
+    assert response.status_code in (400, 422)
+
+
+def test_guest_checkout_success(client, monkeypatch):
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+
+    def fake_create(**kwargs):
+        assert kwargs["line_items"][0]["price"] == "price_test"
+        assert kwargs["mode"] == "subscription"
+        assert kwargs["metadata"]["plan_key"] == "starter"
+        assert "client_reference_id" not in kwargs
+        return SimpleNamespace(url="https://checkout.stripe.com/c/pay_guest", id="cs_guest_123")
+
+    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
+
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "starter", "billing_period": "month"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["url"] == "https://checkout.stripe.com/c/pay_guest"
+    assert data["session_id"] == "cs_guest_123"
+
+
+def test_guest_checkout_feature_disabled(client, monkeypatch):
+    monkeypatch.setattr(settings, "feature_stripe_payments", False)
+
+    response = client.post(
+        "/api/v1/stripe/create-guest-checkout",
+        json={"plan_key": "starter", "billing_period": "month"},
+    )
+    assert response.status_code == 503
+    assert response.json()["code"] == "feature_disabled"
 
 
 def test_webhook_ignored_when_stripe_disabled(client, monkeypatch):

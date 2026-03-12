@@ -12,6 +12,12 @@ class CheckoutSessionCreateRequest(BaseModel):
 
 class CheckoutSessionCreateResponse(BaseModel):
     url: str
+    session_id: str = ""
+
+
+class GuestCheckoutRequest(BaseModel):
+    plan_key: str
+    billing_period: str = "month"
 
 
 class StripeWebhookResponse(BaseModel):
