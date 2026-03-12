@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchSubscriptionEntitlements, type SubscriptionEntitlements } from '$lib/api';
+	import { supabase } from '$lib/supabase';
 	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
 	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
 	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
 	import { getCurrentSession } from '$lib/auth/session';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
+	import { addToast } from '$lib/components/ui/toast';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import { getStoredActiveSciId } from '$lib/portfolio/active-sci';
 	import { readApplicationPreferences } from '$lib/settings/application-preferences';
@@ -17,6 +20,14 @@
 	let defaultLandingRoute = '/dashboard';
 	let subscription: SubscriptionEntitlements | null = null;
 	let subscriptionError = '';
+
+	// Password change
+	let newPassword = '';
+	let newPasswordConfirm = '';
+	let passwordLoading = false;
+	let passwordError = '';
+	let passwordSuccess = false;
+	const passwordMinLength = 8;
 
 	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
 	$: activeSciDetail = activeSciId ? 'Le cockpit reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
@@ -41,6 +52,40 @@
 			);
 		}
 	});
+
+	async function handlePasswordChange() {
+		passwordError = '';
+		passwordSuccess = false;
+
+		if (newPassword !== newPasswordConfirm) {
+			passwordError = 'Les mots de passe ne correspondent pas.';
+			return;
+		}
+
+		if (newPassword.length < passwordMinLength) {
+			passwordError = `Le mot de passe doit contenir au moins ${passwordMinLength} caractères.`;
+			return;
+		}
+
+		passwordLoading = true;
+
+		const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+		if (error) {
+			passwordError = 'Erreur lors de la mise à jour du mot de passe.';
+		} else {
+			passwordSuccess = true;
+			newPassword = '';
+			newPasswordConfirm = '';
+			addToast({
+				title: 'Mot de passe mis à jour',
+				description: 'Votre mot de passe a été modifié avec succès.',
+				variant: 'success'
+			});
+		}
+
+		passwordLoading = false;
+	}
 </script>
 
 <section class="sci-page-shell">
@@ -159,4 +204,54 @@
 			</CardContent>
 		</Card>
 	</div>
+
+	<Card class="sci-section-card mt-6">
+		<CardHeader>
+			<div>
+				<CardTitle class="text-lg">Sécurité</CardTitle>
+				<CardDescription>Modifiez votre mot de passe pour sécuriser votre compte.</CardDescription>
+			</div>
+		</CardHeader>
+		<CardContent class="pt-0">
+			<form class="max-w-md space-y-4" on:submit|preventDefault={handlePasswordChange}>
+				<label class="sci-field">
+					<span class="sci-field-label">Nouveau mot de passe</span>
+					<Input
+						type="password"
+						bind:value={newPassword}
+						placeholder="••••••••"
+						disabled={passwordLoading}
+						autocomplete="new-password"
+					/>
+				</label>
+				<label class="sci-field">
+					<span class="sci-field-label">Confirmer le nouveau mot de passe</span>
+					<Input
+						type="password"
+						bind:value={newPasswordConfirm}
+						placeholder="••••••••"
+						disabled={passwordLoading}
+						autocomplete="new-password"
+					/>
+				</label>
+
+				{#if passwordError}
+					<p class="sci-inline-alert sci-inline-alert-error">{passwordError}</p>
+				{/if}
+
+				{#if passwordSuccess}
+					<p class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+						Mot de passe mis à jour avec succès.
+					</p>
+				{/if}
+
+				<Button
+					type="submit"
+					disabled={passwordLoading || !newPassword || !newPasswordConfirm || newPassword !== newPasswordConfirm || newPassword.length < passwordMinLength}
+				>
+					{passwordLoading ? 'Mise à jour...' : 'Modifier le mot de passe'}
+				</Button>
+			</form>
+		</CardContent>
+	</Card>
 </section>
