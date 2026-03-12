@@ -24,8 +24,8 @@
 				1. Responsable du traitement
 			</h2>
 			<p class="mt-3 text-sm">
-				Le responsable du traitement des donnees collectees sur le site GererSCI est [Nom de la
-				societe], dont le siege social est situe a [Adresse complete].
+				Le responsable du traitement des donnees collectees sur le site GererSCI est GererSCI
+				(Radnoumane Mossabely, entrepreneur individuel), dont le siege social est situe a Paris, France.
 			</p>
 			<p class="mt-2 text-sm">
 				<strong>Contact DPO :</strong> dpo@gerersci.fr

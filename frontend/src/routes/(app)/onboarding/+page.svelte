@@ -1,15 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { Building2, Home, FileText, Bell, Sparkles } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		createSci,
 		createBien,
+		createBail,
 		completeOnboarding,
 		fetchOnboardingStatus,
+		fetchSciBiensList,
+		updateNotificationPreferences,
 		type SCICreatePayload,
 		type BienCreatePayload,
+		type BailCreate,
 		type OnboardingStatus
 	} from '$lib/api';
 
@@ -25,13 +29,25 @@
 	let sciRegime = $state<'IR' | 'IS'>('IR');
 	let createdSciId = $state('');
 
-	// Step 2: Bien
+	// Step 2: Bien (sub-steps: type → adresse → details → financier)
+	let bienSubStep = $state(1);
+	let bienCategorie = $state<'appartement' | 'maison' | 'immeuble' | 'local_commercial' | 'parking' | 'autre'>('appartement');
 	let bienAdresse = $state('');
 	let bienVille = $state('');
 	let bienCodePostal = $state('');
 	let bienType = $state<'nu' | 'meuble' | 'mixte'>('nu');
+	let bienSurface = $state<number | undefined>(undefined);
+	let bienNbPieces = $state<number | undefined>(undefined);
+	let bienDpe = $state<'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | ''>('');
 	let bienLoyerCc = $state(0);
 	let bienCharges = $state(0);
+	let bienNbLots = $state(1);
+
+	// Step 3: Bail
+	let createdBienId = $state('');
+	let bailDateDebut = $state(new Date().toISOString().slice(0, 10));
+	let bailLoyerHc = $state(0);
+	let bailChargesProvisions = $state(0);
 
 	// Step 4: Notifications
 	let emailAlertes = $state(true);
@@ -56,7 +72,16 @@
 				currentStep = 2;
 				if (status.sci_id) createdSciId = String(status.sci_id);
 			}
-			if (status.bien_created) currentStep = 3;
+			if (status.bien_created) {
+				currentStep = 3;
+				// Resolve first bien ID for bail creation
+				if (createdSciId) {
+					try {
+						const biens = await fetchSciBiensList(createdSciId);
+						if (biens.length > 0) createdBienId = String(biens[0].id);
+					} catch { /* continue without bienId */ }
+				}
+			}
 			if (status.bail_created) currentStep = 4;
 			if (status.notifications_set) currentStep = 5;
 		} catch {
@@ -82,13 +107,33 @@
 			createdSciId = String(sci.id);
 			currentStep = 2;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur lors de la création de la SCI.';
+			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation de la SCI.';
 		} finally {
 			submitting = false;
 		}
 	}
 
-	async function handleStep2() {
+	function handleBienSubNext() {
+		error = '';
+		if (bienSubStep === 1) {
+			bienSubStep = 2;
+		} else if (bienSubStep === 2) {
+			if (!bienAdresse.trim() || !bienVille.trim() || !bienCodePostal.trim()) {
+				error = "L'adresse, la ville et le code postal sont requis.";
+				return;
+			}
+			bienSubStep = 3;
+		} else if (bienSubStep === 3) {
+			bienSubStep = 4;
+		}
+	}
+
+	function handleBienSubBack() {
+		error = '';
+		if (bienSubStep > 1) bienSubStep -= 1;
+	}
+
+	async function handleStep2Submit() {
 		if (!bienAdresse.trim() || !bienVille.trim() || !bienCodePostal.trim()) {
 			error = "L'adresse, la ville et le code postal sont requis.";
 			return;
@@ -96,32 +141,84 @@
 		submitting = true;
 		error = '';
 		try {
-			await createBien({
-				id_sci: createdSciId,
-				adresse: bienAdresse.trim(),
-				ville: bienVille.trim(),
-				code_postal: bienCodePostal.trim(),
-				type_locatif: bienType,
-				loyer_cc: bienLoyerCc,
-				charges: bienCharges,
-				tmi: 0
-			} as BienCreatePayload);
+			const lotsToCreate = bienCategorie === 'immeuble' && bienNbLots > 1 ? bienNbLots : 1;
+			let lastBienId: string | null = null;
+			for (let i = 0; i < lotsToCreate; i++) {
+				const lotSuffix = lotsToCreate > 1 ? ` \u2014 Lot ${i + 1}` : '';
+				const createdBienResult = await createBien({
+					id_sci: createdSciId,
+					adresse: bienAdresse.trim() + lotSuffix,
+					ville: bienVille.trim(),
+					code_postal: bienCodePostal.trim(),
+					type_locatif: bienType,
+					loyer_cc: bienLoyerCc,
+					charges: bienCharges,
+					tmi: 0,
+					surface_m2: bienSurface || undefined,
+					nb_pieces: bienNbPieces || undefined,
+					dpe_classe: bienDpe || undefined
+				} as BienCreatePayload);
+				if (createdBienResult?.id) lastBienId = String(createdBienResult.id);
+			}
+			if (lastBienId) createdBienId = lastBienId;
+			bailLoyerHc = bienLoyerCc > bienCharges ? bienLoyerCc - bienCharges : bienLoyerCc;
+			bailChargesProvisions = bienCharges;
 			currentStep = 3;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur lors de la création du bien.';
+			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bien.';
 		} finally {
 			submitting = false;
 		}
 	}
 
-	function handleStep3() {
-		// Bail configuration is optional during onboarding — skip for now
+	async function handleStep3() {
+		if (!createdBienId || !createdSciId) {
+			// No bien created yet — skip bail creation gracefully
+			currentStep = 4;
+			return;
+		}
+		submitting = true;
+		error = '';
+		try {
+			const bailData: BailCreate = {
+				date_debut: bailDateDebut,
+				loyer_hc: bailLoyerHc,
+				charges_provisions: bailChargesProvisions || undefined
+			};
+			await createBail(createdSciId, createdBienId, bailData);
+			currentStep = 4;
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bail.';
+		} finally {
+			submitting = false;
+		}
+	}
+
+	function handleSkipStep3() {
 		currentStep = 4;
 	}
 
-	function handleStep4() {
-		// Save notification preference (simplified — full config in settings later)
-		currentStep = 5;
+	async function handleStep4() {
+		submitting = true;
+		error = '';
+		try {
+			const DEFAULT_TYPES = [
+				'late_payment', 'bail_expiring', 'quittance_pending',
+				'pno_expiring', 'new_loyer', 'new_associe', 'subscription_expiring'
+			];
+			const preferences = DEFAULT_TYPES.map((type) => ({
+				type,
+				email_enabled: emailAlertes,
+				in_app_enabled: true
+			}));
+			await updateNotificationPreferences(preferences);
+			currentStep = 5;
+		} catch {
+			// Non-blocking — continue even if preferences fail
+			currentStep = 5;
+		} finally {
+			submitting = false;
+		}
 	}
 
 	async function handleStep5() {
@@ -129,11 +226,11 @@
 		error = '';
 		try {
 			await completeOnboarding();
-			goto('/dashboard');
+			await invalidateAll();
+			await goto('/dashboard', { replaceState: true });
 		} catch (err) {
 			error =
 				err instanceof Error ? err.message : "Erreur lors de la finalisation de l'onboarding.";
-		} finally {
 			submitting = false;
 		}
 	}
@@ -250,105 +347,286 @@
 				</div>
 
 			{:else if currentStep === 2}
-				<h2 class="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">
-					Ajoutez votre premier bien
-				</h2>
-				<div class="space-y-4">
-					<div>
-						<label for="bien-adresse" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-							Adresse *
-						</label>
-						<input
-							id="bien-adresse"
-							type="text"
-							bind:value={bienAdresse}
-							placeholder="12 rue de la Paix"
-							class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-						/>
+				<div class="mb-4">
+					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+						Ajoutez votre premier bien
+					</h2>
+					<!-- Sub-step progress -->
+					<div class="mt-3 flex items-center gap-2">
+						{#each [1, 2, 3, 4] as ss}
+							<div class="h-1.5 flex-1 rounded-full transition-colors {bienSubStep >= ss ? 'bg-slate-900 dark:bg-slate-100' : 'bg-slate-200 dark:bg-slate-800'}"></div>
+						{/each}
 					</div>
-					<div class="grid grid-cols-2 gap-4">
-						<div>
-							<label for="bien-ville" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-								Ville *
-							</label>
-							<input
-								id="bien-ville"
-								type="text"
-								bind:value={bienVille}
-								placeholder="Paris"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-							/>
-						</div>
-						<div>
-							<label for="bien-cp" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-								Code postal *
-							</label>
-							<input
-								id="bien-cp"
-								type="text"
-								bind:value={bienCodePostal}
-								placeholder="75002"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-							/>
-						</div>
-					</div>
-					<div>
-						<label for="bien-type" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-							Type de location
-						</label>
-						<select
-							id="bien-type"
-							bind:value={bienType}
-							class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-						>
-							<option value="nu">Location nue</option>
-							<option value="meuble">Meublé</option>
-							<option value="mixte">Mixte</option>
-						</select>
-					</div>
-					<div class="grid grid-cols-2 gap-4">
-						<div>
-							<label for="bien-loyer" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-								Loyer CC (€/mois)
-							</label>
-							<input
-								id="bien-loyer"
-								type="number"
-								bind:value={bienLoyerCc}
-								min="0"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-							/>
-						</div>
-						<div>
-							<label for="bien-charges" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-								Charges (€/mois)
-							</label>
-							<input
-								id="bien-charges"
-								type="number"
-								bind:value={bienCharges}
-								min="0"
-								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-							/>
-						</div>
-					</div>
+					<p class="mt-2 text-xs text-slate-500">
+						{bienSubStep === 1 ? 'Type de bien' : bienSubStep === 2 ? 'Adresse' : bienSubStep === 3 ? 'Caractéristiques' : 'Loyer et charges'}
+					</p>
 				</div>
-				<div class="mt-6 flex justify-end">
-					<Button onclick={handleStep2} disabled={submitting}>
-						{submitting ? 'Ajout...' : 'Ajouter le bien'}
-					</Button>
+
+				{#if bienSubStep === 1}
+					<!-- Sub-step 1: Category -->
+					<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">Quel type de bien souhaitez-vous ajouter ?</p>
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+						{#each [
+							{ value: 'appartement', label: 'Appartement', emoji: '🏢' },
+							{ value: 'maison', label: 'Maison', emoji: '🏠' },
+							{ value: 'immeuble', label: 'Immeuble', emoji: '🏗️' },
+							{ value: 'local_commercial', label: 'Local commercial', emoji: '🏪' },
+							{ value: 'parking', label: 'Parking / Box', emoji: '🅿️' },
+							{ value: 'autre', label: 'Autre', emoji: '📦' }
+						] as cat}
+							<button
+								type="button"
+								onclick={() => { bienCategorie = cat.value as typeof bienCategorie; }}
+								class="flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-sm transition-all
+									{bienCategorie === cat.value
+										? 'border-slate-900 bg-slate-50 dark:border-slate-100 dark:bg-slate-900'
+										: 'border-slate-200 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500'}"
+							>
+								<span class="text-2xl">{cat.emoji}</span>
+								<span class="font-medium text-slate-700 dark:text-slate-300">{cat.label}</span>
+							</button>
+						{/each}
+					</div>
+
+				{:else if bienSubStep === 2}
+					<!-- Sub-step 2: Address -->
+					<div class="space-y-4">
+						<div>
+							<label for="bien-adresse" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+								Adresse *
+							</label>
+							<input
+								id="bien-adresse"
+								type="text"
+								bind:value={bienAdresse}
+								placeholder="12 rue de la Paix"
+								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+							/>
+						</div>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label for="bien-ville" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+									Ville *
+								</label>
+								<input
+									id="bien-ville"
+									type="text"
+									bind:value={bienVille}
+									placeholder="Paris"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+								/>
+							</div>
+							<div>
+								<label for="bien-cp" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+									Code postal *
+								</label>
+								<input
+									id="bien-cp"
+									type="text"
+									bind:value={bienCodePostal}
+									placeholder="75002"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+								/>
+							</div>
+						</div>
+					</div>
+
+				{:else if bienSubStep === 3}
+					<!-- Sub-step 3: Details -->
+					<div class="space-y-4">
+						<div>
+							<label for="bien-type" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+								Type de location
+							</label>
+							<select
+								id="bien-type"
+								bind:value={bienType}
+								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+							>
+								<option value="nu">Location nue</option>
+								<option value="meuble">Meublé</option>
+								<option value="mixte">Mixte</option>
+							</select>
+						</div>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label for="bien-surface" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+									Surface (m²)
+								</label>
+								<input
+									id="bien-surface"
+									type="number"
+									bind:value={bienSurface}
+									min="1"
+									placeholder="45"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+								/>
+							</div>
+							<div>
+								<label for="bien-pieces" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+									Nombre de pièces
+								</label>
+								<input
+									id="bien-pieces"
+									type="number"
+									bind:value={bienNbPieces}
+									min="1"
+									placeholder="3"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+								/>
+							</div>
+						</div>
+						<div>
+							<label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+								DPE (Diagnostic de Performance Énergétique)
+							</label>
+							<div class="flex gap-2">
+								{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as classe}
+									<button
+										type="button"
+										onclick={() => { bienDpe = bienDpe === classe ? '' : classe as typeof bienDpe; }}
+										class="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold transition-all
+											{bienDpe === classe
+												? classe <= 'B' ? 'bg-emerald-500 text-white' : classe <= 'D' ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
+												: 'border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'}"
+									>
+										{classe}
+									</button>
+								{/each}
+							</div>
+						</div>
+					</div>
+
+				{:else if bienSubStep === 4}
+					<!-- Sub-step 4: Financial + lots -->
+					<div class="space-y-4">
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label for="bien-loyer" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+									Loyer CC (€/mois)
+								</label>
+								<input
+									id="bien-loyer"
+									type="number"
+									bind:value={bienLoyerCc}
+									min="0"
+									placeholder="850"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+								/>
+							</div>
+							<div>
+								<label for="bien-charges" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+									Charges (€/mois)
+								</label>
+								<input
+									id="bien-charges"
+									type="number"
+									bind:value={bienCharges}
+									min="0"
+									placeholder="50"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+								/>
+							</div>
+						</div>
+
+						{#if bienCategorie === 'immeuble'}
+							<div class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+								<label for="bien-lots" class="mb-1 block text-sm font-medium text-blue-800 dark:text-blue-300">
+									Nombre de lots (appartements)
+								</label>
+								<p class="mb-2 text-xs text-blue-600 dark:text-blue-400">
+									Chaque lot sera créé séparément avec le même loyer et les mêmes charges. Vous pourrez les modifier individuellement ensuite.
+								</p>
+								<input
+									id="bien-lots"
+									type="number"
+									bind:value={bienNbLots}
+									min="1"
+									max="50"
+									class="w-24 rounded-lg border border-blue-300 px-3 py-2 text-sm dark:border-blue-700 dark:bg-blue-900"
+								/>
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Sub-step navigation -->
+				<div class="mt-6 flex items-center justify-between">
+					<div>
+						{#if bienSubStep > 1}
+							<Button variant="outline" onclick={handleBienSubBack}>Retour</Button>
+						{/if}
+					</div>
+					<div>
+						{#if bienSubStep < 4}
+							<Button onclick={handleBienSubNext}>Suivant</Button>
+						{:else}
+							<Button onclick={handleStep2Submit} disabled={submitting}>
+								{submitting ? 'Création...' : bienCategorie === 'immeuble' && bienNbLots > 1 ? `Créer ${bienNbLots} lots` : 'Ajouter le bien'}
+							</Button>
+						{/if}
+					</div>
 				</div>
 
 			{:else if currentStep === 3}
 				<h2 class="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">
 					Configuration du bail
 				</h2>
-				<p class="text-sm text-slate-600 dark:text-slate-400">
-					Vous pourrez configurer le bail et ajouter un locataire depuis la fiche bien.
-					Pour le moment, passons à l'étape suivante.
+				<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+					Créez un premier bail pour votre bien. Vous pourrez ajouter le locataire depuis la fiche bien.
 				</p>
-				<div class="mt-6 flex justify-end">
-					<Button onclick={handleStep3}>Continuer</Button>
+				<div class="space-y-4">
+					<div>
+						<label for="bail-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+							Date de début du bail *
+						</label>
+						<input
+							id="bail-date"
+							type="date"
+							bind:value={bailDateDebut}
+							class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+						/>
+					</div>
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<label for="bail-loyer" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+								Loyer HC (€/mois) *
+							</label>
+							<input
+								id="bail-loyer"
+								type="number"
+								bind:value={bailLoyerHc}
+								min="0"
+								placeholder="800"
+								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+							/>
+						</div>
+						<div>
+							<label for="bail-charges" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+								Provisions charges (€/mois)
+							</label>
+							<input
+								id="bail-charges"
+								type="number"
+								bind:value={bailChargesProvisions}
+								min="0"
+								placeholder="50"
+								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+							/>
+						</div>
+					</div>
+				</div>
+				<div class="mt-6 flex items-center justify-between">
+					<button
+						type="button"
+						onclick={handleSkipStep3}
+						class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+					>
+						Passer cette étape
+					</button>
+					<Button onclick={handleStep3} disabled={submitting || !bailDateDebut || bailLoyerHc <= 0}>
+						{submitting ? 'Création...' : 'Créer le bail'}
+					</Button>
 				</div>
 
 			{:else if currentStep === 4}
@@ -367,7 +645,9 @@
 					</label>
 				</div>
 				<div class="mt-6 flex justify-end">
-					<Button onclick={handleStep4}>Continuer</Button>
+					<Button onclick={handleStep4} disabled={submitting}>
+						{submitting ? 'Enregistrement...' : 'Continuer'}
+					</Button>
 				</div>
 
 			{:else if currentStep === 5}

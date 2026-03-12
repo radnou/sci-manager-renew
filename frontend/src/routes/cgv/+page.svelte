@@ -24,9 +24,8 @@
 			<p class="mt-3 text-sm">
 				Les presentes Conditions Generales de Vente (ci-apres "CGV") regissent la vente
 				d'abonnements au service GererSCI, application en ligne (SaaS) de gestion de Societes
-				Civiles Immobilieres (SCI), edite par [Nom de la societe], [Forme juridique] au capital
-				de [Montant] euros, immatriculee au RCS de [Ville] sous le numero [Numero RCS], dont le
-				siege social est situe [Adresse complete] (ci-apres "le Prestataire").
+				Civiles Immobilieres (SCI), edite par GererSCI (Radnoumane Mossabely, entrepreneur individuel), dont le
+				siege social est situe a Paris, France (SIRET : en cours d'immatriculation) (ci-apres "le Prestataire").
 			</p>
 			<p class="mt-2 text-sm">
 				Le service est accessible a l'adresse <strong>app.gerersci.fr</strong> (ci-apres "le
@@ -291,7 +290,7 @@
 			<p class="mt-2 text-sm">
 				Avant de saisir le mediateur, l'utilisateur doit avoir prealablement adresse une
 				reclamation ecrite au Prestataire a l'adresse <strong>contact@gerersci.fr</strong>
-				ou par courrier a [Adresse du siege social]. A defaut de reponse satisfaisante dans
+				ou par courrier a Paris, France. A defaut de reponse satisfaisante dans
 				un delai de 60 jours, l'utilisateur peut soumettre le litige au mediateur competent.
 			</p>
 			<p class="mt-2 text-sm">
@@ -312,8 +311,7 @@
 			<p class="mt-3 text-sm">
 				Les presentes CGV sont soumises au droit francais. En cas de litige relatif a
 				l'interpretation, l'execution ou la resiliation des presentes CGV, et a defaut de
-				resolution amiable ou de mediation, les tribunaux competents de [Ville du siege
-				social] seront seuls competents.
+				resolution amiable ou de mediation, les tribunaux competents de Paris seront seuls competents.
 			</p>
 			<p class="mt-2 text-sm">
 				Toutefois, conformement aux dispositions du Code de la consommation, le

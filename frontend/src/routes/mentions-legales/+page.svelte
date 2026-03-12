@@ -22,15 +22,15 @@
 				1. Editeur du site
 			</h2>
 			<div class="mt-3 space-y-1 text-sm">
-				<p><strong>Raison sociale :</strong> [Nom de la societe]</p>
-				<p><strong>Forme juridique :</strong> [SAS / SARL / etc.]</p>
-				<p><strong>Capital social :</strong> [Montant] EUR</p>
-				<p><strong>Siege social :</strong> [Adresse complete]</p>
-				<p><strong>RCS :</strong> [Ville] B [Numero]</p>
-				<p><strong>SIRET :</strong> [Numero SIRET]</p>
-				<p><strong>Numero de TVA intracommunautaire :</strong> [Numero TVA]</p>
+				<p><strong>Raison sociale :</strong> GererSCI (exploite par Radnoumane Mossabely, entrepreneur individuel)</p>
+				<p><strong>Forme juridique :</strong> Entrepreneur individuel (EI)</p>
+				<p><strong>Capital social :</strong> N/A (entreprise individuelle)</p>
+				<p><strong>Siege social :</strong> Paris, France</p>
+				<p><strong>RCS :</strong> N/A (entreprise individuelle)</p>
+				<p><strong>SIRET :</strong> En cours d'immatriculation</p>
+				<p><strong>Numero de TVA intracommunautaire :</strong> En cours d'attribution</p>
 				<p><strong>Email :</strong> contact@gerersci.fr</p>
-				<p><strong>Telephone :</strong> [Numero de telephone]</p>
+				<p><strong>Telephone :</strong> Support par email : contact@gerersci.fr</p>
 			</div>
 		</section>
 
@@ -39,8 +39,8 @@
 				2. Directeur de publication
 			</h2>
 			<div class="mt-3 space-y-1 text-sm">
-				<p><strong>Nom :</strong> [Prenom Nom du dirigeant]</p>
-				<p><strong>Qualite :</strong> [President / Gerant]</p>
+				<p><strong>Nom :</strong> Radnoumane Mossabely</p>
+				<p><strong>Qualite :</strong> Fondateur et dirigeant</p>
 			</div>
 		</section>
 

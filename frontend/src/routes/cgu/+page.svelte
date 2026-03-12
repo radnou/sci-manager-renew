@@ -113,7 +113,7 @@
 			</h2>
 			<p class="mt-3 text-sm">
 				L'ensemble des elements du service GererSCI (code source, interface, textes, graphismes,
-				logos, base de donnees) est la propriete exclusive de [Nom de la societe] et est protege
+				logos, base de donnees) est la propriete exclusive de GererSCI (Radnoumane Mossabely, entrepreneur individuel) et est protege
 				par le droit de la propriete intellectuelle.
 			</p>
 			<p class="mt-2 text-sm">
@@ -180,7 +180,7 @@
 			<p class="mt-3 text-sm">
 				Les presentes CGU sont soumises au droit francais. En cas de litige, les parties
 				s'efforceront de trouver une solution amiable. A defaut, les tribunaux competents de
-				[Ville du siege social] seront seuls competents.
+				Paris seront seuls competents.
 			</p>
 			<p class="mt-2 text-sm">
 				Conformement aux articles L611-1 et suivants du Code de la consommation, l'utilisateur

@@ -17,7 +17,7 @@ from app.core.supabase_client import get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
 
-ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing", "paid"}
+ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing", "paid", "free"}
 
 
 class SubscriptionService:

@@ -217,7 +217,7 @@ async def get_fiche_bien(
         client.table("charges")
         .select("*")
         .eq("id_bien", bien_id)
-        .order("date_charge", desc=True)
+        .order("date_paiement", desc=True)
         .execute()
     )
     charges_list = []

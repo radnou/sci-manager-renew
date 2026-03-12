@@ -30,6 +30,8 @@
 	let mobileOpen: boolean = $state(false);
 
 	$effect(() => {
+		// Re-fetch SCIs on navigation (reactive dependency on pathname)
+		void page.url.pathname;
 		fetchScis()
 			.then((data) => {
 				scis = data;

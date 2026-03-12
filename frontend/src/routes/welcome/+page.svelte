@@ -44,6 +44,14 @@
 		const sessionId = page.url.searchParams.get('session_id');
 
 		if (!sessionId) {
+			// If user is already authenticated, redirect to dashboard
+			const {
+				data: { session }
+			} = await supabase.auth.getSession();
+			if (session) {
+				goto('/dashboard', { replaceState: true });
+				return;
+			}
 			errorMessage = 'Lien invalide : aucun identifiant de session.';
 			step = 'error';
 			return;
@@ -56,7 +64,7 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				errorMessage = data.error || 'Erreur lors de l'activation du compte.';
+				errorMessage = data.error || "Erreur lors de l'activation du compte.";
 				step = 'error';
 				return;
 			}
@@ -70,7 +78,7 @@
 			});
 
 			if (otpError) {
-				errorMessage = 'Erreur d'authentification. Veuillez réessayer ou contacter le support.';
+				errorMessage = "Erreur d'authentification. Veuillez réessayer ou contacter le support.";
 				step = 'error';
 				return;
 			}
