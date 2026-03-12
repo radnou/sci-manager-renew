@@ -1,3 +1,15 @@
-# allow crawling everything by default
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /scis
+Disallow: /account
+Disallow: /settings
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /finances
+Disallow: /auth
+Disallow: /welcome
+Disallow: /success
+Disallow: /reset-password
+
+Sitemap: https://gerersci.fr/sitemap.xml
