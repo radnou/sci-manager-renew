@@ -312,6 +312,129 @@ def test_guest_checkout_feature_disabled(client, monkeypatch):
     assert response.json()["code"] == "feature_disabled"
 
 
+def test_webhook_guest_checkout_creates_user(monkeypatch):
+    """checkout.session.completed with no client_reference_id triggers user creation."""
+    from app.api.v1.stripe import _find_user_by_email, _create_or_get_user, _update_subscription_metadata
+
+    # Verify helpers are callable
+    assert callable(_find_user_by_email)
+    assert callable(_create_or_get_user)
+    assert callable(_update_subscription_metadata)
+
+    # Test the full guest checkout flow through _handle_event
+    captured = {}
+
+    def fake_sync(session_data, status_value, **_kwargs):
+        captured["session_data"] = session_data
+        captured["status_value"] = status_value
+
+    def fake_create_or_get(email):
+        captured["email"] = email
+        return "guest-user-42"
+
+    def fake_update_metadata(sub_id, user_id, plan_key):
+        captured["metadata_update"] = {"sub_id": sub_id, "user_id": user_id, "plan_key": plan_key}
+
+    monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
+    monkeypatch.setattr(stripe_api, "_create_or_get_user", fake_create_or_get)
+    monkeypatch.setattr(stripe_api, "_update_subscription_metadata", fake_update_metadata)
+
+    stripe_api._handle_event(
+        {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "payment_status": "paid",
+                    "client_reference_id": None,
+                    "customer_details": {"email": "guest@example.com"},
+                    "subscription": "sub_guest_1",
+                    "metadata": {"plan_key": "starter"},
+                }
+            },
+        }
+    )
+
+    assert captured["email"] == "guest@example.com"
+    assert captured["session_data"]["client_reference_id"] == "guest-user-42"
+    assert captured["status_value"] == "active"
+    assert captured["metadata_update"]["sub_id"] == "sub_guest_1"
+    assert captured["metadata_update"]["user_id"] == "guest-user-42"
+    assert captured["metadata_update"]["plan_key"] == "starter"
+
+
+def test_webhook_guest_checkout_no_email_returns_early(monkeypatch):
+    """Guest checkout without email should return without syncing."""
+    captured = {}
+
+    def fake_sync(session_data, status_value, **_kwargs):
+        captured["called"] = True
+
+    monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
+
+    stripe_api._handle_event(
+        {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "payment_status": "paid",
+                    "client_reference_id": None,
+                    "customer_details": {},
+                }
+            },
+        }
+    )
+
+    assert "called" not in captured
+
+
+def test_webhook_subscription_updated_fallback_resolution(monkeypatch):
+    """subscription.updated with no metadata.user_id resolves via stripe_customer_id."""
+    captured = {}
+
+    def fake_sync(session_data, status_value, **_kwargs):
+        captured["session_data"] = session_data
+        captured["status_value"] = status_value
+
+    class _Query:
+        def select(self, *args):
+            return self
+
+        def eq(self, key, value):
+            captured["eq"] = (key, value)
+            return self
+
+        def limit(self, n):
+            return self
+
+        def execute(self):
+            return SimpleNamespace(data=[{"user_id": "resolved-user-99"}])
+
+    class _Client:
+        def table(self, name):
+            return _Query()
+
+    monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
+
+    stripe_api._handle_event(
+        {
+            "type": "customer.subscription.updated",
+            "data": {
+                "object": {
+                    "id": "sub_456",
+                    "customer": "cus_456",
+                    "status": "active",
+                    "metadata": {},
+                    "items": {"data": [{"price": {"id": "price_456"}}]},
+                }
+            },
+        }
+    )
+
+    assert captured["session_data"]["client_reference_id"] == "resolved-user-99"
+    assert captured["eq"] == ("stripe_customer_id", "cus_456")
+
+
 def test_webhook_ignored_when_stripe_disabled(client, monkeypatch):
     monkeypatch.setattr(settings, "feature_stripe_payments", False)
 

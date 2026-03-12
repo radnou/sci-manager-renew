@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from typing import Any
 
 import stripe
@@ -29,6 +30,52 @@ def _to_str(value: Any) -> str | None:
     if value is None:
         return None
     return str(value)
+
+
+def _find_user_by_email(email: str) -> str | None:
+    """Look up user by email via direct auth.users query."""
+    try:
+        client = get_supabase_service_client()
+        existing = client.auth.admin.list_users()
+        for user in getattr(existing, "users", []):
+            if getattr(user, "email", None) == email:
+                return str(user.id)
+    except Exception:
+        pass
+    return None
+
+
+def _create_or_get_user(email: str) -> str | None:
+    """Create Supabase user if not exists, return user_id."""
+    try:
+        existing_id = _find_user_by_email(email)
+        if existing_id:
+            return existing_id
+
+        client = get_supabase_service_client()
+        random_password = secrets.token_urlsafe(32)
+        result = client.auth.admin.create_user({
+            "email": email,
+            "password": random_password,
+            "email_confirm": True,
+        })
+        if hasattr(result, "user") and result.user:
+            return str(result.user.id)
+    except Exception:
+        logger.error("guest_user_creation_failed", email=email, exc_info=True)
+    return None
+
+
+def _update_subscription_metadata(sub_id: str, user_id: str, plan_key: str | None) -> None:
+    """Write user_id into Stripe Subscription metadata for future webhooks."""
+    try:
+        stripe.api_key = settings.stripe_secret_key
+        metadata: dict[str, str] = {"user_id": user_id}
+        if plan_key:
+            metadata["plan_key"] = plan_key
+        stripe.Subscription.modify(sub_id, metadata=metadata)
+    except Exception:
+        logger.error("stripe_subscription_metadata_update_failed", sub_id=sub_id, user_id=user_id, exc_info=True)
 
 
 def _sync_subscription(
@@ -89,11 +136,28 @@ def _handle_event(event: Any) -> None:
         obj = dict(obj)
 
     if event_type == "checkout.session.completed":
+        user_id = _to_str(obj.get("client_reference_id"))
         status_value = "active" if obj.get("payment_status") == "paid" else "pending"
+        plan_key = _to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None
+
+        # Guest checkout flow: no client_reference_id
+        if not user_id:
+            customer_details = obj.get("customer_details", {})
+            email = customer_details.get("email") if isinstance(customer_details, dict) else None
+            if email:
+                user_id = _create_or_get_user(email)
+                if user_id:
+                    sub_id = _to_str(obj.get("subscription"))
+                    if sub_id:
+                        _update_subscription_metadata(sub_id, user_id, plan_key)
+
+        if not user_id:
+            return
+
         _sync_subscription(
-            obj,
+            {**obj, "client_reference_id": user_id},
             status_value,
-            plan_key=_to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None,
+            plan_key=plan_key,
         )
         return
 
@@ -117,6 +181,19 @@ def _handle_event(event: Any) -> None:
             else None,
             "mode": "subscription",
         }
+
+        # Fallback: resolve user_id via stripe_customer_id if metadata is missing
+        if not session_like.get("client_reference_id"):
+            customer_id = _to_str(obj.get("customer"))
+            if customer_id:
+                try:
+                    client = get_supabase_service_client()
+                    result = client.table("subscriptions").select("user_id").eq("stripe_customer_id", customer_id).limit(1).execute()
+                    if result.data:
+                        session_like["client_reference_id"] = result.data[0].get("user_id")
+                except Exception:
+                    logger.warning("fallback_user_resolution_failed", customer_id=customer_id, exc_info=True)
+
         _sync_subscription(
             session_like,
             subscription_status,
