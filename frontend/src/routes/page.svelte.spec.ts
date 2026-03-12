@@ -9,12 +9,12 @@ describe('/+page.svelte', () => {
 
 		const heading = page.getByRole('heading', { level: 1 });
 		await expect.element(heading).toBeInTheDocument();
+		await expect.element(heading).toHaveTextContent(/Pilotez votre SCI/);
 		await expect.element(
-			page.getByRole('link', { name: 'Demander un accès prioritaire' })
-		).toHaveAttribute('href', '/login');
-		await expect.element(page.getByRole('link', { name: 'Voir la stratégie tarifaire' })).toHaveAttribute(
-			'href',
-			'/pricing'
-		);
+			page.getByRole('link', { name: /Créer un compte/ })
+		).toHaveAttribute('href', '/register');
+		await expect.element(
+			page.getByRole('link', { name: /Voir les tarifs/ })
+		).toHaveAttribute('href', '#pricing');
 	});
 });
