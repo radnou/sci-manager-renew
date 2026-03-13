@@ -28,6 +28,11 @@ export type SCIOverview = {
 	siren?: string | null;
 	regime_fiscal?: 'IR' | 'IS' | string | null;
 	statut?: SCIStatus | string | null;
+	adresse_siege?: string | null;
+	date_creation?: string | null;
+	capital_social?: number | null;
+	objet_social?: string | null;
+	rcs_ville?: string | null;
 	associes_count?: number;
 	biens_count?: number;
 	loyers_count?: number;
@@ -40,6 +45,11 @@ export type SCICreatePayload = {
 	nom: string;
 	siren?: string | null;
 	regime_fiscal?: 'IR' | 'IS';
+	adresse_siege?: string | null;
+	date_creation?: string | null;
+	capital_social?: number | null;
+	objet_social?: string | null;
+	rcs_ville?: string | null;
 };
 
 export type Charge = {
@@ -1016,9 +1026,20 @@ export async function inviteAssocie(
 }
 
 // --- SCI mutations ---
+export type SCIUpdatePayload = {
+	nom?: string;
+	siren?: string | null;
+	regime_fiscal?: 'IR' | 'IS';
+	adresse_siege?: string | null;
+	date_creation?: string | null;
+	capital_social?: number | null;
+	objet_social?: string | null;
+	rcs_ville?: string | null;
+};
+
 export async function updateSci(
 	sciId: EntityId,
-	data: Partial<SCICreatePayload>
+	data: SCIUpdatePayload
 ): Promise<SCIOverview> {
 	return apiFetch(`/api/v1/scis/${sciId}`, {
 		method: 'PATCH',

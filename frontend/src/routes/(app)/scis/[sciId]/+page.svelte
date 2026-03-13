@@ -2,7 +2,7 @@
 	import { getContext } from 'svelte';
 	import { Building2, Users, FileText, MapPin, FolderOpen, Download, Wallet, TrendingUp, Receipt, AlertTriangle, CalendarDays, Clock, CheckCircle2, Pencil, Trash2, Loader2 } from 'lucide-svelte';
 	import type { SCIDetail } from '$lib/api';
-	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, updateSci, deleteSci } from '$lib/api';
+	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { Button } from '$lib/components/ui/button';
 	import { addToast } from '$lib/components/ui/toast';
@@ -16,13 +16,6 @@
 	let loadingBiens = $state(false);
 	let exportingBiens = $state(false);
 	let exportingLoyers = $state(false);
-
-	// Edit SCI state
-	let showEditSci = $state(false);
-	let editNom = $state(sci.nom ?? '');
-	let editSiren = $state(sci.siren ?? '');
-	let editRegime = $state<'IR' | 'IS'>((sci.regime_fiscal as 'IR' | 'IS') ?? 'IR');
-	let savingSci = $state(false);
 
 	// Delete SCI state
 	let showDeleteConfirm = $state(false);
@@ -77,25 +70,6 @@
 		if (daysUntil <= 15) return { color: 'text-rose-700 dark:text-rose-300', iconColor: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-950/30', label: `${daysUntil}j` };
 		if (daysUntil <= 45) return { color: 'text-amber-700 dark:text-amber-300', iconColor: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30', label: `${daysUntil}j` };
 		return { color: 'text-slate-600 dark:text-slate-400', iconColor: 'text-slate-400', bg: 'bg-slate-50 dark:bg-slate-900', label: `${daysUntil}j` };
-	}
-
-	async function handleSaveSci() {
-		savingSci = true;
-		try {
-			await updateSci(sciId, {
-				nom: editNom.trim(),
-				siren: editSiren.trim() || undefined,
-				regime_fiscal: editRegime
-			});
-			addToast({ title: 'SCI modifiée', description: 'Les informations ont été mises à jour.', variant: 'success' });
-			showEditSci = false;
-			// Reload page to get fresh data
-			window.location.reload();
-		} catch (err: any) {
-			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de modifier la SCI.', variant: 'error' });
-		} finally {
-			savingSci = false;
-		}
 	}
 
 	async function handleDeleteSci() {
@@ -234,14 +208,13 @@
 					</span>
 				{/if}
 				{#if isGerant}
-					<button
-						onclick={() => { editNom = sci.nom ?? ''; editSiren = sci.siren ?? ''; editRegime = (sci.regime_fiscal as 'IR' | 'IS') ?? 'IR'; showEditSci = true; }}
+					<a
+						href="/scis/{sciId}/settings"
 						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-						title="Modifier la SCI"
 					>
 						<Pencil class="h-3.5 w-3.5" />
 						Modifier
-					</button>
+					</a>
 					<button
 						onclick={() => { showDeleteConfirm = true; }}
 						class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-800 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/30"
@@ -432,63 +405,6 @@
 			</div>
 		</div>
 	</div>
-
-	<!-- Edit SCI Modal -->
-	{#if showEditSci}
-		<div
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="edit-sci-title"
-			class="fixed inset-0 z-50 flex items-center justify-center p-4"
-		>
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick={() => { if (!savingSci) showEditSci = false; }}></div>
-			<form
-				class="relative w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
-				onsubmit={(e) => { e.preventDefault(); handleSaveSci(); }}
-			>
-				<div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-					<h2 id="edit-sci-title" class="text-base font-semibold text-slate-900 dark:text-slate-100">Modifier la SCI</h2>
-				</div>
-				<div class="space-y-4 px-5 py-4">
-					<div>
-						<label for="edit-sci-nom" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Nom</label>
-						<input id="edit-sci-nom" type="text" bind:value={editNom} required
-							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
-					</div>
-					<div>
-						<label for="edit-sci-siren" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">SIREN</label>
-						<input id="edit-sci-siren" type="text" bind:value={editSiren} maxlength="9" placeholder="123456789"
-							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
-					</div>
-					<div>
-						<label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Regime fiscal</label>
-						<div class="flex gap-2">
-							{#each (['IR', 'IS'] as const) as rf}
-								<button type="button"
-									class="rounded-full px-4 py-1.5 text-xs font-medium transition-colors {editRegime === rf ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-400'}"
-									onclick={() => editRegime = rf}>
-									{rf}
-								</button>
-							{/each}
-						</div>
-					</div>
-				</div>
-				<div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3 dark:border-slate-700">
-					<button type="button" onclick={() => { showEditSci = false; }} disabled={savingSci}
-						class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
-						Annuler
-					</button>
-					<button type="submit" disabled={savingSci}
-						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50">
-						{#if savingSci}<Loader2 class="h-4 w-4 animate-spin" />{/if}
-						Enregistrer
-					</button>
-				</div>
-			</form>
-		</div>
-	{/if}
 
 	<!-- Delete SCI Confirmation Modal -->
 	{#if showDeleteConfirm}

@@ -63,7 +63,8 @@
 		{ suffix: '/biens', label: 'Biens', icon: Home },
 		{ suffix: '/associes', label: 'Associés', icon: Users },
 		{ suffix: '/fiscalite', label: 'Fiscalité', icon: Calculator },
-		{ suffix: '/documents', label: 'Documents', icon: FileText }
+		{ suffix: '/documents', label: 'Documents', icon: FileText },
+		{ suffix: '/settings', label: 'Paramètres', icon: Settings }
 	];
 
 	function isActive(href: string): boolean {

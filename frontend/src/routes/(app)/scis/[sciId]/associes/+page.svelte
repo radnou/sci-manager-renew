@@ -5,7 +5,7 @@
 	import { fetchSciAssociesList, deleteAssocie } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast';
 	import RoleGate from '$lib/components/RoleGate.svelte';
-	import { UserPlus, Trash2, Loader2 } from 'lucide-svelte';
+	import { UserPlus, Pencil, Trash2, Loader2 } from 'lucide-svelte';
 	import AssocieModal from '$lib/components/fiche-bien/modals/AssocieModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
@@ -14,6 +14,7 @@
 	let sciId = $derived(page.params.sciId!);
 	let isGerant = $derived(userRole === 'gerant');
 	let showAssocieModal = $state(false);
+	let editingAssocie: Associe | null = $state(null);
 
 	let associes: Associe[] = $state([]);
 	let loading = $state(true);
@@ -55,6 +56,11 @@
 		return roleBadge[role] ?? roleBadge['associe'];
 	}
 
+	function handleEditAssocie(associe: Associe) {
+		editingAssocie = associe;
+		showAssocieModal = true;
+	}
+
 	async function handleDeleteAssocie(associe: Associe) {
 		if (!confirm(`Supprimer l'associé ${associe.nom} ?`)) return;
 		deletingId = String(associe.id);
@@ -79,7 +85,7 @@
 			<h1 class="sci-page-title">Associés</h1>
 			{#if isGerant}
 				<button
-					onclick={() => showAssocieModal = true}
+					onclick={() => { editingAssocie = null; showAssocieModal = true; }}
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
 				>
 					<UserPlus class="h-4 w-4" />
@@ -133,6 +139,13 @@
 							</span>
 							{#if isGerant}
 								<button
+									onclick={() => handleEditAssocie(associe)}
+									class="ml-1 text-slate-400 transition-colors hover:text-sky-600 dark:hover:text-sky-400"
+									title="Modifier cet associé"
+								>
+									<Pencil class="h-4 w-4" />
+								</button>
+								<button
 									onclick={() => handleDeleteAssocie(associe)}
 									disabled={deletingId === String(associe.id)}
 									class="ml-1 text-slate-400 transition-colors hover:text-rose-600 disabled:opacity-50 dark:hover:text-rose-400"
@@ -163,5 +176,5 @@
 		</div>
 	{/if}
 
-	<AssocieModal bind:open={showAssocieModal} {sciId} onSuccess={loadAssocies} />
+	<AssocieModal bind:open={showAssocieModal} {sciId} associe={editingAssocie} onSuccess={() => { editingAssocie = null; loadAssocies(); }} />
 </section>
