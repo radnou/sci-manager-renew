@@ -58,6 +58,17 @@ class FakeResult:
         self.count = len(data) if count is None else count
 
 
+class _FakeNotProxy:
+    """Proxy for `.not_.is_(...)` negation filter on FakeQuery."""
+
+    def __init__(self, query: "FakeQuery"):
+        self._query = query
+
+    def is_(self, key: str, value: str) -> "FakeQuery":
+        self._query._not_is_filters.append((key, value))
+        return self._query
+
+
 class FakeQuery:
     def __init__(self, store: dict[str, list[dict]], table_name: str):
         self._store = store
@@ -66,13 +77,16 @@ class FakeQuery:
         self._in_filters: list[tuple[str, set[str]]] = []
         self._gte_filters: list[tuple[str, str]] = []
         self._lte_filters: list[tuple[str, str]] = []
+        self._lt_filters: list[tuple[str, str]] = []
         self._is_filters: list[tuple[str, str]] = []
+        self._not_is_filters: list[tuple[str, str]] = []
         self._operation = "select"
         self._payload: list[dict] = []
         self._update_payload: dict = {}
         self._order_key: str | None = None
         self._order_desc: bool = False
         self._limit: int | None = None
+        self.not_ = _FakeNotProxy(self)
 
     def select(self, *_args, **_kwargs) -> "FakeQuery":
         self._operation = "select"
@@ -119,6 +133,10 @@ class FakeQuery:
         self._lte_filters.append((key, str(value)))
         return self
 
+    def lt(self, key: str, value: object) -> "FakeQuery":
+        self._lt_filters.append((key, str(value)))
+        return self
+
     def is_(self, key: str, value: str) -> "FakeQuery":
         self._is_filters.append((key, value))
         return self
@@ -151,6 +169,17 @@ class FakeQuery:
             candidate = row.get(key)
             if candidate is None or str(candidate) > value:
                 return False
+        for key, value in self._lt_filters:
+            candidate = row.get(key)
+            if candidate is None or str(candidate) >= value:
+                return False
+        for key, value in self._not_is_filters:
+            if value == "null":
+                if row.get(key) is None:
+                    return False
+            else:
+                if row.get(key) is not None:
+                    return False
         for key, value in self._is_filters:
             if value == "null":
                 if row.get(key) is not None:

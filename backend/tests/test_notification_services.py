@@ -3,85 +3,17 @@ from __future__ import annotations
 
 import pytest
 from unittest.mock import AsyncMock, patch
-from copy import deepcopy
-from uuid import uuid4
 
-
-# ---------------------------------------------------------------------------
-# Local fake client that extends the conftest one with .not_ support
-# ---------------------------------------------------------------------------
-
-from tests.conftest import FakeSupabaseClient, FakeQuery, FakeResult
-
-
-class FakeQueryWithNot(FakeQuery):
-    """FakeQuery with support for the .not_.is_() chaining pattern and .lt() filter."""
-
-    def lt(self, key: str, value: object) -> "FakeQueryWithNot":
-        """Less-than filter: keep rows where row[key] < value (string comparison)."""
-        self._lt_filters = getattr(self, "_lt_filters", [])
-        self._lt_filters.append((key, str(value)))
-        return self
-
-    @property
-    def not_(self) -> "_NotProxy":
-        return _NotProxy(self)
-
-
-class _NotProxy:
-    """Proxy returned by FakeQuery.not_ that inverts the next filter call."""
-
-    def __init__(self, query: FakeQueryWithNot):
-        self._query = query
-
-    def is_(self, key: str, value: str) -> FakeQueryWithNot:
-        # .not_.is_("user_id", "null") → keep rows where user_id IS NOT null
-        # We store this as a negative is_ filter.
-        self._query._not_is_filters = getattr(self._query, "_not_is_filters", [])
-        self._query._not_is_filters.append((key, value))
-        return self._query
-
-
-# Monkey-patch _matches in FakeQueryWithNot to honour _not_is_filters
-_original_matches = FakeQuery._matches
-
-
-def _patched_matches(self, row: dict) -> bool:
-    if not _original_matches(self, row):
-        return False
-    for key, value in getattr(self, "_not_is_filters", []):
-        if value == "null":
-            # row[key] must NOT be null
-            if row.get(key) is None:
-                return False
-        else:
-            # row[key] must be null
-            if row.get(key) is not None:
-                return False
-    for key, value in getattr(self, "_lt_filters", []):
-        candidate = row.get(key)
-        if candidate is None or str(candidate) >= value:
-            return False
-    return True
-
-
-FakeQueryWithNot._matches = _patched_matches
-
-
-class NotificationFakeSupabaseClient(FakeSupabaseClient):
-    """FakeSupabaseClient that returns FakeQueryWithNot (supports .not_.is_())."""
-
-    def table(self, name: str) -> FakeQueryWithNot:
-        return FakeQueryWithNot(self.store, name)
+from tests.conftest import FakeSupabaseClient
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def make_client(prefs: list[dict] | None = None) -> NotificationFakeSupabaseClient:
-    """Return a NotificationFakeSupabaseClient pre-seeded with optional prefs."""
-    client = NotificationFakeSupabaseClient()
+def make_client(prefs: list[dict] | None = None) -> FakeSupabaseClient:
+    """Return a FakeSupabaseClient pre-seeded with optional prefs."""
+    client = FakeSupabaseClient()
     client.store.setdefault("notifications", [])
     client.store["notification_preferences"] = prefs if prefs is not None else []
     return client
