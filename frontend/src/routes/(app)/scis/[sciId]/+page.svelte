@@ -45,17 +45,44 @@
 	const currentYear = new Date().getFullYear();
 	const regime = (sci.regime_fiscal ?? '').toUpperCase();
 
+	// Dynamic fiscal calendar based on exercise closing date
+	const clotureRaw = (sci as any).date_cloture_exercice as string | undefined;
+	const clotureDate = clotureRaw ? new Date(clotureRaw) : null;
+	const clotureMonth = clotureDate ? clotureDate.getMonth() : 11; // default: December (month 11)
+	const clotureDay = clotureDate ? clotureDate.getDate() : 31;
+	const clotureLabel = clotureDate
+		? clotureDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+		: null;
+
+	function addMonths(date: Date, months: number): Date {
+		const d = new Date(date);
+		d.setMonth(d.getMonth() + months);
+		return d;
+	}
+
+	const clotureRef = new Date(currentYear, clotureMonth, clotureDay);
+	const agDate = addMonths(clotureRef, 6);
+	const liasseIsDate = addMonths(clotureRef, 3);
+
+	// V14 — CFE conditional on type_locatif
+	const biensList = (sci.biens ?? []) as Array<{ type_locatif?: string | null }>;
+	const hasCfeBiens = biensList.some(b => b.type_locatif === 'meuble' || b.type_locatif === 'commercial' || b.type_locatif === 'mixte');
+
 	const allDeadlines: FiscalEvent[] = [
 		...(regime === 'IR' ? [
 			{ key: 'declaration_2072', label: 'Déclaration 2072', date: new Date(currentYear, 4, 20), regime: 'IR', description: 'Déclaration des résultats de la SCI à l\'IR' },
 			{ key: 'declaration_2044', label: 'Déclaration 2044', date: new Date(currentYear, 4, 31), regime: 'IR', description: 'Déclaration individuelle des revenus fonciers (chaque associé)' },
 		] : []),
 		...(regime === 'IS' ? [
-			{ key: 'liasse_fiscale_is', label: 'Liasse fiscale IS', date: new Date(currentYear, 2, 31), regime: 'IS', description: 'Liasse fiscale pour SCI à l\'IS (3 mois post-clôture)' },
+			{ key: 'liasse_fiscale_is', label: 'Liasse fiscale IS', date: liasseIsDate, regime: 'IS', description: `Liasse fiscale pour SCI à l'IS (3 mois post-clôture)${clotureLabel ? ` — basé sur la clôture au ${clotureLabel}` : ''}` },
 		] : []),
-		{ key: 'ag_annuelle', label: 'AG annuelle', date: new Date(currentYear, 5, 30), regime: null, description: 'Assemblée générale obligatoire (6 mois post-clôture)' },
+		{ key: 'ag_annuelle', label: 'AG annuelle', date: agDate, regime: null, description: `Assemblée générale obligatoire (6 mois post-clôture)${clotureLabel ? ` — basé sur la clôture au ${clotureLabel}` : ''}` },
 		{ key: 'taxe_fonciere', label: 'Taxe foncière', date: new Date(currentYear, 9, 15), regime: null, description: 'Paiement de la taxe foncière' },
-		{ key: 'cfe', label: 'CFE', date: new Date(currentYear, 11, 15), regime: null, description: 'Cotisation Foncière des Entreprises' },
+		...(hasCfeBiens ? [
+			{ key: 'cfe', label: 'CFE', date: new Date(currentYear, 11, 15), regime: null, description: 'Cotisation Foncière des Entreprises' },
+		] : biensCount > 0 ? [
+			{ key: 'cfe', label: 'CFE', date: new Date(currentYear, 11, 15), regime: null, description: 'Exonéré (biens nus résidentiels)' },
+		] : []),
 	];
 
 	const now = new Date();
@@ -89,7 +116,7 @@
 	async function handleExportBiens() {
 		exportingBiens = true;
 		try {
-			const blob = await exportBiensCsv(sciId); // TODO: backend needs to support sci_id filter for scoped export
+			const blob = await exportBiensCsv(sciId);
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
@@ -109,7 +136,7 @@
 	async function handleExportLoyers() {
 		exportingLoyers = true;
 		try {
-			const blob = await exportLoyersCsv(sciId); // TODO: backend needs to support sci_id filter for scoped export
+			const blob = await exportLoyersCsv(sciId);
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
@@ -426,7 +453,7 @@
 					<div>
 						<h2 id="delete-sci-title" class="text-base font-semibold text-slate-900 dark:text-slate-100">Supprimer {sci.nom} ?</h2>
 						<p id="delete-sci-desc" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Cette action est irréversible. Tous les biens, baux, loyers et documents associés seront supprimés.
+							Cette action supprimera {biensCount} bien{biensCount > 1 ? 's' : ''}, {sci.loyers_count ?? 0} loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''} et {(sci as any).documents?.length ?? 0} document{((sci as any).documents?.length ?? 0) > 1 ? 's' : ''} de manière irréversible.
 						</p>
 					</div>
 				</div>

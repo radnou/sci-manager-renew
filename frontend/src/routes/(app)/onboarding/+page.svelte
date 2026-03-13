@@ -22,6 +22,8 @@
 	let loading = $state(true);
 	let submitting = $state(false);
 	let error = $state('');
+	let batchProgress = $state(0);
+	let batchTotal = $state(0);
 
 	// Step 1: SCI
 	let sciNom = $state('');
@@ -142,10 +144,14 @@
 		error = '';
 		try {
 			const lotsToCreate = bienCategorie === 'immeuble' && bienNbLots > 1 ? bienNbLots : 1;
+			batchTotal = lotsToCreate;
+			batchProgress = 0;
 			let lastBienId: string | null = null;
-			for (let i = 0; i < lotsToCreate; i++) {
+
+			// Build all payloads
+			const payloads = Array.from({ length: lotsToCreate }, (_, i) => {
 				const lotSuffix = lotsToCreate > 1 ? ` \u2014 Lot ${i + 1}` : '';
-				const createdBienResult = await createBien({
+				return {
 					id_sci: createdSciId,
 					adresse: bienAdresse.trim() + lotSuffix,
 					ville: bienVille.trim(),
@@ -157,12 +163,24 @@
 					surface_m2: bienSurface || undefined,
 					nb_pieces: bienNbPieces || undefined,
 					dpe_classe: bienDpe || undefined
-				} as BienCreatePayload);
-				if (createdBienResult?.id) lastBienId = String(createdBienResult.id);
+				} as BienCreatePayload;
+			});
+
+			// Process in batches of 5
+			const BATCH_SIZE = 5;
+			for (let i = 0; i < payloads.length; i += BATCH_SIZE) {
+				const batch = payloads.slice(i, i + BATCH_SIZE);
+				const results = await Promise.all(batch.map(p => createBien(p)));
+				for (const result of results) {
+					if (result?.id) lastBienId = String(result.id);
+				}
+				batchProgress = Math.min(i + batch.length, lotsToCreate);
 			}
+
 			if (lastBienId) createdBienId = lastBienId;
 			bailLoyerHc = bienLoyerCc > bienCharges ? bienLoyerCc - bienCharges : bienLoyerCc;
 			bailChargesLocatives = bienCharges;
+			batchTotal = 0;
 			currentStep = 3;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bien.';
@@ -322,9 +340,15 @@
 							id="sci-siren"
 							type="text"
 							bind:value={sciSiren}
-							placeholder="123 456 789"
+							placeholder="123456789"
+							pattern="\d{9}"
+							maxlength={9}
+							inputmode="numeric"
 							class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
 						/>
+						{#if sciSiren && !/^\d{9}$/.test(sciSiren.replace(/\s/g, ''))}
+							<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">Le SIREN doit contenir exactement 9 chiffres</p>
+						{/if}
 					</div>
 					<div>
 						<label for="sci-regime" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -562,7 +586,7 @@
 							<Button onclick={handleBienSubNext}>Suivant</Button>
 						{:else}
 							<Button onclick={handleStep2Submit} disabled={submitting}>
-								{submitting ? 'Création...' : bienCategorie === 'immeuble' && bienNbLots > 1 ? `Créer ${bienNbLots} lots` : 'Ajouter le bien'}
+								{submitting && batchTotal > 1 ? `Création ${batchProgress}/${batchTotal}...` : submitting ? 'Création...' : bienCategorie === 'immeuble' && bienNbLots > 1 ? `Créer ${bienNbLots} lots` : 'Ajouter le bien'}
 							</Button>
 						{/if}
 					</div>

@@ -56,12 +56,13 @@
 		error = null;
 		try {
 			const biens = await fetchSciBiens(sciId);
-			const result: BienDocs[] = [];
-			for (const bien of biens) {
-				const docs = await fetchBienDocuments(sciId, bien.id!);
-				result.push({ bien, documents: docs });
-			}
-			groups = result;
+			const results = await Promise.all(
+				biens.map(async (bien) => {
+					const docs = await fetchBienDocuments(sciId, bien.id!);
+					return { bien, documents: docs } as BienDocs;
+				})
+			);
+			groups = results;
 		} catch (err: any) {
 			error = err?.message ?? 'Impossible de charger les documents.';
 		} finally {

@@ -36,18 +36,36 @@
 		return typeFraisLabels[type] ?? type;
 	}
 
+	// Deferred-delete state: store removed items for undo restoration
+	let pendingDeleteCharge: { id: number; item: any } | null = $state(null);
+	let pendingDeletePno: { id: number; item: AssurancePnoEmbed } | null = $state(null);
+	let pendingDeleteFrais: { id: number; item: any } | null = $state(null);
+
 	function handleDeleteCharge(chargeId: number) {
+		const item = charges.find(c => c.id === chargeId);
+		if (!item) return;
+		// Optimistically remove from list
+		pendingDeleteCharge = { id: chargeId, item };
+		charges = charges.filter(c => c.id !== chargeId);
 		addToast({
 			title: 'Charge supprimée',
 			variant: 'undo',
 			undoCallbacks: {
-				onUndo: () => {},
+				onUndo: () => {
+					// Restore item in list
+					if (pendingDeleteCharge?.id === chargeId) {
+						charges = [...charges, pendingDeleteCharge.item].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+						pendingDeleteCharge = null;
+					}
+				},
 				onExpire: async () => {
+					pendingDeleteCharge = null;
 					try {
 						await deleteChargeForBien(sciId, bienId, chargeId);
 						onRefresh();
 					} catch (err: any) {
 						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
+						onRefresh();
 					}
 				}
 			}
@@ -57,17 +75,28 @@
 	function handleDeletePno() {
 		if (!assurancePno) return;
 		const pnoId = assurancePno.id;
+		const item = assurancePno;
+		// Optimistically remove
+		pendingDeletePno = { id: pnoId, item };
+		assurancePno = null;
 		addToast({
 			title: 'Assurance PNO supprimée',
 			variant: 'undo',
 			undoCallbacks: {
-				onUndo: () => {},
+				onUndo: () => {
+					if (pendingDeletePno?.id === pnoId) {
+						assurancePno = pendingDeletePno.item;
+						pendingDeletePno = null;
+					}
+				},
 				onExpire: async () => {
+					pendingDeletePno = null;
 					try {
 						await deletePnoForBien(sciId, bienId, pnoId);
 						onRefresh();
 					} catch (err: any) {
 						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
+						onRefresh();
 					}
 				}
 			}
@@ -75,17 +104,29 @@
 	}
 
 	function handleDeleteFrais(fraisId: number) {
+		const item = fraisAgence.find(f => f.id === fraisId);
+		if (!item) return;
+		// Optimistically remove from list
+		pendingDeleteFrais = { id: fraisId, item };
+		fraisAgence = fraisAgence.filter(f => f.id !== fraisId);
 		addToast({
 			title: 'Frais supprimés',
 			variant: 'undo',
 			undoCallbacks: {
-				onUndo: () => {},
+				onUndo: () => {
+					if (pendingDeleteFrais?.id === fraisId) {
+						fraisAgence = [...fraisAgence, pendingDeleteFrais.item].sort((a, b) => a.id - b.id);
+						pendingDeleteFrais = null;
+					}
+				},
 				onExpire: async () => {
+					pendingDeleteFrais = null;
 					try {
 						await deleteFraisForBien(sciId, bienId, fraisId);
 						onRefresh();
 					} catch (err: any) {
 						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
+						onRefresh();
 					}
 				}
 			}

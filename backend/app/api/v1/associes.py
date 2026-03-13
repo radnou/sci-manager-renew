@@ -197,6 +197,13 @@ async def delete_associe(associe_id: str, user_id: str = Depends(get_current_use
         if len(sci_associes) <= 1:
             raise ValidationError("La SCI doit conserver au moins un associé.")
 
+        if existing.get("role") == "gerant":
+            gerants = _execute_select(
+                client.table("associes").select("id").eq("id_sci", id_sci).eq("role", "gerant")
+            )
+            if len(gerants) <= 1:
+                raise ValidationError("Impossible de supprimer le dernier gérant de la SCI.")
+
         if str(existing.get("user_id") or "") == user_id:
             raise ValidationError("Supprime ou transfère d'abord l'accès du compte depuis un autre associé.")
 

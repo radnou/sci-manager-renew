@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import DatabaseError
@@ -27,9 +28,24 @@ def _get_user_sci_ids(client, user_id: str) -> list[str]:
     return [str(row.get("id_sci")) for row in (result.data or []) if row.get("id_sci")]
 
 
+def _period_to_date(period: Optional[str]) -> Optional[str]:
+    """Convert a period string like '6m', '12m', '24m' to an ISO date cutoff."""
+    if not period:
+        return None
+    months_map = {"6m": 6, "12m": 12, "24m": 24}
+    months = months_map.get(period)
+    if months is None:
+        return None
+    cutoff = datetime.now() - timedelta(days=months * 30)
+    return cutoff.strftime("%Y-%m-%d")
+
+
 @router.get("/loyers/csv")
-async def export_loyers_csv(user_id: str = Depends(get_current_user)):
-    """Export all loyers as CSV for the current user."""
+async def export_loyers_csv(
+    user_id: str = Depends(get_current_user),
+    period: Optional[str] = Query(None, description="Period filter: 6m, 12m, 24m"),
+):
+    """Export loyers as CSV for the current user, optionally filtered by period."""
     client = _get_client()
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
@@ -44,13 +60,18 @@ async def export_loyers_csv(user_id: str = Depends(get_current_user)):
             headers={"Content-Disposition": "attachment; filename=loyers_export.csv"},
         )
 
-    result = (
+    query = (
         client.table("loyers")
         .select("date_loyer, montant, statut, id_bien, id_sci")
         .in_("id_sci", user_sci_ids)
         .order("date_loyer", desc=True)
-        .execute()
     )
+
+    cutoff = _period_to_date(period)
+    if cutoff:
+        query = query.gte("date_loyer", cutoff)
+
+    result = query.execute()
 
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))

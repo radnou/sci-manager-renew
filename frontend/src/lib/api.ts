@@ -1135,9 +1135,12 @@ export async function deleteDocumentBien(
 
 // --- Export CSV ---
 
-export function exportLoyersCsv(sciId?: EntityId): Promise<Blob> {
-	const params = sciId != null ? `?sci_id=${encodeURIComponent(String(sciId))}` : '';
-	return apiFetchBlob(`/api/v1/export/loyers/csv${params}`);
+export function exportLoyersCsv(sciId?: EntityId, period?: string): Promise<Blob> {
+	const searchParams = new URLSearchParams();
+	if (sciId != null) searchParams.set('sci_id', String(sciId));
+	if (period) searchParams.set('period', period);
+	const qs = searchParams.toString();
+	return apiFetchBlob(`/api/v1/export/loyers/csv${qs ? `?${qs}` : ''}`);
 }
 
 export function exportBiensCsv(sciId?: EntityId): Promise<Blob> {
