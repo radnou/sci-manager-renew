@@ -5,7 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import {
 		createSci,
-		createBien,
+		createBienForSci,
 		createBail,
 		completeOnboarding,
 		fetchOnboardingStatus,
@@ -170,7 +170,7 @@
 			const BATCH_SIZE = 5;
 			for (let i = 0; i < payloads.length; i += BATCH_SIZE) {
 				const batch = payloads.slice(i, i + BATCH_SIZE);
-				const results = await Promise.all(batch.map(p => createBien(p)));
+				const results = await Promise.all(batch.map(p => createBienForSci(createdSciId, p)));
 				for (const result of results) {
 					if (result?.id) lastBienId = String(result.id);
 				}

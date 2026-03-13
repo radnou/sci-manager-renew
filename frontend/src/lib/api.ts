@@ -359,10 +359,6 @@ export async function apiFetchBlob(endpoint: string, options?: RequestInit): Pro
 	return response.blob();
 }
 
-export function fetchBiens() {
-	return apiFetch<Bien[]>('/api/v1/biens/');
-}
-
 export function fetchScis() {
 	return apiFetch<SCIOverview[]>('/api/v1/scis/');
 }
@@ -378,21 +374,6 @@ export function fetchSciDetail(sciId: EntityId) {
 	return apiFetch<SCIDetail>(`/api/v1/scis/${sciId}`);
 }
 
-export function createBien(bien: BienCreatePayload) {
-	return apiFetch<Bien>('/api/v1/biens/', {
-		method: 'POST',
-		body: JSON.stringify(bien)
-	});
-}
-
-export function fetchLoyers() {
-	return apiFetch<Loyer[]>('/api/v1/loyers/');
-}
-
-export function fetchLocataires() {
-	return apiFetch<Locataire[]>('/api/v1/locataires/');
-}
-
 export function fetchAssocies(sciId?: EntityId) {
 	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
 	return apiFetch<Associe[]>(`/api/v1/associes/${query}`);
@@ -406,34 +387,6 @@ export function fetchCharges(sciId?: EntityId) {
 export function fetchFiscalite(sciId?: EntityId) {
 	const query = sciId != null ? `?id_sci=${encodeURIComponent(String(sciId))}` : '';
 	return apiFetch<Fiscalite[]>(`/api/v1/fiscalite/${query}`);
-}
-
-export function createLoyer(loyer: LoyerCreatePayload) {
-	return apiFetch<Loyer>('/api/v1/loyers/', {
-		method: 'POST',
-		body: JSON.stringify(loyer)
-	});
-}
-
-export function createLocataire(locataire: LocataireCreatePayload) {
-	return apiFetch<Locataire>('/api/v1/locataires/', {
-		method: 'POST',
-		body: JSON.stringify(locataire)
-	});
-}
-
-export function createAssocie(associe: AssocieCreatePayload) {
-	return apiFetch<Associe>('/api/v1/associes/', {
-		method: 'POST',
-		body: JSON.stringify(associe)
-	});
-}
-
-export function createCharge(charge: ChargeCreatePayload) {
-	return apiFetch<Charge>('/api/v1/charges/', {
-		method: 'POST',
-		body: JSON.stringify(charge)
-	});
 }
 
 export function createFiscalite(exercice: FiscaliteCreatePayload) {
@@ -665,7 +618,7 @@ export type DashboardData = {
 };
 
 export async function fetchDashboard(): Promise<DashboardData> {
-	return apiFetch('/api/v1/dashboard');
+	return apiFetch<DashboardData>('/api/v1/dashboard');
 }
 
 // --- Nested SCI/Biens API ---
@@ -825,15 +778,15 @@ export async function fetchFicheBien(
 	sciId: EntityId,
 	bienId: EntityId
 ): Promise<FicheBien> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}`);
+	return apiFetch<FicheBien>(`/api/v1/scis/${sciId}/biens/${bienId}`);
 }
 
 export async function fetchSciBiensList(sciId: EntityId): Promise<Bien[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens`);
+	return apiFetch<Bien[]>(`/api/v1/scis/${sciId}/biens`);
 }
 
 export async function createBienForSci(sciId: EntityId, data: BienCreatePayload): Promise<Bien> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens`, {
+	return apiFetch<Bien>(`/api/v1/scis/${sciId}/biens`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -845,7 +798,7 @@ export async function createLoyerForBien(
 	bienId: EntityId,
 	data: LoyerCreatePayload
 ): Promise<LoyerEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/loyers`, {
+	return apiFetch<LoyerEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/loyers`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -855,11 +808,11 @@ export async function createLoyerForBien(
 // --- Baux (Leases) ---
 
 export async function fetchBienBaux(sciId: EntityId, bienId: EntityId): Promise<BailEmbed[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux`);
+	return apiFetch<BailEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/baux`);
 }
 
 export async function createBail(sciId: EntityId, bienId: EntityId, data: BailCreate): Promise<BailEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux`, {
+	return apiFetch<BailEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/baux`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -872,7 +825,7 @@ export async function updateBail(
 	bailId: number,
 	data: BailUpdate
 ): Promise<BailEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
+	return apiFetch<BailEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
 		method: 'PATCH',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -884,7 +837,7 @@ export async function deleteBail(
 	bienId: EntityId,
 	bailId: number
 ): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
 		method: 'DELETE'
 	});
 }
@@ -895,7 +848,7 @@ export async function attachLocataireToBail(
 	bailId: number,
 	locataireId: number
 ): Promise<{ bail_id: number; locataire_id: number }> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires`, {
+	return apiFetch<{ bail_id: number; locataire_id: number }>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires`, {
 		method: 'POST',
 		body: JSON.stringify({ locataire_id: locataireId }),
 		headers: { 'Content-Type': 'application/json' }
@@ -908,7 +861,7 @@ export async function detachLocataireFromBail(
 	bailId: number,
 	locataireId: number
 ): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires/${locataireId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires/${locataireId}`, {
 		method: 'DELETE'
 	});
 }
@@ -916,19 +869,19 @@ export async function detachLocataireFromBail(
 // --- Nested Charges / PNO / Frais Agence / Associes ---
 
 export async function fetchBienCharges(sciId: EntityId, bienId: EntityId): Promise<ChargeEmbed[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges`);
+	return apiFetch<ChargeEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/charges`);
 }
 
 export async function fetchBienPno(sciId: EntityId, bienId: EntityId): Promise<AssurancePnoEmbed[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`);
+	return apiFetch<AssurancePnoEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`);
 }
 
 export async function fetchBienFraisAgence(sciId: EntityId, bienId: EntityId): Promise<FraisAgenceEmbed[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`);
+	return apiFetch<FraisAgenceEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`);
 }
 
 export async function fetchSciAssociesList(sciId: EntityId): Promise<AssocieEmbed[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/associes`);
+	return apiFetch<AssocieEmbed[]>(`/api/v1/scis/${sciId}/associes`);
 }
 
 // --- Charge mutations ---
@@ -937,7 +890,7 @@ export async function createChargeForBien(
 	bienId: EntityId,
 	data: ChargeCreate
 ): Promise<ChargeEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges`, {
+	return apiFetch<ChargeEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/charges`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -949,7 +902,7 @@ export async function deleteChargeForBien(
 	bienId: EntityId,
 	chargeId: number
 ): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/charges/${chargeId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/charges/${chargeId}`, {
 		method: 'DELETE'
 	});
 }
@@ -960,7 +913,7 @@ export async function createPnoForBien(
 	bienId: EntityId,
 	data: PnoCreate
 ): Promise<AssurancePnoEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`, {
+	return apiFetch<AssurancePnoEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -973,7 +926,7 @@ export async function updatePnoForBien(
 	pnoId: number,
 	data: PnoUpdate
 ): Promise<AssurancePnoEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
+	return apiFetch<AssurancePnoEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
 		method: 'PATCH',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -985,7 +938,7 @@ export async function deletePnoForBien(
 	bienId: EntityId,
 	pnoId: number
 ): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
 		method: 'DELETE'
 	});
 }
@@ -996,7 +949,7 @@ export async function createFraisForBien(
 	bienId: EntityId,
 	data: FraisCreate
 ): Promise<FraisAgenceEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`, {
+	return apiFetch<FraisAgenceEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -1008,7 +961,7 @@ export async function deleteFraisForBien(
 	bienId: EntityId,
 	fraisId: number
 ): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence/${fraisId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence/${fraisId}`, {
 		method: 'DELETE'
 	});
 }
@@ -1018,7 +971,7 @@ export async function inviteAssocie(
 	sciId: EntityId,
 	data: InviteAssociePayload
 ): Promise<AssocieEmbed> {
-	return apiFetch(`/api/v1/scis/${sciId}/associes`, {
+	return apiFetch<AssocieEmbed>(`/api/v1/scis/${sciId}/associes`, {
 		method: 'POST',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -1041,7 +994,7 @@ export async function updateSci(
 	sciId: EntityId,
 	data: SCIUpdatePayload
 ): Promise<SCIOverview> {
-	return apiFetch(`/api/v1/scis/${sciId}`, {
+	return apiFetch<SCIOverview>(`/api/v1/scis/${sciId}`, {
 		method: 'PATCH',
 		body: JSON.stringify(data),
 		headers: { 'Content-Type': 'application/json' }
@@ -1049,7 +1002,7 @@ export async function updateSci(
 }
 
 export async function deleteSci(sciId: EntityId): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}`, {
 		method: 'DELETE'
 	});
 }
@@ -1066,13 +1019,13 @@ export type NotificationPreference = {
 export async function fetchNotificationPreferences(): Promise<{
 	preferences: NotificationPreference[];
 }> {
-	return apiFetch('/api/v1/user/notification-preferences');
+	return apiFetch<{ preferences: NotificationPreference[] }>('/api/v1/user/notification-preferences');
 }
 
 export async function updateNotificationPreferences(
 	preferences: NotificationPreference[]
 ): Promise<{ preferences: NotificationPreference[] }> {
-	return apiFetch('/api/v1/user/notification-preferences', {
+	return apiFetch<{ preferences: NotificationPreference[] }>('/api/v1/user/notification-preferences', {
 		method: 'PUT',
 		body: JSON.stringify({ preferences })
 	});
@@ -1093,7 +1046,7 @@ export type FinancesData = {
 
 export async function fetchFinances(period?: string): Promise<FinancesData> {
 	const params = period ? `?period=${period}` : '';
-	return apiFetch(`/api/v1/finances${params}`);
+	return apiFetch<FinancesData>(`/api/v1/finances${params}`);
 }
 
 // --- Documents Bien ---
@@ -1102,7 +1055,7 @@ export async function fetchBienDocuments(
 	sciId: EntityId,
 	bienId: EntityId
 ): Promise<DocumentBienEmbed[]> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/documents`);
+	return apiFetch<DocumentBienEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/documents`);
 }
 
 export async function uploadDocumentBien(
@@ -1117,7 +1070,7 @@ export async function uploadDocumentBien(
 	formData.append('nom', nom);
 	formData.append('categorie', categorie);
 
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/documents`, {
+	return apiFetch<DocumentBienEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/documents`, {
 		method: 'POST',
 		body: formData
 	});
@@ -1128,7 +1081,7 @@ export async function deleteDocumentBien(
 	bienId: EntityId,
 	docId: number
 ): Promise<void> {
-	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/documents/${docId}`, {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/documents/${docId}`, {
 		method: 'DELETE'
 	});
 }

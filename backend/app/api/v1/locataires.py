@@ -20,10 +20,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/locataires", tags=["locataires"])
 
 
-def _get_client():
-    return get_supabase_service_client()
-
-
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
     result = client.table("associes").select("id_sci").eq("user_id", user_id).execute()
     if getattr(result, "error", None):
@@ -118,7 +114,7 @@ async def list_locataires(
     logger.info("listing_locataires", user_id=user_id, id_sci=id_sci, id_bien=id_bien)
 
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -153,7 +149,7 @@ async def create_locataire(payload: LocataireCreate, user_id: str = Depends(get_
 
     try:
         _validate_date_range(payload.date_debut, payload.date_fin)
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         bien = _fetch_bien(client, payload.id_bien)
         bien_sci_id = str(bien.get("id_sci") or "")
@@ -194,7 +190,7 @@ async def update_locataire(
         if not update_payload:
             raise ValidationError("No update fields provided")
 
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("locataires").select("*").eq("id", locataire_id).execute()
         if getattr(existing_result, "error", None):
@@ -243,7 +239,7 @@ async def delete_locataire(locataire_id: str, user_id: str = Depends(get_current
     logger.info("deleting_locataire", locataire_id=locataire_id, user_id=user_id)
 
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("locataires").select("*").eq("id", locataire_id).execute()
         if getattr(existing_result, "error", None):

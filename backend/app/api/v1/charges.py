@@ -19,10 +19,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/charges", tags=["charges"])
 
 
-def _get_client():
-    return get_supabase_service_client()
-
-
 def _execute_select(query):
     result = query.execute()
     if getattr(result, "error", None):
@@ -105,7 +101,7 @@ async def list_charges(
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -139,7 +135,7 @@ async def create_charge(payload: ChargeCreate, user_id: str = Depends(get_curren
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         bien = _fetch_bien(client, payload.id_bien)
         id_sci = str(bien.get("id_sci") or "")
@@ -171,7 +167,7 @@ async def update_charge(charge_id: str, payload: ChargeUpdate, user_id: str = De
             raise ValidationError("No update fields provided")
 
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_charge(client, charge_id)
         bien = _fetch_bien(client, str(existing.get("id_bien") or ""))
@@ -200,7 +196,7 @@ async def delete_charge(charge_id: str, user_id: str = Depends(get_current_user)
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_charge(client, charge_id)
         bien = _fetch_bien(client, str(existing.get("id_bien") or ""))

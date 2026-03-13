@@ -60,6 +60,14 @@ from app.core.config import Environment, settings
 from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
+from app.core.supabase_client import get_supabase_service_client
+from app.services.notification_cron import (
+    check_expiring_bails,
+    check_expiring_pno,
+    check_fiscal_deadlines,
+    check_late_payments,
+    check_pending_quittances,
+)
 
 # Configurer logging au démarrage
 configure_logging(
@@ -71,6 +79,28 @@ logger = structlog.get_logger(__name__)
 
 # Shutdown event pour coordonner le shutdown gracieux
 shutdown_event = asyncio.Event()
+
+# Background task handle for notification cron
+_cron_task: asyncio.Task | None = None
+
+
+async def _notification_cron_loop():
+    """Run notification checks every 24 hours in the background."""
+    while True:
+        try:
+            await asyncio.sleep(86_400)  # 24h
+            client = get_supabase_service_client()
+            await check_late_payments(client)
+            await check_expiring_bails(client)
+            await check_expiring_pno(client)
+            await check_pending_quittances(client)
+            await check_fiscal_deadlines(client)
+            logger.info("notification_cron_cycle_complete")
+        except asyncio.CancelledError:
+            logger.info("notification_cron_cancelled")
+            break
+        except Exception:
+            logger.exception("notification_cron_error")
 
 
 def _json_safe(value):
@@ -132,10 +162,24 @@ async def lifespan(app: FastAPI):
         logger.info("signal_handlers_skipped", reason="not_main_thread")
     logger.info("application_started")
 
+    # Start the notification cron background task
+    global _cron_task  # noqa: PLW0603
+    _cron_task = asyncio.create_task(_notification_cron_loop())
+    logger.info("notification_cron_started")
+
     yield
 
     # ==================== SHUTDOWN ====================
     logger.info("application_shutting_down")
+
+    # Cancel the notification cron background task
+    if _cron_task is not None and not _cron_task.done():
+        _cron_task.cancel()
+        try:
+            await _cron_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("notification_cron_stopped")
 
     # Marquer le shutdown event
     shutdown_event.set()
@@ -347,8 +391,8 @@ app.add_middleware(
     allow_origins=_resolved_cors_origins(),
     allow_origin_regex=local_dev_origin_regex,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Accept"],
 )
 
 

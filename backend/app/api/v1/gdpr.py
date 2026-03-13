@@ -107,9 +107,29 @@ async def export_user_data(
                 charges_response = client.table("charges").select("*").in_("id_bien", bien_ids).execute()
                 export_data["data"]["charges"] = charges_response.data or []
 
-            # 6. Données fiscales
+                # 6. Baux
+                baux_response = client.table("baux").select("*").in_("id_bien", bien_ids).execute()
+                export_data["data"]["baux"] = baux_response.data or []
+
+                # 7. Locataires
+                locataires_response = client.table("locataires").select("*").in_("id_bien", bien_ids).execute()
+                export_data["data"]["locataires"] = locataires_response.data or []
+
+                # 8. Documents
+                documents_response = client.table("documents_bien").select("*").in_("id_bien", bien_ids).execute()
+                export_data["data"]["documents"] = documents_response.data or []
+
+            # 9. Données fiscales
             fiscalite_response = client.table("fiscalite").select("*").in_("id_sci", sci_ids).execute()
             export_data["data"]["fiscalite"] = fiscalite_response.data or []
+
+        # 10. Notifications (user-level)
+        notifications_response = client.table("notifications").select("*").eq("user_id", user_id).execute()
+        export_data["data"]["notifications"] = notifications_response.data or []
+
+        # 11. Notification preferences (user-level)
+        notif_prefs_response = client.table("notification_preferences").select("*").eq("user_id", user_id).execute()
+        export_data["data"]["notification_preferences"] = notif_prefs_response.data or []
 
         export_bytes = json.dumps(export_data, ensure_ascii=False, default=str).encode("utf-8")
         file_name = f"gdpr-export-{uuid4().hex}.json"
@@ -269,7 +289,36 @@ async def delete_user_account(
             bien_ids = [b["id"] for b in bien_rows if b.get("id")]
 
         # 2. Suppression en cascade (dans l'ordre inverse des dépendances)
+
+        # User-level tables first (no FK dependency on biens/sci)
+        client.table("notifications").delete().eq("user_id", user_id).execute()
+        client.table("notification_preferences").delete().eq("user_id", user_id).execute()
+
         if bien_ids:
+            # Clean up storage files for documents before deleting records
+            try:
+                docs_response = client.table("documents_bien").select("id,url").in_("id_bien", bien_ids).execute()
+                doc_rows = docs_response.data or []
+                for doc in doc_rows:
+                    doc_url = doc.get("url")
+                    if doc_url:
+                        # Extract storage path from URL (format: .../object/public/documents/<path>)
+                        try:
+                            path_marker = "/object/public/documents/"
+                            if path_marker in str(doc_url):
+                                storage_path = str(doc_url).split(path_marker, 1)[1]
+                                client.storage.from_("documents").remove([storage_path])
+                        except Exception:
+                            pass  # Best-effort storage cleanup
+            except Exception:
+                pass  # Don't block deletion if document cleanup fails
+
+            # Documents
+            client.table("documents_bien").delete().in_("id_bien", bien_ids).execute()
+            # Locataires
+            client.table("locataires").delete().in_("id_bien", bien_ids).execute()
+            # Baux
+            client.table("baux").delete().in_("id_bien", bien_ids).execute()
             # Loyers
             client.table("loyers").delete().in_("id_bien", bien_ids).execute()
             # Charges

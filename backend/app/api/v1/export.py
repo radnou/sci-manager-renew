@@ -17,10 +17,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/export", tags=["export"])
 
 
-def _get_client():
-    return get_supabase_service_client()
-
-
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
     result = client.table("associes").select("id_sci").eq("user_id", user_id).execute()
     if getattr(result, "error", None):
@@ -46,7 +42,7 @@ async def export_loyers_csv(
     period: Optional[str] = Query(None, description="Period filter: 6m, 12m, 24m"),
 ):
     """Export loyers as CSV for the current user, optionally filtered by period."""
-    client = _get_client()
+    client = get_supabase_service_client()
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if not user_sci_ids:
@@ -101,7 +97,7 @@ async def export_loyers_csv(
 @router.get("/biens/csv")
 async def export_biens_csv(user_id: str = Depends(get_current_user)):
     """Export all biens as CSV for the current user."""
-    client = _get_client()
+    client = get_supabase_service_client()
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     headers_row = ["adresse", "ville", "code_postal", "type_locatif", "loyer_cc", "charges", "surface_m2", "nb_pieces", "dpe_classe", "id_sci"]

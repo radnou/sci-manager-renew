@@ -3,16 +3,16 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class BailCreate(BaseModel):
     date_debut: date
     date_fin: Optional[date] = None
-    loyer_hc: float
-    charges_locatives: float = 0
-    depot_garantie: float = 0
-    indice_irl_reference: Optional[str] = "IRL"
+    loyer_hc: float = Field(ge=0)
+    charges_locatives: float = Field(default=0, ge=0)
+    depot_garantie: float = Field(default=0, ge=0)
+    indice_irl_reference: Optional[str] = Field(default="IRL", max_length=50)
     locataire_ids: list[str] = []
 
     @model_validator(mode='after')
@@ -24,11 +24,11 @@ class BailCreate(BaseModel):
 
 class BailUpdate(BaseModel):
     date_fin: Optional[date] = None
-    loyer_hc: Optional[float] = None
-    charges_locatives: Optional[float] = None
-    depot_garantie: Optional[float] = None
-    statut: Optional[str] = None
-    indice_irl_reference: Optional[str] = None
+    loyer_hc: Optional[float] = Field(default=None, ge=0)
+    charges_locatives: Optional[float] = Field(default=None, ge=0)
+    depot_garantie: Optional[float] = Field(default=None, ge=0)
+    statut: Optional[str] = Field(default=None, max_length=30)
+    indice_irl_reference: Optional[str] = Field(default=None, max_length=50)
 
 
 class BailResponse(BaseModel):

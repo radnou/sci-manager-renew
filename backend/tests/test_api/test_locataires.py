@@ -241,7 +241,7 @@ def test_list_locataires_generic_exception(client, auth_headers, fake_supabase):
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.get("/api/v1/locataires/", headers=auth_headers)
     assert response.status_code == 503
 
@@ -256,7 +256,7 @@ def test_create_locataire_generic_exception(client, auth_headers, fake_supabase)
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "Boom", "date_debut": "2026-01-01"},
@@ -275,7 +275,7 @@ def test_update_locataire_generic_exception(client, auth_headers, fake_supabase)
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.patch(
             "/api/v1/locataires/loc-any",
             json={"email": "boom@e.fr"},
@@ -294,7 +294,7 @@ def test_delete_locataire_generic_exception(client, auth_headers, fake_supabase)
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.delete("/api/v1/locataires/loc-any", headers=auth_headers)
     assert response.status_code == 503
 
@@ -324,7 +324,7 @@ def test_create_locataire_insert_db_error(client, auth_headers, fake_supabase):
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "DB Error", "date_debut": "2026-01-01"},
@@ -358,7 +358,7 @@ def test_create_locataire_insert_returns_empty(client, auth_headers, fake_supaba
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "Empty Result", "date_debut": "2026-01-01"},
@@ -383,7 +383,7 @@ def test_update_locataire_db_error_on_select(client, auth_headers, fake_supabase
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.patch(
             "/api/v1/locataires/loc-xx",
             json={"email": "new@e.fr"},
@@ -418,7 +418,7 @@ def test_update_locataire_update_db_error(client, auth_headers, fake_supabase):
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.patch(
             "/api/v1/locataires/loc-ue",
             json={"email": "fail@e.fr"},
@@ -453,7 +453,7 @@ def test_update_locataire_update_returns_empty(client, auth_headers, fake_supaba
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.patch(
             "/api/v1/locataires/loc-ue2",
             json={"email": "empty@e.fr"},
@@ -478,7 +478,7 @@ def test_delete_locataire_db_error_on_select(client, auth_headers, fake_supabase
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.delete("/api/v1/locataires/loc-z", headers=auth_headers)
     assert response.status_code == 503
 
@@ -506,7 +506,7 @@ def test_delete_locataire_db_error_on_delete(client, auth_headers, fake_supabase
         return None
 
     proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "_get_client", lambda: proxy):
+    with patch.object(loc_mod, "get_supabase_service_client", lambda: proxy):
         response = client.delete("/api/v1/locataires/loc-de", headers=auth_headers)
     assert response.status_code == 503
 

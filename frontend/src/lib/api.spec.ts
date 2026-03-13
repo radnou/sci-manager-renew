@@ -11,12 +11,7 @@ vi.mock('$lib/auth/session', () => ({
 import {
 	API_URL,
 	createCheckoutSession,
-	createBien,
 	createSci,
-	createLoyer,
-	createLocataire,
-	createAssocie,
-	createCharge,
 	createFiscalite,
 	deleteBien,
 	deleteLoyer,
@@ -25,11 +20,6 @@ import {
 	deleteCharge,
 	deleteFiscalite,
 	downloadQuitus,
-	fetchBiens,
-	fetchLoyers,
-	fetchLocataires,
-	fetchAssocies,
-	fetchCharges,
 	fetchFiscalite,
 	fetchNotifications,
 	fetchUnreadCount,
@@ -90,38 +80,6 @@ describe('api helpers', () => {
 		getCurrentSessionMock.mockResolvedValue(null);
 	});
 
-	it('fetchBiens returns parsed payload', async () => {
-		const payload = [{ id_sci: 'sci-1', adresse: '14 rue Saint-Honore', ville: 'Paris' }];
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchBiens()).resolves.toEqual(payload);
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/biens/`);
-		expect(options).toBeDefined();
-		const headers = new Headers(options.headers);
-		expect(headers.get('Content-Type')).toBe('application/json');
-		expect(headers.get('Authorization')).toBeNull();
-	});
-
-	it('fetchLoyers returns parsed payload', async () => {
-		const payload = [
-			{ id_bien: 'BIEN-001', date_loyer: '2026-03-01', montant: 1200, statut: 'paye' }
-		];
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchLoyers()).resolves.toEqual(payload);
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/loyers/`);
-	});
-
 	it('fetchScis returns parsed payload', async () => {
 		const payload = [{ id: 'sci-1', nom: 'SCI Mosa Belleville', regime_fiscal: 'IR' }];
 		const fetchMock = vi
@@ -161,56 +119,6 @@ describe('api helpers', () => {
 		expect(url).toBe(`${API_URL}/api/v1/scis/`);
 		expect(options.method).toBe('POST');
 		expect(options.body).toBe(JSON.stringify(payload));
-	});
-
-	it('createBien posts JSON body', async () => {
-		const payload = {
-			id_sci: 'sci-1',
-			adresse: '8 avenue des Tilleuls',
-			ville: 'Lyon',
-			code_postal: '69001',
-			type_locatif: 'nu' as const,
-			loyer_cc: 1100,
-			charges: 120,
-			tmi: 30
-		};
-		const created = { id: 'bien-1', ...payload };
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(createBien(payload)).resolves.toEqual(created);
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/biens/`);
-		expect(options.method).toBe('POST');
-		expect(options.body).toBe(JSON.stringify(payload));
-		const headers = new Headers(options.headers);
-		expect(headers.get('Content-Type')).toBe('application/json');
-	});
-
-	it('createLoyer posts JSON body', async () => {
-		const payload = {
-			id_bien: 'BIEN-004',
-			date_loyer: '2026-03-02',
-			montant: 930,
-			statut: 'paye' as const
-		};
-		const created = { id: 'loyer-8', ...payload };
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(createLoyer(payload)).resolves.toEqual(created);
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/loyers/`);
-		expect(options.method).toBe('POST');
-		expect(options.body).toBe(JSON.stringify(payload));
-		const headers = new Headers(options.headers);
-		expect(headers.get('Content-Type')).toBe('application/json');
 	});
 
 	it('updateBien patches JSON body', async () => {
@@ -390,7 +298,7 @@ describe('api helpers', () => {
 			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await expect(fetchBiens()).resolves.toEqual(payload);
+		await expect(fetchScis()).resolves.toEqual(payload);
 
 		const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		const headers = new Headers(options.headers);
@@ -403,7 +311,7 @@ describe('api helpers', () => {
 			.mockResolvedValue(new Response('Erreur fonctionnelle', { status: 422 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await expect(fetchBiens()).rejects.toThrowError('Erreur fonctionnelle');
+		await expect(fetchScis()).rejects.toThrowError('Erreur fonctionnelle');
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 
@@ -411,7 +319,7 @@ describe('api helpers', () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 500 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await expect(fetchBiens()).rejects.toThrowError(/API error: 500/);
+		await expect(fetchScis()).rejects.toThrowError(/API error: 500/);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 
@@ -431,7 +339,7 @@ describe('api helpers', () => {
 			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await expect(fetchBiens()).resolves.toEqual([]);
+		await expect(fetchScis()).resolves.toEqual([]);
 		const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		const headers = new Headers(options.headers);
 		expect(headers.get('Authorization')).toBeNull();
@@ -441,67 +349,8 @@ describe('api helpers', () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await expect(fetchBiens()).resolves.toBeUndefined();
+		await expect(fetchScis()).resolves.toBeUndefined();
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-	});
-
-	it('fetchLocataires returns parsed payload', async () => {
-		const payload = [{ id_bien: 'bien-1', nom: 'Jean Dupont', date_debut: '2025-01-01' }];
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchLocataires()).resolves.toEqual(payload);
-		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/locataires/`);
-	});
-
-	it('fetchAssocies returns parsed payload without filter', async () => {
-		const payload = [{ id: 'a-1', nom: 'Rad', part: 60, role: 'gerant' }];
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchAssocies()).resolves.toEqual(payload);
-		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/associes/`);
-	});
-
-	it('fetchAssocies appends sci filter when provided', async () => {
-		const payload = [{ id: 'a-1', nom: 'Rad', part: 60, role: 'gerant' }];
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchAssocies('sci-1')).resolves.toEqual(payload);
-		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/associes/?id_sci=sci-1`);
-	});
-
-	it('fetchCharges returns parsed payload without filter', async () => {
-		const payload = [{ id_bien: 'bien-1', type_charge: 'assurance', montant: 240, date_paiement: '2026-01-15' }];
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchCharges()).resolves.toEqual(payload);
-		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/charges/`);
-	});
-
-	it('fetchCharges appends sci filter when provided', async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(fetchCharges('sci-2')).resolves.toEqual([]);
-		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/charges/?id_sci=sci-2`);
 	});
 
 	it('fetchFiscalite returns parsed payload without filter', async () => {
@@ -525,51 +374,6 @@ describe('api helpers', () => {
 		await expect(fetchFiscalite('sci-1')).resolves.toEqual([]);
 		const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/fiscalite/?id_sci=sci-1`);
-	});
-
-	it('createLocataire posts JSON body', async () => {
-		const payload = { id_bien: 'bien-1', nom: 'Marie Martin', date_debut: '2026-01-01' };
-		const created = { id: 'loc-1', ...payload };
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(createLocataire(payload)).resolves.toEqual(created);
-		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/locataires/`);
-		expect(options.method).toBe('POST');
-		expect(options.body).toBe(JSON.stringify(payload));
-	});
-
-	it('createAssocie posts JSON body', async () => {
-		const payload = { id_sci: 'sci-1', nom: 'Paul Durand', part: 40, role: 'associe' };
-		const created = { id: 'a-2', ...payload };
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(createAssocie(payload)).resolves.toEqual(created);
-		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/associes/`);
-		expect(options.method).toBe('POST');
-		expect(options.body).toBe(JSON.stringify(payload));
-	});
-
-	it('createCharge posts JSON body', async () => {
-		const payload = { id_bien: 'bien-1', type_charge: 'travaux', montant: 500, date_paiement: '2026-03-01' };
-		const created = { id: 'ch-1', ...payload };
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
-		vi.stubGlobal('fetch', fetchMock);
-
-		await expect(createCharge(payload)).resolves.toEqual(created);
-		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/charges/`);
-		expect(options.method).toBe('POST');
-		expect(options.body).toBe(JSON.stringify(payload));
 	});
 
 	it('createFiscalite posts JSON body', async () => {

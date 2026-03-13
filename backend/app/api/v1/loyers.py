@@ -21,10 +21,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/loyers", tags=["loyers"])
 
 
-def _get_client():
-    return get_supabase_service_client()
-
-
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
     result = client.table("associes").select("id_sci").eq("user_id", user_id).execute()
     if getattr(result, "error", None):
@@ -123,7 +119,7 @@ async def list_loyers(
 
     try:
         _validate_date_range(date_from, date_to)
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
 
         if id_sci:
@@ -155,7 +151,7 @@ async def create_loyer(
 ):
     logger.info("creating_loyer", user_id=user_id, bien_id=payload.id_bien, montant=payload.montant)
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         bien = _fetch_bien(client, payload.id_bien)
         bien_sci_id = str(bien.get("id_sci") or "")
@@ -200,7 +196,7 @@ async def update_loyer(loyer_id: str, payload: LoyerUpdate, user_id: str = Depen
         if not update_payload:
             raise ValidationError("No update fields provided")
 
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("loyers").select("*").eq("id", loyer_id).execute()
         if getattr(existing_result, "error", None):
@@ -235,7 +231,7 @@ async def update_loyer(loyer_id: str, payload: LoyerUpdate, user_id: str = Depen
 async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)):
     logger.info("deleting_loyer", loyer_id=loyer_id, user_id=user_id)
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("loyers").select("*").eq("id", loyer_id).execute()
         if getattr(existing_result, "error", None):
@@ -268,7 +264,7 @@ async def loyer_stats(
     user_id: str = Depends(get_current_user),
 ):
     """Return monthly aggregated loyer stats for the current user."""
-    client = _get_client()
+    client = get_supabase_service_client()
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if not user_sci_ids:

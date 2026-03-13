@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
 
 class DocumentBienCreate(BaseModel):
-    nom: str
-    categorie: str = "autre"  # 'bail', 'quittance', 'diagnostic', 'assurance', 'autre'
+    nom: str = Field(max_length=200)
+    categorie: str = Field(default="autre", max_length=50)  # 'bail', 'quittance', 'diagnostic', 'assurance', 'autre'
 
 
 class DocumentBienResponse(BaseModel):

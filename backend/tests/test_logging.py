@@ -206,7 +206,7 @@ def test_create_loyer_logs_creation():
     try:
         with (
             patch("app.api.v1.loyers.logger") as mock_logger,
-            patch("app.api.v1.loyers._get_client") as mock_get_client,
+            patch("app.api.v1.loyers.get_supabase_service_client") as mock_get_client,
             patch("app.api.v1.loyers._get_user_sci_ids", return_value=["sci123"]),
             patch("app.api.v1.loyers._fetch_bien", return_value={"id": "bien123", "id_sci": "sci123"}),
         ):
@@ -382,7 +382,7 @@ def test_delete_loyer_logs_operation():
     try:
         with (
             patch("app.api.v1.loyers.logger") as mock_logger,
-            patch("app.api.v1.loyers._get_client") as mock_get_client,
+            patch("app.api.v1.loyers.get_supabase_service_client") as mock_get_client,
             patch("app.api.v1.loyers._get_user_sci_ids", return_value=["sci123"]),
             patch("app.api.v1.loyers._resolve_loyer_sci_id", return_value="sci123"),
         ):

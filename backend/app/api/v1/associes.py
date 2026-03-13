@@ -18,10 +18,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/associes", tags=["associes"])
 
 
-def _get_client():
-    return get_supabase_service_client()
-
-
 def _execute_select(query):
     result = query.execute()
     if getattr(result, "error", None):
@@ -96,7 +92,7 @@ async def list_associes(
     logger.info("listing_associes", user_id=user_id, id_sci=id_sci)
 
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -118,7 +114,7 @@ async def create_associe(payload: AssocieCreate, user_id: str = Depends(get_curr
     logger.info("creating_associe", user_id=user_id, id_sci=payload.id_sci, nom=payload.nom)
 
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         _require_sci_access(user_sci_ids, payload.id_sci)
         _ensure_total_parts_within_bounds(client, payload.id_sci, payload.part)
@@ -157,7 +153,7 @@ async def update_associe(
         if not update_payload:
             raise ValidationError("No update fields provided")
 
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_associe(client, associe_id)
         id_sci = str(existing.get("id_sci") or "")
@@ -187,7 +183,7 @@ async def delete_associe(associe_id: str, user_id: str = Depends(get_current_use
     logger.info("deleting_associe", associe_id=associe_id, user_id=user_id)
 
     try:
-        client = _get_client()
+        client = get_supabase_service_client()
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_associe(client, associe_id)
         id_sci = str(existing.get("id_sci") or "")

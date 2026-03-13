@@ -1,6 +1,6 @@
 """Admin panel API routes — restricted to users in the admins table."""
 
-import logging
+import structlog
 
 from fastapi import APIRouter, Depends, Query
 
@@ -10,7 +10,7 @@ from app.core.supabase_client import get_supabase_service_client as get_service_
 
 ACTIVE_STATUSES = {"active", "trialing", "paid"}
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/admin",
