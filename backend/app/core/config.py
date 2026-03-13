@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     database_socket_timeout_seconds: float = 2.0
 
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.local"),
+        env_file=("../.env", ".env", ".env.local"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
