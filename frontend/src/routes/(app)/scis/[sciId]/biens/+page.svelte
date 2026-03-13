@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail } from '$lib/api';
+	import type { SCIDetail, Bien } from '$lib/api';
 	import { fetchSciBiensList, deleteBien } from '$lib/api';
+
+	type BienListItem = Bien & {
+		statut?: string | null;
+		bail_actif?: unknown;
+	};
 	import { formatEur } from '$lib/high-value/formatters';
 	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet } from 'lucide-svelte';
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
@@ -17,7 +22,7 @@
 	let deletingId = $state<string | null>(null);
 	let confirmingDeleteId = $state<string | null>(null);
 
-	let biens: Array<any> = $state([]);
+	let biens: BienListItem[] = $state([]);
 	let loading = $state(true);
 	let error: string | null = $state(null);
 
@@ -38,11 +43,12 @@
 		}
 	}
 
-	async function handleDeleteBien(bien: any) {
+	async function handleDeleteBien(bien: BienListItem) {
+		if (!bien.id) return;
 		const confirmed = confirm(`Supprimer le bien "${bien.adresse}" ? Cette action est irréversible.`);
 		if (!confirmed) return;
 
-		deletingId = bien.id;
+		deletingId = String(bien.id);
 		try {
 			await deleteBien(bien.id);
 			await loadBiens();
@@ -70,7 +76,7 @@
 		travaux: 'Travaux'
 	};
 
-	function getStatut(bien: any): string {
+	function getStatut(bien: BienListItem): string {
 		return bien.statut || (bien.bail_actif ? 'loue' : 'vacant');
 	}
 </script>
@@ -151,7 +157,7 @@
 				{@const statut = getStatut(bien)}
 				{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
 				{@const label = statutLabel[statut] ?? statut}
-				{@const isDeleting = deletingId === bien.id}
+				{@const isDeleting = deletingId != null && bien.id != null && deletingId === String(bien.id)}
 				<div
 					class="group rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
 				>
@@ -220,7 +226,7 @@
 								Modifier
 							</a>
 							<button
-								onclick={() => { confirmingDeleteId = bien.id; }}
+								onclick={() => { confirmingDeleteId = bien.id != null ? String(bien.id) : null; }}
 								disabled={isDeleting}
 								class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
 							>
@@ -266,7 +272,7 @@
 						{@const statut = getStatut(bien)}
 						{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
 						{@const label = statutLabel[statut] ?? statut}
-						{@const isDeleting = deletingId === bien.id}
+						{@const isDeleting = deletingId != null && bien.id != null && deletingId === String(bien.id)}
 						<tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
 							<td class="px-4 py-3">
 								<a
@@ -320,7 +326,7 @@
 											<Pencil class="h-4 w-4" />
 										</a>
 										<button
-											onclick={() => { confirmingDeleteId = bien.id; }}
+											onclick={() => { confirmingDeleteId = bien.id != null ? String(bien.id) : null; }}
 											disabled={isDeleting}
 											class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
 											title="Supprimer"
@@ -349,7 +355,7 @@
 			</table>
 		</div>
 		{#if confirmingDeleteId}
-			{@const bienToDelete = biens.find(b => b.id === confirmingDeleteId)}
+			{@const bienToDelete = biens.find(b => b.id != null && String(b.id) === confirmingDeleteId)}
 			{#if bienToDelete}
 				<div class="mt-3 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 dark:border-rose-800 dark:bg-rose-950/30">
 					<p class="text-sm text-rose-700 dark:text-rose-300">Supprimer "{bienToDelete.adresse}" ? Cette action est irréversible.</p>
@@ -362,10 +368,10 @@
 						</button>
 						<button
 							onclick={() => handleDeleteBien(bienToDelete)}
-							disabled={deletingId === bienToDelete.id}
+							disabled={deletingId != null && bienToDelete.id != null && deletingId === String(bienToDelete.id)}
 							class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
 						>
-							{#if deletingId === bienToDelete.id}
+							{#if deletingId != null && bienToDelete.id != null && deletingId === String(bienToDelete.id)}
 								<Loader2 class="h-3.5 w-3.5 animate-spin" />
 							{/if}
 							Confirmer

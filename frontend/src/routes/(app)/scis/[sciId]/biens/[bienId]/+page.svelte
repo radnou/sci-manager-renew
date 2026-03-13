@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { getContext } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import type { SCIDetail, FicheBien } from '$lib/api';
 	import { breadcrumbNames } from '$lib/stores/breadcrumb-names';
 	import { fetchFicheBien, renderQuitus, type QuitusRequestPayload } from '$lib/api';
@@ -63,6 +63,50 @@
 			loading = false;
 		}
 	}
+
+	// G04: IntersectionObserver to update active tab on scroll
+	$effect(() => {
+		if (loading || !bien) return;
+
+		const sectionIds = sections.map((s) => s.id);
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						const id = entry.target.id.replace('section-', '');
+						if (sectionIds.includes(id)) {
+							activeSection = id;
+						}
+					}
+				}
+			},
+			{ rootMargin: '-160px 0px -60% 0px', threshold: 0 }
+		);
+
+		for (const sec of sectionIds) {
+			const el = document.getElementById(`section-${sec}`);
+			if (el) observer.observe(el);
+		}
+
+		return () => observer.disconnect();
+	});
+
+	// G05: Scroll to hash anchor on mount (e.g. #loyers)
+	onMount(() => {
+		const hash = window.location.hash?.replace('#', '');
+		if (hash) {
+			// Wait for content to render
+			const tryScroll = () => {
+				const el = document.getElementById(`section-${hash}`);
+				if (el) {
+					el.scrollIntoView({ behavior: 'smooth' });
+					activeSection = hash;
+				}
+			};
+			// Defer to allow page rendering
+			requestAnimationFrame(() => setTimeout(tryScroll, 100));
+		}
+	});
 
 	function scrollToSection(id: string) {
 		activeSection = id;
@@ -195,7 +239,7 @@
 				/>
 			</div>
 			<div id="section-rentabilite">
-				<FicheBienRentabilite rentabilite={bien.rentabilite} />
+				<FicheBienRentabilite rentabilite={bien.rentabilite} hasSourceData={bien.prix_acquisition != null && bien.bail_actif != null} />
 			</div>
 			<div id="section-documents">
 				<FicheBienDocuments

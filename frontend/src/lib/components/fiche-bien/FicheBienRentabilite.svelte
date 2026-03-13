@@ -5,16 +5,14 @@
 
 	interface Props {
 		rentabilite: RentabiliteCalculee;
+		hasSourceData?: boolean;
 	}
 
-	let { rentabilite }: Props = $props();
+	let { rentabilite, hasSourceData = true }: Props = $props();
 
-	const isAllZero = $derived(
-		rentabilite.brute === 0 &&
-		rentabilite.nette === 0 &&
-		rentabilite.cashflow_mensuel === 0 &&
-		rentabilite.cashflow_annuel === 0
-	);
+	// G12: Show warning only when source data (prix_acquisition + bail) is missing,
+	// not when calculated values are legitimately 0.
+	const isNoData = $derived(!hasSourceData);
 
 	function cashflowColor(value: number): string {
 		if (value > 0) return 'text-emerald-600 dark:text-emerald-400';
@@ -35,7 +33,7 @@
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Rentabilité</h2>
 	</div>
 
-	{#if isAllZero}
+	{#if isNoData}
 		<p class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
 			Renseignez le prix d'acquisition et ajoutez un bail actif pour calculer la rentabilite.
 		</p>

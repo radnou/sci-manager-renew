@@ -35,10 +35,10 @@
 	let activeSciId: string | null = $state(null);
 	let scisLoaded: boolean = $state(false);
 
-	// Fetch SCIs once on mount, and when navigating back to /scis or /dashboard
+	// Fetch SCIs once on mount, and refresh when navigating to /scis, /dashboard, or any SCI page
 	$effect(() => {
 		const path = page.url.pathname;
-		if (!scisLoaded || path === '/scis' || path === '/dashboard') {
+		if (!scisLoaded || path === '/scis' || path === '/dashboard' || /^\/scis\/[^/]+/.test(path)) {
 			fetchScis()
 				.then((data) => {
 					scis = data;
@@ -89,7 +89,7 @@
 		sciSwitcherOpen = false;
 	}
 
-	function selectSci(sciId: string | number) {
+	function selectSci() {
 		sciSwitcherOpen = false;
 		closeMobileOnNavigate();
 	}
@@ -192,7 +192,7 @@
 						role="option"
 						aria-selected={String(sci.id) === String(activeSciId)}
 						class="flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 {String(sci.id) === String(activeSciId) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"
-						onclick={() => selectSci(sci.id)}
+						onclick={() => selectSci()}
 					>
 						<Building2 class="h-3.5 w-3.5 flex-shrink-0 {String(sci.id) === String(activeSciId) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}" />
 						<span class="flex-1 truncate {String(sci.id) === String(activeSciId) ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}">{sci.nom}</span>

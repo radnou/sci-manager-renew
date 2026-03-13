@@ -25,7 +25,7 @@
 	async function handleExportLoyers() {
 		exportingLoyers = true;
 		try {
-			const blob = await exportLoyersCsv();
+			const blob = await exportLoyersCsv(undefined, period);
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;

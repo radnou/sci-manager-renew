@@ -79,6 +79,15 @@
 	}
 
 	async function handleCreate() {
+		// G11: Check for duplicate fiscal year before submitting
+		if (exercices.some((ex) => ex.annee === newAnnee)) {
+			addToast({
+				title: 'Année déjà existante',
+				description: `Un exercice fiscal pour l'année ${newAnnee} existe déjà.`,
+				variant: 'error'
+			});
+			return;
+		}
 		creating = true;
 		try {
 			await createFiscalite({

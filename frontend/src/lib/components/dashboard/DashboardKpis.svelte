@@ -69,12 +69,14 @@
 			value: noLoyers ? '—' : formatEur(kpis.cashflow_net),
 			hint: noLoyers ? 'Enregistrez un loyer pour activer' : '',
 			icon: Wallet,
-			iconColor:
-				kpis.cashflow_net >= 0
+			iconColor: noLoyers
+				? 'text-slate-400 dark:text-slate-500'
+				: kpis.cashflow_net >= 0
 					? 'text-emerald-500 dark:text-emerald-400'
 					: 'text-rose-500 dark:text-rose-400',
-			bgIcon:
-				kpis.cashflow_net >= 0
+			bgIcon: noLoyers
+				? 'bg-slate-100 dark:bg-slate-800'
+				: kpis.cashflow_net >= 0
 					? 'bg-emerald-50 dark:bg-emerald-950/40'
 					: 'bg-rose-50 dark:bg-rose-950/40'
 		}
