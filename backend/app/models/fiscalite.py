@@ -33,6 +33,7 @@ class FiscaliteResponse(FiscaliteBase):
     resultat_fiscal: float = 0
     regime_fiscal: str | None = None
     nom_sci: str | None = None
+    disclaimer: str = "Résultat simplifié — consultez votre comptable pour la déclaration définitive"
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

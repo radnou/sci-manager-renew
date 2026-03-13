@@ -166,22 +166,37 @@ async def get_portfolio_kpis(client, user_id: str) -> dict:
     biens_count = len(biens)
 
     # Loyers
-    loyers = _query_in_sci_ids(client, "loyers", "montant,statut", sci_ids)
+    loyers = _query_in_sci_ids(client, "loyers", "montant,statut,date_loyer", sci_ids)
     loyers_total = sum(float(l.get("montant") or 0) for l in loyers)
     loyers_payes = sum(
         float(l.get("montant") or 0) for l in loyers if l.get("statut") == "paye"
     )
     taux_recouvrement = round((loyers_payes / loyers_total * 100) if loyers_total > 0 else 0.0, 1)
 
+    # Cashflow: trailing 12 months only
+    cutoff_12m = (date.today() - timedelta(days=365)).isoformat()
+    loyers_payes_12m = sum(
+        float(l.get("montant") or 0)
+        for l in loyers
+        if l.get("statut") == "paye"
+        and (l.get("date_loyer") or date.today().isoformat()) >= cutoff_12m
+    )
+
     # Charges
     try:
-        charges = _query_in_sci_ids(client, "charges", "montant", sci_ids)
+        charges = _query_in_sci_ids(client, "charges", "montant,date_paiement", sci_ids)
         charges_total = sum(float(c.get("montant") or 0) for c in charges)
+        charges_total_12m = sum(
+            float(c.get("montant") or 0)
+            for c in charges
+            if (c.get("date_paiement") or date.today().isoformat()) >= cutoff_12m
+        )
     except Exception:
         charges_total = 0.0
+        charges_total_12m = 0.0
         logger.warning("kpi_charges_fetch_failed", user_id=user_id, exc_info=True)
 
-    cashflow_net = round(loyers_payes - charges_total, 2)
+    cashflow_net = round(loyers_payes_12m - charges_total_12m, 2)
 
     return {
         "sci_count": sci_count,

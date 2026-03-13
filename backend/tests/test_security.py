@@ -83,27 +83,23 @@ def test_decode_bearer_token_rejects_missing_matching_key(monkeypatch):
 
 
 def test_get_supabase_jwks_uses_cache(monkeypatch):
+    import httpx
+
     security._jwks_cache["expires_at"] = 0.0
     security._jwks_cache["keys"] = []
     calls = {"count": 0}
 
-    class FakeResponse:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def read(self, *_args, **_kwargs):
-            return json.dumps({"keys": [{"kid": "cached-key"}]}).encode()
-
-    def fake_urlopen(url: str, timeout: float):
+    def fake_httpx_get(url: str, timeout: float):
         calls["count"] += 1
         assert url == f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
         assert timeout == settings.supabase_request_timeout_seconds
-        return FakeResponse()
+        return httpx.Response(
+            200,
+            json={"keys": [{"kid": "cached-key"}]},
+            request=httpx.Request("GET", url),
+        )
 
-    monkeypatch.setattr(security, "urlopen", fake_urlopen)
+    monkeypatch.setattr(httpx, "get", fake_httpx_get)
 
     first = security._get_supabase_jwks()
     second = security._get_supabase_jwks()

@@ -509,7 +509,26 @@ async def create_bien_bail(
     logger.info("creating_bail", bien_id=bien_id, sci_id=str(sci_id))
 
     client = _get_client()
-    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+    bien = _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Validate minimum bail duration based on type_locatif
+    if payload.date_fin:
+        type_locatif = (bien.get("type_locatif") or "").lower()
+        duration_days = (payload.date_fin - payload.date_debut).days
+        _MINIMUM_DURATIONS = {
+            "nu": (1095, "3 ans"),
+            "meuble": (365, "1 an"),
+        }
+        if type_locatif in _MINIMUM_DURATIONS:
+            min_days, label = _MINIMUM_DURATIONS[type_locatif]
+            if duration_days < min_days:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Durée minimale légale pour un bail {type_locatif} : {label}. "
+                        f"Durée fournie : {duration_days} jours."
+                    ),
+                )
 
     # 1. Expire existing en_cours bail
     existing = (
