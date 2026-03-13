@@ -170,7 +170,7 @@ class StorageService:
             await run_with_retry(
                 operation="supabase_storage.create_bucket",
                 func=lambda: self.client.storage.create_bucket(
-                    bucket_id=self.bucket_name,
+                    id=self.bucket_name,
                     options={"public": False},
                 ),
                 allow_retry=False,

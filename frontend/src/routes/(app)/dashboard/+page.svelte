@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Loader2, Rocket, Building2, HandCoins, FileText } from 'lucide-svelte';
+	import { Rocket, Building2, HandCoins, FileText } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		fetchDashboard,
@@ -63,10 +63,7 @@
 	</header>
 
 	{#if loading}
-		<div class="flex items-center justify-center py-24">
-			<Loader2 class="h-8 w-8 animate-spin text-slate-400" />
-			<span class="ml-3 text-sm text-slate-500 dark:text-slate-400">Chargement du tableau de bord...</span>
-		</div>
+		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if errorMessage}
 		<div
 			class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 dark:border-rose-800 dark:bg-rose-950/30"
@@ -116,27 +113,29 @@
 			</a>
 		</div>
 	{:else}
-		<!-- Alertes -->
-		<div class="mt-6">
-			<DashboardAlerts {alertes} />
-		</div>
+		<div class="sci-stagger">
+			<!-- Alertes -->
+			<div class="mt-6">
+				<DashboardAlerts {alertes} />
+			</div>
 
-		<!-- KPIs -->
-		<div class="mt-6">
-			<DashboardKpisComponent {kpis} />
-		</div>
+			<!-- KPIs -->
+			<div class="mt-6">
+				<DashboardKpisComponent {kpis} />
+			</div>
 
-		<!-- SCI Cards -->
-		<div class="mt-8">
-			<h2 class="mb-4 text-sm font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-				Mes SCI
-			</h2>
-			<DashboardSciCards {scis} />
-		</div>
+			<!-- SCI Cards -->
+			<div class="mt-8">
+				<h2 class="mb-4 text-sm font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+					Mes SCI
+				</h2>
+				<DashboardSciCards {scis} />
+			</div>
 
-		<!-- Activite recente -->
-		<div class="mt-8">
-			<DashboardActivity {activite} />
+			<!-- Activite recente -->
+			<div class="mt-8">
+				<DashboardActivity {activite} />
+			</div>
 		</div>
 	{/if}
 </section>

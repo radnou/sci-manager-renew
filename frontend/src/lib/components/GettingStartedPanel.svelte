@@ -93,7 +93,7 @@
 	<CardHeader class="border-b border-slate-200/80 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
+				<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
 					{compact ? 'Cap suivant • parcours guidé' : 'Première connexion • prise en main guidée'}
 				</p>
 				<CardTitle class="mt-2 text-2xl">
@@ -111,7 +111,7 @@
 			</div>
 			<div class="flex items-center gap-3">
 				<div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-950">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
+					<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
 						Progression
 					</p>
 					<p class="mt-1 font-semibold text-slate-900 dark:text-slate-100">
@@ -175,7 +175,7 @@
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<FileText class="h-4 w-4" />
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase">
 								Référentiel des entités
 							</p>
 						</div>

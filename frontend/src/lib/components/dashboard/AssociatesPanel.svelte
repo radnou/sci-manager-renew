@@ -50,7 +50,7 @@
 							{associe.part ? formatPercent(associe.part) : 'Part N/A'}
 						</span>
 					</div>
-					<p class="mt-3 text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					<p class="mt-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 						{mapAssociateRoleLabel(associe.role)}
 					</p>
 				</div>

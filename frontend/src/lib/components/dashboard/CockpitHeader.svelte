@@ -65,7 +65,7 @@
 			<div class="space-y-5">
 				<div class="flex flex-wrap items-start justify-between gap-4">
 					<div class="space-y-3">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">SCI active</p>
+						<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">SCI active</p>
 						<div class="flex flex-wrap items-center gap-2">
 							<span class={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(activeSciProfile?.statut)}`}>
 								{statusLabel(activeSciProfile?.statut)}
@@ -107,7 +107,7 @@
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<Landmark class="h-4 w-4" />
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Identité</p>
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase">Identité</p>
 						</div>
 						<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
 							SIREN {activeSciProfile?.siren || 'À compléter'}
@@ -122,7 +122,7 @@
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<Users class="h-4 w-4" />
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Gouvernance</p>
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase">Gouvernance</p>
 						</div>
 						<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
 							{activeSciProfile?.associes_count || 0} associé(s)
@@ -135,7 +135,7 @@
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 						<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 							<ShieldCheck class="h-4 w-4" />
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Santé SCI active</p>
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase">Santé SCI active</p>
 						</div>
 						<p class="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
 							Recouvrement {formatPercent(collectionRate, '0%')}
@@ -154,7 +154,7 @@
 			<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-700 dark:bg-slate-900">
 				<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
 					<TriangleAlert class="h-4 w-4" />
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase">Points de suivi</p>
+					<p class="text-xs font-semibold tracking-[0.15em] uppercase">Points de suivi</p>
 				</div>
 				<p class="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 					Chaque bloc ci-dessous renvoie vers une section de votre espace.
@@ -167,7 +167,7 @@
 						>
 							<div class="flex items-start justify-between gap-3">
 								<div>
-									<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">{track.label}</p>
+									<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">{track.label}</p>
 									<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{track.summary}</p>
 									<p class="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{track.detail}</p>
 								</div>
@@ -179,7 +179,7 @@
 					{/each}
 				</div>
 				<div class="mt-5">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">À traiter maintenant</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">À traiter maintenant</p>
 				</div>
 				<div class="mt-3 space-y-3">
 					{#each priorities as item}

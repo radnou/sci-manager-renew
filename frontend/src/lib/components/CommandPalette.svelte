@@ -20,7 +20,7 @@
 		{ label: 'Dashboard', description: 'Tableau de bord', icon: LayoutDashboard, href: '/dashboard' },
 		{ label: 'SCI', description: 'Gérer les sociétés', icon: Building2, href: '/scis' },
 		{ label: 'Finances', description: 'Vue financière consolidée', icon: HandCoins, href: '/finances' },
-		{ label: 'Tarifs', description: 'Plans et abonnements', icon: HandCoins, href: '/pricing' },
+		{ label: 'Abonnement', description: 'Offre active et facturation', icon: HandCoins, href: '/account/billing' },
 		{ label: 'Paramètres', description: 'Configuration du compte', icon: Settings, href: '/settings' },
 		{ label: 'Compte', description: 'Profil utilisateur', icon: User, href: '/account' }
 	];

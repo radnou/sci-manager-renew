@@ -36,9 +36,7 @@
 	</header>
 
 	{#if loading}
-		<div class="flex justify-center py-12">
-			<div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900"></div>
-		</div>
+		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if error}
 		<p class="text-sm text-rose-600">{error}</p>
 	{:else if scis.length === 0}
@@ -50,7 +48,7 @@
 			ctaHref="/onboarding"
 		/>
 	{:else}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="sci-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each scis as sci (String(sci.id))}
 				<a
 					href="/scis/{sci.id}"

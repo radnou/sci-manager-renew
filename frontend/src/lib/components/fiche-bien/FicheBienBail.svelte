@@ -70,10 +70,10 @@
 		<div
 			class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-12 dark:border-slate-700"
 		>
-			<Users class="mb-3 h-8 w-8 text-slate-400 dark:text-slate-500" />
-			<p class="text-sm text-slate-500 dark:text-slate-400">Aucun bail actif pour ce bien.</p>
+			<Users class="mb-3 h-10 w-10 text-slate-400 dark:text-slate-500" />
+			<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucun bail actif pour ce bien.</p>
 			{#if isGerant}
-				<p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+				<p class="mt-1.5 text-sm text-slate-400 dark:text-slate-500">
 					Cliquez sur "Créer un bail" pour commencer.
 				</p>
 			{/if}
@@ -84,7 +84,7 @@
 			<!-- Statut badge + modify button -->
 			<div class="flex items-center justify-between">
 				<span
-					class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {statut.class}"
+					class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {statut.class}"
 				>
 					{statut.label}
 				</span>
@@ -102,7 +102,7 @@
 			<!-- Locataires -->
 			<div>
 				<p
-					class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+					class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 				>
 					{bail.locataires.length > 1 ? 'Locataires (colocation)' : 'Locataire'}
 				</p>
@@ -126,7 +126,7 @@
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
 					<p
-						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 					>
 						Date de début
 					</p>
@@ -137,7 +137,7 @@
 				</div>
 				<div>
 					<p
-						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 					>
 						Date de fin
 					</p>
@@ -150,9 +150,9 @@
 
 			<!-- Montants -->
 			<div class="grid gap-4 sm:grid-cols-3">
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+				<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
 					<p
-						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 					>
 						Loyer HC
 					</p>
@@ -160,9 +160,9 @@
 						{formatEur(bail.loyer_hc)}
 					</p>
 				</div>
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+				<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
 					<p
-						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 					>
 						Charges locatives
 					</p>
@@ -170,9 +170,9 @@
 						{formatEur(bail.charges_locatives)}
 					</p>
 				</div>
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+				<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
 					<p
-						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 					>
 						Dépôt de garantie
 					</p>
@@ -186,7 +186,7 @@
 			{#if bail.revision_indice}
 				<div>
 					<p
-						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 					>
 						Indice de révision
 					</p>

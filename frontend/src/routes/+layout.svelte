@@ -20,11 +20,9 @@
 	} from '$lib/auth/route-guard';
 	import { Button } from '$lib/components/ui/button';
 	import { Toaster } from '$lib/components/ui/toast';
-	import AppBreadcrumbs from '$lib/components/AppBreadcrumbs.svelte';
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
-	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
@@ -33,20 +31,7 @@
 	let user = $state<User | null>(null);
 	let authResolved = $state(false);
 	let mobileMenuOpen = $state(false);
-	let accountMenuOpen = $state(false);
 	let previousPath = page.url.pathname;
-	let accountMenuContainer = $state<HTMLDivElement | null>(null);
-
-	const authenticatedUtilityItems = [
-		{ href: '/account', label: 'Compte' },
-		{ href: '/pricing', label: 'Abonnement' },
-		{ href: '/settings', label: 'Paramètres' },
-		{ href: '/account/privacy', label: 'Confidentialité' }
-	];
-
-	function isActivePath(href: string) {
-		return page.url.pathname === href || (href !== '/' && page.url.pathname.startsWith(`${href}/`));
-	}
 
 	// Track page views on SvelteKit client-side navigation
 	afterNavigate(() => {
@@ -55,11 +40,6 @@
 
 	onMount(() => {
 		let mounted = true;
-		const handleDocumentClick = (event: MouseEvent) => {
-			if (accountMenuContainer && !accountMenuContainer.contains(event.target as Node)) {
-				accountMenuOpen = false;
-			}
-		};
 
 		// Initialize theme
 		theme.initialize();
@@ -81,12 +61,9 @@
 			}
 		});
 
-		document.addEventListener('mousedown', handleDocumentClick);
-
 		return () => {
 			mounted = false;
 			subscription.unsubscribe();
-			document.removeEventListener('mousedown', handleDocumentClick);
 		};
 	});
 
@@ -94,15 +71,14 @@
 		await supabase.auth.signOut();
 		clearFakeSession();
 		user = null;
-		accountMenuOpen = false;
 		mobileMenuOpen = false;
+		goto('/login', { replaceState: true });
 	}
 
 	$effect(() => {
 		const currentPath = page.url.pathname;
 		if (currentPath !== previousPath) {
 			mobileMenuOpen = false;
-			accountMenuOpen = false;
 			previousPath = currentPath;
 		}
 	});
@@ -129,6 +105,9 @@
 			goto('/dashboard', { replaceState: true, noScroll: true });
 		}
 	});
+
+	// Show public navbar only for non-authenticated or public routes
+	const showPublicNav = $derived(!user || isPublicRoute(page.url.pathname));
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -136,129 +115,22 @@
 <div
 	class="min-h-screen bg-white text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-50"
 >
-	<nav
-		class="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95"
-	>
-		<div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
-			<div class="flex items-center gap-3">
-				<a
-					href={user ? '/dashboard' : '/'}
-					class="text-xl font-bold tracking-tight text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
-				>
-					GererSCI
-				</a>
-				{#if user}
-					<span
-						class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-slate-600 uppercase lg:inline-flex dark:bg-slate-800 dark:text-slate-300"
+	<!-- Public navbar: only for visitors / public pages -->
+	{#if showPublicNav && !isProtectedRoute(page.url.pathname)}
+		<nav
+			class="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95"
+		>
+			<div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
+				<div class="flex items-center gap-3">
+					<a
+						href="/"
+						class="text-xl font-bold tracking-tight text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
 					>
-						Espace de gestion
-					</span>
-				{/if}
-			</div>
+						GererSCI
+					</a>
+				</div>
 
-			<div class="flex items-center gap-2 md:gap-4">
-				{#if user}
-					<NotificationCenter />
-
-					<div class="relative hidden md:block" bind:this={accountMenuContainer}>
-						<button
-							type="button"
-							class="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 text-sm transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
-							aria-haspopup="menu"
-							aria-expanded={accountMenuOpen}
-							aria-controls="desktop-account-menu"
-							onkeydown={(event) => {
-								if (event.key === 'Escape') {
-									accountMenuOpen = false;
-								}
-							}}
-							onclick={() => {
-								accountMenuOpen = !accountMenuOpen;
-							}}
-						>
-							<span
-								class="hidden max-w-[12rem] truncate text-slate-600 lg:block dark:text-slate-300"
-								>{user.email}</span
-							>
-							<span
-								class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950"
-							>
-								Compte
-							</span>
-						</button>
-
-						{#if accountMenuOpen}
-							<div
-								id="desktop-account-menu"
-								role="menu"
-								aria-label="Menu du compte"
-								tabindex="-1"
-								class="absolute top-full right-0 mt-3 w-72 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-950"
-								onkeydown={(event) => {
-									if (event.key === 'Escape') {
-										accountMenuOpen = false;
-									}
-								}}
-							>
-								<div
-									class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
-								>
-									<p
-										class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-									>
-										Mon espace
-									</p>
-									<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-										{user.email}
-									</p>
-								</div>
-
-								<div class="mt-3 grid gap-2">
-									{#each authenticatedUtilityItems as item (item.href)}
-										<a
-											href={item.href}
-											role="menuitem"
-											aria-current={isActivePath(item.href) ? 'page' : undefined}
-											class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
-												isActivePath(item.href)
-													? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950'
-													: 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-											}`}
-											onclick={() => {
-												accountMenuOpen = false;
-											}}
-										>
-											{item.label}
-										</a>
-									{/each}
-								</div>
-
-								<Button variant="outline" size="sm" class="mt-3 w-full" onclick={handleLogout}
-									>Déconnexion</Button
-								>
-							</div>
-						{/if}
-					</div>
-
-					<Button
-						type="button"
-						variant="outline"
-						size="icon"
-						class="md:hidden"
-						aria-expanded={mobileMenuOpen}
-						aria-controls="mobile-navigation"
-						aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-						onclick={() => {
-							mobileMenuOpen = !mobileMenuOpen;
-						}}
-					>
-						{#if mobileMenuOpen}
-							<X class="h-4 w-4" />
-						{:else}
-							<Menu class="h-4 w-4" />
-						{/if}
-					</Button>
-				{:else}
+				<div class="flex items-center gap-2 md:gap-4">
 					<div class="hidden items-center gap-4 md:flex">
 						<a
 							href="/pricing"
@@ -280,102 +152,53 @@
 							</Button>
 						</a>
 					</div>
-				{/if}
-
-				<ThemeToggle />
+					<ThemeToggle />
+				</div>
 			</div>
-		</div>
 
-		{#if user && mobileMenuOpen}
-			<div
-				id="mobile-navigation"
-				class="border-t border-slate-200 bg-white px-4 py-4 md:hidden dark:border-slate-800 dark:bg-slate-950"
-			>
+			{#if mobileMenuOpen}
 				<div
-					class="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
+					id="mobile-navigation"
+					class="border-t border-slate-200 bg-white px-4 py-4 md:hidden dark:border-slate-800 dark:bg-slate-950"
 				>
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-						Session active
-					</p>
-					<p class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-						{user.email}
-					</p>
-				</div>
-
-				<div class="grid gap-2">
-					<p class="mt-1 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-						Navigation
-					</p>
-					<a
-						href="/dashboard"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/dashboard') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Dashboard</a
-					>
-					<a
-						href="/scis"
-						class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${isActivePath('/scis') ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'}`}
-						>Mes SCI</a
-					>
-
-					<p class="mt-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-						Compte
-					</p>
-					{#each authenticatedUtilityItems as item (item.href)}
+					<div class="grid gap-2">
 						<a
-							href={item.href}
-							aria-current={isActivePath(item.href) ? 'page' : undefined}
-							class={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
-								isActivePath(item.href)
-									? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950'
-									: 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-							}`}
+							href="/pricing"
+							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
-							{item.label}
+							Tarifs
 						</a>
-					{/each}
-					<Button variant="outline" size="sm" class="mt-2" onclick={handleLogout}
-						>Déconnexion</Button
-					>
+						<a
+							href="/login"
+							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							Connexion
+						</a>
+					</div>
 				</div>
-			</div>
-		{/if}
-	</nav>
-
-	{#if page.url.pathname !== '/'}
-		<AppBreadcrumbs />
+			{/if}
+		</nav>
 	{/if}
 
 	{#if isPublicRoute(page.url.pathname) && !user}
 		{@render children()}
 	{:else if authResolved && user && page.url.pathname === '/'}
-		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
-			<div
-				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
-			>
-				<p class="text-sm font-semibold tracking-[0.18em] text-slate-500 uppercase">
-					Espace connecté
-				</p>
-				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-					Chargement en cours
-				</h1>
-				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
-					Redirection vers votre tableau de bord.
-				</p>
-			</div>
+		<section class="flex min-h-[60vh] items-center justify-center">
+			<p class="animate-pulse text-sm text-slate-500">Redirection vers le tableau de bord…</p>
 		</section>
 	{:else if isProtectedRoute(page.url.pathname) && (!authResolved || !user)}
 		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
 			<div
 				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
 			>
-				<p class="text-sm font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				<p class="text-sm font-semibold tracking-[0.15em] text-slate-500 uppercase">
 					Zone protégée
 				</p>
 				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 					Connexion requise
 				</h1>
 				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
-					Redirection vers l’espace de connexion sécurisé.
+					Redirection vers l'espace de connexion sécurisé.
 				</p>
 			</div>
 		</section>
@@ -383,72 +206,15 @@
 		{@render children()}
 	{/if}
 
-	{#if user}
-		<CommandPalette />
-	{/if}
-
-	<!-- Footer -->
-	<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-		{#if user}
-			<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-				<div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-					<div class="space-y-2">
-						<h3 class="font-semibold text-slate-900 dark:text-slate-100">
-							Espace de gestion
-						</h3>
-						<p class="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-							Gérez votre portefeuille SCI, vos biens, loyers et documents depuis un seul endroit.
-						</p>
-					</div>
-
-					<div class="flex flex-wrap gap-2">
-						<a
-							href="/dashboard"
-							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
-							>Dashboard</a
-						>
-						<a
-							href="/scis"
-							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
-							>Mes SCI</a
-						>
-						<a
-							href="/account"
-							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
-							>Compte</a
-						>
-						<a
-							href="/account/privacy"
-							class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-slate-100"
-							>Confidentialité</a
-						>
-					</div>
-				</div>
-
-				<div class="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
-					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-						<p class="text-sm text-slate-600 dark:text-slate-400">
-							© 2026 GererSCI. Tous droits réservés.
-						</p>
-						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-							<a href="/mentions-legales" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Mentions légales</a>
-							<span>•</span>
-							<a href="/confidentialite" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Confidentialité</a>
-							<span>•</span>
-							<a href="/cgu" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGU</a>
-							<span>•</span>
-							<a href="/cgv" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">CGV</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		{:else}
+	<!-- Footer: only for public pages -->
+	{#if !user || isPublicRoute(page.url.pathname)}
+		<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
 			<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 				<div class="grid gap-8 md:grid-cols-4">
 					<div class="space-y-4">
 						<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
-							Plateforme de gestion et d’intelligence fiscale pour SCI.
+							Plateforme de gestion et d'intelligence fiscale pour SCI.
 						</p>
 					</div>
 
@@ -565,8 +331,12 @@
 					</div>
 				</div>
 			</div>
-		{/if}
-	</footer>
+		</footer>
+	{/if}
+
+	{#if user}
+		<CommandPalette />
+	{/if}
 
 	<Toaster />
 	<CookieConsent />

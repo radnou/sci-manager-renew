@@ -23,7 +23,7 @@ async def create_notification_with_email(
         supabase_client.table("notification_preferences")
         .select("email_enabled, in_app_enabled")
         .eq("user_id", user_id)
-        .eq("notification_type", notification_type)
+        .eq("type", notification_type)
         .execute()
     )
 

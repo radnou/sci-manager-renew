@@ -7,74 +7,91 @@
 		FileText,
 		TrendingUp,
 		Settings,
-		User,
 		ChevronDown,
 		LogOut,
 		Eye,
 		Home,
 		Calculator,
 		Menu,
-		X
+		X,
+		ChevronsUpDown,
+		Check
 	} from 'lucide-svelte';
 	import { fetchScis, type SCIOverview } from '$lib/api';
 	import { supabase } from '$lib/supabase';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
 
 	interface Props {
 		user: { email?: string } | null;
+		subscription?: { plan_key: string; plan_name: string } | null;
 	}
 
-	let { user }: Props = $props();
+	let { user, subscription = null }: Props = $props();
 
 	let scis: SCIOverview[] = $state([]);
-	let expandedScis: Set<string | number> = $state(new Set());
 	let mobileOpen: boolean = $state(false);
+	let sciSwitcherOpen: boolean = $state(false);
+	let activeSciId: string | null = $state(null);
+	let scisLoaded: boolean = $state(false);
 
+	// Fetch SCIs once on mount, and when navigating back to /scis or /dashboard
 	$effect(() => {
-		// Re-fetch SCIs on navigation (reactive dependency on pathname)
-		void page.url.pathname;
-		fetchScis()
-			.then((data) => {
-				scis = data;
-			})
-			.catch(() => {
-				scis = [];
-			});
+		const path = page.url.pathname;
+		if (!scisLoaded || path === '/scis' || path === '/dashboard') {
+			fetchScis()
+				.then((data) => {
+					scis = data;
+					scisLoaded = true;
+				})
+				.catch(() => {
+					scis = [];
+				});
+		}
 	});
 
-	function toggleSci(id: string | number) {
-		const next = new Set(expandedScis);
-		if (next.has(id)) {
-			next.delete(id);
-		} else {
-			next.add(id);
-		}
-		expandedScis = next;
-	}
+	// Auto-detect active SCI from URL
+	$effect(() => {
+		const match = page.url.pathname.match(/^\/scis\/([^/]+)/);
+		activeSciId = match ? match[1] : null;
+	});
+
+	const activeSci = $derived(scis.find((s) => String(s.id) === String(activeSciId)) ?? null);
+
+	const sciSubNav = [
+		{ suffix: '', label: "Vue d'ensemble", icon: Eye },
+		{ suffix: '/biens', label: 'Biens', icon: Home },
+		{ suffix: '/associes', label: 'Associés', icon: Users },
+		{ suffix: '/fiscalite', label: 'Fiscalité', icon: Calculator },
+		{ suffix: '/documents', label: 'Documents', icon: FileText }
+	];
 
 	function isActive(href: string): boolean {
 		return page.url.pathname === href || (href !== '/' && page.url.pathname.startsWith(`${href}/`));
 	}
 
-	function isActiveSci(sciId: string | number): boolean {
-		return page.url.pathname.startsWith(`/scis/${sciId}`);
+	function isExactActive(href: string): boolean {
+		return page.url.pathname === href;
 	}
 
 	async function handleLogout() {
-		await supabase.auth.signOut();
+		try {
+			await supabase.auth.signOut();
+		} catch {
+			// Supabase may throw if session already expired
+		}
 		window.location.href = '/login';
 	}
 
 	function closeMobileOnNavigate() {
 		mobileOpen = false;
+		sciSwitcherOpen = false;
 	}
 
-	const sciSubNav = [
-		{ suffix: '', label: "Vue d'ensemble", icon: Eye },
-		{ suffix: '/biens', label: 'Biens', icon: Home },
-		{ suffix: '/associes', label: 'Associes', icon: Users },
-		{ suffix: '/fiscalite', label: 'Fiscalite', icon: Calculator },
-		{ suffix: '/documents', label: 'Documents', icon: FileText }
-	];
+	function selectSci(sciId: string | number) {
+		sciSwitcherOpen = false;
+		closeMobileOnNavigate();
+	}
 </script>
 
 <!-- Mobile toggle button -->
@@ -108,11 +125,78 @@
 		? 'translate-x-0'
 		: '-translate-x-full'} md:relative md:translate-x-0"
 >
-	<!-- Brand -->
-	<div class="flex h-14 flex-shrink-0 items-center border-b border-slate-200 px-4 dark:border-slate-700">
-		<a href="/dashboard" class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-			GererSCI
-		</a>
+	<!-- SCI Switcher -->
+	<div class="flex-shrink-0 border-b border-slate-200 px-3 py-3 dark:border-slate-700">
+		{#if activeSci}
+			<!-- Active SCI context -->
+			<button
+				type="button"
+				onclick={() => (sciSwitcherOpen = !sciSwitcherOpen)}
+				class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+				aria-haspopup="listbox"
+				aria-expanded={sciSwitcherOpen}
+				aria-label="Changer de SCI, SCI active: {activeSci.nom}"
+			>
+				<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+					<Building2 class="h-4 w-4 text-blue-600 dark:text-blue-400" />
+				</div>
+				<div class="flex-1 min-w-0 text-left">
+					<p class="truncate text-sm font-semibold text-slate-900 dark:text-white">{activeSci.nom}</p>
+					<p class="text-xs text-slate-500 dark:text-slate-400">
+						{subscription?.plan_name ?? 'Free'}
+					</p>
+				</div>
+				<ChevronsUpDown class="h-4 w-4 flex-shrink-0 text-slate-400" />
+			</button>
+		{:else}
+			<!-- No active SCI — show brand + switcher -->
+			<button
+				type="button"
+				onclick={() => (sciSwitcherOpen = !sciSwitcherOpen)}
+				class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+				aria-haspopup="listbox"
+				aria-expanded={sciSwitcherOpen}
+			>
+				<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+					<Building2 class="h-4 w-4 text-slate-600 dark:text-slate-400" />
+				</div>
+				<div class="flex-1 min-w-0 text-left">
+					<p class="text-sm font-semibold text-slate-900 dark:text-white">GererSCI</p>
+					<p class="text-xs text-slate-500 dark:text-slate-400">
+						{scis.length} SCI{scis.length > 1 ? 's' : ''}
+					</p>
+				</div>
+				<ChevronsUpDown class="h-4 w-4 flex-shrink-0 text-slate-400" />
+			</button>
+		{/if}
+
+		<!-- SCI Switcher Dropdown -->
+		{#if sciSwitcherOpen}
+			<div
+				class="mt-1.5 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+				role="listbox"
+				aria-label="Sélectionner une SCI"
+			>
+				{#if scis.length === 0}
+					<p class="px-3 py-2 text-xs text-slate-400 italic">Aucune SCI</p>
+				{/if}
+				{#each scis as sci (sci.id)}
+					<a
+						href="/scis/{sci.id}"
+						role="option"
+						aria-selected={String(sci.id) === String(activeSciId)}
+						class="flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 {String(sci.id) === String(activeSciId) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"
+						onclick={() => selectSci(sci.id)}
+					>
+						<Building2 class="h-3.5 w-3.5 flex-shrink-0 {String(sci.id) === String(activeSciId) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}" />
+						<span class="flex-1 truncate {String(sci.id) === String(activeSciId) ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}">{sci.nom}</span>
+						{#if String(sci.id) === String(activeSciId)}
+							<Check class="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+						{/if}
+					</a>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Navigation -->
@@ -132,66 +216,52 @@
 			<span>Dashboard</span>
 		</a>
 
-		<!-- Mes SCI section -->
-		<div class="mt-4">
-			<p class="mb-2 px-3 text-[0.65rem] font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
-				Mes SCI
-			</p>
-
-			{#if scis.length === 0}
-				<p class="px-3 py-2 text-xs text-slate-400 italic dark:text-slate-500">Aucune SCI</p>
-			{/if}
-
-			{#each scis as sci (sci.id)}
-				<div class="mb-0.5">
-					<!-- SCI expandable header -->
-					<button
-						type="button"
-						onclick={() => toggleSci(sci.id)}
-						class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActiveSci(
-							sci.id
-						)
-							? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-							: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+		<!-- SCI Sub-nav (always visible when a SCI is active) -->
+		{#if activeSciId}
+			<div class="mt-4">
+				<p class="mb-2 px-3 text-xs font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
+					Navigation SCI
+				</p>
+				<div class="space-y-0.5">
+					{#each sciSubNav as subItem (subItem.suffix)}
+						{@const href = `/scis/${activeSciId}${subItem.suffix}`}
+						{@const active = subItem.suffix === '' ? isExactActive(href) : isActive(href)}
+						<a
+							{href}
+							onclick={closeMobileOnNavigate}
+							aria-current={active ? 'page' : undefined}
+							class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {active
+								? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+								: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+						>
+							<subItem.icon class="h-4 w-4 flex-shrink-0" />
+							<span>{subItem.label}</span>
+						</a>
+					{/each}
+				</div>
+			</div>
+		{:else if scis.length > 0}
+			<!-- No SCI selected: show SCI list for quick access -->
+			<div class="mt-4">
+				<p class="mb-2 px-3 text-xs font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
+					Mes SCI
+				</p>
+				{#each scis as sci (sci.id)}
+					<a
+						href="/scis/{sci.id}"
+						onclick={closeMobileOnNavigate}
+						class="mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
 					>
 						<Building2 class="h-4 w-4 flex-shrink-0" />
-						<span class="flex-1 truncate text-left">{sci.nom}</span>
-						<ChevronDown
-							class="h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200 {expandedScis.has(
-								sci.id
-							)
-								? 'rotate-180'
-								: 'rotate-0'}"
-						/>
-					</button>
+						<span class="truncate">{sci.nom}</span>
+					</a>
+				{/each}
+			</div>
+		{/if}
 
-					<!-- Sub-nav items -->
-					{#if expandedScis.has(sci.id)}
-						<div class="ml-4 mt-0.5 space-y-0.5 border-l border-slate-200 pl-3 dark:border-slate-700">
-							{#each sciSubNav as subItem (subItem.suffix)}
-								{@const href = `/scis/${sci.id}${subItem.suffix}`}
-								<a
-									{href}
-									onclick={closeMobileOnNavigate}
-									aria-current={page.url.pathname === href ? 'page' : undefined}
-									class="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[0.8rem] transition-colors {page
-										.url.pathname === href
-										? 'bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white'
-										: 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300'}"
-								>
-									<subItem.icon class="h-3.5 w-3.5 flex-shrink-0" />
-									<span>{subItem.label}</span>
-								</a>
-							{/each}
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</div>
-
-		<!-- Finances -->
+		<!-- Gestion -->
 		<div class="mt-4">
-			<p class="mb-2 px-3 text-[0.65rem] font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
+			<p class="mb-2 px-3 text-xs font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
 				Gestion
 			</p>
 			<a
@@ -208,53 +278,36 @@
 				<span>Finances</span>
 			</a>
 		</div>
+	</nav>
 
-		<!-- Compte section -->
-		<div class="mt-4">
-			<p class="mb-2 px-3 text-[0.65rem] font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
-				Compte
-			</p>
+	<!-- Footer: utilities + user -->
+	<div class="flex-shrink-0 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
+		<!-- Utilities row -->
+		<div class="mb-2 flex items-center gap-1">
+			<NotificationCenter />
+			<ThemeToggle />
 			<a
 				href="/settings"
 				onclick={closeMobileOnNavigate}
-				aria-current={isActive('/settings') ? 'page' : undefined}
-				class="mb-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive(
-					'/settings'
-				)
-					? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+				class="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+				aria-label="Paramètres"
+				title="Paramètres"
 			>
-				<Settings class="h-4 w-4 flex-shrink-0" />
-				<span>Parametres</span>
-			</a>
-			<a
-				href="/account"
-				onclick={closeMobileOnNavigate}
-				aria-current={isActive('/account') ? 'page' : undefined}
-				class="mb-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive(
-					'/account'
-				)
-					? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-			>
-				<User class="h-4 w-4 flex-shrink-0" />
-				<span>Compte</span>
+				<Settings class="h-4 w-4" />
 			</a>
 		</div>
-	</nav>
 
-	<!-- User footer -->
-	<div class="flex-shrink-0 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
+		<!-- User info + logout -->
 		{#if user?.email}
-			<p class="mb-2 truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+			<p class="mb-1.5 truncate px-2 text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
 		{/if}
 		<button
 			type="button"
 			onclick={handleLogout}
-			class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+			class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
 		>
-			<LogOut class="h-4 w-4 flex-shrink-0" />
-			<span>Deconnexion</span>
+			<LogOut class="h-3.5 w-3.5 flex-shrink-0" />
+			<span>Déconnexion</span>
 		</button>
 	</div>
 </aside>

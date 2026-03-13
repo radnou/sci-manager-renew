@@ -39,6 +39,9 @@ class AlerteItem(BaseModel):
     id_sci: str | None = None
     montant: float | None = None
     date: str | None = None
+    sci_nom: str | None = None
+    bien_adresse: str | None = None
+    link: str | None = None
 
 
 class PortfolioKPIs(BaseModel):

@@ -48,7 +48,7 @@
 >
 	<div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500/70 via-sky-400/80 to-emerald-500/70"></div>
 	<CardHeader class="pb-2">
-		<CardDescription class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400">{label}</CardDescription>
+		<CardDescription class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500 dark:text-slate-400">{label}</CardDescription>
 		<CardTitle class="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
 			{#if loading}
 				<span class="inline-flex h-8 w-28 animate-pulse rounded-md bg-slate-200 dark:bg-slate-800"></span>

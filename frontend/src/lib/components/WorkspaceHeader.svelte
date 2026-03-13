@@ -42,7 +42,7 @@
 	{#if contextValue || contextDetail}
 		<div class="mt-2 max-w-xl rounded-[1.35rem] border border-slate-200/80 bg-white/88 px-4 py-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.6)] backdrop-blur-sm dark:border-slate-800/90 dark:bg-slate-900/78">
 			{#if contextLabel}
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400">
+				<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500 dark:text-slate-400">
 					{contextLabel}
 				</p>
 			{/if}

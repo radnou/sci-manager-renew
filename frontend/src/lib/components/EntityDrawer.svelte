@@ -40,7 +40,7 @@
 			<div class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/96 px-6 py-5 backdrop-blur">
 				<div class="flex items-start justify-between gap-4">
 					<div class="min-w-0">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">
+						<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">
 							Action contextuelle
 						</p>
 						<h2 class="mt-2 text-2xl font-semibold text-slate-50">{title}</h2>

@@ -23,12 +23,21 @@
 | Navigation sidebar | ✅ OK (après fix BUG-001) | — |
 | Finances | ✅ OK | — |
 | Account / Settings | ✅ OK | — |
-| Fiche bien détail | ✅ OK (après fix BUG-008/015-019) | — |
-| Déconnexion | ✅ OK | — |
+| Fiche bien détail | ⚠️ Partiel | Mineur |
+| Déconnexion | 🔴 KO | Majeur |
 | Pages légales (CGU/CGV/etc.) | ✅ OK (après fix BUG-012) | — |
 | Landing sections (hero, features, FAQ) | ✅ OK | — |
+| Fiscalité | 🔴 KO | Majeur |
+| Documents SCI | 🔴 KO | Majeur |
+| Associés | ✅ OK | — |
+| Mot de passe oublié | ✅ OK | — |
+| Admin (non-admin) | ✅ OK (redirect dashboard) | — |
+| Notifications (popover) | ✅ OK | — |
+| Sidebar SCI expand | ✅ OK | — |
+| Page register (connecté) | ✅ OK (redirect dashboard) | — |
+| Breadcrumbs pages légales | ⚠️ Slug brut | Mineur |
 
-**Verdict global : ✅ FONCTIONNEL — 17/20 bugs corrigés. Restants : BUG-005 (sidebar /pricing), BUG-006 (onboarding notif no-op), BUG-020 (breadcrumb UUID fiche bien).**
+**Verdict global : ⚠️ PARTIELLEMENT FONCTIONNEL — 17/20 bugs précédents corrigés + 6 nouveaux bugs trouvés (BUG-021 à BUG-026). 3 majeurs, 3 mineurs.**
 
 ---
 
@@ -412,3 +421,139 @@ Après correction, vérifier :
 19. ✅ Landing page complète (hero, personas, features, pricing, FAQ, footer)
 20. ✅ Pages légales existent (mentions, CGU, CGV, confidentialité)
 21. ⚠️ Placeholders non remplis dans pages légales (BUG-012)
+
+---
+
+## 10. Validation QA complète — 2026-03-13
+
+**Testeur** : Claude Code (Chrome DevTools MCP)
+**Compte** : mossabelyradnoumane@gmail.com
+**Mode** : Dark mode
+
+### 10.1 Résumé des nouveaux bugs
+
+| Bug | Sévérité | Écran | Symptôme |
+|-----|----------|-------|----------|
+| BUG-021 | 🔴 Majeur | `/scis/[sciId]/fiscalite` | Affiche JSON brut d'erreur paywall au lieu d'un upgrade prompt UX |
+| BUG-022 | 🔴 Majeur | `/scis/[sciId]/documents` | "Failed to fetch" — page documents SCI cassée |
+| BUG-023 | 🔴 Majeur | Déconnexion (sidebar) | Clic "Déconnexion" → état mixte : header public mais sidebar + contenu restent authentifiés, pas de redirect `/login` |
+| BUG-024 | ⚠️ Mineur | Fiche bien — Identité | TYPE DE BIEN affiche "—" au lieu de "appartement" (valeur par défaut non propagée) |
+| BUG-025 | ⚠️ Mineur | Fiche bien — Header/Identité | LOYER affiche "N/A /mois" au lieu de loyer_cc calculé (875+75=950€). Statut "Vacant" alors qu'un bail en cours existe |
+| BUG-026 | ⚠️ Mineur | Pages légales + forgot-password | Breadcrumbs affichent le slug brut ("mentions-legales", "forgot-password") au lieu du label lisible |
+
+### 10.2 Détail des bugs
+
+#### BUG-021 — Fiscalité : JSON brut d'erreur paywall [MAJEUR]
+
+**Route** : `/scis/[sciId]/fiscalite`
+
+**Symptôme** : La page affiche un message JSON brut :
+```
+{"error":"Feature not available on your plan","code":"upgrade_required","current_plan":"free","required_plan":"pro"}
+```
+
+**Attendu** : Un composant UX type "Upgrade prompt" avec message clair et bouton vers `/pricing`.
+
+**Root cause probable** : Le frontend affiche directement le body de la réponse 403 sans traitement UX.
+
+---
+
+#### BUG-022 — Documents SCI : Failed to fetch [MAJEUR]
+
+**Route** : `/scis/[sciId]/documents`
+
+**Symptôme** : Message "Failed to fetch" affiché, aucun document listé.
+
+**Root cause probable** : Endpoint API `/api/v1/scis/{id}/documents` manquant ou erreur backend.
+
+---
+
+#### BUG-023 — Déconnexion : état mixte sans redirect [MAJEUR]
+
+**Route** : `/dashboard` après clic "Déconnexion"
+
+**Symptôme** : Après clic sur le bouton "Déconnexion" dans la sidebar :
+- Le header passe en mode public (Tarifs, Connexion, Inscription)
+- La sidebar reste en mode authentifié (Dashboard, SCI, Finances, etc.)
+- Le contenu principal reste affiché (dashboard KPIs)
+- L'URL reste `/dashboard`
+- Pas de redirection vers `/login`
+
+**Attendu** : Redirect immédiat vers `/login` avec nettoyage complet de l'état.
+
+**Root cause probable** : Le `signOut()` Supabase clear le token mais ne trigger pas de `goto('/login')`. Le layout `(app)` ne détecte pas la perte de session en temps réel.
+
+---
+
+#### BUG-024 — Fiche bien : TYPE DE BIEN manquant [MINEUR]
+
+**Route** : `/scis/[sciId]/biens/[bienId]`
+
+**Symptôme** : Champ "TYPE DE BIEN" affiche "—" au lieu de "appartement".
+
+**Root cause probable** : Le champ `type_locatif` n'est pas propagé depuis la DB ou le frontend ne map pas correctement la valeur par défaut.
+
+---
+
+#### BUG-025 — Fiche bien : LOYER N/A et statut Vacant incohérent [MINEUR]
+
+**Route** : `/scis/[sciId]/biens/[bienId]`
+
+**Symptôme** :
+1. Header affiche "Vacant" alors qu'un bail en cours existe (date_debut: 13 mars 2026, statut: En cours)
+2. Champ "LOYER" dans l'identité affiche "N/A /mois" alors que loyer_hc=875€ + charges=75€ = 950€ CC
+
+**Root cause probable** :
+- `loyer_cc` dans le response fiche bien est calculé côté backend et vaut 0 (non mis à jour quand bail créé)
+- Le statut "Vacant" vient de `bail_actif` qui n'est pas correctement lié
+
+---
+
+#### BUG-026 — Breadcrumbs : slugs bruts sur pages légales [MINEUR]
+
+**Routes** : `/mentions-legales`, `/forgot-password`, `/confidentialite`, `/cgu`, `/cgv`
+
+**Symptôme** : Le fil d'Ariane affiche le slug URL brut ("mentions-legales", "forgot-password") au lieu d'un label lisible ("Mentions légales", "Mot de passe oublié").
+
+**Root cause probable** : Le composant breadcrumb utilise le segment URL comme label par défaut, sans mapping vers un label humain pour les pages hors `(app)/`.
+
+---
+
+### 10.3 Écrans validés (✅ OK)
+
+| Écran | Détail |
+|-------|--------|
+| Landing page (hero, personas, features, pricing, FAQ) | Complet, dark mode OK |
+| Login | Formulaire email/password + magic link, validation erreurs OK |
+| Forgot password | Formulaire fonctionnel, lien retour login |
+| Register (connecté) | Redirect dashboard correcte |
+| Admin (non-admin) | Redirect dashboard silencieuse, pas d'erreur |
+| Dashboard | KPIs (1 SCI, 1 bien, 0% recouvrement, 0€ cashflow), carte SCI, activité récente |
+| Sidebar expansion SCI | Sous-menu : Vue d'ensemble, Biens, Associés, Fiscalité, Documents |
+| Notifications (popover) | S'ouvre, affiche "Aucune notification" |
+| SCI Vue d'ensemble | Nom SCI, statut, résumé |
+| Biens | Liste avec 1 bien, lien vers fiche |
+| Associés | "Compte principal / Gérant / 100%", bouton "Inviter un associé" |
+| Fiche bien (structure) | 7 sections : Identité, Bail, Loyers, Charges, Assurance PNO, Frais agence, Documents |
+| Fiche bien — Bail | Bail en cours affiché avec loyer_hc=875€, charges=75€, date_debut OK |
+| Fiche bien — Breadcrumb | Affiche "25 rue de la Validation" (BUG-020 RÉSOLU) |
+| Finances | Page accessible |
+| Account | Profil + privacy |
+| Settings | Paramètres accessibles |
+| Mentions légales | Contenu complet |
+| Dark mode | Toggle fonctionnel, rendu cohérent |
+| Cookie consent | Banner RGPD fonctionnel |
+
+### 10.4 Priorités de correction
+
+**P0 (Bloquant UX)** :
+1. BUG-023 — Déconnexion cassée (état mixte)
+2. BUG-021 — Fiscalité affiche JSON brut (impression "app cassée")
+
+**P1 (Fonctionnel)** :
+3. BUG-022 — Documents SCI "Failed to fetch"
+4. BUG-025 — Fiche bien loyer N/A + statut Vacant incohérent
+
+**P2 (Cosmétique)** :
+5. BUG-024 — Type de bien "—"
+6. BUG-026 — Breadcrumbs slugs bruts pages légales

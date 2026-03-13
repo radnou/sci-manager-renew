@@ -15,12 +15,8 @@ def test_export_biens_csv_requires_auth(client):
     assert response.status_code in (401, 403)
 
 
-def test_export_loyers_csv_returns_csv(client, auth_headers, fake_supabase, monkeypatch):
+def test_export_loyers_csv_returns_csv(client, auth_headers, fake_supabase):
     """Export loyers returns a valid CSV response with data."""
-    from app.api.v1 import export
-
-    monkeypatch.setattr(export, "create_client", lambda *a, **kw: fake_supabase)
-
     fake_supabase.store["loyers"] = [
         {
             "id": "loyer-1",
@@ -38,11 +34,8 @@ def test_export_loyers_csv_returns_csv(client, auth_headers, fake_supabase, monk
     assert "1200" in resp.text
 
 
-def test_export_loyers_csv_empty(client, auth_headers, fake_supabase, monkeypatch):
+def test_export_loyers_csv_empty(client, auth_headers, fake_supabase):
     """Export loyers for user with no SCIs returns header-only CSV."""
-    from app.api.v1 import export
-
-    monkeypatch.setattr(export, "create_client", lambda *a, **kw: fake_supabase)
     fake_supabase.store["associes"] = []
 
     resp = client.get("/api/v1/export/loyers/csv", headers=auth_headers)
@@ -50,28 +43,29 @@ def test_export_loyers_csv_empty(client, auth_headers, fake_supabase, monkeypatc
     assert "date_loyer" in resp.text
 
 
-def test_export_biens_csv_returns_csv(client, auth_headers, fake_supabase, monkeypatch):
+def test_export_biens_csv_returns_csv(client, auth_headers, fake_supabase):
     """Export biens returns a valid CSV response with data."""
-    from app.api.v1 import export
-
-    monkeypatch.setattr(export, "create_client", lambda *a, **kw: fake_supabase)
-
     fake_supabase.store["biens"] = [
         {
             "id": "bien-1",
             "id_sci": "sci-1",
-            "nom": "Appt Lyon",
             "adresse": "1 rue Seed",
-            "type_bien": "appartement",
-            "loyer_mensuel": 900,
+            "ville": "Lyon",
+            "code_postal": "69001",
+            "type_locatif": "appartement",
+            "loyer_cc": 900,
             "charges": 100,
+            "surface_m2": 45,
+            "nb_pieces": 2,
+            "dpe_classe": "C",
         },
     ]
 
     resp = client.get("/api/v1/export/biens/csv", headers=auth_headers)
     assert resp.status_code == 200
     assert "text/csv" in resp.headers.get("content-type", "")
-    assert "Appt Lyon" in resp.text
+    assert "1 rue Seed" in resp.text
+    assert "Lyon" in resp.text
 
 
 def test_get_user_sci_ids_returns_ids(fake_supabase):

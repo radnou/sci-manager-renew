@@ -181,10 +181,10 @@
 		<div
 			class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-12 dark:border-slate-700"
 		>
-			<FileText class="mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
-			<p class="text-sm text-slate-500 dark:text-slate-400">Aucun document pour ce bien.</p>
+			<FileText class="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+			<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucun document pour ce bien.</p>
 			{#if isGerant}
-				<p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+				<p class="mt-1.5 text-sm text-slate-400 dark:text-slate-500">
 					Cliquez sur "Ajouter" pour uploader un document.
 				</p>
 			{/if}
@@ -201,7 +201,7 @@
 								{doc.nom}
 							</p>
 							<span
-								class="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold {getCategorieBadge(doc.categorie)}"
+								class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold {getCategorieBadge(doc.categorie)}"
 							>
 								{getCategorieLabel(doc.categorie)}
 							</span>
@@ -215,7 +215,7 @@
 							href={doc.url}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+							class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
 						>
 							<Download class="h-3 w-3" />
 							Ouvrir
@@ -223,7 +223,7 @@
 						{#if isGerant}
 							<button
 								onclick={() => handleDelete(doc.id)}
-								class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
+								class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
 								title="Supprimer"
 							>
 								<Trash2 class="h-3 w-3" />

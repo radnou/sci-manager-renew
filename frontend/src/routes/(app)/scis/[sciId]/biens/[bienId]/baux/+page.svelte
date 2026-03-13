@@ -79,11 +79,7 @@
 	</header>
 
 	{#if loading}
-		<div class="mt-6 space-y-4">
-			{#each Array.from({ length: 3 }) as _}
-				<div class="h-32 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
-			{/each}
-		</div>
+		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if error}
 		<div class="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950/30">
 			<p class="text-sm text-rose-700 dark:text-rose-300">{error}</p>
@@ -101,7 +97,7 @@
 		</div>
 	{:else}
 		<!-- Timeline -->
-		<div class="mt-6 space-y-4">
+		<div class="sci-stagger mt-6 space-y-4">
 			{#each baux as bail, index (bail.id)}
 				{@const statut = getStatut(bail.statut)}
 				{@const isActive = bail.statut === 'en_cours'}
@@ -146,7 +142,7 @@
 						<!-- Right: montants -->
 						<div class="flex gap-4 text-right">
 							<div>
-								<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 									Loyer HC
 								</p>
 								<p class="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -154,7 +150,7 @@
 								</p>
 							</div>
 							<div>
-								<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 									Charges
 								</p>
 								<p class="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -162,7 +158,7 @@
 								</p>
 							</div>
 							<div>
-								<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 									Dépôt
 								</p>
 								<p class="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -175,7 +171,7 @@
 					<!-- Locataires -->
 					{#if bail.locataires && bail.locataires.length > 0}
 						<div class="mt-3 border-t border-slate-200 pt-3 dark:border-slate-800">
-							<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 								{bail.locataires.length > 1 ? 'Locataires (colocation)' : 'Locataire'}
 							</p>
 							<div class="mt-1.5 flex flex-wrap gap-2">

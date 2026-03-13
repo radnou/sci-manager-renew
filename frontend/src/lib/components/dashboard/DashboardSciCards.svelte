@@ -55,7 +55,7 @@
 						{sci.nom}
 					</h3>
 					<span
-						class="rounded-full px-2 py-0.5 text-[0.65rem] font-semibold {statutBadge[sci.statut] ?? statutBadge['configuration']}"
+						class="rounded-full px-2 py-0.5 text-xs font-semibold {statutBadge[sci.statut] ?? statutBadge['configuration']}"
 					>
 						{statutLabel[sci.statut] ?? sci.statut}
 					</span>
@@ -65,7 +65,7 @@
 					<div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
 						<span>{sci.biens_count} bien{sci.biens_count > 1 ? 's' : ''}</span>
 						<span class="font-medium text-slate-900 dark:text-slate-100">
-							{formatEur(sci.loyer_total)}/mois
+							{formatEur(sci.loyer_total)}
 						</span>
 					</div>
 

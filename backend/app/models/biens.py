@@ -41,8 +41,23 @@ class BienUpdate(BaseModel):
     photo_url: str | None = Field(default=None, max_length=500)
 
 
-class BienResponse(BienBase):
+class BienResponse(BaseModel):
+    """Response model — accepts any type_locatif stored in DB (legacy values like T3, studio, etc.)."""
     id: str
+    id_sci: str
+    adresse: str
+    ville: str
+    code_postal: str
+    type_locatif: str = "nu"
+    loyer_cc: float = 0
+    charges: float = 0
+    tmi: float = 0
+    acquisition_date: date | None = None
+    prix_acquisition: float | None = None
+    surface_m2: float | None = None
+    nb_pieces: int | None = None
+    dpe_classe: str | None = None
+    photo_url: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     rentabilite_brute: float = 0

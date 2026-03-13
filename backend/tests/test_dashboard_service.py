@@ -401,7 +401,7 @@ class TestGetRecentActivity:
         activity = await get_recent_activity(client, USER_ID)
         bien_items = [a for a in activity if a["type"] == "bien"]
         assert len(bien_items) >= 1
-        assert "Appart Paris 11" in bien_items[0]["description"]
+        assert "11 rue de la Paix" in bien_items[0]["description"]
 
     @pytest.mark.asyncio
     async def test_activity_sorted_by_created_at_desc(self):

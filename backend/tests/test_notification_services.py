@@ -131,7 +131,7 @@ class TestCreateNotificationWithEmail:
     async def test_in_app_disabled_by_preference(self):
         """When in_app_enabled=False, no notification row is inserted."""
         prefs = [
-            {"user_id": "user-123", "notification_type": "late_payment",
+            {"user_id": "user-123", "type": "late_payment",
              "in_app_enabled": False, "email_enabled": True}
         ]
         client = make_client(prefs)
@@ -153,7 +153,7 @@ class TestCreateNotificationWithEmail:
     async def test_email_disabled_by_preference(self):
         """When email_enabled=False, email is not sent but in-app is created."""
         prefs = [
-            {"user_id": "user-123", "notification_type": "late_payment",
+            {"user_id": "user-123", "type": "late_payment",
              "in_app_enabled": True, "email_enabled": False}
         ]
         client = make_client(prefs)
@@ -175,7 +175,7 @@ class TestCreateNotificationWithEmail:
     async def test_both_disabled_by_preference(self):
         """When both are disabled, nothing happens."""
         prefs = [
-            {"user_id": "user-123", "notification_type": "late_payment",
+            {"user_id": "user-123", "type": "late_payment",
              "in_app_enabled": False, "email_enabled": False}
         ]
         client = make_client(prefs)

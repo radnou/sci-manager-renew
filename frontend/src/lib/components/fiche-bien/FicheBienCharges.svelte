@@ -2,6 +2,7 @@
 	import type { AssurancePnoEmbed, FraisAgenceEmbed } from '$lib/api';
 	import { deleteChargeForBien, deletePnoForBien, deleteFraisForBien } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
+	import { mapChargeTypeLabel } from '$lib/high-value/presentation';
 	import { Plus, Trash2, Shield, Building2 } from 'lucide-svelte';
 	import ChargeModal from '$lib/components/fiche-bien/modals/ChargeModal.svelte';
 	import PnoModal from '$lib/components/fiche-bien/modals/PnoModal.svelte';
@@ -127,23 +128,23 @@
 					<thead>
 						<tr class="border-b border-slate-200 dark:border-slate-700">
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Libellé
 							</th>
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Montant
 							</th>
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Date
 							</th>
 							{#if isGerant}
 								<th
-									class="pb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									class="pb-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>
 									Actions
 								</th>
@@ -154,7 +155,7 @@
 						{#each charges as charge (charge.id ?? charge.date_paiement)}
 							<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
 								<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">
-									{charge.type_charge ?? charge.libelle ?? '—'}
+									{mapChargeTypeLabel(charge.type_charge) ?? charge.libelle ?? '—'}
 								</td>
 								<td class="py-3 pr-4 text-slate-700 dark:text-slate-300">
 									{formatEur(charge.montant)}
@@ -165,7 +166,7 @@
 								{#if isGerant}
 									<td class="py-3">
 										<button
-											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
+											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
 											title="Supprimer"
 											onclick={() => handleDeleteCharge(charge.id)}
 										>
@@ -203,13 +204,13 @@
 		{#if assurancePno}
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
-					<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Assureur</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">Assureur</p>
 					<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
 						{assurancePno.assureur}
 					</p>
 				</div>
 				<div>
-					<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
 						N° contrat
 					</p>
 					<p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
@@ -217,7 +218,7 @@
 					</p>
 				</div>
 				<div>
-					<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
 						Prime annuelle
 					</p>
 					<p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -225,7 +226,7 @@
 					</p>
 				</div>
 				<div>
-					<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Période</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">Période</p>
 					<p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
 						{formatFrDate(assurancePno.date_debut)}
 						{#if assurancePno.date_fin}
@@ -237,13 +238,13 @@
 			{#if isGerant}
 				<div class="mt-4 flex gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
 					<button
-						class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+						class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
 						onclick={() => { editPno = assurancePno; showPnoModal = true; }}
 					>
 						Modifier
 					</button>
 					<button
-						class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
+						class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
 						onclick={() => handleDeletePno()}
 					>
 						<Trash2 class="h-3 w-3" />
@@ -255,8 +256,8 @@
 			<div
 				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700"
 			>
-				<Shield class="mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
-				<p class="text-sm text-slate-500 dark:text-slate-400">
+				<Shield class="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">
 					Aucune assurance PNO renseignée.
 				</p>
 			</div>
@@ -285,8 +286,8 @@
 			<div
 				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700"
 			>
-				<Building2 class="mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
-				<p class="text-sm text-slate-500 dark:text-slate-400">Aucun frais d'agence enregistré.</p>
+				<Building2 class="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucun frais d'agence enregistré.</p>
 			</div>
 		{:else}
 			<div class="overflow-x-auto">
@@ -294,28 +295,28 @@
 					<thead>
 						<tr class="border-b border-slate-200 dark:border-slate-700">
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Type
 							</th>
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Montant
 							</th>
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Date
 							</th>
 							<th
-								class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
 								Description
 							</th>
 							{#if isGerant}
 								<th
-									class="pb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									class="pb-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>
 									Actions
 								</th>
@@ -340,7 +341,7 @@
 								{#if isGerant}
 									<td class="py-3">
 										<button
-											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
+											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
 											title="Supprimer"
 											onclick={() => handleDeleteFrais(frais.id)}
 										>

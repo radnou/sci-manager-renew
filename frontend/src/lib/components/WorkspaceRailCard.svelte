@@ -14,7 +14,7 @@
 
 <section class="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700 dark:bg-slate-900/88">
 	{#if title}
-		<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400">
+		<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500 dark:text-slate-400">
 			{title}
 		</p>
 	{/if}

@@ -4,8 +4,11 @@ import logging
 
 from fastapi import APIRouter, Depends, Query
 
+from app.core.entitlements import PlanKey, resolve_plan_key_from_price_id
 from app.core.security import get_current_admin
 from app.core.supabase_client import get_supabase_service_client as get_service_client
+
+ACTIVE_STATUSES = {"active", "trialing", "paid"}
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +27,13 @@ async def admin_stats(admin_id: str = Depends(get_current_admin)):
     users_count = client.table("associes").select("user_id", count="exact").execute()
     scis_count = client.table("sci").select("id", count="exact").execute()
     biens_count = client.table("biens").select("id", count="exact").execute()
-    subs = client.table("subscriptions").select("plan_key, is_active").execute()
+    subs = client.table("subscriptions").select("stripe_price_id, status").execute()
 
-    active_subs = [s for s in (subs.data or []) if s.get("is_active")]
+    active_subs = [s for s in (subs.data or []) if s.get("status") in ACTIVE_STATUSES]
     plan_breakdown = {}
     for s in active_subs:
-        key = s.get("plan_key", "unknown")
+        resolved = resolve_plan_key_from_price_id(s.get("stripe_price_id"))
+        key = resolved.value if resolved else "free"
         plan_breakdown[key] = plan_breakdown.get(key, 0) + 1
 
     return {
@@ -65,12 +69,15 @@ async def admin_list_users(
         email = u.email if hasattr(u, "email") else u.get("email", "")
         created = u.created_at if hasattr(u, "created_at") else u.get("created_at", "")
         sub = subs_by_user.get(user_id, {})
+        resolved = resolve_plan_key_from_price_id(sub.get("stripe_price_id"))
+        plan_key = resolved.value if resolved else "free"
+        is_active = sub.get("status", "") in ACTIVE_STATUSES
         result.append({
             "id": user_id,
             "email": email,
             "created_at": str(created),
-            "plan_key": sub.get("plan_key", "free"),
-            "is_active": sub.get("is_active", False),
+            "plan_key": plan_key,
+            "is_active": is_active,
             "stripe_customer_id": sub.get("stripe_customer_id"),
         })
 

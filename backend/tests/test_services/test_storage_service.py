@@ -61,10 +61,10 @@ class _FakeStorage:
             raise RuntimeError("list buckets failed")
         return self.buckets
 
-    def create_bucket(self, bucket_id, options):
+    def create_bucket(self, id=None, options=None, **kwargs):
         if self.fail_bucket_create:
             raise RuntimeError("create bucket failed")
-        self.created_bucket = (bucket_id, options)
+        self.created_bucket = (id, options)
 
 
 class _FakeClient:

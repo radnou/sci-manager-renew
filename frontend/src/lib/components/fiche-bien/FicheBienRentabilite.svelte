@@ -9,6 +9,13 @@
 
 	let { rentabilite }: Props = $props();
 
+	const isAllZero = $derived(
+		rentabilite.brute === 0 &&
+		rentabilite.nette === 0 &&
+		rentabilite.cashflow_mensuel === 0 &&
+		rentabilite.cashflow_annuel === 0
+	);
+
 	function cashflowColor(value: number): string {
 		if (value > 0) return 'text-emerald-600 dark:text-emerald-400';
 		if (value < 0) return 'text-rose-600 dark:text-rose-400';
@@ -28,10 +35,16 @@
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Rentabilité</h2>
 	</div>
 
+	{#if isAllZero}
+		<p class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+			Renseignez le prix d'acquisition et ajoutez un bail actif pour calculer la rentabilite.
+		</p>
+	{/if}
+
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 		<!-- Rentabilité brute -->
-		<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
+		<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
+			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
 				Rentabilité brute
 			</p>
 			<p class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -40,8 +53,8 @@
 		</div>
 
 		<!-- Rentabilité nette -->
-		<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
+		<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
+			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
 				Rentabilité nette
 			</p>
 			<p class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -50,8 +63,8 @@
 		</div>
 
 		<!-- Cashflow mensuel -->
-		<div class="rounded-xl border p-4 {cashflowBg(rentabilite.cashflow_mensuel)}">
-			<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
+		<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_mensuel)}">
+			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
 				Cashflow mensuel
 			</p>
 			<div class="mt-1 flex items-center gap-1.5">
@@ -67,8 +80,8 @@
 		</div>
 
 		<!-- Cashflow annuel -->
-		<div class="rounded-xl border p-4 {cashflowBg(rentabilite.cashflow_annuel)}">
-			<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
+		<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_annuel)}">
+			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
 				Cashflow annuel
 			</p>
 			<div class="mt-1 flex items-center gap-1.5">

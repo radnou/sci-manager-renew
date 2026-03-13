@@ -607,9 +607,14 @@ export function completeOnboarding() {
 // --- Dashboard V2 ---
 
 export type DashboardAlerte = {
-	type: 'loyer_retard' | 'bail_expirant' | 'quittance_pending';
+	type: string;
 	message: string;
-	severity: 'error' | 'warning' | 'info';
+	severity: string;
+	entity_id?: string;
+	entity_type?: string;
+	id_sci?: string;
+	montant?: number;
+	date?: string;
 	sci_nom?: string;
 	bien_adresse?: string;
 	link?: string;
@@ -620,6 +625,9 @@ export type DashboardKpis = {
 	biens_count: number;
 	taux_recouvrement: number;
 	cashflow_net: number;
+	loyers_total?: number;
+	loyers_payes?: number;
+	charges_total?: number;
 };
 
 export type SCICard = {
@@ -785,8 +793,8 @@ export type FicheBien = {
 	adresse: string;
 	ville: string;
 	code_postal: string;
-	type_bien: string;
-	loyer: number;
+	type_locatif: string;
+	loyer_cc: number;
 	charges: number;
 	surface_m2: number | null;
 	nb_pieces: number | null;

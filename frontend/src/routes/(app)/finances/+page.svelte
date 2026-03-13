@@ -100,14 +100,7 @@
 	</div>
 
 	{#if loading}
-		<div class="mt-6 space-y-4">
-			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{#each Array.from({ length: 6 }) as _}
-					<div class="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
-				{/each}
-			</div>
-			<div class="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
-		</div>
+		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if error}
 		<div
 			class="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950/30"
@@ -133,7 +126,7 @@
 		</div>
 	{:else if data}
 		<!-- KPI cards -->
-		<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="sci-stagger mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			<!-- Revenus total -->
 			<div
 				class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950"
@@ -295,22 +288,22 @@
 						<thead>
 							<tr class="border-b border-slate-200 dark:border-slate-700">
 								<th
-									class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>
 									SCI
 								</th>
 								<th
-									class="pb-3 pr-4 text-right text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									class="pb-3 pr-4 text-right text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>
 									Revenus
 								</th>
 								<th
-									class="pb-3 pr-4 text-right text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									class="pb-3 pr-4 text-right text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>
 									Charges
 								</th>
 								<th
-									class="pb-3 text-right text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+									class="pb-3 text-right text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>
 									Cashflow
 								</th>

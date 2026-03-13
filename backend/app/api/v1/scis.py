@@ -277,11 +277,20 @@ async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user
 
     created = rows[0]
 
+    # Fetch user email from Supabase Auth for a meaningful associé name
+    _associe_nom = "Gérant"
+    try:
+        _user_resp = client.auth.admin.get_user_by_id(user_id)
+        if _user_resp and getattr(_user_resp, "user", None):
+            _associe_nom = _user_resp.user.email or "Gérant"
+    except Exception:
+        pass
+
     associe_result = client.table("associes").insert(
         {
             "id_sci": created["id"],
             "user_id": user_id,
-            "nom": "Compte principal",
+            "nom": _associe_nom,
             "email": None,
             "part": 100,
             "role": "gerant",

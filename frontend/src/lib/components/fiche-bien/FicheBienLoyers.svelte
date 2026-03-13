@@ -147,20 +147,20 @@
 			<table class="w-full text-left text-sm">
 				<thead>
 					<tr class="border-b border-slate-200 dark:border-slate-700">
-						<th class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 							Mois
 						</th>
-						<th class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 							Montant
 						</th>
-						<th class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 							Statut
 						</th>
-						<th class="pb-3 pr-4 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 							Date paiement
 						</th>
 						{#if isGerant}
-							<th class="pb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							<th class="pb-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 								Actions
 							</th>
 						{/if}
@@ -178,7 +178,7 @@
 								{formatEur(loyer.montant)}
 							</td>
 							<td class="py-3 pr-4">
-								<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {statut.class}">
+								<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {statut.class}">
 									{statut.label}
 								</span>
 							</td>
@@ -191,7 +191,7 @@
 										{#if loyer.statut !== 'paye'}
 											<div class="relative">
 												<button
-													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
 													title="Marquer comme payé"
 													onclick={() => { payDateLoyerId = loyer.id; payDateOpen = true; }}
 												>
@@ -210,7 +210,7 @@
 										<button
 											onclick={() => handleGenerateQuittance(loyer)}
 											disabled={isGenerating}
-											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
 											title="Générer la quittance"
 										>
 											{#if isGenerating}

@@ -234,7 +234,7 @@ class TestGetFicheBien:
         fake_supabase.store.setdefault("biens", []).append(bien)
 
     def _seed_empty_tables(self, fake_supabase):
-        for tbl in ("baux", "loyers", "charges", "assurances_pno", "frais_agence", "documents"):
+        for tbl in ("baux", "loyers", "charges", "assurances_pno", "frais_agence", "documents_bien"):
             fake_supabase.store.setdefault(tbl, [])
 
     def test_requires_auth(self, client):
@@ -279,7 +279,7 @@ class TestGetFicheBien:
             }
         ]
         fake_supabase.store.setdefault("locataires", [])
-        for tbl in ("loyers", "charges", "assurances_pno", "frais_agence", "documents"):
+        for tbl in ("loyers", "charges", "assurances_pno", "frais_agence", "documents_bien"):
             fake_supabase.store.setdefault(tbl, [])
 
         response = client.get(f"{BASE}/{self.FICHE_BIEN_ID}", headers=auth_headers)
@@ -318,12 +318,12 @@ class TestGetFicheBien:
             {
                 "id": 1,
                 "id_bien": str(self.FICHE_BIEN_ID),
-                "assureur": "AXA",
-                "prime_annuelle": 360.0,
-                "date_debut": "2024-01-01",
+                "compagnie": "AXA",
+                "montant_annuel": 360.0,
+                "date_echeance": "2025-01-01",
             }
         ]
-        for tbl in ("baux", "loyers", "charges", "frais_agence", "documents"):
+        for tbl in ("baux", "loyers", "charges", "frais_agence", "documents_bien"):
             fake_supabase.store.setdefault(tbl, [])
 
         response = client.get(f"{BASE}/{self.FICHE_BIEN_ID}", headers=auth_headers)
@@ -694,10 +694,10 @@ class TestBailLocataires:
 class TestAssurancePno:
     PNO_URL = f"{BASE}/{BIEN_ID}/assurance-pno"
     PNO_PAYLOAD = {
-        "assureur": "AXA",
+        "compagnie": "AXA",
         "numero_contrat": "CTR-2024-001",
-        "prime_annuelle": 360.0,
-        "date_debut": "2024-01-01",
+        "montant_annuel": 360.0,
+        "date_echeance": "2025-01-01",
     }
 
     def test_list_pno_requires_auth(self, client):
@@ -719,8 +719,8 @@ class TestAssurancePno:
         response = client.post(self.PNO_URL, json=self.PNO_PAYLOAD, headers=auth_headers)
         assert response.status_code == 201
         data = response.json()
-        assert data["assureur"] == "AXA"
-        assert data["prime_annuelle"] == 360.0
+        assert data["compagnie"] == "AXA"
+        assert data["montant_annuel"] == 360.0
 
     def test_create_pno_as_associe_returns_403(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
@@ -736,18 +736,18 @@ class TestAssurancePno:
             {
                 "id": 3,
                 "id_bien": BIEN_ID,
-                "assureur": "AXA",
-                "prime_annuelle": 360.0,
-                "date_debut": "2024-01-01",
+                "compagnie": "AXA",
+                "montant_annuel": 360.0,
+                "date_echeance": "2025-01-01",
             }
         ]
         response = client.patch(
             f"{self.PNO_URL}/3",
-            json={"prime_annuelle": 420.0},
+            json={"montant_annuel": 420.0},
             headers=auth_headers,
         )
         assert response.status_code == 200
-        assert response.json()["prime_annuelle"] == 420.0
+        assert response.json()["montant_annuel"] == 420.0
 
     def test_delete_pno_as_gerant(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
@@ -756,9 +756,9 @@ class TestAssurancePno:
             {
                 "id": 3,
                 "id_bien": BIEN_ID,
-                "assureur": "AXA",
-                "prime_annuelle": 360.0,
-                "date_debut": "2024-01-01",
+                "compagnie": "AXA",
+                "montant_annuel": 360.0,
+                "date_echeance": "2025-01-01",
             }
         ]
         response = client.delete(f"{self.PNO_URL}/3", headers=auth_headers)
@@ -774,7 +774,7 @@ class TestAssurancePno:
         fake_supabase.store["assurances_pno"] = []
         response = client.patch(
             f"{self.PNO_URL}/9999",
-            json={"prime_annuelle": 420.0},
+            json={"montant_annuel": 420.0},
             headers=auth_headers,
         )
         assert response.status_code == 404
@@ -796,10 +796,9 @@ class TestAssurancePno:
 class TestFraisAgence:
     FRAIS_URL = f"{BASE}/{BIEN_ID}/frais-agence"
     FRAIS_PAYLOAD = {
-        "type_frais": "gestion_locative",
-        "montant": 85.0,
-        "date_frais": "2024-03-01",
-        "description": "Gestion mars 2024",
+        "nom_agence": "Foncia",
+        "type_frais": "fixe",
+        "montant_ou_pourcentage": 85.0,
     }
 
     def test_list_frais_requires_auth(self, client):
@@ -821,8 +820,8 @@ class TestFraisAgence:
         response = client.post(self.FRAIS_URL, json=self.FRAIS_PAYLOAD, headers=auth_headers)
         assert response.status_code == 201
         data = response.json()
-        assert data["type_frais"] == "gestion_locative"
-        assert data["montant"] == 85.0
+        assert data["type_frais"] == "fixe"
+        assert data["montant_ou_pourcentage"] == 85.0
 
     def test_create_frais_as_associe_returns_403(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
@@ -838,9 +837,9 @@ class TestFraisAgence:
             {
                 "id": 8,
                 "id_bien": BIEN_ID,
-                "type_frais": "gestion_locative",
-                "montant": 85.0,
-                "date_frais": "2024-03-01",
+                "nom_agence": "Foncia",
+                "type_frais": "fixe",
+                "montant_ou_pourcentage": 85.0,
             }
         ]
         response = client.delete(f"{self.FRAIS_URL}/8", headers=auth_headers)
@@ -877,14 +876,14 @@ class TestDocuments:
     DOCS_URL = f"{BASE}/{BIEN_ID}/documents"
 
     def _seed_document(self, fake_supabase, doc_id: int = 20):
-        fake_supabase.store["documents"] = [
+        fake_supabase.store["documents_bien"] = [
             {
                 "id": doc_id,
                 "id_bien": BIEN_ID,
                 "nom": "Bail signé",
                 "categorie": "bail",
                 "url": "https://storage.local/sci-1/bien-abc/doc.pdf",
-                "created_at": "2024-01-15T10:00:00",
+                "uploaded_at": "2024-01-15T10:00:00",
             }
         ]
 
@@ -923,7 +922,7 @@ class TestDocuments:
         assert response.status_code == 204
 
         # Verify document is removed from store
-        assert fake_supabase.store["documents"] == []
+        assert fake_supabase.store["documents_bien"] == []
 
     def test_delete_document_as_associe_returns_403(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
@@ -942,14 +941,14 @@ class TestDocuments:
         setup(fake_supabase)
         seed_bien(fake_supabase)
         # Seed docs: one for our bien, one for another
-        fake_supabase.store["documents"] = [
+        fake_supabase.store["documents_bien"] = [
             {
                 "id": 20,
                 "id_bien": BIEN_ID,
                 "nom": "Bail signé",
                 "categorie": "bail",
                 "url": "https://storage.local/doc1.pdf",
-                "created_at": "2024-01-15T10:00:00",
+                "uploaded_at": "2024-01-15T10:00:00",
             },
             {
                 "id": 21,
@@ -957,7 +956,7 @@ class TestDocuments:
                 "nom": "Autre doc",
                 "categorie": "autre",
                 "url": "https://storage.local/doc2.pdf",
-                "created_at": "2024-01-15T10:00:00",
+                "uploaded_at": "2024-01-15T10:00:00",
             },
         ]
         response = client.get(self.DOCS_URL, headers=auth_headers)
@@ -965,6 +964,62 @@ class TestDocuments:
         data = response.json()
         assert len(data) == 1
         assert data[0]["id"] == 20
+
+    # ── Security: ownership verification tests ──
+
+    def test_delete_nonexistent_document_returns_404(self, client, auth_headers, fake_supabase):
+        """Deleting a document ID that does not exist must return 404."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store["documents_bien"] = []
+        response = client.delete(f"{self.DOCS_URL}/999", headers=auth_headers)
+        assert response.status_code == 404
+
+    def test_delete_document_belonging_to_other_bien_returns_404(self, client, auth_headers, fake_supabase):
+        """IDOR prevention: a document that exists but belongs to a different bien
+        must not be deletable through a URL referencing another bien."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        # Seed a document that belongs to a *different* bien
+        fake_supabase.store["documents_bien"] = [
+            {
+                "id": 30,
+                "id_bien": "other-bien-id",
+                "nom": "Secret doc",
+                "categorie": "autre",
+                "url": "https://storage.local/storage/v1/object/public/documents/sci-x/bien-y/secret.pdf",
+                "uploaded_at": "2024-01-15T10:00:00",
+            }
+        ]
+        response = client.delete(f"{self.DOCS_URL}/30", headers=auth_headers)
+        assert response.status_code == 404
+        # Document must NOT have been deleted
+        assert len(fake_supabase.store["documents_bien"]) == 1
+
+    def test_delete_document_removes_storage_file(self, client, auth_headers, fake_supabase):
+        """Successful document deletion must also remove the file from storage."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        storage_path = f"sci-{SCI_UUID}/bien-{BIEN_ID}/abc123.pdf"
+        public_url = f"https://storage.local/storage/v1/object/public/documents/{storage_path}"
+        fake_supabase.store["documents_bien"] = [
+            {
+                "id": 40,
+                "id_bien": BIEN_ID,
+                "nom": "Bail signé",
+                "categorie": "bail",
+                "url": public_url,
+                "uploaded_at": "2024-01-15T10:00:00",
+            }
+        ]
+        response = client.delete(f"{self.DOCS_URL}/40", headers=auth_headers)
+        assert response.status_code == 204
+        # Verify the storage remove was called with the correct path
+        bucket = fake_supabase.storage.from_("documents")
+        assert len(bucket.removed) == 1
+        assert bucket.removed[0] == [storage_path]
+        # Verify DB record was removed
+        assert fake_supabase.store["documents_bien"] == []
 
 
 # ──────────────────────────────────────────────────────────────

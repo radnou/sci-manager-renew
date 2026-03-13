@@ -41,7 +41,7 @@
 			</div>
 		{:else}
 			<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Charges documentées</p>
+				<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Charges documentées</p>
 				<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 					{formatEur(totalRecordedCharges, 'N/A')}
 				</p>
@@ -73,7 +73,7 @@
 			</div>
 
 			<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-				<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Dernier exercice fiscal</p>
+				<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Dernier exercice fiscal</p>
 				{#if latestFiscalYear}
 					<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Exercice {latestFiscalYear.annee}</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">

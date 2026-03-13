@@ -16,7 +16,7 @@
 	class="rounded-[2rem] border border-slate-200 bg-white/92 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-950/88"
 	aria-live="polite"
 >
-	<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">{eyebrow}</p>
+	<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">{eyebrow}</p>
 	<h2 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
 	<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{description}</p>
 

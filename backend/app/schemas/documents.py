@@ -14,4 +14,4 @@ class DocumentBienResponse(BaseModel):
     nom: str
     categorie: str
     url: str
-    created_at: datetime
+    uploaded_at: datetime

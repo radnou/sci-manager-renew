@@ -207,9 +207,37 @@ class FakeAuth:
         self.admin = FakeAuthAdmin()
 
 
+class _FakeBucket:
+    """Minimal fake for ``client.storage.from_(<bucket>)``."""
+
+    def __init__(self):
+        self.removed: list[list[str]] = []
+        self.uploaded: list[tuple[str, bytes]] = []
+
+    def upload(self, path: str, content: bytes, **_kwargs):
+        self.uploaded.append((path, content))
+
+    def get_public_url(self, path: str) -> str:
+        return f"https://storage.local/storage/v1/object/public/documents/{path}"
+
+    def remove(self, paths: list[str]):
+        self.removed.append(paths)
+
+
+class _FakeStorageProxy:
+    """Minimal fake for ``client.storage``."""
+
+    def __init__(self):
+        self._buckets: dict[str, _FakeBucket] = {}
+
+    def from_(self, bucket_name: str) -> _FakeBucket:
+        return self._buckets.setdefault(bucket_name, _FakeBucket())
+
+
 class FakeSupabaseClient:
     def __init__(self):
         self.auth = FakeAuth()
+        self.storage = _FakeStorageProxy()
         self.store: dict[str, list[dict]] = {
             "sci": [
                 {

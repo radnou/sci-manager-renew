@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 import structlog
 from fastapi import APIRouter, Depends
 from app.core.supabase_client import get_supabase_service_client
@@ -48,7 +46,7 @@ async def get_notification_preferences(
 
     result = (
         client.table("notification_preferences")
-        .select("notification_type, email_enabled, in_app_enabled")
+        .select("type, email_enabled, in_app_enabled")
         .eq("user_id", user_id)
         .execute()
     )
@@ -58,8 +56,8 @@ async def get_notification_preferences(
 
     saved: dict[str, NotificationPreference] = {}
     for row in result.data or []:
-        saved[row["notification_type"]] = NotificationPreference(
-            type=row["notification_type"],
+        saved[row["type"]] = NotificationPreference(
+            type=row["type"],
             email_enabled=row["email_enabled"],
             in_app_enabled=row["in_app_enabled"],
         )
@@ -82,15 +80,13 @@ async def update_notification_preferences(
 ):
     """Bulk upsert notification preferences for the current user."""
     client = _get_client()
-    now = datetime.now(timezone.utc).isoformat()
 
     rows = [
         {
             "user_id": user_id,
-            "notification_type": pref.type,
+            "type": pref.type,
             "email_enabled": pref.email_enabled,
             "in_app_enabled": pref.in_app_enabled,
-            "updated_at": now,
         }
         for pref in body.preferences
         if pref.type in DEFAULT_NOTIFICATION_TYPES
@@ -99,7 +95,7 @@ async def update_notification_preferences(
     if rows:
         result = (
             client.table("notification_preferences")
-            .upsert(rows, on_conflict="user_id,notification_type")
+            .upsert(rows, on_conflict="user_id,type")
             .execute()
         )
 

@@ -21,7 +21,7 @@
 </script>
 
 <div class="sci-empty-state text-left">
-	<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400">
+	<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500 dark:text-slate-400">
 		{eyebrow}
 	</p>
 	<h2 class="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>

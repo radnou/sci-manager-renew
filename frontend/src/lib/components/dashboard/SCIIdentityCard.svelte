@@ -48,14 +48,14 @@
 		{:else}
 			<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Société</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Société</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						SIREN {activeSciProfile?.siren || 'À compléter'}
 					</p>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{statusLabel(activeSciProfile?.statut)}</p>
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Gouvernance</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Gouvernance</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						{activeSciProfile?.user_role ? mapAssociateRoleLabel(activeSciProfile.user_role) : 'Rôle à confirmer'}
 					</p>
@@ -64,7 +64,7 @@
 					</p>
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Patrimoine</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Patrimoine</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						{activeSciDetail?.biens_count ?? scopedBiens.length} bien(s)
 					</p>
@@ -73,7 +73,7 @@
 					</p>
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">Documentation</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Documentation</p>
 					<p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 						{activeSciDetail?.fiscalite?.length || 0} exercice(s)
 					</p>

@@ -39,11 +39,25 @@ def _query_in_sci_ids(client, table: str, select: str, sci_ids: list[str]):
     return result.data or []
 
 
+def _format_date_fr(iso_date: str) -> str:
+    """Convert ISO date (2025-07-01) to French format (1 juillet 2025)."""
+    MOIS_FR = [
+        "", "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+    ]
+    try:
+        d = date.fromisoformat(iso_date)
+        return f"{d.day} {MOIS_FR[d.month]} {d.year}"
+    except (ValueError, IndexError):
+        return iso_date
+
+
 async def get_alertes(client, user_id: str) -> list[dict]:
     """
     Return a list of alert objects for the user:
     - Loyers en retard (statut='en_retard' or no paiement_date and date > 5 days ago)
     - Baux expiring within 90 days
+    Enriched with sci_nom, bien_adresse and link for frontend display.
     """
     sci_ids = _get_user_sci_ids(client, user_id)
     if not sci_ids:
@@ -53,6 +67,17 @@ async def get_alertes(client, user_id: str) -> list[dict]:
     today = date.today()
     five_days_ago = (today - timedelta(days=5)).isoformat()
     ninety_days_from_now = (today + timedelta(days=90)).isoformat()
+
+    # --- Build lookup maps for SCI names and biens ---
+    sci_names: dict[str, str] = {}
+    for sci_id in sci_ids:
+        result = client.table("sci").select("id,nom").eq("id", sci_id).execute()
+        if not getattr(result, "error", None) and result.data:
+            for row in result.data:
+                sci_names[str(row["id"])] = row.get("nom") or row.get("name", "")
+
+    all_biens = _query_in_sci_ids(client, "biens", "id,id_sci,adresse", sci_ids)
+    biens_by_id: dict[str, dict] = {str(b["id"]): b for b in all_biens}
 
     # --- Loyers en retard ---
     loyers = _query_in_sci_ids(client, "loyers", "*", sci_ids)
@@ -70,15 +95,23 @@ async def get_alertes(client, user_id: str) -> list[dict]:
         )
 
         if is_late or is_overdue:
+            sci_id = str(loyer.get("id_sci", ""))
+            bien_id = str(loyer.get("id_bien", ""))
+            bien = biens_by_id.get(bien_id, {})
+            date_label = _format_date_fr(date_loyer) if date_loyer else date_loyer
+
             alertes.append({
                 "type": "loyer_en_retard",
                 "severity": "high",
-                "message": f"Loyer impayé du {date_loyer}",
+                "message": f"Loyer impayé — {date_label}",
                 "entity_id": loyer.get("id"),
                 "entity_type": "loyer",
-                "id_sci": loyer.get("id_sci"),
+                "id_sci": sci_id,
                 "montant": loyer.get("montant"),
                 "date": date_loyer,
+                "sci_nom": sci_names.get(sci_id, ""),
+                "bien_adresse": bien.get("adresse", ""),
+                "link": f"/scis/{sci_id}/biens/{bien_id}" if bien_id else None,
             })
 
     # --- Baux expirant bientôt ---
@@ -88,14 +121,17 @@ async def get_alertes(client, user_id: str) -> list[dict]:
             date_fin = loc.get("date_fin_bail") or loc.get("date_fin")
             statut = loc.get("statut", "en_cours")
             if date_fin and statut == "en_cours" and date_fin <= ninety_days_from_now:
+                sci_id = str(loc.get("id_sci", ""))
+                date_label = _format_date_fr(date_fin) if date_fin else date_fin
                 alertes.append({
                     "type": "bail_expire_bientot",
                     "severity": "medium",
-                    "message": f"Bail expire le {date_fin}",
+                    "message": f"Bail expire le {date_label}",
                     "entity_id": loc.get("id"),
                     "entity_type": "locataire",
-                    "id_sci": loc.get("id_sci"),
+                    "id_sci": sci_id,
                     "date": date_fin,
+                    "sci_nom": sci_names.get(sci_id, ""),
                 })
     except Exception:
         # locataires table may not have id_sci; skip gracefully
@@ -236,7 +272,7 @@ async def get_recent_activity(client, user_id: str, limit: int = 10) -> list[dic
                 "type": "loyer",
                 "id": l.get("id"),
                 "id_sci": l.get("id_sci"),
-                "description": f"Loyer de {l.get('montant', 0)}€ — {l.get('statut', 'en_attente')}",
+                "description": f"Loyer de {float(l.get('montant') or 0):,.0f} € — {l.get('statut', 'en_attente')}".replace(",", " "),
                 "date": l.get("date_loyer"),
                 "created_at": l.get("created_at", ""),
             })
@@ -245,9 +281,9 @@ async def get_recent_activity(client, user_id: str, limit: int = 10) -> list[dic
 
     # Recent biens
     try:
-        biens = _query_in_sci_ids(client, "biens", "id,id_sci,nom,adresse,created_at", sci_ids)
+        biens = _query_in_sci_ids(client, "biens", "id,id_sci,adresse,created_at", sci_ids)
         for b in biens:
-            nom = b.get("nom") or b.get("adresse") or "Bien"
+            nom = b.get("adresse") or "Bien"
             activities.append({
                 "type": "bien",
                 "id": b.get("id"),

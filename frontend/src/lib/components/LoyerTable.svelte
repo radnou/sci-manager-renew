@@ -42,7 +42,7 @@
 			<CardTitle class="text-lg">{title}</CardTitle>
 			<CardDescription>{description}</CardDescription>
 		</div>
-		<p class="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+		<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 			{loyers.length} enregistrements
 		</p>
 	</CardHeader>

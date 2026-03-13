@@ -83,10 +83,12 @@ async def export_biens_csv(user_id: str = Depends(get_current_user)):
     client = _get_client()
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
+    headers_row = ["adresse", "ville", "code_postal", "type_locatif", "loyer_cc", "charges", "surface_m2", "nb_pieces", "dpe_classe", "id_sci"]
+
     if not user_sci_ids:
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["nom", "adresse", "type_bien", "loyer_mensuel", "charges", "id_sci"])
+        writer.writerow(headers_row)
         output.seek(0)
         return StreamingResponse(
             iter([output.getvalue()]),
@@ -96,9 +98,9 @@ async def export_biens_csv(user_id: str = Depends(get_current_user)):
 
     result = (
         client.table("biens")
-        .select("nom, adresse, type_bien, loyer_mensuel, charges, id_sci")
+        .select(", ".join(headers_row))
         .in_("id_sci", user_sci_ids)
-        .order("nom")
+        .order("adresse")
         .execute()
     )
 
@@ -107,17 +109,10 @@ async def export_biens_csv(user_id: str = Depends(get_current_user)):
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["nom", "adresse", "type_bien", "loyer_mensuel", "charges", "id_sci"])
+    writer.writerow(headers_row)
 
     for row in result.data or []:
-        writer.writerow([
-            row.get("nom", ""),
-            row.get("adresse", ""),
-            row.get("type_bien", ""),
-            row.get("loyer_mensuel", ""),
-            row.get("charges", ""),
-            row.get("id_sci", ""),
-        ])
+        writer.writerow([row.get(col, "") for col in headers_row])
 
     output.seek(0)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")

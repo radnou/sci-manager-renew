@@ -291,8 +291,8 @@ async def get_fiche_bien(
         adresse=bien.get("adresse", ""),
         ville=bien.get("ville", ""),
         code_postal=bien.get("code_postal", ""),
-        type_bien=bien.get("type_locatif", "appartement"),
-        loyer=loyer_mensuel,
+        type_locatif=bien.get("type_locatif", "appartement"),
+        loyer_cc=loyer_mensuel,
         charges=charges_mensuelles,
         surface_m2=bien.get("surface_m2"),
         nb_pieces=bien.get("nb_pieces"),
@@ -1046,7 +1046,7 @@ async def list_bien_documents(
         client.table("documents_bien")
         .select("*")
         .eq("id_bien", bien_id)
-        .order("created_at", desc=True)
+        .order("uploaded_at", desc=True)
         .execute()
     )
     if getattr(result, "error", None):
@@ -1128,15 +1128,57 @@ async def delete_document(
     doc_id: int,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
-    """Supprime un document (gérant uniquement)."""
-    logger.info("deleting_document", doc_id=doc_id, bien_id=bien_id)
+    """Supprime un document (gérant uniquement).
+
+    Security: verifies the document belongs to the bien which belongs to the
+    SCI the authenticated user is gérant of before allowing deletion.
+    """
+    logger.info("deleting_document", doc_id=doc_id, bien_id=bien_id, sci_id=str(sci_id))
 
     client = _get_client()
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
+    # --- Ownership check: confirm the document exists and belongs to this bien ---
+    doc_result = (
+        client.table("documents_bien")
+        .select("id, id_bien, url")
+        .eq("id", doc_id)
+        .execute()
+    )
+    if getattr(doc_result, "error", None):
+        raise DatabaseError(str(doc_result.error))
+
+    doc_rows = doc_result.data or []
+    if not doc_rows:
+        raise ResourceNotFoundError("Document", str(doc_id))
+
+    doc = doc_rows[0]
+    if str(doc.get("id_bien", "")) != bien_id:
+        # Document exists but does not belong to this bien — treat as not found
+        # to avoid leaking document existence to unauthorized users.
+        raise ResourceNotFoundError("Document", str(doc_id))
+
+    # --- Delete the file from Supabase Storage ---
+    doc_url = doc.get("url", "")
+    if doc_url:
+        # Extract storage path from public URL.
+        # Public URLs have the pattern: .../storage/v1/object/public/documents/<path>
+        _STORAGE_PREFIX = "/storage/v1/object/public/documents/"
+        idx = doc_url.find(_STORAGE_PREFIX)
+        if idx != -1:
+            storage_path = doc_url[idx + len(_STORAGE_PREFIX):]
+            try:
+                client.storage.from_("documents").remove([storage_path])
+                logger.info("storage_file_deleted", path=storage_path)
+            except Exception as exc:
+                # Log but do not block the DB record deletion — the file may
+                # already have been removed or the path may be stale.
+                logger.warning("storage_file_delete_failed", path=storage_path, error=str(exc))
+
+    # --- Delete the database record ---
     result = client.table("documents_bien").delete().eq("id", doc_id).eq("id_bien", bien_id).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
-    logger.info("document_deleted", doc_id=doc_id)
+    logger.info("document_deleted", doc_id=doc_id, bien_id=bien_id, sci_id=str(sci_id))
     return Response(status_code=status.HTTP_204_NO_CONTENT)

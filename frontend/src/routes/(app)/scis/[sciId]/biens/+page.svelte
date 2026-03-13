@@ -61,11 +61,7 @@
 	</header>
 
 	{#if loading}
-		<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each Array.from({ length: 3 }) as _}
-				<div class="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900"></div>
-			{/each}
-		</div>
+		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if error}
 		<div class="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950/30">
 			<p class="text-sm text-rose-700 dark:text-rose-300">{error}</p>
@@ -89,7 +85,7 @@
 			</p>
 		</div>
 	{:else}
-		<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="sci-stagger mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each biens as bien (bien.id)}
 				{@const statut = bien.statut ?? 'vacant'}
 				{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
@@ -101,7 +97,7 @@
 						<h3 class="font-semibold text-slate-900 group-hover:text-sky-600 dark:text-slate-100 dark:group-hover:text-sky-400">
 							{bien.adresse}
 						</h3>
-						<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[0.65rem] font-medium {badgeClass}">
+						<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {badgeClass}">
 							{statut}
 						</span>
 					</div>
@@ -109,14 +105,14 @@
 						{bien.ville ?? ''} {bien.code_postal ?? ''}
 					</p>
 					<div class="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-						{#if bien.type_bien ?? bien.type_locatif}
+						{#if bien.type_locatif}
 							<span class="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
-								{bien.type_bien ?? bien.type_locatif}
+								{bien.type_locatif}
 							</span>
 						{/if}
-						{#if bien.loyer ?? bien.loyer_cc}
+						{#if bien.loyer_cc}
 							<span class="font-medium text-slate-700 dark:text-slate-300">
-								{formatEur(bien.loyer ?? bien.loyer_cc)}/mois
+								{formatEur(bien.loyer_cc)}/mois
 							</span>
 						{/if}
 					</div>

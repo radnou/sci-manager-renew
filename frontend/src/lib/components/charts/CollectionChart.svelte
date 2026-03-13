@@ -36,7 +36,7 @@
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-	<p class="mb-3 text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+	<p class="mb-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 		Taux de recouvrement (6 derniers mois)
 	</p>
 

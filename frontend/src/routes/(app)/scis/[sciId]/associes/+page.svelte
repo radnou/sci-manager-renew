@@ -2,9 +2,10 @@
 	import { page } from '$app/state';
 	import { getContext } from 'svelte';
 	import type { SCIDetail, Associe } from '$lib/api';
-	import { fetchSciAssociesList } from '$lib/api';
+	import { fetchSciAssociesList, deleteAssocie } from '$lib/api';
+	import { addToast } from '$lib/components/ui/toast';
 	import RoleGate from '$lib/components/RoleGate.svelte';
-	import { UserPlus } from 'lucide-svelte';
+	import { UserPlus, Trash2, Loader2 } from 'lucide-svelte';
 	import AssocieModal from '$lib/components/fiche-bien/modals/AssocieModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
@@ -17,6 +18,7 @@
 	let associes: Associe[] = $state([]);
 	let loading = $state(true);
 	let error: string | null = $state(null);
+	let deletingId: string | null = $state(null);
 
 	$effect(() => {
 		if (sciId) {
@@ -52,6 +54,20 @@
 		if (!role) return roleBadge['associe'];
 		return roleBadge[role] ?? roleBadge['associe'];
 	}
+
+	async function handleDeleteAssocie(associe: Associe) {
+		if (!confirm(`Supprimer l'associé ${associe.nom} ?`)) return;
+		deletingId = String(associe.id);
+		try {
+			await deleteAssocie(associe.id);
+			addToast({ title: 'Associé supprimé', description: `${associe.nom} a été retiré.`, variant: 'success' });
+			await loadAssocies();
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? "Impossible de supprimer l'associé.", variant: 'error' });
+		} finally {
+			deletingId = null;
+		}
+	}
 </script>
 
 <svelte:head><title>Associés | {sci.nom} | GererSCI</title></svelte:head>
@@ -74,13 +90,7 @@
 	</header>
 
 	{#if loading}
-		<div class="space-y-3">
-			{#each Array.from({ length: 3 }) as _}
-				<div
-					class="h-16 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-900"
-				></div>
-			{/each}
-		</div>
+		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if error}
 		<div
 			class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950/30"
@@ -94,7 +104,7 @@
 			</button>
 		</div>
 	{:else if associes.length > 0}
-		<div class="space-y-3">
+		<div class="sci-stagger space-y-3">
 			{#each associes as associe (String(associe.id))}
 				<div
 					class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
@@ -121,6 +131,20 @@
 							>
 								{associe.part ?? 0}%
 							</span>
+							{#if isGerant}
+								<button
+									onclick={() => handleDeleteAssocie(associe)}
+									disabled={deletingId === String(associe.id)}
+									class="ml-1 text-slate-400 transition-colors hover:text-rose-600 disabled:opacity-50 dark:hover:text-rose-400"
+									title="Supprimer cet associé"
+								>
+									{#if deletingId === String(associe.id)}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										<Trash2 class="h-4 w-4" />
+									{/if}
+								</button>
+							{/if}
 						</div>
 					</div>
 				</div>

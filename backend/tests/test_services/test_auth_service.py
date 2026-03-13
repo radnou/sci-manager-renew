@@ -3,9 +3,25 @@ import pytest
 from app.services.auth_service import MagicLinkService
 
 
+class _FakeAdminLinkResult:
+    def __init__(self, email):
+        self.properties = type("Props", (), {"action_link": f"https://example.com/auth?token=abc&email={email}"})()
+
+
+class _FakeAdmin:
+    """Mimics client.auth.admin with generate_link()."""
+
+    def generate_link(self, payload):
+        email = payload.get("email", "")
+        if email == "error@example.com":
+            raise RuntimeError("otp failed")
+        return _FakeAdminLinkResult(email)
+
+
 class _FakeAuthClient:
     def __init__(self):
         self.auth = self
+        self.admin = _FakeAdmin()
 
     def sign_in_with_otp(self, payload):
         if payload.get("email") == "error@example.com":
@@ -31,6 +47,10 @@ class _FakeAuthClient:
 @pytest.fixture
 def service(monkeypatch):
     monkeypatch.setattr("app.services.auth_service.create_client", lambda *_args, **_kwargs: _FakeAuthClient())
+    # Mock email_service.send_magic_link so it doesn't actually send emails
+    async def _noop_send(email, link):
+        pass
+    monkeypatch.setattr("app.services.auth_service.email_service.send_magic_link", _noop_send)
     return MagicLinkService()
 
 
@@ -38,7 +58,7 @@ def service(monkeypatch):
 async def test_send_magic_link_success(service):
     response = await service.send_magic_link("user@example.com")
     assert response["success"] is True
-    assert response["data"] == {"otp": "sent"}
+    assert response["message"] == "Magic link sent to email"
 
 
 @pytest.mark.asyncio

@@ -329,7 +329,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Email
 						</p>
@@ -341,7 +341,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Compte cree le
 						</p>
@@ -353,7 +353,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Derniere connexion
 						</p>
@@ -365,7 +365,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Nombre de SCI
 						</p>
@@ -377,7 +377,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Nombre de biens
 						</p>
@@ -389,7 +389,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Nombre de loyers
 						</p>
@@ -401,7 +401,7 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
 					>
 						<p
-							class="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500"
+							class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500"
 						>
 							Nombre d'associes
 						</p>

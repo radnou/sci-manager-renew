@@ -29,8 +29,15 @@
 		register: 'Inscription',
 		privacy: 'Confidentialité',
 		account: 'Compte',
-		settings: 'Paramètres'
+		settings: 'Paramètres',
+		'mentions-legales': 'Mentions légales',
+		'forgot-password': 'Mot de passe oublié',
+		confidentialite: 'Confidentialité',
+		cgu: 'CGU',
+		cgv: 'CGV'
 	};
+
+	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 	function buildBreadcrumbs(pathname: string, names: Record<string, string>): Crumb[] {
 		const segments = pathname.split('/').filter(Boolean);
@@ -39,10 +46,11 @@
 
 		for (const segment of segments) {
 			currentPath = `${currentPath}/${segment}`;
-			crumbs.push({
-				label: names[segment] ?? labelMap[segment] ?? segment,
-				href: currentPath
-			});
+			let label = names[segment] ?? labelMap[segment];
+			if (!label) {
+				label = UUID_RE.test(segment) ? '\u2026' : segment;
+			}
+			crumbs.push({ label, href: currentPath });
 		}
 
 		return crumbs;

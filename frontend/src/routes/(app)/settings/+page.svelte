@@ -55,33 +55,35 @@
 	);
 	let densityLabel = $derived(preferences.density === 'compact' ? 'Compacte' : 'Confortable');
 
-	onMount(async () => {
+	onMount(() => {
 		preferences = readApplicationPreferences();
 
-		const [subResult, notifResult] = await Promise.allSettled([
-			fetchSubscriptionEntitlements(),
-			fetchNotificationPreferences()
-		]);
+		Promise.allSettled([fetchSubscriptionEntitlements(), fetchNotificationPreferences()])
+			.then(([subResult, notifResult]) => {
+				if (subResult.status === 'fulfilled') {
+					subscription = subResult.value;
+				} else {
+					subscriptionError = formatApiErrorMessage(
+						subResult.reason,
+						"Impossible de charger l'offre active."
+					);
+				}
 
-		if (subResult.status === 'fulfilled') {
-			subscription = subResult.value;
-		} else {
-			subscriptionError = formatApiErrorMessage(
-				subResult.reason,
-				"Impossible de charger l'offre active."
-			);
-		}
-
-		if (notifResult.status === 'fulfilled') {
-			notifPreferences = notifResult.value.preferences;
-		} else {
-			notifError = formatApiErrorMessage(
-				notifResult.reason,
-				'Impossible de charger les preferences de notification.'
-			);
-		}
-
-		notifLoading = false;
+				if (notifResult.status === 'fulfilled') {
+					notifPreferences = notifResult.value.preferences;
+				} else {
+					notifError = formatApiErrorMessage(
+						notifResult.reason,
+						'Impossible de charger les preferences de notification.'
+					);
+				}
+			})
+			.catch(() => {
+				notifError = 'Impossible de charger les preferences de notification.';
+			})
+			.finally(() => {
+				notifLoading = false;
+			});
 	});
 
 	function handleSave() {
@@ -347,12 +349,12 @@
 			</CardHeader>
 			<CardContent class="grid gap-3 pt-0">
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Point d'entree</p>
+					<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Point d'entree</p>
 					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{landingRouteLabel}</p>
 					<p class="mt-1 text-slate-500 dark:text-slate-400">La premiere page ouverte apres connexion sur ce navigateur.</p>
 				</div>
 				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Densite d'affichage</p>
+					<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Densite d'affichage</p>
 					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{densityLabel}</p>
 					<p class="mt-1 text-slate-500 dark:text-slate-400">
 						{preferences.density === 'compact'
@@ -376,7 +378,7 @@
 				</div>
 				{#if !notifLoading && notifPreferences.length > 0}
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Notifications</p>
+						<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Notifications</p>
 						<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
 							{notifPreferences.filter((p) => p.email_enabled).length}/{notifPreferences.length} email
 							-
@@ -387,7 +389,7 @@
 				{/if}
 				{#if subscription}
 					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-slate-500">Capacite active</p>
+						<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Capacite active</p>
 						<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
 						<p class="mt-1 text-slate-500 dark:text-slate-400">
 							{subscription.max_scis == null ? 'SCI illimitees' : `${subscription.remaining_scis ?? 0} SCI restantes`}

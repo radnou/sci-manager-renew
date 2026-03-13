@@ -29,10 +29,13 @@
 		}).format(value / 100);
 	}
 
+	const noLoyers = $derived(kpis.taux_recouvrement === 0 && kpis.cashflow_net === 0 && kpis.biens_count > 0);
+
 	const cards = $derived([
 		{
 			label: 'SCI actives',
 			value: String(kpis.sci_count),
+			hint: kpis.sci_count === 0 ? 'Créez votre première SCI' : '',
 			icon: Landmark,
 			iconColor: 'text-indigo-500 dark:text-indigo-400',
 			bgIcon: 'bg-indigo-50 dark:bg-indigo-950/40'
@@ -40,13 +43,15 @@
 		{
 			label: 'Biens',
 			value: String(kpis.biens_count),
+			hint: kpis.biens_count === 0 && kpis.sci_count > 0 ? 'Ajoutez un bien à une SCI' : '',
 			icon: Building2,
 			iconColor: 'text-sky-500 dark:text-sky-400',
 			bgIcon: 'bg-sky-50 dark:bg-sky-950/40'
 		},
 		{
 			label: 'Recouvrement',
-			value: formatPercent(kpis.taux_recouvrement),
+			value: noLoyers ? '—' : formatPercent(kpis.taux_recouvrement),
+			hint: noLoyers ? 'Enregistrez un loyer pour activer' : '',
 			icon: TrendingUp,
 			iconColor:
 				kpis.taux_recouvrement >= 80
@@ -59,7 +64,8 @@
 		},
 		{
 			label: 'Cashflow net',
-			value: formatEur(kpis.cashflow_net),
+			value: noLoyers ? '—' : formatEur(kpis.cashflow_net),
+			hint: noLoyers ? 'Enregistrez un loyer pour activer' : '',
 			icon: Wallet,
 			iconColor:
 				kpis.cashflow_net >= 0
@@ -94,6 +100,9 @@
 					<div class="min-w-0">
 						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
 						<p class="text-xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
+						{#if card.hint}
+							<p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{card.hint}</p>
+						{/if}
 					</div>
 				</div>
 			</div>
