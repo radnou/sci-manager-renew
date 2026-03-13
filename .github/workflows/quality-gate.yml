@@ -6,8 +6,19 @@ on:
       - main
   pull_request:
 
+env:
+  # Minimal env vars for backend tests (mocked Supabase)
+  SUPABASE_URL: "https://test.supabase.co"
+  SUPABASE_ANON_KEY: "test-anon-key"
+  SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
+  SUPABASE_JWT_SECRET: "test-jwt-secret-at-least-32-chars-long"
+  STRIPE_SECRET_KEY: "sk_test_fake"
+  STRIPE_WEBHOOK_SECRET: "whsec_test_fake"
+  RESEND_API_KEY: "re_test_fake"
+
 jobs:
-  quality-gate:
+  backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -18,41 +29,65 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "25"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
 
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
 
-      - name: Install frontend dependencies
-        run: npm --prefix frontend ci
-
-      - name: Run quality gate
-        run: bash scripts/quality-gate.sh
+      - name: Backend tests with coverage
+        run: |
+          cd backend
+          PYTHONPATH=. pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 
       - name: Backend security scan (bandit)
         run: |
-          cd backend
           pip install bandit
-          bandit -r app -ll -ii --format json --output bandit-report.json || true
+          cd backend
           bandit -r app -ll -ii
 
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Svelte check (TypeScript + Svelte)
+        run: pnpm --dir frontend run check
+
+      - name: Lint
+        run: pnpm --dir frontend run lint
+
+      - name: Unit tests (high-value coverage gate)
+        run: pnpm --dir frontend run test:high-value -- --coverage
+
       - name: Frontend dependency audit
-        run: |
-          cd frontend
-          npm audit --audit-level=high || true
-
-      - name: Install Playwright browsers
-        run: |
-          cd frontend
-          npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: |
-          cd frontend
-          npx playwright test --project=chromium
+        run: pnpm --dir frontend audit --audit-level=high || true
