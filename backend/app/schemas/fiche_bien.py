@@ -11,7 +11,7 @@ class BailEmbed(BaseModel):
     date_debut: date
     date_fin: Optional[date] = None
     loyer_hc: float
-    charges_provisions: float = 0
+    charges_locatives: float = 0
     depot_garantie: float = 0
     statut: str = "en_cours"
     locataires: list[dict] = []
@@ -19,27 +19,27 @@ class BailEmbed(BaseModel):
 
 class AssurancePnoEmbed(BaseModel):
     id: str | int
-    assureur: str
+    compagnie: str
     numero_contrat: Optional[str] = None
-    prime_annuelle: float = 0
-    date_debut: date
-    date_fin: Optional[date] = None
+    montant_annuel: float = 0
+    date_echeance: date
 
 
 class FraisAgenceEmbed(BaseModel):
     id: str | int
+    nom_agence: str
+    contact: Optional[str] = None
     type_frais: str
-    montant: float
-    date_frais: date
-    description: Optional[str] = None
+    montant_ou_pourcentage: float
 
 
 class DocumentBienEmbed(BaseModel):
     id: str | int
     nom: str
     categorie: str = "autre"
-    url: str
-    created_at: datetime
+    file_url: str
+    file_size: Optional[int] = None
+    uploaded_at: datetime
 
 
 class RentabiliteCalculee(BaseModel):
@@ -55,15 +55,14 @@ class FicheBienResponse(BaseModel):
     adresse: str
     ville: str
     code_postal: str
-    type_bien: str = "appartement"
-    loyer: float = 0
+    type_locatif: str = "appartement"
+    loyer_cc: float = 0
     charges: float = 0
     surface_m2: Optional[float] = None
     nb_pieces: Optional[int] = None
     dpe_classe: Optional[str] = None
     photo_url: Optional[str] = None
     prix_acquisition: Optional[float] = None
-    statut: Optional[str] = None
     bail_actif: Optional[BailEmbed] = None
     loyers_recents: list[dict] = []
     charges_list: list[dict] = []

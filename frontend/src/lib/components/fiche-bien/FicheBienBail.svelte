@@ -164,10 +164,10 @@
 					<p
 						class="text-[0.68rem] font-semibold tracking-[0.18em] text-slate-500 uppercase"
 					>
-						Provisions charges
+						Charges locatives
 					</p>
 					<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-						{formatEur(bail.charges_provisions)}
+						{formatEur(bail.charges_locatives)}
 					</p>
 				</div>
 				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">

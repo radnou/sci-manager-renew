@@ -63,7 +63,7 @@ export function buildOperatorOnboardingSteps(
 			description:
 				metrics.bienCount > 0
 					? `${metrics.bienCount} bien(s) documenté(s) avec adresse, loyer, charges et fiscalité locative.`
-					: 'Rattache ensuite un actif complet à la SCI active pour ouvrir l’exploitation locative.',
+					: "Rattache ensuite un actif complet à la SCI active pour ouvrir l\u2019exploitation locative.",
 			href: '/biens',
 			actionLabel: metrics.bienCount > 0 ? 'Voir les biens' : 'Ajouter mon premier bien',
 			done: metrics.bienCount > 0,
@@ -78,7 +78,7 @@ export function buildOperatorOnboardingSteps(
 			description:
 				metrics.locataireCount > 0
 					? `${metrics.locataireCount} locataire(s) rattaché(s) à un bien avec période d’occupation.`
-					: 'Ajoute ensuite l’occupant principal du bien avant de saisir les flux de loyer.',
+					: "Ajoute ensuite l\u2019occupant principal du bien avant de saisir les flux de loyer.",
 			href: '/locataires',
 			actionLabel:
 				metrics.locataireCount > 0 ? 'Voir les locataires' : 'Ajouter mon premier locataire',
@@ -121,7 +121,7 @@ export function buildOperatorOnboardingSteps(
 			description:
 				metrics.fiscaliteCount > 0
 					? `${metrics.fiscaliteCount} exercice(s) consolidé(s) pour la lecture annuelle.`
-					: 'Crée l’exercice fiscal pour consolider revenus, charges et résultat de la SCI.',
+					: "Crée l\u2019exercice fiscal pour consolider revenus, charges et résultat de la SCI.",
 			href: '/fiscalite',
 			actionLabel:
 				metrics.fiscaliteCount > 0

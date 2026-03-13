@@ -19,7 +19,7 @@
 
 	let {
 		title = 'Quittance PDF',
-		description = 'Prépare une quittance à partir d’un loyer sélectionné, sans exposer les identifiants techniques.',
+		description = "Prépare une quittance à partir d\u2019un loyer sélectionné, sans exposer les identifiants techniques.",
 		buttonLabel = 'Générer le PDF',
 		loyers = [],
 		biens = [],
@@ -124,7 +124,7 @@
 		try {
 			const blob = await (generateQuitus ? generateQuitus() : defaultGenerateQuitus());
 			if (blob.size === 0 || (blob.type && !blob.type.toLowerCase().includes('pdf'))) {
-				throw new Error('Le document généré n’est pas un PDF exploitable.');
+				throw new Error("Le document généré n\u2019est pas un PDF exploitable.");
 			}
 			if (pdfUrl) {
 				URL.revokeObjectURL(pdfUrl);

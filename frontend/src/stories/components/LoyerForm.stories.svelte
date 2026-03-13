@@ -8,7 +8,7 @@
 		tags: ['autodocs'],
 		args: {
 			title: 'Nouveau loyer',
-			description: 'Saisie d’un encaissement mensuel avec statut de paiement.',
+			description: "Saisie d\u2019un encaissement mensuel avec statut de paiement.",
 			submitting: false
 		}
 	});

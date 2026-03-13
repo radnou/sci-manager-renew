@@ -10,19 +10,19 @@ class BailCreate(BaseModel):
     date_debut: date
     date_fin: Optional[date] = None
     loyer_hc: float
-    charges_provisions: float = 0
+    charges_locatives: float = 0
     depot_garantie: float = 0
-    revision_indice: Optional[str] = "IRL"
+    indice_irl_reference: Optional[str] = "IRL"
     locataire_ids: list[int] = []  # For colocation
 
 
 class BailUpdate(BaseModel):
     date_fin: Optional[date] = None
     loyer_hc: Optional[float] = None
-    charges_provisions: Optional[float] = None
+    charges_locatives: Optional[float] = None
     depot_garantie: Optional[float] = None
     statut: Optional[str] = None
-    revision_indice: Optional[str] = None
+    indice_irl_reference: Optional[str] = None
 
 
 class BailResponse(BaseModel):
@@ -31,8 +31,8 @@ class BailResponse(BaseModel):
     date_debut: date
     date_fin: Optional[date] = None
     loyer_hc: float
-    charges_provisions: float = 0
+    charges_locatives: float = 0
     depot_garantie: float = 0
-    revision_indice: Optional[str] = None
+    indice_irl_reference: Optional[str] = None
     statut: str = "en_cours"
     locataires: list[dict] = []

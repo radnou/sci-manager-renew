@@ -136,6 +136,9 @@ export type BienCreatePayload = {
 	tmi: number;
 	acquisition_date?: string;
 	prix_acquisition?: number;
+	surface_m2?: number;
+	nb_pieces?: number;
+	dpe_classe?: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 };
 
 export type BienUpdatePayload = {
@@ -664,7 +667,7 @@ export type BailEmbed = {
 	date_debut: string;
 	date_fin: string | null;
 	loyer_hc: number;
-	charges_provisions: number;
+	charges_locatives: number;
 	depot_garantie: number;
 	revision_indice: string | null;
 	statut: string;
@@ -754,7 +757,7 @@ export type BailCreate = {
 	date_debut: string;
 	date_fin?: string;
 	loyer_hc: number;
-	charges_provisions?: number;
+	charges_locatives?: number;
 	depot_garantie?: number;
 	revision_indice?: string;
 };
@@ -1132,13 +1135,6 @@ export type Cerfa2044ResponsePayload = {
 
 export function generateCerfa2044(payload: Cerfa2044RequestPayload) {
 	return apiFetch<Cerfa2044ResponsePayload>('/api/v1/cerfa/2044', {
-		method: 'POST',
-		body: JSON.stringify(payload)
-	});
-}
-
-export function generateCerfa2044Pdf(payload: Cerfa2044RequestPayload): Promise<Blob> {
-	return apiFetchBlob('/api/v1/cerfa/2044/pdf', {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});

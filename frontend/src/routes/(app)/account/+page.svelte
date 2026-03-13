@@ -30,7 +30,7 @@
 	const passwordMinLength = 8;
 
 	$: activeSciStatus = activeSciId ? 'Une SCI active est mémorisée' : 'Aucune SCI active mémorisée';
-	$: activeSciDetail = activeSciId ? 'L'interface reviendra sur la dernière société suivie.' : 'Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.';
+	$: activeSciDetail = activeSciId ? "L'interface reviendra sur la dernière société suivie." : "Sélectionne une SCI dans le portefeuille pour cadrer les vues métier.";
 	$: capacityLabel = subscription
 		? subscription.max_scis == null
 			? 'SCI et biens illimités'

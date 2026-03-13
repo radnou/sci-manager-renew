@@ -47,7 +47,7 @@
 	let createdBienId = $state('');
 	let bailDateDebut = $state(new Date().toISOString().slice(0, 10));
 	let bailLoyerHc = $state(0);
-	let bailChargesProvisions = $state(0);
+	let bailChargesLocatives = $state(0);
 
 	// Step 4: Notifications
 	let emailAlertes = $state(true);
@@ -162,7 +162,7 @@
 			}
 			if (lastBienId) createdBienId = lastBienId;
 			bailLoyerHc = bienLoyerCc > bienCharges ? bienLoyerCc - bienCharges : bienLoyerCc;
-			bailChargesProvisions = bienCharges;
+			bailChargesLocatives = bienCharges;
 			currentStep = 3;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bien.';
@@ -183,7 +183,7 @@
 			const bailData: BailCreate = {
 				date_debut: bailDateDebut,
 				loyer_hc: bailLoyerHc,
-				charges_provisions: bailChargesProvisions || undefined
+				charges_locatives: bailChargesLocatives || undefined
 			};
 			await createBail(createdSciId, createdBienId, bailData);
 			currentStep = 4;
@@ -603,12 +603,12 @@
 						</div>
 						<div>
 							<label for="bail-charges" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-								Provisions charges (€/mois)
+								Charges locatives (€/mois)
 							</label>
 							<input
 								id="bail-charges"
 								type="number"
-								bind:value={bailChargesProvisions}
+								bind:value={bailChargesLocatives}
 								min="0"
 								placeholder="50"
 								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"

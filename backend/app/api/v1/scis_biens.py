@@ -189,13 +189,17 @@ async def get_fiche_bien(
         bail_id = bail_row.get("id")
         if bail_id:
             loc_result = (
-                client.table("locataires")
-                .select("id, nom, prenom, email, telephone")
+                client.table("bail_locataires")
+                .select("locataires(id, nom, email, telephone)")
                 .eq("id_bail", bail_id)
                 .execute()
             )
             if not getattr(loc_result, "error", None) and loc_result.data:
-                locataires = loc_result.data
+                locataires = [
+                    row["locataires"]
+                    for row in loc_result.data
+                    if row.get("locataires")
+                ]
         bail_row["locataires"] = locataires
         bail_actif = bail_row
 
@@ -230,7 +234,7 @@ async def get_fiche_bien(
         client.table("assurances_pno")
         .select("*")
         .eq("id_bien", bien_id)
-        .order("date_debut", desc=True)
+        .order("date_echeance", desc=True)
         .limit(1)
         .execute()
     )
@@ -242,7 +246,7 @@ async def get_fiche_bien(
         client.table("frais_agence")
         .select("*")
         .eq("id_bien", bien_id)
-        .order("date_frais", desc=True)
+        .order("created_at", desc=True)
         .execute()
     )
     frais_agence = []
@@ -251,10 +255,10 @@ async def get_fiche_bien(
 
     # Documents
     docs_result = (
-        client.table("documents")
+        client.table("documents_bien")
         .select("*")
         .eq("id_bien", bien_id)
-        .order("created_at", desc=True)
+        .order("uploaded_at", desc=True)
         .execute()
     )
     documents = []
@@ -264,9 +268,9 @@ async def get_fiche_bien(
     # Calculate rentabilite
     prime_pno = 0
     if assurance_pno:
-        prime_pno = assurance_pno.get("prime_annuelle", 0) or 0
+        prime_pno = assurance_pno.get("montant_annuel", 0) or 0
 
-    frais_annuel = sum(f.get("montant", 0) or 0 for f in frais_agence)
+    frais_annuel = sum(f.get("montant_ou_pourcentage", 0) or 0 for f in frais_agence)
 
     loyer_mensuel = bien.get("loyer_cc", 0) or bien.get("loyer", 0) or 0
     charges_mensuelles = bien.get("charges", 0) or 0
@@ -457,21 +461,14 @@ async def list_bien_baux(
         if bail_id:
             loc_result = (
                 client.table("bail_locataires")
-                .select("locataire_id")
-                .eq("bail_id", bail_id)
+                .select("locataires(id, nom, email, telephone)")
+                .eq("id_bail", bail_id)
                 .execute()
             )
             if not getattr(loc_result, "error", None) and loc_result.data:
-                loc_ids = [row["locataire_id"] for row in loc_result.data]
-                for loc_id in loc_ids:
-                    loc_detail = (
-                        client.table("locataires")
-                        .select("id, nom, prenom, email, telephone")
-                        .eq("id", loc_id)
-                        .execute()
-                    )
-                    if not getattr(loc_detail, "error", None) and loc_detail.data:
-                        locataires.append(loc_detail.data[0])
+                for row in loc_result.data:
+                    if row.get("locataires"):
+                        locataires.append(row["locataires"])
         bail["locataires"] = locataires
 
     return baux
@@ -527,11 +524,11 @@ async def create_bien_bail(
     # 3. Attach locataires via bail_locataires join table
     locataires = []
     for loc_id in locataire_ids:
-        join_row = {"bail_id": bail_id, "locataire_id": loc_id}
+        join_row = {"id_bail": bail_id, "id_locataire": loc_id}
         client.table("bail_locataires").insert(join_row).execute()
         loc_detail = (
             client.table("locataires")
-            .select("id, nom, prenom, email, telephone")
+            .select("id, nom, email, telephone")
             .eq("id", loc_id)
             .execute()
         )
@@ -584,21 +581,15 @@ async def update_bien_bail(
     # Fetch locataires
     loc_result = (
         client.table("bail_locataires")
-        .select("locataire_id")
-        .eq("bail_id", bail_id)
+        .select("locataires(id, nom, email, telephone)")
+        .eq("id_bail", bail_id)
         .execute()
     )
     locataires = []
     if not getattr(loc_result, "error", None) and loc_result.data:
         for row in loc_result.data:
-            loc_detail = (
-                client.table("locataires")
-                .select("id, nom, prenom, email, telephone")
-                .eq("id", row["locataire_id"])
-                .execute()
-            )
-            if not getattr(loc_detail, "error", None) and loc_detail.data:
-                locataires.append(loc_detail.data[0])
+            if row.get("locataires"):
+                locataires.append(row["locataires"])
 
     bail["locataires"] = locataires
     logger.info("bail_updated", bail_id=bail_id)
@@ -970,7 +961,7 @@ async def list_bien_frais_agence(
         client.table("frais_agence")
         .select("*")
         .eq("id_bien", bien_id)
-        .order("date_frais", desc=True)
+        .order("created_at", desc=True)
         .execute()
     )
     if getattr(result, "error", None):
@@ -1052,7 +1043,7 @@ async def list_bien_documents(
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
-        client.table("documents")
+        client.table("documents_bien")
         .select("*")
         .eq("id_bien", bien_id)
         .order("created_at", desc=True)
@@ -1113,7 +1104,7 @@ async def upload_document(
         "categorie": categorie,
         "url": url,
     }
-    result = client.table("documents").insert(row).execute()
+    result = client.table("documents_bien").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -1143,7 +1134,7 @@ async def delete_document(
     client = _get_client()
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    result = client.table("documents").delete().eq("id", doc_id).eq("id_bien", bien_id).execute()
+    result = client.table("documents_bien").delete().eq("id", doc_id).eq("id_bien", bien_id).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 

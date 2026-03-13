@@ -133,8 +133,20 @@ async def complete_onboarding(
     logger.info("completing_onboarding", user_id=user_id)
 
     client = get_supabase_service_client()
-    client.table("subscriptions").update(
-        {"onboarding_completed": True}
-    ).eq("user_id", user_id).execute()
+    # Check if row exists first — if not, create with status='free'
+    existing = (
+        client.table("subscriptions")
+        .select("id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if existing.data:
+        client.table("subscriptions").update(
+            {"onboarding_completed": True}
+        ).eq("user_id", user_id).execute()
+    else:
+        client.table("subscriptions").insert(
+            {"user_id": user_id, "onboarding_completed": True, "status": "free"}
+        ).execute()
 
     return OnboardingCompleteResponse(completed=True)

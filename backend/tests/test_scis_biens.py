@@ -273,7 +273,7 @@ class TestGetFicheBien:
                 "id_bien": str(self.FICHE_BIEN_ID),
                 "date_debut": "2024-01-01",
                 "loyer_hc": 900.0,
-                "charges_provisions": 100.0,
+                "charges_locatives": 100.0,
                 "depot_garantie": 900.0,
                 "statut": "en_cours",
             }
@@ -493,7 +493,7 @@ class TestBaux:
     BAIL_PAYLOAD = {
         "date_debut": "2024-01-01",
         "loyer_hc": 900.0,
-        "charges_provisions": 100.0,
+        "charges_locatives": 100.0,
         "depot_garantie": 900.0,
         "locataire_ids": [],
     }
@@ -541,7 +541,7 @@ class TestBaux:
                 "id_bien": BIEN_ID,
                 "date_debut": "2023-01-01",
                 "loyer_hc": 800.0,
-                "charges_provisions": 0,
+                "charges_locatives": 0,
                 "depot_garantie": 800.0,
                 "statut": "en_cours",
             }
@@ -566,7 +566,7 @@ class TestBaux:
                 "id_bien": BIEN_ID,
                 "date_debut": "2024-01-01",
                 "loyer_hc": 900.0,
-                "charges_provisions": 0,
+                "charges_locatives": 0,
                 "depot_garantie": 0,
                 "statut": "en_cours",
             }
@@ -590,7 +590,7 @@ class TestBaux:
                 "id_bien": BIEN_ID,
                 "date_debut": "2024-01-01",
                 "loyer_hc": 900.0,
-                "charges_provisions": 0,
+                "charges_locatives": 0,
                 "depot_garantie": 0,
                 "statut": "en_cours",
             }
@@ -634,7 +634,7 @@ class TestBailLocataires:
                 "id_bien": BIEN_ID,
                 "date_debut": "2024-01-01",
                 "loyer_hc": 900.0,
-                "charges_provisions": 0,
+                "charges_locatives": 0,
                 "depot_garantie": 0,
                 "statut": "en_cours",
             }

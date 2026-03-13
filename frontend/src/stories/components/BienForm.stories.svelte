@@ -8,7 +8,7 @@
 		tags: ['autodocs'],
 		args: {
 			title: 'Nouveau bien',
-			description: 'Crée un actif avec statut d’occupation et loyer estimé.',
+			description: "Crée un actif avec statut d\u2019occupation et loyer estimé.",
 			submitting: false
 		}
 	});

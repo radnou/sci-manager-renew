@@ -158,7 +158,7 @@
 									Charges
 								</p>
 								<p class="text-sm font-bold text-slate-900 dark:text-slate-100">
-									{formatEur(bail.charges_provisions)}
+									{formatEur(bail.charges_locatives)}
 								</p>
 							</div>
 							<div>

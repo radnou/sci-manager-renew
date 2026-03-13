@@ -17,7 +17,7 @@
   let date_debut = $state('');
   let date_fin = $state('');
   let loyer_hc = $state(0);
-  let charges_provisions = $state(0);
+  let charges_locatives = $state(0);
   let depot_garantie = $state(0);
   let revision_indice = $state('');
 
@@ -28,12 +28,12 @@
       date_debut = editItem.date_debut ?? '';
       date_fin = editItem.date_fin ?? '';
       loyer_hc = editItem.loyer_hc ?? 0;
-      charges_provisions = editItem.charges_provisions ?? 0;
+      charges_locatives = editItem.charges_locatives ?? 0;
       depot_garantie = editItem.depot_garantie ?? 0;
       revision_indice = editItem.revision_indice ?? '';
     } else if (open) {
       date_debut = ''; date_fin = ''; loyer_hc = 0;
-      charges_provisions = 0; depot_garantie = 0; revision_indice = '';
+      charges_locatives = 0; depot_garantie = 0; revision_indice = '';
     }
   });
 
@@ -42,11 +42,11 @@
     loading = true;
     try {
       if (isEdit && editItem) {
-        const data: BailUpdate = { date_fin: date_fin || undefined, loyer_hc, charges_provisions, depot_garantie, revision_indice: revision_indice || undefined };
+        const data: BailUpdate = { date_fin: date_fin || undefined, loyer_hc, charges_locatives, depot_garantie, revision_indice: revision_indice || undefined };
         await updateBail(sciId, bienId, editItem.id, data);
         addToast({ title: 'Bail mis à jour', variant: 'success' });
       } else {
-        const data: BailCreate = { date_debut, date_fin: date_fin || undefined, loyer_hc, charges_provisions, depot_garantie, revision_indice: revision_indice || undefined };
+        const data: BailCreate = { date_debut, date_fin: date_fin || undefined, loyer_hc, charges_locatives, depot_garantie, revision_indice: revision_indice || undefined };
         await createBail(sciId, bienId, data);
         addToast({ title: 'Bail créé', variant: 'success' });
       }
@@ -77,8 +77,8 @@
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Charges provisions (€)</label>
-    <input type="number" bind:value={charges_provisions} min="0" step="0.01"
+    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Charges locatives (€)</label>
+    <input type="number" bind:value={charges_locatives} min="0" step="0.01"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>

@@ -17,7 +17,7 @@
 		tags: ['autodocs'],
 		args: {
 			title: 'Quittance PDF',
-			description: 'Production d’un quittus à la demande.',
+			description: "Production d\u2019un quittus à la demande.",
 			buttonLabel: 'Générer le quittus',
 			generateQuitus: mockGenerateQuitus
 		}

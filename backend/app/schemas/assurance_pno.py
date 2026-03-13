@@ -5,26 +5,23 @@ from pydantic import BaseModel
 
 
 class AssurancePnoCreate(BaseModel):
-    assureur: str
+    compagnie: str
     numero_contrat: Optional[str] = None
-    prime_annuelle: float = 0
-    date_debut: date
-    date_fin: Optional[date] = None
+    montant_annuel: float = 0
+    date_echeance: date
 
 
 class AssurancePnoUpdate(BaseModel):
-    assureur: Optional[str] = None
+    compagnie: Optional[str] = None
     numero_contrat: Optional[str] = None
-    prime_annuelle: Optional[float] = None
-    date_debut: Optional[date] = None
-    date_fin: Optional[date] = None
+    montant_annuel: Optional[float] = None
+    date_echeance: Optional[date] = None
 
 
 class AssurancePnoResponse(BaseModel):
     id: str | int
     id_bien: str | int
-    assureur: str
+    compagnie: str
     numero_contrat: Optional[str] = None
-    prime_annuelle: float = 0
-    date_debut: date
-    date_fin: Optional[date] = None
+    montant_annuel: float = 0
+    date_echeance: date

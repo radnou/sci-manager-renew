@@ -69,7 +69,7 @@
 		{
 			title: 'Locataire',
 			icon: Users,
-			fields: 'Nom ou référence locataire, email, dates d’occupation, bien rattaché'
+			fields: "Nom ou référence locataire, email, dates d\u2019occupation, bien rattaché"
 		},
 		{
 			title: 'Loyer',

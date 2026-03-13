@@ -1,27 +1,26 @@
-from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel
 
 
 class FraisAgenceCreate(BaseModel):
-    type_frais: str  # 'gestion_locative', 'mise_en_location', 'autre'
-    montant: float
-    date_frais: date
-    description: Optional[str] = None
+    nom_agence: str
+    contact: Optional[str] = None
+    type_frais: str  # 'pourcentage' or 'fixe'
+    montant_ou_pourcentage: float
 
 
 class FraisAgenceUpdate(BaseModel):
+    nom_agence: Optional[str] = None
+    contact: Optional[str] = None
     type_frais: Optional[str] = None
-    montant: Optional[float] = None
-    date_frais: Optional[date] = None
-    description: Optional[str] = None
+    montant_ou_pourcentage: Optional[float] = None
 
 
 class FraisAgenceResponse(BaseModel):
     id: str | int
     id_bien: str | int
+    nom_agence: str
+    contact: Optional[str] = None
     type_frais: str
-    montant: float
-    date_frais: date
-    description: Optional[str] = None
+    montant_ou_pourcentage: float
