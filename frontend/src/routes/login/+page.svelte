@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { supabase } from '$lib/supabase';
+	import { API_URL } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -54,26 +55,35 @@
 		errorMessage = '';
 		isLoading = true;
 
-		const { error } = await supabase.auth.signInWithOtp({
-			email,
-			options: {
-				emailRedirectTo: `${window.location.origin}/auth/callback`
-			}
-		});
+		try {
+			const res = await fetch(`${API_URL}/api/v1/auth/magic-link/send`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email })
+			});
+			const data = await res.json();
 
-		if (error) {
-			errorMessage = formatApiErrorMessage(error, "Impossible d'envoyer le lien de connexion.");
+			if (!res.ok || !data.success) {
+				errorMessage = data.detail || data.message || "Impossible d'envoyer le lien de connexion.";
+				addToast({
+					title: 'Erreur',
+					description: errorMessage,
+					variant: 'error'
+				});
+			} else {
+				showCheckEmail = true;
+				addToast({
+					title: 'Email envoyé',
+					description: `Vérifiez votre boîte mail à ${email}`,
+					variant: 'success'
+				});
+			}
+		} catch {
+			errorMessage = "Impossible de contacter le serveur. Vérifiez votre connexion.";
 			addToast({
 				title: 'Erreur',
 				description: errorMessage,
 				variant: 'error'
-			});
-		} else {
-			showCheckEmail = true;
-			addToast({
-				title: 'Email envoyé',
-				description: `Vérifiez votre boîte mail à ${email}`,
-				variant: 'success'
 			});
 		}
 

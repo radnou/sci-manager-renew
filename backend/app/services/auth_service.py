@@ -1,4 +1,4 @@
-"""Magic Link authentication service"""
+"""Magic Link authentication service — uses Resend + custom HTML templates"""
 from typing import Optional
 
 import structlog
@@ -6,11 +6,13 @@ from supabase import create_client
 
 from app.core.config import settings
 from app.core.external_services import run_with_retry
+from app.services.email_service import email_service
 
 logger = structlog.get_logger(__name__)
 
+
 class MagicLinkService:
-    """Service for magic link authentication"""
+    """Service for magic link authentication via custom email templates"""
 
     def __init__(self):
         self.client = create_client(
@@ -19,20 +21,37 @@ class MagicLinkService:
 
     async def send_magic_link(self, email: str) -> dict:
         """
-        Send magic link to user email via Supabase Auth
-        Returns the access token and session info
+        Generate magic link via Supabase Admin API and send via Resend
+        with the custom HTML template.
         """
         try:
-            response = await run_with_retry(
-                operation="supabase_auth.send_magic_link",
-                func=lambda: self.client.auth.sign_in_with_otp({"email": email}),
+            # Generate link without sending email (admin API)
+            link_result = await run_with_retry(
+                operation="supabase_auth.generate_link",
+                func=lambda: self.client.auth.admin.generate_link({
+                    "type": "magiclink",
+                    "email": email,
+                }),
                 context={"email": email},
             )
 
+            # Extract the action link from the response
+            action_link = ""
+            if hasattr(link_result, "properties"):
+                action_link = getattr(link_result.properties, "action_link", "")
+
+            if not action_link:
+                logger.error("magic_link_no_action_link", email=email)
+                return {"success": False, "message": "Failed to generate magic link", "data": None}
+
+            # Send via Resend with custom HTML template
+            await email_service.send_magic_link(email, action_link)
+
+            logger.info("magic_link_sent_via_resend", email=email)
             return {
                 "success": True,
                 "message": "Magic link sent to email",
-                "data": response,
+                "data": None,
             }
         except Exception as e:
             logger.error("send_magic_link_failed", email=email, error=str(e), exc_info=True)
