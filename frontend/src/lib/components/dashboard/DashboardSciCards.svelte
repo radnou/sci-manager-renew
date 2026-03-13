@@ -36,9 +36,9 @@
 {#if scis.length === 0}
 	<EmptyState
 		icon={Building2}
-		title="Aucune SCI enregistree"
-		description="Creez votre premiere SCI pour suivre vos biens, loyers et charges depuis le dashboard."
-		ctaText="Creer une SCI"
+		title="Aucune SCI enregistrée"
+		description="Créez votre première SCI pour suivre vos biens, loyers et charges depuis le dashboard."
+		ctaText="Créer une SCI"
 		ctaHref="/scis"
 	/>
 {:else}

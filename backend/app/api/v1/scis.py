@@ -366,7 +366,16 @@ async def delete_sci(
     biens_rows = _execute_select(client.table("biens").select("id").eq("id_sci", sci_id))
     bien_ids = [str(row["id"]) for row in biens_rows if row.get("id")]
     if bien_ids:
-        for table in ["charges", "loyers", "baux", "documents", "assurance_pno", "frais_agence"]:
+        for bid in bien_ids:
+            try:
+                baux_rows = _execute_select(client.table("baux").select("id").eq("id_bien", bid))
+                bail_ids = [str(b["id"]) for b in baux_rows if b.get("id")]
+                if bail_ids:
+                    for bail_id in bail_ids:
+                        client.table("bail_locataires").delete().eq("id_bail", bail_id).execute()
+            except Exception:
+                pass
+        for table in ["charges", "loyers", "baux", "locataires", "documents", "assurance_pno", "frais_agence"]:
             for bid in bien_ids:
                 try:
                     client.table(table).delete().eq("id_bien", bid).execute()

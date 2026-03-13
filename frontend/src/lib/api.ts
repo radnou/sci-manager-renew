@@ -1088,7 +1088,7 @@ export type FinancesData = {
 	patrimoine_total: number;
 	rentabilite_moyenne: number;
 	evolution_mensuelle: Array<{ mois: string; revenus: number; charges: number }>;
-	repartition_sci: Array<{ sci_nom: string; revenus: number; charges: number }>;
+	repartition_sci: Array<{ sci_id?: string; sci_nom: string; revenus: number; charges: number }>;
 };
 
 export async function fetchFinances(period?: string): Promise<FinancesData> {
@@ -1135,12 +1135,14 @@ export async function deleteDocumentBien(
 
 // --- Export CSV ---
 
-export function exportLoyersCsv(): Promise<Blob> {
-	return apiFetchBlob('/api/v1/export/loyers/csv');
+export function exportLoyersCsv(sciId?: EntityId): Promise<Blob> {
+	const params = sciId != null ? `?sci_id=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetchBlob(`/api/v1/export/loyers/csv${params}`);
 }
 
-export function exportBiensCsv(): Promise<Blob> {
-	return apiFetchBlob('/api/v1/export/biens/csv');
+export function exportBiensCsv(sciId?: EntityId): Promise<Blob> {
+	const params = sciId != null ? `?sci_id=${encodeURIComponent(String(sciId))}` : '';
+	return apiFetchBlob(`/api/v1/export/biens/csv${params}`);
 }
 
 // --- CERFA 2044 ---

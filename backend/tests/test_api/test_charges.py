@@ -75,7 +75,7 @@ def test_create_update_and_delete_charge(client, auth_headers, fake_supabase):
     assert deleted.status_code == 204
 
 
-def test_create_charge_requires_feature_upgrade(client, auth_headers):
+def test_create_charge_requires_feature_upgrade(client, auth_headers, free_plan):
     response = client.post(
         "/api/v1/charges/",
         json={

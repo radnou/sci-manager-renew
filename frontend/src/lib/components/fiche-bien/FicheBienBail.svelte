@@ -54,7 +54,7 @@
 				<History class="h-4 w-4" />
 				Historique
 			</a>
-			{#if isGerant && !bail}
+			{#if isGerant && (!bail || bail.statut === 'expire' || bail.statut === 'resilie')}
 				<button
 					onclick={() => { editBail = null; showBailModal = true; }}
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"

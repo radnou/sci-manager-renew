@@ -1,8 +1,7 @@
-import json
+import threading
 from time import monotonic
-from urllib.error import URLError
-from urllib.request import urlopen
 
+import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
@@ -13,6 +12,7 @@ from .config import settings
 security = HTTPBearer(auto_error=False)
 _JWKS_CACHE_TTL_SECONDS = 300.0
 _jwks_cache: dict[str, object] = {"expires_at": 0.0, "keys": []}
+_jwks_lock = threading.Lock()
 
 
 def _raise_unauthorized(detail: str) -> None:
@@ -25,20 +25,29 @@ def _raise_unauthorized(detail: str) -> None:
 
 def _get_supabase_jwks() -> list[dict]:
     now = monotonic()
+
+    # Fast path: check cache without lock
     if _jwks_cache["expires_at"] > now:
         return list(_jwks_cache["keys"])
 
-    jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-    with urlopen(jwks_url, timeout=settings.supabase_request_timeout_seconds) as response:
-        payload = json.load(response)
+    with _jwks_lock:
+        # Re-check after acquiring lock (another thread may have refreshed)
+        now = monotonic()
+        if _jwks_cache["expires_at"] > now:
+            return list(_jwks_cache["keys"])
 
-    keys = payload.get("keys")
-    if not isinstance(keys, list):
-        raise ValueError("Supabase JWKS response is invalid")
+        jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+        response = httpx.get(jwks_url, timeout=settings.supabase_request_timeout_seconds)
+        response.raise_for_status()
+        payload = response.json()
 
-    _jwks_cache["keys"] = keys
-    _jwks_cache["expires_at"] = now + _JWKS_CACHE_TTL_SECONDS
-    return list(keys)
+        keys = payload.get("keys")
+        if not isinstance(keys, list):
+            raise ValueError("Supabase JWKS response is invalid")
+
+        _jwks_cache["keys"] = keys
+        _jwks_cache["expires_at"] = monotonic() + _JWKS_CACHE_TTL_SECONDS
+        return list(keys)
 
 
 def _decode_bearer_token(token: str) -> dict:
@@ -84,7 +93,7 @@ async def get_current_user(
 
     try:
         payload = _decode_bearer_token(token)
-    except (PyJWTError, URLError, ValueError):
+    except (PyJWTError, httpx.HTTPError, ValueError):
         _raise_unauthorized("Invalid bearer token")
 
     user_id = payload.get("sub")

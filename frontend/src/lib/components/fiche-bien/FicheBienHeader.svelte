@@ -12,8 +12,6 @@
 
 	let { bien, sciNom, isGerant, onGenerateQuittance, generatingQuittance = false }: Props = $props();
 
-	let showEditNotice = $state(false);
-
 	const dpeColors: Record<string, string> = {
 		A: 'bg-green-600 text-white',
 		B: 'bg-green-400 text-white',
@@ -34,10 +32,6 @@
 	let bailStatut = $derived(bien.bail_actif ? (bien.bail_actif.statut ?? 'actif') : 'vacant');
 	let statutInfo = $derived(statutLabels[bailStatut] ?? statutLabels['vacant']);
 
-	function handleEdit() {
-		showEditNotice = true;
-		setTimeout(() => { showEditNotice = false; }, 3000);
-	}
 </script>
 
 <header class="sci-page-header">
@@ -51,13 +45,13 @@
 		</div>
 		{#if isGerant}
 			<div class="flex gap-2">
-				<button
-					onclick={handleEdit}
+				<a
+					href="#section-identite"
 					class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 				>
 					<Pencil class="h-4 w-4" />
 					Modifier
-				</button>
+				</a>
 				<button
 					onclick={onGenerateQuittance}
 					disabled={generatingQuittance}
@@ -74,12 +68,6 @@
 			</div>
 		{/if}
 	</div>
-
-	{#if showEditNotice}
-		<div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-			La modification du bien sera disponible prochainement. Utilisez les sections ci-dessous pour gérer bail, loyers et charges.
-		</div>
-	{/if}
 
 	<div class="mt-3 flex flex-wrap gap-2.5">
 		{#if bien.type_locatif}

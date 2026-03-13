@@ -79,7 +79,7 @@
 			addToast({ title: 'Aucun locataire associé au bail', variant: 'error' });
 			return;
 		}
-		const lastPaidLoyer = bien.loyers_recents?.find((l: any) => l.statut === 'paye');
+		const lastPaidLoyer = [...(bien.loyers_recents ?? [])].reverse().find((l: any) => l.statut === 'paye');
 		if (!lastPaidLoyer) {
 			addToast({ title: 'Aucun loyer payé pour générer une quittance', variant: 'error' });
 			return;

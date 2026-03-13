@@ -5,10 +5,11 @@ from __future__ import annotations
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from app.core.supabase_client import get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.services.subscription_service import SubscriptionService
 from app.models.biens import BienCreate, BienResponse, BienUpdate
 from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
 from app.models.loyers import LoyerCreate, LoyerResponse
@@ -137,6 +138,8 @@ async def create_sci_bien(
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un bien dans la SCI (gérant uniquement)."""
+    SubscriptionService.enforce_limit(membership.user_id, "biens")
+
     logger.info("creating_bien_nested", sci_id=str(sci_id), adresse=payload.adresse)
 
     client = _get_client()
@@ -270,7 +273,16 @@ async def get_fiche_bien(
     if assurance_pno:
         prime_pno = assurance_pno.get("montant_annuel", 0) or 0
 
-    frais_annuel = sum(f.get("montant_ou_pourcentage", 0) or 0 for f in frais_agence)
+    loyer_hc = 0
+    if bail_actif:
+        loyer_hc = bail_actif.get("loyer_hc", 0) or 0
+    frais_annuel = 0
+    for f in frais_agence:
+        montant = f.get("montant_ou_pourcentage", 0) or 0
+        if f.get("type_frais") == "pourcentage":
+            frais_annuel += loyer_hc * 12 * montant / 100
+        else:
+            frais_annuel += montant * 12 if montant > 100 else montant
 
     loyer_mensuel = bien.get("loyer_cc", 0) or bien.get("loyer", 0) or 0
     charges_mensuelles = bien.get("charges", 0) or 0
@@ -406,6 +418,8 @@ async def create_bien_loyer(
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un loyer pour un bien (gérant uniquement)."""
+    SubscriptionService.enforce_limit(membership.user_id, "biens")
+
     logger.info("creating_loyer_nested", bien_id=bien_id, sci_id=str(sci_id))
 
     client = _get_client()
@@ -414,6 +428,10 @@ async def create_bien_loyer(
     row = payload.model_dump(mode="json")
     row["id_bien"] = bien_id
     row["id_sci"] = str(sci_id)
+
+    existing = client.table("loyers").select("id").eq("id_bien", bien_id).eq("date_loyer", row["date_loyer"]).execute()
+    if existing.data:
+        raise HTTPException(status_code=409, detail="Un loyer existe déjà pour ce bien à cette date")
 
     result = client.table("loyers").insert(row).execute()
     if getattr(result, "error", None):
@@ -486,6 +504,8 @@ async def create_bien_bail(
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un bail pour un bien (gérant uniquement). Expire le bail en_cours existant."""
+    SubscriptionService.enforce_limit(membership.user_id, "biens")
+
     logger.info("creating_bail", bien_id=bien_id, sci_id=str(sci_id))
 
     client = _get_client()
@@ -614,7 +634,7 @@ async def delete_bien_bail(
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # Delete join table entries first
-    client.table("bail_locataires").delete().eq("bail_id", bail_id).execute()
+    client.table("bail_locataires").delete().eq("id_bail", bail_id).execute()
 
     result = client.table("baux").delete().eq("id", bail_id).eq("id_bien", bien_id).execute()
     if getattr(result, "error", None):
@@ -651,13 +671,13 @@ async def attach_locataire_to_bail(
     if not bail_result.data:
         raise ResourceNotFoundError("Bail", str(bail_id))
 
-    join_row = {"bail_id": bail_id, "locataire_id": locataire_id}
+    join_row = {"id_bail": bail_id, "id_locataire": locataire_id}
     result = client.table("bail_locataires").insert(join_row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
     logger.info("locataire_attached", bail_id=bail_id, locataire_id=locataire_id)
-    return {"bail_id": bail_id, "locataire_id": locataire_id}
+    return {"id_bail": bail_id, "id_locataire": locataire_id}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -681,8 +701,8 @@ async def detach_locataire_from_bail(
     result = (
         client.table("bail_locataires")
         .delete()
-        .eq("bail_id", bail_id)
-        .eq("locataire_id", locataire_id)
+        .eq("id_bail", bail_id)
+        .eq("id_locataire", locataire_id)
         .execute()
     )
     if getattr(result, "error", None):

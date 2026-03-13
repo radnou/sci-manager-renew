@@ -34,7 +34,7 @@
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
-			addToast({ title: 'Export termine', description: 'Le fichier CSV des loyers a ete telecharge.', variant: 'success' });
+			addToast({ title: 'Export terminé', description: 'Le fichier CSV des loyers a été téléchargé.', variant: 'success' });
 		} catch (err: any) {
 			addToast({ title: 'Erreur export', description: err?.message ?? "Impossible d'exporter les loyers.", variant: 'error' });
 		} finally {
@@ -118,8 +118,8 @@
 		<div class="mt-6">
 			<EmptyState
 				icon={Wallet}
-				title="Aucune donnee financiere"
-				description="Enregistrez des loyers et des charges sur vos biens pour voir apparaitre vos revenus, cashflow et graphiques d'evolution."
+				title="Aucune donnée financière"
+				description="Enregistrez des loyers et des charges sur vos biens pour voir apparaître vos revenus, cashflow et graphiques d'évolution."
 				ctaText="Aller au dashboard"
 				ctaHref="/dashboard"
 			/>
@@ -218,13 +218,13 @@
 			</div>
 		</div>
 
-		<!-- Evolution mensuelle -->
+		<!-- Évolution mensuelle -->
 		{#if data.evolution_mensuelle.length > 0}
 			<div
 				class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
 			>
 				<h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
-					Evolution mensuelle
+					Évolution mensuelle
 				</h2>
 
 				<!-- Bar chart using CSS -->

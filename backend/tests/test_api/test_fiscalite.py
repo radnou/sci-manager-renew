@@ -59,7 +59,7 @@ def test_create_update_and_delete_fiscalite(client, auth_headers, fake_supabase)
     assert deleted.status_code == 204
 
 
-def test_list_fiscalite_requires_feature_upgrade(client, auth_headers):
+def test_list_fiscalite_requires_feature_upgrade(client, auth_headers, free_plan):
     response = client.get("/api/v1/fiscalite/?id_sci=sci-1", headers=auth_headers)
     assert response.status_code == 402
     assert response.json()["code"] == "upgrade_required"

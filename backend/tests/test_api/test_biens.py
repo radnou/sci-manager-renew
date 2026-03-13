@@ -3,10 +3,12 @@ def test_get_biens_requires_auth(client):
     assert response.status_code == 401
 
 
-def test_get_biens_empty(client, auth_headers):
+def test_get_biens_returns_user_biens(client, auth_headers):
     response = client.get("/api/v1/biens/", headers=auth_headers)
     assert response.status_code == 200
-    assert response.json() == []
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
 
 
 def test_create_bien(client, auth_headers):

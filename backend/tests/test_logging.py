@@ -138,6 +138,7 @@ def test_create_bien_logs_creation():
             patch("app.api.v1.biens.logger") as mock_logger,
             patch("app.api.v1.biens._get_client") as mock_get_client,
             patch("app.api.v1.biens._get_user_sci_ids", return_value=["sci123"]),
+            patch("app.api.v1.biens.SubscriptionService.enforce_limit", return_value={"plan_key": "pro", "is_active": True}),
         ):
 
             # Mock Supabase response

@@ -74,7 +74,7 @@
 				class="mt-2 text-sm font-semibold text-rose-600 underline underline-offset-2 hover:no-underline dark:text-rose-400"
 				onclick={loadDashboard}
 			>
-				Reessayer
+				Réessayer
 			</button>
 		</div>
 	{:else if isBrandNew}
@@ -132,7 +132,7 @@
 				<DashboardSciCards {scis} />
 			</div>
 
-			<!-- Activite recente -->
+			<!-- Activité récente -->
 			<div class="mt-8">
 				<DashboardActivity {activite} />
 			</div>

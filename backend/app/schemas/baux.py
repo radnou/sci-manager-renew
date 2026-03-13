@@ -3,7 +3,7 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class BailCreate(BaseModel):
@@ -13,7 +13,13 @@ class BailCreate(BaseModel):
     charges_locatives: float = 0
     depot_garantie: float = 0
     indice_irl_reference: Optional[str] = "IRL"
-    locataire_ids: list[int] = []  # For colocation
+    locataire_ids: list[str] = []
+
+    @model_validator(mode='after')
+    def check_dates(self):
+        if self.date_fin and self.date_debut and self.date_fin <= self.date_debut:
+            raise ValueError("date_fin doit être postérieure à date_debut")
+        return self
 
 
 class BailUpdate(BaseModel):

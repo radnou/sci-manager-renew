@@ -89,7 +89,7 @@
 	async function handleExportBiens() {
 		exportingBiens = true;
 		try {
-			const blob = await exportBiensCsv();
+			const blob = await exportBiensCsv(sciId); // TODO: backend needs to support sci_id filter for scoped export
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
@@ -109,7 +109,7 @@
 	async function handleExportLoyers() {
 		exportingLoyers = true;
 		try {
-			const blob = await exportLoyersCsv();
+			const blob = await exportLoyersCsv(sciId); // TODO: backend needs to support sci_id filter for scoped export
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
@@ -177,7 +177,7 @@
 			icon: FolderOpen,
 			iconClass: 'text-teal-600 dark:text-teal-400',
 			bgClass: 'bg-teal-50 dark:bg-teal-950/40',
-			value: sci.fiscalite?.length ?? 0,
+			value: (sci as any).documents?.length ?? 0,
 			label: 'Documents',
 			loading: false
 		}

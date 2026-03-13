@@ -125,6 +125,10 @@
 	class="fixed top-0 left-0 z-40 flex h-full w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 dark:border-slate-700 dark:bg-slate-900 {mobileOpen
 		? 'translate-x-0'
 		: '-translate-x-full'} md:relative md:translate-x-0"
+	role={mobileOpen ? 'dialog' : undefined}
+	aria-modal={mobileOpen ? 'true' : undefined}
+	aria-hidden={mobileOpen ? undefined : 'true'}
+	aria-label="Navigation principale"
 >
 	<!-- SCI Switcher -->
 	<div class="flex-shrink-0 border-b border-slate-200 px-3 py-3 dark:border-slate-700">
@@ -173,8 +177,9 @@
 
 		<!-- SCI Switcher Dropdown -->
 		{#if sciSwitcherOpen}
+			<button type="button" class="fixed inset-0 z-30" onclick={() => (sciSwitcherOpen = false)} aria-label="Fermer la liste des SCI" tabindex="-1"></button>
 			<div
-				class="mt-1.5 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+				class="relative z-40 mt-1.5 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"
 				role="listbox"
 				aria-label="Sélectionner une SCI"
 			>

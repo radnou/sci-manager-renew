@@ -5,6 +5,7 @@
 	import { formatEur } from '$lib/high-value/formatters';
 	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet } from 'lucide-svelte';
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
+	import { addToast } from '$lib/components/ui/toast';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -14,6 +15,7 @@
 	let showBienModal = $state(false);
 	let viewMode = $state<'grid' | 'list'>('grid');
 	let deletingId = $state<string | null>(null);
+	let confirmingDeleteId = $state<string | null>(null);
 
 	let biens: Array<any> = $state([]);
 	let loading = $state(true);
@@ -67,6 +69,10 @@
 		vacant: 'Vacant',
 		travaux: 'Travaux'
 	};
+
+	function getStatut(bien: any): string {
+		return bien.statut || (bien.bail_actif ? 'loue' : 'vacant');
+	}
 </script>
 
 <svelte:head><title>Biens | {sci.nom} | GererSCI</title></svelte:head>
@@ -142,7 +148,7 @@
 		<!-- Grid View -->
 		<div class="sci-stagger mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each biens as bien (bien.id)}
-				{@const statut = bien.statut ?? 'vacant'}
+				{@const statut = getStatut(bien)}
 				{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
 				{@const label = statutLabel[statut] ?? statut}
 				{@const isDeleting = deletingId === bien.id}
@@ -214,7 +220,7 @@
 								Modifier
 							</a>
 							<button
-								onclick={() => handleDeleteBien(bien)}
+								onclick={() => { confirmingDeleteId = bien.id; }}
 								disabled={isDeleting}
 								class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
 							>
@@ -257,7 +263,7 @@
 				</thead>
 				<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 					{#each biens as bien (bien.id)}
-						{@const statut = bien.statut ?? 'vacant'}
+						{@const statut = getStatut(bien)}
 						{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
 						{@const label = statutLabel[statut] ?? statut}
 						{@const isDeleting = deletingId === bien.id}
@@ -314,7 +320,7 @@
 											<Pencil class="h-4 w-4" />
 										</a>
 										<button
-											onclick={() => handleDeleteBien(bien)}
+											onclick={() => { confirmingDeleteId = bien.id; }}
 											disabled={isDeleting}
 											class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
 											title="Supprimer"
@@ -342,6 +348,32 @@
 				</tbody>
 			</table>
 		</div>
+		{#if confirmingDeleteId}
+			{@const bienToDelete = biens.find(b => b.id === confirmingDeleteId)}
+			{#if bienToDelete}
+				<div class="mt-3 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 dark:border-rose-800 dark:bg-rose-950/30">
+					<p class="text-sm text-rose-700 dark:text-rose-300">Supprimer "{bienToDelete.adresse}" ? Cette action est irréversible.</p>
+					<div class="flex items-center gap-2">
+						<button
+							onclick={() => { confirmingDeleteId = null; }}
+							class="rounded-md px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+						>
+							Annuler
+						</button>
+						<button
+							onclick={() => handleDeleteBien(bienToDelete)}
+							disabled={deletingId === bienToDelete.id}
+							class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+						>
+							{#if deletingId === bienToDelete.id}
+								<Loader2 class="h-3.5 w-3.5 animate-spin" />
+							{/if}
+							Confirmer
+						</button>
+					</div>
+				</div>
+			{/if}
+		{/if}
 	{/if}
 
 	<BienModal bind:open={showBienModal} {sciId} />

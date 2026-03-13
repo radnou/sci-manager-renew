@@ -63,7 +63,8 @@
 
 	function buildPeriodeLabel(dateLoyer: string): string {
 		try {
-			const date = new Date(dateLoyer);
+			const [year, month] = dateLoyer.split('-').map(Number);
+			const date = new Date(year, month - 1, 15);
 			return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 		} catch {
 			return dateLoyer;

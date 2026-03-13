@@ -657,8 +657,8 @@ class TestBailLocataires:
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["bail_id"] == 5
-        assert data["locataire_id"] == 42
+        assert data["id_bail"] == 5
+        assert data["id_locataire"] == 42
 
     def test_attach_locataire_as_associe_returns_403(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
@@ -674,7 +674,7 @@ class TestBailLocataires:
     def test_detach_locataire_as_gerant(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
         self._seed_bail(fake_supabase)
-        fake_supabase.store["bail_locataires"] = [{"bail_id": 5, "locataire_id": 42}]
+        fake_supabase.store["bail_locataires"] = [{"id_bail": 5, "id_locataire": 42}]
 
         response = client.delete(self.DETACH_URL, headers=auth_headers)
         assert response.status_code == 204

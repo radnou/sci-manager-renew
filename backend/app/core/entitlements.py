@@ -163,13 +163,7 @@ def resolve_plan_key_from_price_id(price_id: str | None) -> PlanKey | None:
     if result is not None:
         return result
 
-    # Fallback: detect plan from price_id naming convention (e.g. "price_pro_demo")
-    price_lower = price_id.lower()
-    if "pro" in price_lower or "lifetime" in price_lower:
-        return PlanKey.PRO
-    if "starter" in price_lower:
-        return PlanKey.STARTER
-    return None
+    return PlanKey.FREE
 
 
 def build_plan_snapshot(plan_key: PlanKey | str) -> dict[str, Any]:

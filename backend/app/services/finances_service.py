@@ -62,7 +62,7 @@ async def get_finances_overview(supabase_client, user_id: str, period_months: in
             **_empty_response(),
             "patrimoine_total": patrimoine_total,
             "repartition_sci": [
-                {"sci_nom": sci_map.get(sid, "?"), "revenus": 0, "charges": 0}
+                {"sci_id": str(sid), "sci_nom": sci_map.get(sid, "?"), "revenus": 0, "charges": 0}
                 for sid in sci_ids
             ],
         }
@@ -154,6 +154,7 @@ async def get_finances_overview(supabase_client, user_id: str, period_months: in
 
     repartition_sci = [
         {
+            "sci_id": str(sid),
             "sci_nom": sci_map.get(str(sid), "?"),
             "revenus": round(sci_revenus.get(str(sid), 0), 2),
             "charges": round(sci_charges.get(str(sid), 0), 2),

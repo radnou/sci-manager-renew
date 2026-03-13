@@ -37,7 +37,7 @@ class DocumentBienEmbed(BaseModel):
     id: str | int
     nom: str
     categorie: str = "autre"
-    file_url: str
+    url: str
     file_size: Optional[int] = None
     uploaded_at: datetime
 

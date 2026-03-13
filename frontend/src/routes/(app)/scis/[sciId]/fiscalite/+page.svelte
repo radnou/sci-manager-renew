@@ -177,6 +177,19 @@
 	</div>
 
 	<!-- CERFA 2044 Generation -->
+	{#if sci.regime_fiscal === 'is' || sci.regime_fiscal === 'IS'}
+		<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+			<div class="flex items-center gap-2">
+				<FileText class="h-5 w-5 text-sky-600 dark:text-sky-400" />
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+					Déclaration fiscale
+				</h2>
+			</div>
+			<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+				Les SCI à l'IS utilisent la liasse fiscale 2065 (hors périmètre).
+			</p>
+		</div>
+	{:else}
 	<div
 		class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
 	>
@@ -227,6 +240,7 @@
 			<p class="mt-3 text-sm text-rose-600 dark:text-rose-400">{cerfaError}</p>
 		{/if}
 	</div>
+	{/if}
 
 	<!-- Exercices fiscaux -->
 	<div
@@ -380,7 +394,7 @@
 								<td
 									class="py-3 text-right font-semibold {resultatColor(ex.resultat_fiscal)}"
 								>
-									{formatEur(ex.resultat_fiscal ?? 0)}
+									{ex.resultat_fiscal != null ? formatEur(ex.resultat_fiscal) : '—'}
 								</td>
 								{#if isGerant}
 									<td class="py-3 text-right">

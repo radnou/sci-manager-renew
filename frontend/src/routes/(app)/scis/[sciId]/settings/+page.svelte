@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { Building2, MapPin, Landmark, Scale, Loader2, ArrowLeft } from 'lucide-svelte';
+	import { invalidateAll } from '$app/navigation';
 	import type { SCIDetail } from '$lib/api';
 	import { updateSci } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast';
@@ -40,8 +41,8 @@
 				objet_social: objetSocial.trim() || null,
 				rcs_ville: rcsVille.trim() || null
 			});
+			await invalidateAll();
 			addToast({ title: 'SCI modifiée', description: 'Les informations ont été mises à jour.', variant: 'success' });
-			window.location.reload();
 		} catch (err: any) {
 			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de modifier la SCI.', variant: 'error' });
 		} finally {

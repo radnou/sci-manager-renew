@@ -53,12 +53,14 @@
 			value: noLoyers ? '—' : formatPercent(kpis.taux_recouvrement),
 			hint: noLoyers ? 'Enregistrez un loyer pour activer' : '',
 			icon: TrendingUp,
-			iconColor:
-				kpis.taux_recouvrement >= 80
+			iconColor: noLoyers
+				? 'text-slate-400 dark:text-slate-500'
+				: kpis.taux_recouvrement >= 80
 					? 'text-emerald-500 dark:text-emerald-400'
 					: 'text-amber-500 dark:text-amber-400',
-			bgIcon:
-				kpis.taux_recouvrement >= 80
+			bgIcon: noLoyers
+				? 'bg-slate-100 dark:bg-slate-800'
+				: kpis.taux_recouvrement >= 80
 					? 'bg-emerald-50 dark:bg-emerald-950/40'
 					: 'bg-amber-50 dark:bg-amber-950/40'
 		},
@@ -82,9 +84,9 @@
 {#if isEmpty}
 	<EmptyState
 		icon={BarChart3}
-		title="Vos indicateurs apparaitront ici"
-		description="Enregistrez votre premiere SCI et un loyer pour voir vos KPIs : nombre de biens, taux de recouvrement, cashflow net."
-		ctaText="Creer une SCI"
+		title="Vos indicateurs apparaîtront ici"
+		description="Enregistrez votre première SCI et un loyer pour voir vos KPIs : nombre de biens, taux de recouvrement, cashflow net."
+		ctaText="Créer une SCI"
 		ctaHref="/scis"
 	/>
 {:else}

@@ -54,7 +54,7 @@ def test_generate_cerfa_2044_disabled(client, auth_headers, monkeypatch, fake_su
     assert data["details"]["flag"] == "feature_cerfa_generation"
 
 
-def test_cerfa_2044_blocked_for_free_plan(client, auth_headers):
+def test_cerfa_2044_blocked_for_free_plan(client, auth_headers, free_plan):
     """Free users cannot access CERFA 2044 (cerfa_enabled=False for FREE plan)."""
     payload = {
         "annee": 2025,
@@ -68,7 +68,7 @@ def test_cerfa_2044_blocked_for_free_plan(client, auth_headers):
     assert data["code"] == "upgrade_required"
 
 
-def test_cerfa_2044_pdf_blocked_for_free_plan(client, auth_headers):
+def test_cerfa_2044_pdf_blocked_for_free_plan(client, auth_headers, free_plan):
     """Free users cannot access CERFA 2044 PDF (cerfa_enabled=False for FREE plan)."""
     payload = {
         "annee": 2025,

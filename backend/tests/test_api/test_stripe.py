@@ -232,7 +232,7 @@ def test_sync_subscription_deleted_with_service_client(monkeypatch):
     assert writes["executed"] is True
 
 
-def test_get_subscription_returns_free_fallback(client, auth_headers):
+def test_get_subscription_returns_free_fallback(client, auth_headers, free_plan):
     response = client.get("/api/v1/stripe/subscription", headers=auth_headers)
     assert response.status_code == 200
     payload = response.json()

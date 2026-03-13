@@ -17,16 +17,38 @@ settings.cors_origins = ["http://testserver"]
 # Disable rate limiting in tests to avoid 429 errors
 limiter.enabled = False
 
+# ── Seed data (deep-copied into every fresh FakeSupabaseClient) ──────────
 
-@pytest.fixture
-def client() -> TestClient:
-    # Temporarily allow testserver host
-    original_allowed = settings.allowed_hosts if hasattr(settings, "allowed_hosts") else None
-    settings.allowed_hosts = ["testserver", "localhost", "*.gerersci.fr"]
-    with TestClient(app, base_url="http://testserver") as test_client:
-        yield test_client
-    if original_allowed:
-        settings.allowed_hosts = original_allowed
+_INITIAL_STORE: dict[str, list[dict]] = {
+    "sci": [
+        {"id": "sci-1", "nom": "SCI Mosa Belleville", "siren": "123456789", "regime_fiscal": "IR"},
+        {"id": "sci-2", "nom": "SCI Horizon Lyon", "siren": "987654321", "regime_fiscal": "IS"},
+    ],
+    "biens": [
+        {"id": "bien-1", "id_sci": "sci-1", "adresse": "1 rue de la Paix", "ville": "Paris", "code_postal": "75001", "type_bien": "appartement", "surface_m2": 50, "nb_pieces": 2, "loyer_cc": 1200, "statut": "loue", "tmi": 30},
+        {"id": "bien-9", "id_sci": "sci-2", "adresse": "42 avenue QA", "ville": "Lyon", "code_postal": "69001", "type_bien": "appartement", "surface_m2": 35, "nb_pieces": 1, "loyer_cc": 980, "statut": "loue", "tmi": 30},
+        {"id": "bien-free", "id_sci": "sci-1", "adresse": "5 rue Gratuite", "ville": "Lyon", "code_postal": "69002", "type_bien": "studio", "surface_m2": 20, "nb_pieces": 1, "loyer_cc": 800, "statut": "loue", "tmi": 30},
+    ],
+    "locataires": [],
+    "loyers": [
+        {"id": "loyer-1", "id_bien": "bien-1", "date_loyer": "2026-03-01", "montant": 1200.0, "statut": "paye"},
+        {"id": "loyer-2", "id_bien": "bien-9", "date_loyer": "2026-04-01", "montant": 980.0, "statut": "paye"},
+        {"id": "loyer-free", "id_bien": "bien-free", "date_loyer": "2026-01-01", "montant": 800.0, "statut": "paye"},
+    ],
+    "charges": [],
+    "fiscalite": [],
+    "admins": [
+        {"user_id": "user-123"},
+    ],
+    "subscriptions": [
+        {"id": "sub-1", "user_id": "user-123", "status": "active", "plan_key": "pro", "is_active": True, "onboarding_completed": True},
+    ],
+    "associes": [
+        {"id": "associe-1", "id_sci": "sci-1", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 60, "role": "gerant"},
+        {"id": "associe-1b", "id_sci": "sci-1", "user_id": "user-456", "nom": "Camille Bernard", "email": "camille.bernard@sci.local", "part": 40, "role": "associe"},
+        {"id": "associe-2", "id_sci": "sci-2", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 100, "role": "associe"},
+    ],
+}
 
 
 class FakeResult:
@@ -238,70 +260,27 @@ class FakeSupabaseClient:
     def __init__(self):
         self.auth = FakeAuth()
         self.storage = _FakeStorageProxy()
-        self.store: dict[str, list[dict]] = {
-            "sci": [
-                {
-                    "id": "sci-1",
-                    "nom": "SCI Mosa Belleville",
-                    "siren": "123456789",
-                    "regime_fiscal": "IR",
-                },
-                {
-                    "id": "sci-2",
-                    "nom": "SCI Horizon Lyon",
-                    "siren": "987654321",
-                    "regime_fiscal": "IS",
-                },
-            ],
-            "biens": [],
-            "locataires": [],
-            "loyers": [],
-            "charges": [],
-            "fiscalite": [],
-            "admins": [
-                {"user_id": "user-123"},
-            ],
-            "subscriptions": [],
-            "associes": [
-                {
-                    "id": "associe-1",
-                    "id_sci": "sci-1",
-                    "user_id": "user-123",
-                    "nom": "Test User",
-                    "email": "test.user@sci.local",
-                    "part": 60,
-                    "role": "gerant",
-                },
-                {
-                    "id": "associe-1b",
-                    "id_sci": "sci-1",
-                    "user_id": "user-456",
-                    "nom": "Camille Bernard",
-                    "email": "camille.bernard@sci.local",
-                    "part": 40,
-                    "role": "associe",
-                },
-                {
-                    "id": "associe-2",
-                    "id_sci": "sci-2",
-                    "user_id": "user-123",
-                    "nom": "Test User",
-                    "email": "test.user@sci.local",
-                    "part": 100,
-                    "role": "associe",
-                },
-            ],
-        }
+        self.store: dict[str, list[dict]] = deepcopy(_INITIAL_STORE)
+
+    def reset_store(self):
+        """Reset store to initial seed data (called between tests)."""
+        self.store = deepcopy(_INITIAL_STORE)
+        self.storage = _FakeStorageProxy()
 
     def table(self, name: str) -> FakeQuery:
         return FakeQuery(self.store, name)
 
 
-@pytest.fixture
-def fake_storage():
+# ── Session-scoped fixtures (boot app + monkeypatch once per worker) ─────
+
+@pytest.fixture(scope="session")
+def _fake_storage_session():
     class FakeStorageService:
         def __init__(self):
             self.files: dict[str, bytes] = {}
+
+        def reset(self):
+            self.files.clear()
 
         async def create_bucket_if_not_exists(self) -> bool:
             return True
@@ -328,13 +307,14 @@ def fake_storage():
     return FakeStorageService()
 
 
-@pytest.fixture
-def fake_supabase() -> FakeSupabaseClient:
+@pytest.fixture(scope="session")
+def _fake_supabase_session() -> FakeSupabaseClient:
     return FakeSupabaseClient()
 
 
-@pytest.fixture(autouse=True)
-def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseClient, fake_storage):
+@pytest.fixture(scope="session")
+def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient:
+    """Boot TestClient + monkeypatch once per xdist worker."""
     from app.api.v1 import associes, biens, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
     from app.api.v1 import dashboard, scis_biens, notification_preferences
     from app import main
@@ -342,36 +322,71 @@ def patch_supabase(monkeypatch: pytest.MonkeyPatch, fake_supabase: FakeSupabaseC
     from app.services import subscription_service
     from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
-    monkeypatch.setattr(quitus, "storage_service", fake_storage)
+    fake_supabase = _fake_supabase_session
+    fake_storage = _fake_storage_session
 
-    # Patch get_supabase_service_client everywhere it's used
-    # Must have cache_clear() to satisfy shutdown handler
-    def fake_service():
-        return fake_supabase
-    fake_service.cache_clear = lambda: None
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(quitus, "storage_service", fake_storage)
 
-    # Patch all 12 API modules that now use get_supabase_service_client via _get_client()
-    for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
-                notifications, dashboard, scis_biens, notification_preferences]:
-        monkeypatch.setattr(mod, "get_supabase_service_client", fake_service)
+        def fake_service():
+            return fake_supabase
+        fake_service.cache_clear = lambda: None
 
-    def fake_anon():
-        return fake_supabase
-    fake_anon.cache_clear = lambda: None
+        for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
+                    notifications, dashboard, scis_biens, notification_preferences, quitus]:
+            mp.setattr(mod, "get_supabase_service_client", fake_service)
 
-    monkeypatch.setattr(auth, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(files, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(stripe, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(subscription_service, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(onboarding, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(finances, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(admin, "get_service_client", fake_service)
-    monkeypatch.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
-    monkeypatch.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
-    monkeypatch.setattr(paywall_mod, "get_supabase_service_client", fake_service)
+        def fake_anon():
+            return fake_supabase
+        fake_anon.cache_clear = lambda: None
 
-    monkeypatch.setattr(main, "shutdown_event", __import__("asyncio").Event())
+        mp.setattr(auth, "get_supabase_service_client", fake_service)
+        mp.setattr(files, "get_supabase_service_client", fake_service)
+        mp.setattr(gdpr, "get_supabase_service_client", fake_service)
+        mp.setattr(stripe, "get_supabase_service_client", fake_service)
+        mp.setattr(subscription_service, "get_supabase_service_client", fake_service)
+        mp.setattr(onboarding, "get_supabase_service_client", fake_service)
+        mp.setattr(finances, "get_supabase_service_client", fake_service)
+        mp.setattr(admin, "get_service_client", fake_service)
+        mp.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
+        mp.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
+        mp.setattr(paywall_mod, "get_supabase_service_client", fake_service)
+
+        mp.setattr(main, "shutdown_event", __import__("asyncio").Event())
+
+        settings.allowed_hosts = ["testserver", "localhost", "*.gerersci.fr"]
+        with TestClient(app, base_url="http://testserver") as test_client:
+            yield test_client
+
+
+# ── Function-scoped fixtures (exposed to tests, reset store each time) ───
+
+@pytest.fixture(autouse=True)
+def _reset_store(_fake_supabase_session, _fake_storage_session):
+    """Reset the in-memory store before each test for isolation."""
+    _fake_supabase_session.reset_store()
+    _fake_storage_session.reset()
+
+
+@pytest.fixture
+def client(_session_client) -> TestClient:
+    return _session_client
+
+
+@pytest.fixture
+def fake_supabase(_fake_supabase_session) -> FakeSupabaseClient:
+    return _fake_supabase_session
+
+
+@pytest.fixture
+def fake_storage(_fake_storage_session):
+    return _fake_storage_session
+
+
+@pytest.fixture
+def free_plan(fake_supabase: FakeSupabaseClient):
+    """Clear subscriptions so user-123 falls back to free plan."""
+    fake_supabase.store["subscriptions"] = []
 
 
 @pytest.fixture
