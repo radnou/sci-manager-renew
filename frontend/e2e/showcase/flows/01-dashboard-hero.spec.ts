@@ -21,14 +21,13 @@ function buildDashboardPayload() {
 
 	return {
 		kpis: {
-			total_scis: 2,
-			total_biens: 4,
-			total_loyers_mois: 6_670,
-			total_charges_mois: 770,
-			taux_occupation: 100,
-			loyers_impayes: 0,
-			revenus_annuels: 80_040,
-			charges_annuelles: 9_240
+			sci_count: 2,
+			biens_count: 4,
+			taux_recouvrement: 97.5,
+			cashflow_net: 70_800,
+			loyers_total: 80_040,
+			loyers_payes: 78_039,
+			charges_total: 9_240
 		},
 		alertes: [
 			{
@@ -50,31 +49,35 @@ function buildDashboardPayload() {
 			{
 				id: 'sci-belleville',
 				nom: belleville.nom,
+				statut: 'exploitation',
 				biens_count: 2,
-				loyers_count: 24,
-				total_monthly_rent: 2_270,
-				user_role: 'gerant'
+				loyer_total: 27_240,
+				recouvrement: 96.2
 			},
 			{
 				id: 'sci-lyon',
 				nom: lyon.nom,
+				statut: 'exploitation',
 				biens_count: 2,
-				loyers_count: 24,
-				total_monthly_rent: 4_400,
-				user_role: 'gerant'
+				loyer_total: 52_800,
+				recouvrement: 98.5
 			}
 		],
-		activite_recente: [
-			{ type: 'loyer_paye', message: 'Loyer de fevrier paye — Fatima Benali', date: '2026-03-05' },
+		activite: [
+			{ id: 'act-1', type: 'loyer', description: 'Loyer de 1 430 \u20ac \u2014 pay\u00e9', created_at: '2026-03-05T10:00:00Z', sci_nom: belleville.nom },
 			{
-				type: 'document_upload',
-				message: 'Quittance generee — 12 rue de Belleville',
-				date: '2026-03-04'
+				id: 'act-2',
+				type: 'quittance',
+				description: 'Quittance g\u00e9n\u00e9r\u00e9e \u2014 12 rue de Belleville',
+				created_at: '2026-03-04T14:00:00Z',
+				sci_nom: belleville.nom
 			},
 			{
-				type: 'loyer_paye',
-				message: 'Loyer de fevrier paye — SARL Boulangerie Hugo',
-				date: '2026-03-03'
+				id: 'act-3',
+				type: 'loyer',
+				description: 'Loyer de 4 400 \u20ac \u2014 pay\u00e9',
+				created_at: '2026-03-03T09:00:00Z',
+				sci_nom: lyon.nom
 			}
 		]
 	};

@@ -24,18 +24,17 @@ const SUBSCRIPTION = PRO_SUBSCRIPTION;
 
 const DASHBOARD_DATA = {
 	kpis: {
-		total_scis: 2,
-		total_biens: 4,
-		total_loyers_mois: 6_670,
-		total_charges_mois: 770,
-		taux_occupation: 100,
-		loyers_impayes: 0,
-		revenus_annuels: 80_040,
-		charges_annuelles: 9_240
+		sci_count: 2,
+		biens_count: 4,
+		taux_recouvrement: 97.5,
+		cashflow_net: 70_800,
+		loyers_total: 80_040,
+		loyers_payes: 78_039,
+		charges_total: 9_240
 	},
 	alertes: [
 		{
-			type: 'bail_expiring',
+			type: 'bail_expire_bientot',
 			message: 'Bail de Emilie Dupont expire dans 45 jours',
 			severity: 'warning',
 			sci_nom: belleville.nom,
@@ -46,14 +45,14 @@ const DASHBOARD_DATA = {
 		{
 			id: 'sci-belleville',
 			nom: belleville.nom,
+			statut: 'exploitation',
 			biens_count: 2,
-			loyers_count: 24,
-			total_monthly_rent: 2_270,
-			user_role: 'gerant'
+			loyer_total: 27_240,
+			recouvrement: 96.2
 		}
 	],
-	activite_recente: [
-		{ type: 'loyer_paye', message: 'Loyer de fevrier paye — Fatima Benali', date: '2026-03-05' }
+	activite: [
+		{ id: 'act-1', type: 'loyer', description: 'Loyer de 1 430 \u20ac \u2014 pay\u00e9', created_at: '2026-03-05T10:00:00Z', sci_nom: belleville.nom }
 	]
 };
 
@@ -69,7 +68,11 @@ const BIENS = belleville.biens.map((b, i) => ({
 	loyer_cc: b.loyer_cc,
 	charges: b.charges,
 	dpe_classe: b.dpe_classe,
-	tmi: 30
+	tmi: 30,
+	statut: 'loue',
+	bail_actif: { id: `bail-${i + 1}`, date_debut: '2023-09-01', date_fin: '2026-04-28' },
+	rentabilite_brute: 8.2 - i * 0.5,
+	cashflow_annuel: 9_840 - i * 2_000
 }));
 
 const SCI_DETAIL = {
@@ -93,7 +96,10 @@ const SCI_DETAIL = {
 	recent_loyers: [],
 	recent_charges: [],
 	fiscalite: [],
-	associes: []
+	associes: [
+		{ id: 'associe-1', nom: 'Sophie Moreau', email: 'sophie.moreau@gerersci.fr', part: 60, role: 'gerant', user_id: 'user-showcase-001' },
+		{ id: 'associe-2', nom: 'Marc Moreau', email: 'marc.moreau@gmail.com', part: 40, role: 'associe', user_id: 'user-other-1' }
+	]
 };
 
 async function installMobileMocks(page: Page) {

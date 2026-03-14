@@ -12,7 +12,7 @@ import { test as base, type Page } from '@playwright/test';
 // ---------------------------------------------------------------------------
 // Auth skip guard
 // ---------------------------------------------------------------------------
-export const skipIfNoAuth = () => !process.env.E2E_AUTH_TOKEN;
+export const skipIfNoAuth = () => false; // Showcase tests use page.route() mocks, no real auth needed
 
 // ---------------------------------------------------------------------------
 // Screenshot helper — viewport + full-page captures with animation delay

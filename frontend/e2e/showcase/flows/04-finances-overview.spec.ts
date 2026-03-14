@@ -24,33 +24,24 @@ const belleville = MARKETING_SCIS[0];
 const lyon = MARKETING_SCIS[1];
 
 const FINANCES_DATA = {
-	revenus_mensuels: 6_670,
-	charges_mensuelles: 770,
-	cashflow_mensuel: 5_900,
-	revenus_annuels: 80_040,
-	charges_annuelles: 9_240,
-	cashflow_annuel: 70_800,
-	taux_occupation: 100,
-	rentabilite_brute_moyenne: 7.8,
-	rentabilite_nette_moyenne: 5.6,
-	repartition_par_sci: [
+	revenus_total: 80_040,
+	charges_total: 9_240,
+	cashflow_net: 70_800,
+	patrimoine_total: 620_000,
+	taux_recouvrement: 97.5,
+	rentabilite_moyenne: 7.8,
+	repartition_sci: [
 		{
 			sci_id: 'sci-belleville',
 			sci_nom: belleville.nom,
-			revenus_mensuels: 2_270,
-			charges_mensuelles: 270,
-			cashflow_mensuel: 2_000,
-			biens_count: 2,
-			taux_occupation: 100
+			revenus: 27_240,
+			charges: 3_240
 		},
 		{
 			sci_id: 'sci-lyon',
 			sci_nom: lyon.nom,
-			revenus_mensuels: 4_400,
-			charges_mensuelles: 500,
-			cashflow_mensuel: 3_900,
-			biens_count: 2,
-			taux_occupation: 100
+			revenus: 52_800,
+			charges: 6_000
 		}
 	],
 	evolution_mensuelle: Array.from({ length: 12 }, (_, i) => {
@@ -155,18 +146,8 @@ test.describe.serial('Showcase: Finances Overview', () => {
 		await page.waitForTimeout(2000);
 
 		// Scroll down to the repartition table
-		const repartition = page
-			.locator('table, [data-testid="repartition"], section, div')
-			.filter({ hasText: /r[eé]partition|par sci/i })
-			.first();
-		if (await repartition.isVisible()) {
-			await repartition.scrollIntoViewIfNeeded();
-			await page.waitForTimeout(600);
-		} else {
-			// Fallback: scroll to bottom half of page
-			await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.6));
-			await page.waitForTimeout(600);
-		}
+		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+		await page.waitForTimeout(800);
 
 		await capture(page, 'finances-repartition');
 	});

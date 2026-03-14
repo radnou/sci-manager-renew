@@ -33,7 +33,11 @@ const BIENS = belleville.biens.map((b, i) => ({
 	loyer_cc: b.loyer_cc,
 	charges: b.charges,
 	dpe_classe: b.dpe_classe,
-	tmi: 30
+	tmi: 30,
+	statut: 'loue',
+	bail_actif: { id: `bail-${i + 1}`, date_debut: '2023-09-01', date_fin: '2026-04-28' },
+	rentabilite_brute: 8.2 - i * 0.5,
+	cashflow_annuel: 9_840 - i * 2_000
 }));
 
 const SCI_DETAIL = {
@@ -102,7 +106,8 @@ const SCI_DETAIL = {
 		nom: a.nom,
 		email: a.email,
 		part: a.part,
-		role: a.role
+		role: a.role,
+		user_id: i === 0 ? 'user-showcase-001' : `user-other-${i}`
 	}))
 };
 

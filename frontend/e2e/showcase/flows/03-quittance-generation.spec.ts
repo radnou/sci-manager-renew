@@ -34,6 +34,9 @@ const BIEN = {
 	charges: belleville.biens[0].charges,
 	dpe_classe: belleville.biens[0].dpe_classe,
 	tmi: 30,
+	statut: 'loue',
+	rentabilite_brute: 8.2,
+	cashflow_annuel: 9_840,
 	locataires: [
 		{
 			id: 'loc-1',
@@ -94,7 +97,10 @@ const SCI_DETAIL = {
 	recent_loyers: LOYERS,
 	recent_charges: [],
 	fiscalite: [],
-	associes: []
+	associes: [
+		{ id: 'associe-1', nom: 'Sophie Moreau', email: 'sophie.moreau@gerersci.fr', part: 60, role: 'gerant', user_id: 'user-showcase-001' },
+		{ id: 'associe-2', nom: 'Marc Moreau', email: 'marc.moreau@gmail.com', part: 40, role: 'associe', user_id: 'user-other-1' }
+	]
 };
 
 async function installQuittanceMocks(page: Page) {

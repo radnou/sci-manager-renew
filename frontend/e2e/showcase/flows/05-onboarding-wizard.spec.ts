@@ -142,18 +142,14 @@ async function installOnboardingMocks(page: Page) {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					kpis: {
-						total_scis: 1,
-						total_biens: 1,
-						total_loyers_mois: 0,
-						total_charges_mois: 0,
-						taux_occupation: 0,
-						loyers_impayes: 0,
-						revenus_annuels: 0,
-						charges_annuelles: 0
+						sci_count: 1,
+						biens_count: 1,
+						taux_recouvrement: 0,
+						cashflow_net: 0
 					},
 					alertes: [],
-					scis: [{ id: 'sci-belleville', nom: belleville.nom, biens_count: 1, loyers_count: 0, total_monthly_rent: 0, user_role: 'gerant' }],
-					activite_recente: []
+					scis: [{ id: 'sci-belleville', nom: belleville.nom, statut: 'configuration', biens_count: 1, loyer_total: 0, recouvrement: 0 }],
+					activite: []
 				})
 			});
 			return;
