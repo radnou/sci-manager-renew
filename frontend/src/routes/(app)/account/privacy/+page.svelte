@@ -105,17 +105,17 @@
 				if (data.export_url) {
 					window.open(data.export_url, '_blank', 'noopener,noreferrer');
 					addToast({
-						title: 'Export pret. Le telechargement a ete ouvert dans un nouvel onglet.',
+						title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.',
 						variant: 'success'
 					});
 				} else {
 					addToast({
-						title: "Export cree, mais aucun lien de telechargement n'a ete retourne.",
+						title: "Export créé, mais aucun lien de téléchargement n'a été retourné.",
 						variant: 'error'
 					});
 				}
 			} else {
-				addToast({ title: "Erreur lors de l'export des donnees", variant: 'error' });
+				addToast({ title: "Erreur lors de l'export des données", variant: 'error' });
 			}
 		} catch (error) {
 			addToast({ title: 'Erreur reseau', variant: 'error' });
@@ -435,11 +435,11 @@
 							<li>Informations du compte (email, dates de creation et connexion)</li>
 							<li>SCI et associes</li>
 							<li>Biens immobiliers</li>
-							<li>Loyers enregistres</li>
-							<li>Charges et donnees fiscales</li>
+							<li>Loyers enregistrés</li>
+							<li>Charges et données fiscales</li>
 						</ul>
 						<p class="mt-3 text-xs text-slate-500 dark:text-slate-500">
-							Le lien de telechargement est valide 30 minutes. L'export est limite a 3
+							Le lien de téléchargement est valide 30 minutes. L'export est limité à 3
 							demandes par heure.
 						</p>
 					</div>

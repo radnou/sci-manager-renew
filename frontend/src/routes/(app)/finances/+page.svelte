@@ -314,7 +314,7 @@
 								{@const cf = sci.revenus - sci.charges}
 								<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
 									<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">
-										{sci.sci_nom}
+										<a href="/scis/{sci.sci_id}" class="hover:text-sky-600 dark:hover:text-sky-400 transition-colors underline decoration-slate-300 dark:decoration-slate-600 underline-offset-2">{sci.sci_nom}</a>
 									</td>
 									<td class="py-3 pr-4 text-right text-emerald-700 dark:text-emerald-400">
 										{formatEur(sci.revenus)}

@@ -27,7 +27,7 @@
 		{ value: '/scis', label: 'Portefeuille' },
 		{ value: '/exploitation', label: 'Exploitation' },
 		{ value: '/finance', label: 'Finance' },
-		{ value: '/settings', label: "Parametres de l'application" }
+		{ value: '/settings', label: "Paramètres de l'application" }
 	];
 
 	const notificationTypeLabels: Record<string, string> = {
@@ -36,7 +36,7 @@
 		quittance_pending: 'Quittance en attente',
 		pno_expiring: 'PNO expirant',
 		new_loyer: 'Nouveau loyer',
-		new_associe: 'Nouvel associe',
+		new_associe: 'Nouvel associé',
 		subscription_expiring: 'Abonnement expirant'
 	};
 
@@ -74,12 +74,12 @@
 				} else {
 					notifError = formatApiErrorMessage(
 						notifResult.reason,
-						'Impossible de charger les preferences de notification.'
+						'Impossible de charger les préférences de notification.'
 					);
 				}
 			})
 			.catch(() => {
-				notifError = 'Impossible de charger les preferences de notification.';
+				notifError = 'Impossible de charger les préférences de notification.';
 			})
 			.finally(() => {
 				notifLoading = false;
@@ -89,8 +89,8 @@
 	function handleSave() {
 		saveApplicationPreferences(preferences);
 		addToast({
-			title: 'Parametres enregistres',
-			description: "Les preferences d'application ont ete mises a jour sur ce navigateur.",
+			title: 'Paramètres enregistrés',
+			description: "Les préférences d'application ont été mises à jour sur ce navigateur.",
 			variant: 'success'
 		});
 	}
@@ -103,13 +103,13 @@
 			notifPreferences = result.preferences;
 			addToast({
 				title: 'Notifications mises a jour',
-				description: 'Vos preferences de notification ont ete enregistrees.',
+				description: 'Vos préférences de notification ont été enregistrées.',
 				variant: 'success'
 			});
 		} catch (error) {
 			notifError = formatApiErrorMessage(
 				error,
-				'Impossible de sauvegarder les preferences de notification.'
+				'Impossible de sauvegarder les préférences de notification.'
 			);
 		} finally {
 			notifSaving = false;

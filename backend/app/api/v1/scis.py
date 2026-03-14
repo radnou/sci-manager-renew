@@ -375,7 +375,7 @@ async def delete_sci(
                         client.table("bail_locataires").delete().eq("id_bail", bail_id).execute()
             except Exception:
                 pass
-        for table in ["charges", "loyers", "baux", "locataires", "documents", "assurance_pno", "frais_agence"]:
+        for table in ["charges", "loyers", "baux", "locataires", "documents_bien", "assurances_pno", "frais_agence"]:
             for bid in bien_ids:
                 try:
                     client.table(table).delete().eq("id_bien", bid).execute()
@@ -383,7 +383,7 @@ async def delete_sci(
                     pass
 
     # Delete direct children by id_sci
-    for table in ["biens", "associes", "fiscalite", "notifications"]:
+    for table in ["biens", "associes", "fiscalite", "notifications", "notification_preferences"]:
         try:
             client.table(table).delete().eq("id_sci", sci_id).execute()
         except Exception:

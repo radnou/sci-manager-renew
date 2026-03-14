@@ -212,6 +212,10 @@
 			Générez un résumé simplifié de votre déclaration des revenus fonciers au format PDF.
 		</p>
 
+		<p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
+			⚠ Résultat simplifié (revenus − charges). Ne tient pas compte des abattements micro-foncier, amortissements ou reports déficitaires. Consultez votre comptable pour la déclaration officielle.
+		</p>
+
 		{#if exercices.length > 0}
 			<div class="mt-4 space-y-2">
 				{#each exercices as ex (ex.id ?? ex.annee)}
