@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
 	import {
@@ -19,6 +20,14 @@
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 	let showConfirmEmail = $state(false);
+
+	const planLabels: Record<string, string> = {
+		starter: 'Gestion (19€/mois)',
+		pro: 'Fiscal (39€/mois)',
+		lifetime: 'Lifetime',
+	};
+	const selectedPlan = $derived($page.url.searchParams.get('plan'));
+	const planLabel = $derived(selectedPlan ? planLabels[selectedPlan] ?? selectedPlan : null);
 
 	const passwordMinLength = 8;
 
@@ -81,10 +90,14 @@
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">
 			<CardHeader>
-				<p class="sci-eyebrow">Plan Essentiel — Gratuit</p>
+				<p class="sci-eyebrow">{planLabel ? `Plan ${planLabel}` : 'Plan Essentiel — Gratuit'}</p>
 				<CardTitle class="text-2xl">Créer un compte</CardTitle>
 				<CardDescription>
-					Gérez jusqu'à 1 SCI et 2 biens gratuitement. Passez à un plan supérieur quand vous voulez.
+					{#if planLabel}
+						Créez votre compte pour activer le plan {planLabel}.
+					{:else}
+						Gérez jusqu'à 1 SCI et 2 biens gratuitement. Passez à un plan supérieur quand vous voulez.
+					{/if}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>

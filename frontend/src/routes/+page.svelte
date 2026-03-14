@@ -36,7 +36,7 @@
 				window.location.href = data.url;
 			}
 		} catch {
-			window.location.href = '/register';
+			window.location.href = `/register?plan=${planKey}`;
 		} finally {
 			checkoutLoading = null;
 		}
