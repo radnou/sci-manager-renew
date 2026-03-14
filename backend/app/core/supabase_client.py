@@ -1,7 +1,7 @@
 from functools import lru_cache
 
 from fastapi import Request
-from supabase import Client, create_client
+from supabase import Client, ClientOptions, create_client
 
 from .config import settings
 
@@ -32,5 +32,5 @@ def get_supabase_user_client(request: Request) -> Client:
     return create_client(
         settings.supabase_url,
         settings.supabase_anon_key,
-        options={"headers": {"Authorization": f"Bearer {token}"}},
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"}),
     )
