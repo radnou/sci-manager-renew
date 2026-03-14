@@ -10,8 +10,10 @@ from reportlab.pdfgen import canvas
 
 from app.models.quitus import QuitusRequest
 
-# Register DejaVu Sans for proper accent support in PDFs.
-# Fall back to Helvetica if the font file is not available.
+# Register a TTF font with Latin-1 support for French accented characters.
+# Priority: DejaVu Sans (system) > Bitstream Vera (bundled with reportlab) > Helvetica.
+# Helvetica (Type 1) cannot render UTF-8 accents; Vera/DejaVu TTF fonts can.
+
 _FONT_NAME = "Helvetica"
 _FONT_NAME_BOLD = "Helvetica-Bold"
 
@@ -26,23 +28,57 @@ _DEJAVU_BOLD_PATHS = [
     "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
 ]
 
-for _path in _DEJAVU_PATHS:
-    if os.path.isfile(_path):
-        try:
-            pdfmetrics.registerFont(TTFont("DejaVuSans", _path))
-            _FONT_NAME = "DejaVuSans"
-        except Exception:
-            pass
-        break
 
-for _path in _DEJAVU_BOLD_PATHS:
-    if os.path.isfile(_path):
-        try:
-            pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", _path))
-            _FONT_NAME_BOLD = "DejaVuSans-Bold"
-        except Exception:
-            pass
-        break
+def _register_fonts() -> tuple[str, str]:
+    """Register a TTF font that supports accented characters and return (name, bold_name)."""
+    font_name = "Helvetica"
+    font_bold = "Helvetica-Bold"
+
+    # Try DejaVu Sans first (best Unicode coverage, common on Linux/Docker).
+    for path in _DEJAVU_PATHS:
+        if os.path.isfile(path):
+            try:
+                pdfmetrics.registerFont(TTFont("DejaVuSans", path))
+                font_name = "DejaVuSans"
+            except Exception:
+                pass
+            break
+
+    for path in _DEJAVU_BOLD_PATHS:
+        if os.path.isfile(path):
+            try:
+                pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", path))
+                font_bold = "DejaVuSans-Bold"
+            except Exception:
+                pass
+            break
+
+    # If DejaVu not found, use Bitstream Vera bundled with reportlab (always available).
+    if font_name == "Helvetica":
+        import reportlab
+
+        rl_fonts_dir = os.path.join(os.path.dirname(reportlab.__file__), "fonts")
+        vera_path = os.path.join(rl_fonts_dir, "Vera.ttf")
+        vera_bold_path = os.path.join(rl_fonts_dir, "VeraBd.ttf")
+
+        if os.path.isfile(vera_path):
+            try:
+                pdfmetrics.registerFont(TTFont("Vera", vera_path))
+                font_name = "Vera"
+            except Exception:
+                pass
+
+        if os.path.isfile(vera_bold_path):
+            try:
+                pdfmetrics.registerFont(TTFont("VeraBd", vera_bold_path))
+                font_bold = "VeraBd"
+            except Exception:
+                pass
+
+    return font_name, font_bold
+
+
+_FONT_NAME, _FONT_NAME_BOLD = _register_fonts()
 
 
 class QuitusService:
