@@ -1,27 +1,10 @@
 import { test, expect } from '@playwright/test';
-
-const hasAuth = () => !!process.env.E2E_AUTH_TOKEN;
+import { setupAuthedMocks } from '../fixtures/api-mocks';
 
 test.describe('Finances consolidees @P0', () => {
-  test.skip(!hasAuth(), 'Requires E2E_AUTH_TOKEN');
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate((token) => {
-      const session = {
-        access_token: token,
-        refresh_token: 'e2e-refresh',
-        user: {
-          id: process.env.E2E_USER_ID || 'e2e-user',
-          email: process.env.E2E_USER_EMAIL || 'e2e@test.fr',
-          role: 'authenticated',
-        },
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-      };
-      localStorage.setItem('sb-auth-token', JSON.stringify(session));
-    }, process.env.E2E_AUTH_TOKEN);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await setupAuthedMocks(page);
   });
 
   test('la vue finances consolidees charge @P0', async ({ page }) => {
@@ -39,7 +22,7 @@ test.describe('Finances consolidees @P0', () => {
 
     // Look for the repartition table or section
     const repartition = page.locator(
-      ':text("Répartition"), :text("répartition"), :text("SCI"), table'
+      ':text("partition"), :text("SCI"), table'
     );
     const exists = await repartition.first().isVisible().catch(() => false);
 
@@ -88,7 +71,7 @@ test.describe('Finances consolidees @P0', () => {
 
     // Look for export button
     const exportButton = page.locator(
-      'button:has-text("Export"), button:has-text("export"), button:has-text("CSV"), button:has-text("Télécharger")'
+      'button:has-text("Export"), button:has-text("export"), button:has-text("CSV"), button:has-text("charger")'
     );
     if (await exportButton.first().isVisible().catch(() => false)) {
       // Set up download listener

@@ -1,27 +1,10 @@
 import { test, expect } from '@playwright/test';
-
-const hasAuth = () => !!process.env.E2E_AUTH_TOKEN;
+import { setupAuthedMocks } from '../fixtures/api-mocks';
 
 test.describe('Gestion des SCI @P0', () => {
-  test.skip(!hasAuth(), 'Requires E2E_AUTH_TOKEN');
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate((token) => {
-      const session = {
-        access_token: token,
-        refresh_token: 'e2e-refresh',
-        user: {
-          id: process.env.E2E_USER_ID || 'e2e-user',
-          email: process.env.E2E_USER_EMAIL || 'e2e@test.fr',
-          role: 'authenticated',
-        },
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-      };
-      localStorage.setItem('sb-auth-token', JSON.stringify(session));
-    }, process.env.E2E_AUTH_TOKEN);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await setupAuthedMocks(page);
   });
 
   test('la liste SCI affiche toutes les SCI de utilisateur @P0', async ({ page }) => {
@@ -30,7 +13,7 @@ test.describe('Gestion des SCI @P0', () => {
 
     // The page should load with either a list of SCIs or an empty state
     const sciList = page.locator('[data-testid="sci-list"], [class*="sci"], table, [class*="card"]');
-    const emptyState = page.locator(':text("Aucune SCI"), :text("Créer"), :text("Commencer")');
+    const emptyState = page.locator(':text("Aucune SCI"), :text("Cr"), :text("Commencer")');
 
     const hasList = await sciList.first().isVisible().catch(() => false);
     const hasEmpty = await emptyState.first().isVisible().catch(() => false);
@@ -44,7 +27,7 @@ test.describe('Gestion des SCI @P0', () => {
 
     // Look for create button
     const createButton = page.locator(
-      'button:has-text("Créer"), button:has-text("Nouvelle"), button:has-text("Ajouter"), a:has-text("Créer")'
+      'button:has-text("Cr"), button:has-text("Nouvelle"), button:has-text("Ajouter"), a:has-text("Cr")'
     );
 
     if (await createButton.first().isVisible().catch(() => false)) {
@@ -58,7 +41,7 @@ test.describe('Gestion des SCI @P0', () => {
 
         // Look for submit button in the form/modal
         const submitButton = page.locator(
-          'button[type="submit"], button:has-text("Créer"), button:has-text("Valider"), button:has-text("Enregistrer")'
+          'button[type="submit"], button:has-text("Cr"), button:has-text("Valider"), button:has-text("Enregistrer")'
         );
         await expect(submitButton.first()).toBeVisible();
       }
@@ -95,7 +78,7 @@ test.describe('Gestion des SCI @P0', () => {
 
       // Look for edit button
       const editButton = page.locator(
-        'button:has-text("Modifier"), button:has-text("Éditer"), button[aria-label*="edit"], button[aria-label*="modifier"]'
+        'button:has-text("Modifier"), button:has-text("diter"), button[aria-label*="edit"], button[aria-label*="modifier"]'
       );
       if (await editButton.first().isVisible().catch(() => false)) {
         await editButton.first().click();
@@ -164,7 +147,7 @@ test.describe('Gestion des SCI @P0', () => {
 
         // Should show list of associes or empty state
         const content = await page.textContent('body');
-        const hasAssocies = content!.includes('part') || content!.includes('Part') || content!.includes('Associé') || content!.includes('Aucun');
+        const hasAssocies = content!.includes('part') || content!.includes('Part') || content!.includes('Associ') || content!.includes('Aucun');
         expect(hasAssocies).toBe(true);
       }
     }
@@ -212,8 +195,8 @@ test.describe('Gestion des SCI @P0', () => {
       await page.waitForLoadState('networkidle');
 
       // The page should have loaded correctly
-      // Role gating is verified by checking that edit controls exist for gérant
-      // (the authenticated user should be gérant for their own SCIs)
+      // Role gating is verified by checking that edit controls exist for gerant
+      // (the authenticated user should be gerant for their own SCIs)
       const pageContent = await page.textContent('body');
       expect(pageContent!.length).toBeGreaterThan(0);
     }

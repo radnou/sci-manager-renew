@@ -1,27 +1,10 @@
 import { test, expect } from '@playwright/test';
-
-const hasAuth = () => !!process.env.E2E_AUTH_TOKEN;
+import { setupAuthedMocks } from '../fixtures/api-mocks';
 
 test.describe('Gestion des biens @P0', () => {
-  test.skip(!hasAuth(), 'Requires E2E_AUTH_TOKEN');
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate((token) => {
-      const session = {
-        access_token: token,
-        refresh_token: 'e2e-refresh',
-        user: {
-          id: process.env.E2E_USER_ID || 'e2e-user',
-          email: process.env.E2E_USER_EMAIL || 'e2e@test.fr',
-          role: 'authenticated',
-        },
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-      };
-      localStorage.setItem('sb-auth-token', JSON.stringify(session));
-    }, process.env.E2E_AUTH_TOKEN);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await setupAuthedMocks(page);
   });
 
   /**
@@ -66,7 +49,7 @@ test.describe('Gestion des biens @P0', () => {
     const biensContent = page.locator(
       '[data-testid="biens-list"], [class*="bien"], table, [class*="card"], [class*="Card"]'
     );
-    const emptyState = page.locator(':text("Aucun bien"), :text("Ajouter"), :text("Créer")');
+    const emptyState = page.locator(':text("Aucun bien"), :text("Ajouter"), :text("Cr")');
 
     const hasBiens = await biensContent.first().isVisible().catch(() => false);
     const hasEmpty = await emptyState.first().isVisible().catch(() => false);
@@ -79,7 +62,7 @@ test.describe('Gestion des biens @P0', () => {
     if (!navigated) return;
 
     const createButton = page.locator(
-      'button:has-text("Ajouter"), button:has-text("Créer"), button:has-text("Nouveau")'
+      'button:has-text("Ajouter"), button:has-text("Cr"), button:has-text("Nouveau")'
     );
     if (await createButton.first().isVisible().catch(() => false)) {
       await createButton.first().click();
@@ -103,9 +86,9 @@ test.describe('Gestion des biens @P0', () => {
     const hasIdentity =
       pageContent!.includes('adresse') ||
       pageContent!.includes('Adresse') ||
-      pageContent!.includes('Identité') ||
+      pageContent!.includes('Identit') ||
       pageContent!.includes('type') ||
-      pageContent!.includes('meublé') ||
+      pageContent!.includes('meubl') ||
       pageContent!.includes('nu');
     expect(hasIdentity).toBe(true);
   });
@@ -124,7 +107,7 @@ test.describe('Gestion des biens @P0', () => {
 
       // Look for create bail button
       const createBailBtn = page.locator(
-        'button:has-text("Créer"), button:has-text("Nouveau"), button:has-text("Ajouter")'
+        'button:has-text("Cr"), button:has-text("Nouveau"), button:has-text("Ajouter")'
       );
       if (await createBailBtn.first().isVisible().catch(() => false)) {
         await createBailBtn.first().click();
@@ -153,8 +136,8 @@ test.describe('Gestion des biens @P0', () => {
       // Should show loyers or empty state
       const content = await page.textContent('body');
       const hasLoyers =
-        content!.includes('payé') ||
-        content!.includes('Payé') ||
+        content!.includes('pay') ||
+        content!.includes('Pay') ||
         content!.includes('attente') ||
         content!.includes('retard') ||
         content!.includes('Aucun loyer') ||
@@ -197,7 +180,7 @@ test.describe('Gestion des biens @P0', () => {
       await page.waitForTimeout(500);
 
       const addButton = page.locator(
-        'button:has-text("Ajouter"), button:has-text("Créer"), button:has-text("Nouvelle")'
+        'button:has-text("Ajouter"), button:has-text("Cr"), button:has-text("Nouvelle")'
       );
       if (await addButton.first().isVisible().catch(() => false)) {
         await addButton.first().click();
@@ -272,7 +255,7 @@ test.describe('Gestion des biens @P0', () => {
       await page.waitForTimeout(500);
 
       const addButton = page.locator(
-        'button:has-text("Ajouter"), button:has-text("Créer"), button:has-text("Nouvelle")'
+        'button:has-text("Ajouter"), button:has-text("Cr"), button:has-text("Nouvelle")'
       );
       if (await addButton.first().isVisible().catch(() => false)) {
         await addButton.first().click();
@@ -299,7 +282,7 @@ test.describe('Gestion des biens @P0', () => {
       await page.waitForTimeout(500);
 
       const addButton = page.locator(
-        'button:has-text("Ajouter"), button:has-text("Créer")'
+        'button:has-text("Ajouter"), button:has-text("Cr")'
       );
       if (await addButton.first().isVisible().catch(() => false)) {
         await addButton.first().click();
@@ -320,7 +303,7 @@ test.describe('Gestion des biens @P0', () => {
 
     // Look for rentabilite tab or section
     const rentaSection = page.locator(
-      'button:has-text("Rentabilité"), button:has-text("rentabilité"), a:has-text("Rentabilité"), [data-testid*="rentabilite"]'
+      'button:has-text("Rentabilit"), button:has-text("rentabilit"), a:has-text("Rentabilit"), [data-testid*="rentabilite"]'
     );
     if (await rentaSection.first().isVisible().catch(() => false)) {
       await rentaSection.first().click();

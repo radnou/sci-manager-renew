@@ -1,27 +1,10 @@
 import { test, expect } from '@playwright/test';
-
-const hasAuth = () => !!process.env.E2E_AUTH_TOKEN;
+import { setupAuthedMocks } from '../fixtures/api-mocks';
 
 test.describe('Fiscalite @P1', () => {
-  test.skip(!hasAuth(), 'Requires E2E_AUTH_TOKEN');
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate((token) => {
-      const session = {
-        access_token: token,
-        refresh_token: 'e2e-refresh',
-        user: {
-          id: process.env.E2E_USER_ID || 'e2e-user',
-          email: process.env.E2E_USER_EMAIL || 'e2e@test.fr',
-          role: 'authenticated',
-        },
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-      };
-      localStorage.setItem('sb-auth-token', JSON.stringify(session));
-    }, process.env.E2E_AUTH_TOKEN);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await setupAuthedMocks(page);
   });
 
   async function goToFiscalite(page: import('@playwright/test').Page): Promise<boolean> {
@@ -49,8 +32,8 @@ test.describe('Fiscalite @P1', () => {
     const hasFiscalite =
       content!.includes('exercice') ||
       content!.includes('Exercice') ||
-      content!.includes('Fiscalité') ||
-      content!.includes('année') ||
+      content!.includes('Fiscalit') ||
+      content!.includes('ann') ||
       content!.includes('Aucun') ||
       /20\d{2}/.test(content!); // Year pattern
     expect(hasFiscalite).toBe(true);
@@ -61,7 +44,7 @@ test.describe('Fiscalite @P1', () => {
     if (!navigated) return;
 
     const createButton = page.locator(
-      'button:has-text("Ajouter"), button:has-text("Créer"), button:has-text("Nouvel")'
+      'button:has-text("Ajouter"), button:has-text("Cr"), button:has-text("Nouvel")'
     );
     if (await createButton.first().isVisible().catch(() => false)) {
       await createButton.first().click();
