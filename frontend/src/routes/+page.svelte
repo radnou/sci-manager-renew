@@ -22,6 +22,54 @@
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);
 	let openFaqIndex = $state<number | null>(null);
+	let activeDemo = $state(0);
+
+	const demoFeatures = [
+		{
+			label: 'Dashboard',
+			title: 'Votre cockpit SCI',
+			video: '/videos/demo/dashboard.mp4',
+			description:
+				"Visualisez l'état de votre patrimoine en un coup d'œil : loyers, taux de recouvrement, alertes et activité récente.",
+			bullets: ['KPIs en temps réel', 'Alertes loyers impayés', 'Multi-SCI consolidé']
+		},
+		{
+			label: 'Tarifs',
+			title: 'Un prix simple, sans surprise',
+			video: '/videos/demo/pricing.mp4',
+			description:
+				'Trois plans adaptés à vos besoins. Commencez gratuitement, évoluez quand vous êtes prêt.',
+			bullets: [
+				'Plan gratuit à vie',
+				'Facturation mensuelle ou annuelle',
+				'Annulation à tout moment'
+			]
+		},
+		{
+			label: 'Multi-SCI',
+			title: 'Gérez toutes vos SCI',
+			video: '/videos/demo/multi-sci.mp4',
+			description:
+				"Passez d'une SCI à l'autre en un clic. Chaque SCI a son propre espace avec biens, baux et finances.",
+			bullets: ['Portefeuille multi-SCI', 'Basculement instantané', 'Données isolées par SCI']
+		},
+		{
+			label: 'Fiscalité',
+			title: 'Fiscalité et CERFA 2044',
+			video: '/videos/demo/fiscalite.mp4',
+			description:
+				'Suivez vos exercices fiscaux et générez vos déclarations CERFA 2044 en un clic.',
+			bullets: ['Exercices IR et IS', 'Génération CERFA PDF', 'Calcul résultat fiscal']
+		},
+		{
+			label: 'Sécurité',
+			title: 'Upgrade en douceur',
+			video: '/videos/demo/paywall.mp4',
+			description:
+				'Quand vous atteignez les limites de votre plan, une transition fluide vers le plan supérieur.',
+			bullets: ['Limites claires par plan', 'Upgrade Stripe sécurisé', 'Données préservées']
+		}
+	];
 
 	async function createGuestCheckout(planKey: string) {
 		checkoutLoading = planKey;
@@ -338,6 +386,82 @@
 				<span class="text-slate-300 dark:text-slate-600">·</span>
 				<span>Annulez à tout moment</span>
 			</div>
+		</div>
+	</section>
+
+	<!-- ============================================================ -->
+	<!-- VIDEO DEMO CAROUSEL -->
+	<!-- ============================================================ -->
+	<section class="bg-slate-50 py-20 dark:bg-slate-900/50">
+		<div class="mx-auto max-w-7xl px-6">
+			<div class="mb-12 text-center">
+				<span class="text-sm font-semibold text-sky-600 dark:text-sky-400">Démonstration</span>
+				<h2 class="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+					Découvrez GererSCI en action
+				</h2>
+			</div>
+
+			<!-- Feature tabs -->
+			<div class="mb-10 flex flex-wrap justify-center gap-3" role="tablist" aria-label="Fonctionnalités démo">
+				{#each demoFeatures as demoFeature, i}
+					<button
+						class="rounded-full px-5 py-2.5 text-sm font-medium transition-all {activeDemo === i
+							? 'bg-sky-600 text-white shadow-lg'
+							: 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}"
+						onclick={() => (activeDemo = i)}
+						role="tab"
+						aria-selected={activeDemo === i}
+						aria-controls="demo-panel-{i}"
+					>
+						{demoFeature.label}
+					</button>
+				{/each}
+			</div>
+
+			<!-- Video + description -->
+			{#key activeDemo}
+				<div
+					class="demo-fade-in grid items-center gap-8 lg:grid-cols-5"
+					role="tabpanel"
+					id="demo-panel-{activeDemo}"
+				>
+					<div class="lg:col-span-3">
+						<div
+							class="overflow-hidden rounded-xl border border-slate-200 bg-black shadow-2xl dark:border-slate-700"
+						>
+							<video
+								src={demoFeatures[activeDemo].video}
+								autoplay
+								loop
+								muted
+								playsinline
+								class="w-full"
+								aria-label="Démonstration : {demoFeatures[activeDemo].label}"
+							>
+								<track kind="descriptions" />
+							</video>
+						</div>
+					</div>
+					<div class="demo-slide-in lg:col-span-2 space-y-4">
+						<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+							{demoFeatures[activeDemo].title}
+						</h3>
+						<p class="leading-relaxed text-slate-600 dark:text-slate-400">
+							{demoFeatures[activeDemo].description}
+						</p>
+						<ul class="space-y-2">
+							{#each demoFeatures[activeDemo].bullets as bullet}
+								<li
+									class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+								>
+									<Check class="h-4 w-4 flex-shrink-0 text-emerald-500" />
+									{bullet}
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/key}
 		</div>
 	</section>
 
@@ -864,3 +988,35 @@
 		</div>
 	</section>
 </main>
+
+<style>
+	@keyframes demoFadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes demoSlideIn {
+		from {
+			opacity: 0;
+			transform: translateX(16px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	:global(.demo-fade-in) {
+		animation: demoFadeIn 0.4s ease-out;
+	}
+
+	:global(.demo-slide-in) {
+		animation: demoSlideIn 0.5s ease-out;
+	}
+</style>
