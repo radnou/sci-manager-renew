@@ -28,9 +28,24 @@ jobs:
             set -e
             cd /opt/gerersci
 
+            echo "=== Backup .env before deploy ==="
+            cp .env .env.pre-deploy-$(date +%Y%m%d-%H%M%S)
+
             echo "=== Pulling latest code ==="
             git fetch origin main
             git reset --hard origin/main
+
+            echo "=== Validating .env (no localhost in production) ==="
+            if grep -q 'VITE_API_URL=http://localhost' .env; then
+              echo "FATAL: .env contains localhost URLs! Aborting deploy."
+              echo "Fix: update VITE_API_URL, CORS_ORIGINS, FRONTEND_URL in .env"
+              exit 1
+            fi
+            if grep -q 'CORS_ORIGINS=.*localhost' .env; then
+              echo "FATAL: CORS_ORIGINS contains localhost! Aborting deploy."
+              exit 1
+            fi
+            echo ".env validation passed"
 
             echo "=== Building containers ==="
             docker compose build
