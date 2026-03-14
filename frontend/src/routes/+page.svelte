@@ -22,54 +22,82 @@
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);
 	let openFaqIndex = $state<number | null>(null);
-	let activeDemo = $state(0);
-
-	const demoFeatures = [
+	const featureSections = [
 		{
-			label: 'Dashboard',
-			title: 'Votre cockpit SCI',
-			video: '/videos/demo/dashboard.mp4',
+			eyebrow: 'Gestion des biens',
+			title: "Vos biens en un coup d'oeil",
 			description:
-				"Visualisez l'état de votre patrimoine en un coup d'œil : loyers, taux de recouvrement, alertes et activité récente.",
-			bullets: ['KPIs en temps réel', 'Alertes loyers impayés', 'Multi-SCI consolidé']
-		},
-		{
-			label: 'Tarifs',
-			title: 'Un prix simple, sans surprise',
-			video: '/videos/demo/pricing.mp4',
-			description:
-				'Trois plans adaptés à vos besoins. Commencez gratuitement, évoluez quand vous êtes prêt.',
+				'Grille visuelle avec statut locatif, loyer mensuel et rendement brut. Ajoutez un bien en 30 secondes.',
+			image: '/images/showcase/biens-grid.png',
+			alt: 'Grille des biens immobiliers — statut Loue, loyer, rendement',
 			bullets: [
-				'Plan gratuit à vie',
-				'Facturation mensuelle ou annuelle',
-				'Annulation à tout moment'
+				'Statut locatif en temps reel',
+				'Rendement brut calcule',
+				'Actions rapides : modifier, quittance'
 			]
 		},
 		{
-			label: 'Multi-SCI',
-			title: 'Gérez toutes vos SCI',
-			video: '/videos/demo/multi-sci.mp4',
+			eyebrow: 'Vision financiere',
+			title: 'Revenus, charges et cashflow consolides',
 			description:
-				"Passez d'une SCI à l'autre en un clic. Chaque SCI a son propre espace avec biens, baux et finances.",
-			bullets: ['Portefeuille multi-SCI', 'Basculement instantané', 'Données isolées par SCI']
+				'Vue transversale de toutes vos SCI. Evolution mensuelle, repartition par SCI, export CSV en 1 clic.',
+			image: '/images/showcase/finances-consolidated.png',
+			alt: 'Vue financiere consolidee — revenus, charges, cashflow net',
+			bullets: ['Cashflow net par periode', 'Repartition par SCI', 'Export comptable CSV']
 		},
 		{
-			label: 'Fiscalité',
-			title: 'Fiscalité et CERFA 2044',
-			video: '/videos/demo/fiscalite.mp4',
+			eyebrow: 'Gouvernance',
+			title: 'Associes et parts sociales',
 			description:
-				'Suivez vos exercices fiscaux et générez vos déclarations CERFA 2044 en un clic.',
-			bullets: ['Exercices IR et IS', 'Génération CERFA PDF', 'Calcul résultat fiscal']
+				"Gerez vos associes, leurs parts et roles. Total automatique avec alerte si \u2260 100%.",
+			image: '/images/showcase/fiche-identite.png',
+			alt: 'Page associes — parts sociales, roles, total 100%',
+			bullets: [
+				'Parts et pourcentages',
+				"Roles gerant / associe",
+				'Invitation par email'
+			]
 		},
 		{
-			label: 'Sécurité',
-			title: 'Upgrade en douceur',
-			video: '/videos/demo/paywall.mp4',
+			eyebrow: 'Fiscalite',
+			title: 'Generez votre CERFA 2044 en un clic',
 			description:
-				'Quand vous atteignez les limites de votre plan, une transition fluide vers le plan supérieur.',
-			bullets: ['Limites claires par plan', 'Upgrade Stripe sécurisé', 'Données préservées']
+				"Exercices fiscaux IR et IS, resultat fiscal calcule, declaration PDF prete a deposer.",
+			image: '/images/showcase/loyers-with-button.png',
+			alt: 'Page fiscalite — exercices, CERFA 2044, resultat fiscal',
+			bullets: [
+				'Regimes IR et IS',
+				'PDF CERFA 2044 automatique',
+				'Resultat fiscal calcule'
+			]
 		}
 	];
+
+	// Lightbox state
+	let lightboxOpen = $state(false);
+	let lightboxIndex = $state(0);
+
+	const allImages = [
+		{ src: '/images/showcase/dashboard-light.png', title: 'Dashboard' },
+		...featureSections.map((f) => ({ src: f.image, title: f.eyebrow }))
+	];
+
+	function openLightbox(index: number) {
+		lightboxIndex = index;
+		lightboxOpen = true;
+	}
+
+	function closeLightbox() {
+		lightboxOpen = false;
+	}
+
+	function nextImage() {
+		lightboxIndex = (lightboxIndex + 1) % allImages.length;
+	}
+
+	function prevImage() {
+		lightboxIndex = (lightboxIndex - 1 + allImages.length) % allImages.length;
+	}
 
 	async function createGuestCheckout(planKey: string) {
 		checkoutLoading = planKey;
@@ -403,71 +431,89 @@
 	</section>
 
 	<!-- ============================================================ -->
-	<!-- VIDEO DEMO CAROUSEL -->
+	<!-- HERO SCREENSHOT -->
 	<!-- ============================================================ -->
-	<section class="bg-slate-50 py-20 dark:bg-slate-900/50">
-		<div class="mx-auto max-w-7xl px-6">
-			<div class="mb-12 text-center">
-				<span class="text-sm font-semibold text-sky-600 dark:text-sky-400">Démonstration</span>
-				<h2 class="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-					Découvrez GererSCI en action
-				</h2>
-			</div>
-
-			<!-- Feature tabs -->
-			<div class="mb-10 flex flex-wrap justify-center gap-3" role="tablist" aria-label="Fonctionnalités démo">
-				{#each demoFeatures as demoFeature, i}
-					<button
-						class="rounded-full px-5 py-2.5 text-sm font-medium transition-all {activeDemo === i
-							? 'bg-sky-600 text-white shadow-lg'
-							: 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}"
-						onclick={() => (activeDemo = i)}
-						role="tab"
-						aria-selected={activeDemo === i}
-						aria-controls="demo-panel-{i}"
-					>
-						{demoFeature.label}
-					</button>
-				{/each}
-			</div>
-
-			<!-- Video + description -->
-			{#key activeDemo}
-				<div
-					class="demo-fade-in grid items-center gap-8 lg:grid-cols-5"
-					role="tabpanel"
-					id="demo-panel-{activeDemo}"
-				>
-					<div class="lg:col-span-3">
-						<div
-							class="overflow-hidden rounded-xl border border-slate-200 bg-black shadow-2xl dark:border-slate-700"
-						>
-							<video
-								src={demoFeatures[activeDemo].video}
-								autoplay
-								loop
-								muted
-								playsinline
-								preload="none"
-								class="w-full"
-								aria-label="Démonstration : {demoFeatures[activeDemo].label}"
-							>
-								<track kind="descriptions" />
-							</video>
+	<section class="py-16 bg-white dark:bg-slate-950">
+		<div class="mx-auto max-w-6xl px-6">
+			<div class="relative mx-auto">
+				<!-- Browser frame -->
+				<div class="rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+					<!-- Browser bar -->
+					<div class="flex items-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+						<div class="flex gap-1.5">
+							<div class="w-3 h-3 rounded-full bg-red-400"></div>
+							<div class="w-3 h-3 rounded-full bg-amber-400"></div>
+							<div class="w-3 h-3 rounded-full bg-emerald-400"></div>
+						</div>
+						<div class="flex-1 mx-4">
+							<div class="bg-white dark:bg-slate-700 rounded-md px-3 py-1 text-xs text-slate-400 text-center">
+								gerersci.fr/dashboard
+							</div>
 						</div>
 					</div>
-					<div class="demo-slide-in lg:col-span-2 space-y-4">
-						<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
-							{demoFeatures[activeDemo].title}
-						</h3>
-						<p class="leading-relaxed text-slate-600 dark:text-slate-400">
-							{demoFeatures[activeDemo].description}
-						</p>
-						<ul class="space-y-2">
-							{#each demoFeatures[activeDemo].bullets as bullet}
-								<li
-									class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
-								>
+					<!-- Screenshot -->
+					<button onclick={() => openLightbox(0)} class="block w-full cursor-zoom-in">
+						<img
+							src="/images/showcase/dashboard-light.png"
+							alt="Dashboard GererSCI — 2 SCI, 4 biens, 100% recouvrement, 64 900EUR cashflow"
+							class="w-full block dark:hidden"
+							fetchpriority="high"
+							decoding="async"
+							width="1440"
+							height="900"
+						/>
+						<img
+							src="/images/showcase/dashboard-dark.png"
+							alt="Dashboard GererSCI en mode sombre"
+							class="w-full hidden dark:block"
+							fetchpriority="high"
+							decoding="async"
+							width="1440"
+							height="900"
+						/>
+					</button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================================================ -->
+	<!-- FEATURE SECTIONS -->
+	<!-- ============================================================ -->
+	{#each featureSections as feature, i}
+		<section class="py-16 {i % 2 === 0 ? 'bg-slate-50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-950'}">
+			<div class="mx-auto max-w-6xl px-6">
+				<div class="grid lg:grid-cols-2 gap-12 items-center {i % 2 !== 0 ? 'lg:grid-flow-col-dense' : ''}">
+					<!-- Image -->
+					<div class="{i % 2 !== 0 ? 'lg:col-start-2' : ''}">
+						<button onclick={() => openLightbox(i + 1)} class="block w-full cursor-zoom-in group">
+							<div class="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden transition-shadow group-hover:shadow-2xl">
+								<!-- Browser bar mini -->
+								<div class="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+									<div class="w-2 h-2 rounded-full bg-red-400"></div>
+									<div class="w-2 h-2 rounded-full bg-amber-400"></div>
+									<div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+								</div>
+								<img
+									src={feature.image}
+									alt={feature.alt}
+									class="w-full"
+									loading="lazy"
+									decoding="async"
+									width="1440"
+									height="900"
+								/>
+							</div>
+						</button>
+					</div>
+					<!-- Text -->
+					<div class="{i % 2 !== 0 ? 'lg:col-start-1' : ''}">
+						<span class="text-sm font-semibold text-sky-600 dark:text-sky-400">{feature.eyebrow}</span>
+						<h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{feature.title}</h3>
+						<p class="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed">{feature.description}</p>
+						<ul class="mt-4 space-y-2">
+							{#each feature.bullets as bullet}
+								<li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
 									<Check class="h-4 w-4 flex-shrink-0 text-emerald-500" />
 									{bullet}
 								</li>
@@ -475,143 +521,9 @@
 						</ul>
 					</div>
 				</div>
-			{/key}
-		</div>
-	</section>
-
-	<!-- ============================================================ -->
-	<!-- PRODUCT SHOWCASE -->
-	<!-- ============================================================ -->
-	<section class="bg-slate-50 py-20 dark:bg-slate-950">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="mb-12 text-center">
-				<Badge variant="outline" class="mb-4 px-3 py-1 text-sm font-medium"
-					>Apercu produit</Badge
-				>
-				<h2 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-					Votre cockpit SCI, simplifie
-				</h2>
-				<p class="mx-auto mt-3 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-					Dashboard, gestion des biens, finances, quittances — tout en un seul endroit.
-				</p>
 			</div>
-
-			<!-- Main screenshot: Dashboard -->
-			<div class="relative mx-auto max-w-5xl">
-				<div
-					class="overflow-hidden rounded-xl border border-slate-200 shadow-2xl dark:border-slate-700"
-				>
-					<img
-						src="/images/showcase/dashboard-light.png"
-						alt="Dashboard GererSCI — vue d'ensemble avec KPIs, alertes et cartes SCI"
-						class="block w-full dark:hidden"
-						fetchpriority="high"
-						decoding="async"
-						width="1280"
-						height="800"
-					/>
-					<img
-						src="/images/showcase/dashboard-dark.png"
-						alt="Dashboard GererSCI en mode sombre"
-						class="hidden w-full dark:block"
-						fetchpriority="high"
-						decoding="async"
-						width="1280"
-						height="800"
-					/>
-				</div>
-			</div>
-
-			<!-- Feature screenshots grid -->
-			<div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-				<div class="group">
-					<div
-						class="overflow-hidden rounded-lg border border-slate-200 shadow-md transition-shadow group-hover:shadow-xl dark:border-slate-700"
-					>
-						<img
-							src="/images/showcase/biens-grid.png"
-							alt="Gestion des biens immobiliers — vue en grille avec statut et loyer par bien"
-							class="w-full"
-							loading="lazy"
-							decoding="async"
-							width="640"
-							height="400"
-						/>
-					</div>
-					<h3 class="mt-3 font-semibold text-slate-900 dark:text-slate-100">
-						Gestion des biens
-					</h3>
-					<p class="text-sm text-slate-500 dark:text-slate-400">
-						Vue en grille avec statut, loyer et rendement par bien.
-					</p>
-				</div>
-
-				<div class="group">
-					<div
-						class="overflow-hidden rounded-lg border border-slate-200 shadow-md transition-shadow group-hover:shadow-xl dark:border-slate-700"
-					>
-						<img
-							src="/images/showcase/finances-consolidated.png"
-							alt="Vue financiere consolidee — revenus, charges et cashflow"
-							class="w-full"
-							loading="lazy"
-							decoding="async"
-							width="640"
-							height="400"
-						/>
-					</div>
-					<h3 class="mt-3 font-semibold text-slate-900 dark:text-slate-100">
-						Finances consolidees
-					</h3>
-					<p class="text-sm text-slate-500 dark:text-slate-400">
-						Revenus, charges et cashflow en un coup d'oeil.
-					</p>
-				</div>
-
-				<div class="group">
-					<div
-						class="overflow-hidden rounded-lg border border-slate-200 shadow-md transition-shadow group-hover:shadow-xl dark:border-slate-700"
-					>
-						<img
-							src="/images/showcase/loyers-with-button.png"
-							alt="Suivi des loyers et generation de quittances en un clic"
-							class="w-full"
-							loading="lazy"
-							decoding="async"
-							width="640"
-							height="400"
-						/>
-					</div>
-					<h3 class="mt-3 font-semibold text-slate-900 dark:text-slate-100">
-						Loyers & quittances
-					</h3>
-					<p class="text-sm text-slate-500 dark:text-slate-400">
-						Suivi mensuel et generation de quittances en 1 clic.
-					</p>
-				</div>
-			</div>
-
-			<!-- Mobile preview -->
-			<div class="mt-16 flex flex-col items-center">
-				<h3 class="mb-6 text-xl font-semibold text-slate-900 dark:text-slate-100">
-					Accessible sur mobile
-				</h3>
-				<div
-					class="w-64 overflow-hidden rounded-[2rem] border-4 border-slate-800 shadow-xl dark:border-slate-600"
-				>
-					<img
-						src="/images/showcase/mobile-dashboard.png"
-						alt="GererSCI sur mobile — tableau de bord responsive"
-						class="w-full"
-						loading="lazy"
-						decoding="async"
-						width="375"
-						height="812"
-					/>
-				</div>
-			</div>
-		</div>
-	</section>
+		</section>
+	{/each}
 
 	<!-- ============================================================ -->
 	<!-- TARGET AUDIENCE -->
@@ -1008,36 +920,54 @@
 			</div>
 		</div>
 	</section>
+
+	<!-- ============================================================ -->
+	<!-- LIGHTBOX GALLERY -->
+	<!-- ============================================================ -->
+	{#if lightboxOpen}
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+			onclick={closeLightbox}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') closeLightbox();
+				if (e.key === 'ArrowRight') nextImage();
+				if (e.key === 'ArrowLeft') prevImage();
+			}}
+			role="dialog"
+			aria-modal="true"
+			aria-label="Galerie d'images"
+			tabindex="-1"
+		>
+			<!-- Close button -->
+			<button onclick={closeLightbox} class="absolute top-6 right-6 text-white/80 hover:text-white z-10" aria-label="Fermer">
+				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+			</button>
+
+			<!-- Previous -->
+			<button onclick={(e) => { e.stopPropagation(); prevImage(); }} class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2" aria-label="Image precedente">
+				<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+			</button>
+
+			<!-- Image -->
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div onclick={(e) => e.stopPropagation()} class="max-w-[90vw] max-h-[85vh]">
+				<img
+					src={allImages[lightboxIndex].src}
+					alt={allImages[lightboxIndex].title}
+					class="max-w-full max-h-[80vh] rounded-lg shadow-2xl"
+				/>
+				<div class="mt-3 text-center">
+					<p class="text-white/90 font-medium">{allImages[lightboxIndex].title}</p>
+					<p class="text-white/50 text-sm">{lightboxIndex + 1} / {allImages.length}</p>
+				</div>
+			</div>
+
+			<!-- Next -->
+			<button onclick={(e) => { e.stopPropagation(); nextImage(); }} class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2" aria-label="Image suivante">
+				<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+			</button>
+		</div>
+	{/if}
 </main>
-
-<style>
-	@keyframes demoFadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@keyframes demoSlideIn {
-		from {
-			opacity: 0;
-			transform: translateX(16px);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(0);
-		}
-	}
-
-	:global(.demo-fade-in) {
-		animation: demoFadeIn 0.4s ease-out;
-	}
-
-	:global(.demo-slide-in) {
-		animation: demoSlideIn 0.5s ease-out;
-	}
-</style>
