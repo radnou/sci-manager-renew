@@ -15,6 +15,7 @@
 
   let loading = $state(false);
   let periode = $state(new Date().toISOString().slice(0, 7));
+  // svelte-ignore state_referenced_locally
   let montant = $state(defaultMontant);
   let statut = $state<LoyerStatus>('en_attente');
 
@@ -50,18 +51,18 @@
 
 <CrudModal bind:open title="Enregistrer un loyer" submitLabel="Enregistrer" {loading} onsubmit={handleSubmit}>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Période</label>
-    <input type="month" bind:value={periode} required
+    <label for="loyer-periode" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Période</label>
+    <input id="loyer-periode" type="month" bind:value={periode} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (€)</label>
-    <input type="number" bind:value={montant} min="0" step="0.01" required
+    <label for="loyer-montant" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (€)</label>
+    <input id="loyer-montant" type="number" bind:value={montant} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Statut</label>
-    <div class="flex gap-2">
+    <span id="loyer-statut-label" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Statut</span>
+    <div class="flex gap-2" role="group" aria-labelledby="loyer-statut-label">
       {#each (['en_attente', 'paye', 'en_retard'] as const) as s}
         <button type="button"
           class="rounded-full px-3 py-1 text-xs font-medium transition-colors {statut === s ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-400'}"

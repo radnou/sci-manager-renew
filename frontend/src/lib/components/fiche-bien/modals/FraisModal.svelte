@@ -50,8 +50,8 @@
 
 <CrudModal bind:open title="Ajouter des frais d'agence" submitLabel="Ajouter" {loading} onsubmit={handleSubmit}>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type</label>
-    <select bind:value={type_frais} required
+    <label for="frais-type" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type</label>
+    <select id="frais-type" bind:value={type_frais} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
       {#each fraisTypes as ft}
         <option value={ft.value}>{ft.label}</option>
@@ -59,18 +59,18 @@
     </select>
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (&euro;)</label>
-    <input type="number" bind:value={montant} min="0" step="0.01" required
+    <label for="frais-montant" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (&euro;)</label>
+    <input id="frais-montant" type="number" bind:value={montant} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date</label>
-    <input type="date" bind:value={date_frais} required
+    <label for="frais-date" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date</label>
+    <input id="frais-date" type="date" bind:value={date_frais} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Description</label>
-    <input type="text" bind:value={description} placeholder="Optionnel"
+    <label for="frais-description" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Description</label>
+    <input id="frais-description" type="text" bind:value={description} placeholder="Optionnel"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
 </CrudModal>

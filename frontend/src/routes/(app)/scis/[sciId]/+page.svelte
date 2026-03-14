@@ -12,6 +12,7 @@
 	const sciId = getContext<string>('sciId');
 	const userRole = getContext<string>('userRole');
 
+	// svelte-ignore state_referenced_locally
 	let biensCount = $state(sci.biens_count ?? sci.biens?.length ?? 0);
 	let loadingBiens = $state(false);
 	let exportingBiens = $state(false);
@@ -78,6 +79,7 @@
 		] : []),
 		{ key: 'ag_annuelle', label: 'AG annuelle', date: agDate, regime: null, description: `Assemblée générale obligatoire (6 mois post-clôture)${clotureLabel ? ` — basé sur la clôture au ${clotureLabel}` : ''}` },
 		{ key: 'taxe_fonciere', label: 'Taxe foncière', date: new Date(currentYear, 9, 15), regime: null, description: 'Paiement de la taxe foncière' },
+		// svelte-ignore state_referenced_locally
 		...(hasCfeBiens ? [
 			{ key: 'cfe', label: 'CFE', date: new Date(currentYear, 11, 15), regime: null, description: 'Cotisation Foncière des Entreprises' },
 		] : biensCount > 0 ? [

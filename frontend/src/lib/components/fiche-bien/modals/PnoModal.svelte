@@ -57,28 +57,28 @@
 
 <CrudModal bind:open title={isEdit ? 'Modifier assurance PNO' : 'Ajouter assurance PNO'} submitLabel={isEdit ? 'Mettre a jour' : 'Ajouter'} {loading} onsubmit={handleSubmit}>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Assureur</label>
-    <input type="text" bind:value={assureur} required placeholder="Nom de l'assureur"
+    <label for="pno-assureur" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Assureur</label>
+    <input id="pno-assureur" type="text" bind:value={assureur} required placeholder="Nom de l'assureur"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">N contrat</label>
-    <input type="text" bind:value={numero_contrat} placeholder="Optionnel"
+    <label for="pno-contrat" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">N contrat</label>
+    <input id="pno-contrat" type="text" bind:value={numero_contrat} placeholder="Optionnel"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Prime annuelle (EUR)</label>
-    <input type="number" bind:value={prime_annuelle} min="0" step="0.01" required
+    <label for="pno-prime" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Prime annuelle (EUR)</label>
+    <input id="pno-prime" type="number" bind:value={prime_annuelle} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date debut</label>
-    <input type="date" bind:value={date_debut} required
+    <label for="pno-date-debut" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date debut</label>
+    <input id="pno-date-debut" type="date" bind:value={date_debut} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date fin</label>
-    <input type="date" bind:value={date_fin}
+    <label for="pno-date-fin" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date fin</label>
+    <input id="pno-date-fin" type="date" bind:value={date_fin}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
 </CrudModal>

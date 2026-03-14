@@ -82,6 +82,7 @@
 		<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
 			<div class="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
 				<Search class="h-4 w-4 text-slate-400" />
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					type="text"
 					bind:value={query}

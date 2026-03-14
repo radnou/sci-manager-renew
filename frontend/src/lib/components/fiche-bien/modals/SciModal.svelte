@@ -42,18 +42,18 @@
 
 <CrudModal bind:open title="Créer une SCI" size="wide" submitLabel="Créer la SCI" {loading} onsubmit={handleSubmit}>
   <div class="col-span-2">
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Nom de la SCI</label>
-    <input type="text" bind:value={nom} required placeholder="SCI Mon Patrimoine"
+    <label for="sci-nom" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Nom de la SCI</label>
+    <input id="sci-nom" type="text" bind:value={nom} required placeholder="SCI Mon Patrimoine"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">SIREN (optionnel)</label>
-    <input type="text" bind:value={siren} placeholder="123456789" maxlength="9"
+    <label for="sci-siren" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">SIREN (optionnel)</label>
+    <input id="sci-siren" type="text" bind:value={siren} placeholder="123456789" maxlength="9"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Régime fiscal</label>
-    <div class="flex gap-2">
+    <span id="sci-regime-label" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Régime fiscal</span>
+    <div class="flex gap-2" role="group" aria-labelledby="sci-regime-label">
       {#each (['IR', 'IS'] as const) as rf}
         <button type="button"
           class="rounded-full px-4 py-1.5 text-xs font-medium transition-colors {regime_fiscal === rf ? 'bg-sky-600 text-white' : 'border border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-400'}"

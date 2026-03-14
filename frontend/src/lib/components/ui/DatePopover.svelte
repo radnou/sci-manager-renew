@@ -10,6 +10,7 @@
 
   let { open = $bindable(), defaultDate, onconfirm, oncancel }: Props = $props();
 
+  // svelte-ignore state_referenced_locally
   let dateValue = $state(defaultDate ?? new Date().toISOString().slice(0, 10));
 
   $effect(() => {
@@ -41,10 +42,11 @@
     transition:fade={{ duration: 100 }}
     onkeydown={handleKeydown}
   >
-    <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+    <label for="datepopover-date" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
       Date de paiement
     </label>
     <input
+      id="datepopover-date"
       type="date"
       bind:value={dateValue}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"

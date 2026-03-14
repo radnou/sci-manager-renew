@@ -4,12 +4,17 @@
 
 	const props = $props<{ data: any; children: any }>();
 
+	// svelte-ignore state_referenced_locally
 	setContext('sci', props.data.sci);
+	// svelte-ignore state_referenced_locally
 	setContext('userRole', props.data.userRole);
+	// svelte-ignore state_referenced_locally
 	setContext('sciId', props.data.sciId);
 
 	// Set breadcrumb name immediately so the navbar never shows a raw UUID
+	// svelte-ignore state_referenced_locally
 	if (props.data.sciId && props.data.sci?.nom) {
+		// svelte-ignore state_referenced_locally
 		breadcrumbNames.update((n) => ({ ...n, [props.data.sciId]: props.data.sci.nom }));
 	}
 

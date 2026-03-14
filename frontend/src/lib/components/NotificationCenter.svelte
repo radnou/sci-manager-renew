@@ -77,7 +77,6 @@
 					{#each $notifications.items as notification (notification.id)}
 						<button
 							type="button"
-							role="listitem"
 							class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900 {notification.read_at ? 'opacity-60' : ''}"
 							onclick={() => {
 								if (!notification.read_at) notifications.markRead(notification.id);

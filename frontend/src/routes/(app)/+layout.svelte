@@ -4,7 +4,9 @@
 
 	const props = $props<{ data: any; children: any }>();
 
+	// svelte-ignore state_referenced_locally
 	setContext('user', props.data.user);
+	// svelte-ignore state_referenced_locally
 	setContext('subscription', props.data.subscription);
 </script>
 
