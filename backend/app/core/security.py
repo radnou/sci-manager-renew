@@ -1,4 +1,4 @@
-import threading
+import asyncio
 from time import monotonic
 
 import httpx
@@ -10,9 +10,9 @@ from jwt.exceptions import PyJWTError
 from .config import settings
 
 security = HTTPBearer(auto_error=False)
-_JWKS_CACHE_TTL_SECONDS = 300.0
+_JWKS_CACHE_TTL_SECONDS = 3600.0  # 1 hour
 _jwks_cache: dict[str, object] = {"expires_at": 0.0, "keys": []}
-_jwks_lock = threading.Lock()
+_jwks_lock = asyncio.Lock()
 
 
 def _raise_unauthorized(detail: str) -> None:
@@ -23,21 +23,25 @@ def _raise_unauthorized(detail: str) -> None:
     )
 
 
-def _get_supabase_jwks() -> list[dict]:
+async def _get_supabase_jwks() -> list[dict]:
     now = monotonic()
 
-    # Fast path: check cache without lock
+    # Fast path: read cache without awaiting the lock.
+    # dict reads are atomic in CPython so this is safe for a staleness check.
     if _jwks_cache["expires_at"] > now:
         return list(_jwks_cache["keys"])
 
-    with _jwks_lock:
-        # Re-check after acquiring lock (another thread may have refreshed)
+    async with _jwks_lock:
+        # Re-check after acquiring lock (another coroutine may have refreshed)
         now = monotonic()
         if _jwks_cache["expires_at"] > now:
             return list(_jwks_cache["keys"])
 
         jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-        response = httpx.get(jwks_url, timeout=settings.supabase_request_timeout_seconds)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                jwks_url, timeout=settings.supabase_request_timeout_seconds
+            )
         response.raise_for_status()
         payload = response.json()
 
@@ -50,7 +54,7 @@ def _get_supabase_jwks() -> list[dict]:
         return list(keys)
 
 
-def _decode_bearer_token(token: str) -> dict:
+async def _decode_bearer_token(token: str) -> dict:
     header = jwt.get_unverified_header(token)
     algorithm = header.get("alg", "HS256")
 
@@ -69,7 +73,7 @@ def _decode_bearer_token(token: str) -> dict:
     if not isinstance(key_id, str) or not key_id:
         raise PyJWTError("Missing bearer token key id")
 
-    for jwk in _get_supabase_jwks():
+    for jwk in await _get_supabase_jwks():
         if jwk.get("kid") != key_id:
             continue
         public_key = jwt.PyJWK(jwk).key
@@ -92,7 +96,7 @@ async def get_current_user(
     token = credentials.credentials
 
     try:
-        payload = _decode_bearer_token(token)
+        payload = await _decode_bearer_token(token)
     except (PyJWTError, httpx.HTTPError, ValueError):
         _raise_unauthorized("Invalid bearer token")
 
