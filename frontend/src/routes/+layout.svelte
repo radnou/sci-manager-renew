@@ -115,9 +115,18 @@
 <div
 	class="min-h-screen bg-white text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-50"
 >
+	<!-- Skip to content link for keyboard / screen reader users -->
+	<a
+		href="#main-content"
+		class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none"
+	>
+		Aller au contenu principal
+	</a>
+
 	<!-- Public navbar: only for visitors / public pages -->
 	{#if showPublicNav && !isProtectedRoute(page.url.pathname)}
 		<nav
+			aria-label="Navigation principale"
 			class="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95"
 		>
 			<div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
@@ -181,7 +190,7 @@
 	{/if}
 
 	{#if isPublicRoute(page.url.pathname) && !user}
-		{@render children()}
+		<div id="main-content">{@render children()}</div>
 	{:else if authResolved && user && page.url.pathname === '/'}
 		<section class="flex min-h-[60vh] items-center justify-center">
 			<p class="animate-pulse text-sm text-slate-500">Redirection vers le tableau de bord…</p>
@@ -203,12 +212,12 @@
 			</div>
 		</section>
 	{:else if authResolved}
-		{@render children()}
+		<div id="main-content">{@render children()}</div>
 	{/if}
 
 	<!-- Footer: only for public pages -->
 	{#if !user || isPublicRoute(page.url.pathname)}
-		<footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+		<footer aria-label="Pied de page" class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
 			<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 				<div class="grid gap-8 md:grid-cols-4">
 					<div class="space-y-4">

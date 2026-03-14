@@ -321,13 +321,26 @@
 </script>
 
 <svelte:head>
-	<title>GererSCI | Votre SCI mérite mieux qu'un tableur</title>
+	<title>GererSCI — Gestion simplifiée de vos SCI</title>
 	<meta
 		name="description"
-		content="GererSCI centralise biens, loyers et documents pour accélérer la gestion de vos SCI et sécuriser vos revenus locatifs."
+		content="Centralisez biens, loyers et documents. Dashboard multi-SCI, quittances PDF, fiscalité CERFA 2044."
 	/>
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="canonical" href="https://gerersci.fr" />
+	{@html `<script type="application/ld+json">${JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "SoftwareApplication",
+		"name": "GererSCI",
+		"applicationCategory": "BusinessApplication",
+		"operatingSystem": "Web",
+		"description": "Gestion simplifiée de Sociétés Civiles Immobilières",
+		"url": "https://gerersci.fr",
+		"offers": [
+			{ "@type": "Offer", "price": "0", "priceCurrency": "EUR", "name": "Essentiel" },
+			{ "@type": "Offer", "price": "19", "priceCurrency": "EUR", "name": "Gestion" },
+			{ "@type": "Offer", "price": "39", "priceCurrency": "EUR", "name": "Fiscal" }
+		]
+	})}</script>`}
 </svelte:head>
 
 <main class="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -435,6 +448,7 @@
 								loop
 								muted
 								playsinline
+								preload="none"
 								class="w-full"
 								aria-label="Démonstration : {demoFeatures[activeDemo].label}"
 							>
@@ -491,7 +505,8 @@
 						src="/images/showcase/dashboard-light.png"
 						alt="Dashboard GererSCI — vue d'ensemble avec KPIs, alertes et cartes SCI"
 						class="block w-full dark:hidden"
-						loading="lazy"
+						fetchpriority="high"
+						decoding="async"
 						width="1280"
 						height="800"
 					/>
@@ -499,7 +514,8 @@
 						src="/images/showcase/dashboard-dark.png"
 						alt="Dashboard GererSCI en mode sombre"
 						class="hidden w-full dark:block"
-						loading="lazy"
+						fetchpriority="high"
+						decoding="async"
 						width="1280"
 						height="800"
 					/>
@@ -517,6 +533,7 @@
 							alt="Gestion des biens immobiliers — vue en grille avec statut et loyer par bien"
 							class="w-full"
 							loading="lazy"
+							decoding="async"
 							width="640"
 							height="400"
 						/>
@@ -538,6 +555,7 @@
 							alt="Vue financiere consolidee — revenus, charges et cashflow"
 							class="w-full"
 							loading="lazy"
+							decoding="async"
 							width="640"
 							height="400"
 						/>
@@ -559,6 +577,7 @@
 							alt="Suivi des loyers et generation de quittances en un clic"
 							class="w-full"
 							loading="lazy"
+							decoding="async"
 							width="640"
 							height="400"
 						/>
@@ -585,6 +604,7 @@
 						alt="GererSCI sur mobile — tableau de bord responsive"
 						class="w-full"
 						loading="lazy"
+						decoding="async"
 						width="375"
 						height="812"
 					/>
@@ -925,7 +945,8 @@
 						class="rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
 					>
 						<button
-							class="flex w-full items-center justify-between px-6 py-5 text-left"
+							class="flex w-full items-center justify-between rounded-2xl px-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+							aria-expanded={openFaqIndex === i}
 							onclick={() => (openFaqIndex = openFaqIndex === i ? null : i)}
 						>
 							<span class="pr-4 text-base font-semibold text-slate-900 dark:text-slate-100">
