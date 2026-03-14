@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 2 : 4,
   reporter: [['html', { outputFolder: '../playwright-report/validation' }], ['list']],
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5173',
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
     screenshot: 'only-on-failure',
     video: 'off',
     trace: 'on-first-retry',

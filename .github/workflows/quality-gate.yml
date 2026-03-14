@@ -136,10 +136,10 @@ jobs:
       - name: Start dev server
         run: |
           cd frontend
-          pnpm run dev &
+          pnpm run dev -- --host 0.0.0.0 &
           # Wait for dev server to be ready
           for i in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:5173 > /dev/null 2>&1; then
+            if curl -sf http://localhost:5173 > /dev/null 2>&1; then
               echo "Dev server ready after ${i}s"
               break
             fi
