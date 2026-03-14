@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import structlog
 from fastapi import APIRouter, Depends, Request, Response, status
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -17,6 +17,11 @@ from app.services.subscription_service import SubscriptionService
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/charges", tags=["charges"])
+
+
+def _get_write_client():
+    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
+    return get_supabase_service_client()
 
 
 def _execute_select(query):
@@ -142,7 +147,8 @@ async def create_charge(payload: ChargeCreate, request: Request, user_id: str = 
         id_sci = str(bien.get("id_sci") or "")
         _require_sci_access(user_sci_ids, id_sci)
 
-        result = client.table("charges").insert(payload.model_dump(mode="json")).execute()
+        write_client = _get_write_client()
+        result = write_client.table("charges").insert(payload.model_dump(mode="json")).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
 

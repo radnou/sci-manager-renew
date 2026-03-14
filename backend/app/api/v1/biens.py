@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import structlog
 from fastapi import APIRouter, Depends, Request, Response, status
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import AuthorizationError, DatabaseError, ResourceNotFoundError
 from app.core.security import get_current_user
 from app.models.biens import BienCreate, BienResponse, BienUpdate
@@ -16,6 +16,11 @@ router = APIRouter(prefix="/biens", tags=["biens"])
 
 def _get_client(request: Request):
     return get_supabase_user_client(request)
+
+
+def _get_write_client():
+    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
+    return get_supabase_service_client()
 
 
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
@@ -84,7 +89,8 @@ async def create_bien(payload: BienCreate, request: Request, user_id: str = Depe
     # Calculate rentabilite for response only (not DB columns)
     rentabilite = SCIService.calculate_rentabilite(row)
 
-    result = client.table("biens").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("biens").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 

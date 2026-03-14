@@ -805,23 +805,15 @@ def test_create_loyer_insert_db_error(client, auth_headers, monkeypatch):
     """DB error on insert during create triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_user_client
+    class InsertErrorClient:
+        def table(self, name):
+            return type("Q", (), {
+                "insert": lambda s, payload: type("IQ", (), {
+                    "execute": lambda s2: _make_error_result("insert failed"),
+                })(),
+            })()
 
-    def _patched_get_service_client(request=None):
-        real_client = original_get_service_client()
-
-        class WrappedClient:
-            def table(self, name):
-                if name == "loyers":
-                    return type("Q", (), {
-                        "insert": lambda s, payload: type("IQ", (), {
-                            "execute": lambda s2: _make_error_result("insert failed"),
-                        })(),
-                    })()
-                return real_client.table(name)
-        return WrappedClient()
-
-    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "_get_write_client", lambda: InsertErrorClient())
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
@@ -836,23 +828,15 @@ def test_create_loyer_insert_empty_result(client, auth_headers, monkeypatch):
     """Insert returning empty data during create triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_user_client
+    class InsertEmptyClient:
+        def table(self, name):
+            return type("Q", (), {
+                "insert": lambda s, payload: type("IQ", (), {
+                    "execute": lambda s2: MagicMock(error=None, data=[]),
+                })(),
+            })()
 
-    def _patched_get_service_client(request=None):
-        real_client = original_get_service_client()
-
-        class WrappedClient:
-            def table(self, name):
-                if name == "loyers":
-                    return type("Q", (), {
-                        "insert": lambda s, payload: type("IQ", (), {
-                            "execute": lambda s2: MagicMock(error=None, data=[]),
-                        })(),
-                    })()
-                return real_client.table(name)
-        return WrappedClient()
-
-    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "_get_write_client", lambda: InsertEmptyClient())
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",

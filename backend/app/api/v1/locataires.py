@@ -4,7 +4,7 @@ from datetime import date
 
 import structlog
 from fastapi import APIRouter, Depends, Request, Response, status
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -18,6 +18,11 @@ from app.models.locataires import LocataireCreate, LocataireResponse, LocataireU
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/locataires", tags=["locataires"])
+
+
+def _get_write_client():
+    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
+    return get_supabase_service_client()
 
 
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
@@ -156,7 +161,8 @@ async def create_locataire(payload: LocataireCreate, request: Request, user_id: 
         bien_sci_id = str(bien.get("id_sci") or "")
         _require_sci_access(user_sci_ids, bien_sci_id)
 
-        result = client.table("locataires").insert(payload.model_dump(mode="json")).execute()
+        write_client = _get_write_client()
+        result = write_client.table("locataires").insert(payload.model_dump(mode="json")).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
 

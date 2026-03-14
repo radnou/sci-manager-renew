@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
 
@@ -56,6 +56,11 @@ class AGResponse(BaseModel):
 
 def _get_client(request: Request):
     return get_supabase_user_client(request)
+
+
+def _get_write_client():
+    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
+    return get_supabase_service_client()
 
 
 # ──────────────────────────────────────────────────────────────
@@ -111,7 +116,8 @@ async def create_assemblee_generale(
         insert_data = payload.model_dump(mode="json")
         insert_data["id_sci"] = str(sci_id)
 
-        result = client.table("assemblees_generales").insert(insert_data).execute()
+        write_client = _get_write_client()
+        result = write_client.table("assemblees_generales").insert(insert_data).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
 

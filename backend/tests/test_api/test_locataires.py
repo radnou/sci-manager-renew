@@ -250,13 +250,13 @@ def test_create_locataire_generic_exception(client, auth_headers, fake_supabase)
     """Non-SCIManagerException during create returns 503."""
     from app.api.v1 import locataires as loc_mod
 
-    def interceptor(name, real):
-        if name == "locataires":
-            raise TypeError("unexpected type error")
-        return None
+    class BoomClient:
+        def table(self, name):
+            if name == "locataires":
+                raise TypeError("unexpected type error")
+            return fake_supabase.table(name)
 
-    proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "get_supabase_user_client", lambda request=None: proxy):
+    with patch.object(loc_mod, "_get_write_client", lambda: BoomClient()):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "Boom", "date_debut": "2026-01-01"},
@@ -304,27 +304,14 @@ def test_create_locataire_insert_db_error(client, auth_headers, fake_supabase):
     from app.api.v1 import locataires as loc_mod
     from tests.conftest import FakeResult
 
-    class InsertErrorQuery:
-        def __init__(self, real_query):
-            self._real = real_query
-            self._is_insert = False
-        def __getattr__(self, n):
-            return getattr(self._real, n)
-        def insert(self, payload):
-            self._is_insert = True
-            return self
-        def execute(self):
-            if self._is_insert:
-                return FakeResult(data=[], error="insert failed")
-            return self._real.execute()
+    class InsertErrorClient:
+        def table(self, name):
+            class Q:
+                def insert(self, payload): return self
+                def execute(self): return FakeResult(data=[], error="insert failed")
+            return Q()
 
-    def interceptor(name, real):
-        if name == "locataires":
-            return InsertErrorQuery(real.table(name))
-        return None
-
-    proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "get_supabase_user_client", lambda request=None: proxy):
+    with patch.object(loc_mod, "_get_write_client", lambda: InsertErrorClient()):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "DB Error", "date_debut": "2026-01-01"},
@@ -338,27 +325,14 @@ def test_create_locataire_insert_returns_empty(client, auth_headers, fake_supaba
     from app.api.v1 import locataires as loc_mod
     from tests.conftest import FakeResult
 
-    class InsertEmptyQuery:
-        def __init__(self, real_query):
-            self._real = real_query
-            self._is_insert = False
-        def __getattr__(self, n):
-            return getattr(self._real, n)
-        def insert(self, payload):
-            self._is_insert = True
-            return self
-        def execute(self):
-            if self._is_insert:
-                return FakeResult(data=[])
-            return self._real.execute()
+    class InsertEmptyClient:
+        def table(self, name):
+            class Q:
+                def insert(self, payload): return self
+                def execute(self): return FakeResult(data=[])
+            return Q()
 
-    def interceptor(name, real):
-        if name == "locataires":
-            return InsertEmptyQuery(real.table(name))
-        return None
-
-    proxy = _ProxyClient(fake_supabase, interceptor)
-    with patch.object(loc_mod, "get_supabase_user_client", lambda request=None: proxy):
+    with patch.object(loc_mod, "_get_write_client", lambda: InsertEmptyClient()):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "Empty Result", "date_debut": "2026-01-01"},

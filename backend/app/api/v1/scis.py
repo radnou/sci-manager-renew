@@ -7,7 +7,7 @@ import structlog
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from app.core.config import settings
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.core.security import get_current_user
@@ -84,6 +84,15 @@ class SCIDetail(SCIOverview):
 
 def _get_client(request: Request):
     return get_supabase_user_client(request)
+
+
+def _get_write_client():
+    """Service client for INSERT operations that require elevated privileges.
+
+    RLS policies require the user to already be a member of the SCI,
+    which is impossible for the initial INSERT (creating a new SCI + first associé).
+    """
+    return get_supabase_service_client()
 
 
 def _execute_select(query):
@@ -268,7 +277,8 @@ async def create_sci(payload: SCICreate, request: Request, user_id: str = Depend
             plan_key=plan_key,
         )
 
-    client = _get_client(request)
+    # Use service client for INSERT — RLS blocks new SCI creation (user not yet associated)
+    client = _get_write_client()
     result = client.table("sci").insert(payload.model_dump(mode="json")).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -442,7 +452,8 @@ async def invite_sci_associe(
     """Invite un associé à la SCI (gérant uniquement)."""
     logger.info("inviting_associe", sci_id=sci_id, nom=payload.nom)
 
-    client = _get_client(request)
+    # Use service client — RLS on associes requires existing membership
+    client = _get_write_client()
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
 

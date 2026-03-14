@@ -137,6 +137,7 @@ def test_create_bien_logs_creation():
         with (
             patch("app.api.v1.biens.logger") as mock_logger,
             patch("app.api.v1.biens._get_client") as mock_get_client,
+            patch("app.api.v1.biens._get_write_client") as mock_get_write_client,
             patch("app.api.v1.biens._get_user_sci_ids", return_value=["sci123"]),
             patch("app.api.v1.biens.SubscriptionService.enforce_limit", return_value={"plan_key": "pro", "is_active": True}),
         ):
@@ -161,6 +162,7 @@ def test_create_bien_logs_creation():
             mock_client = MagicMock()
             mock_client.table.return_value.insert.return_value.execute.return_value = mock_result
             mock_get_client.return_value = mock_client
+            mock_get_write_client.return_value = mock_client
 
             client = TestClient(app)
             response = client.post(
@@ -207,6 +209,7 @@ def test_create_loyer_logs_creation():
         with (
             patch("app.api.v1.loyers.logger") as mock_logger,
             patch("app.api.v1.loyers.get_supabase_user_client") as mock_get_client,
+            patch("app.api.v1.loyers._get_write_client") as mock_get_write_client,
             patch("app.api.v1.loyers._get_user_sci_ids", return_value=["sci123"]),
             patch("app.api.v1.loyers._fetch_bien", return_value={"id": "bien123", "id_sci": "sci123"}),
         ):
@@ -230,6 +233,7 @@ def test_create_loyer_logs_creation():
             mock_client = MagicMock()
             mock_client.table.return_value.insert.return_value.execute.return_value = mock_result
             mock_get_client.return_value = mock_client
+            mock_get_write_client.return_value = mock_client
 
             client = TestClient(app)
             response = client.post(

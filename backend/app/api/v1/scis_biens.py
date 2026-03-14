@@ -6,7 +6,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.services.subscription_service import SubscriptionService
@@ -27,6 +27,11 @@ router = APIRouter(prefix="/scis/{sci_id}/biens", tags=["scis-biens"])
 
 def _get_client(request: Request):
     return get_supabase_user_client(request)
+
+
+def _get_write_client():
+    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
+    return get_supabase_service_client()
 
 
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
@@ -149,7 +154,8 @@ async def create_sci_bien(
     # Force the sci_id from the URL path
     row["id_sci"] = str(sci_id)
 
-    result = client.table("biens").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("biens").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -440,7 +446,8 @@ async def create_bien_loyer(
     if existing.data:
         raise HTTPException(status_code=409, detail="Un loyer existe déjà pour ce bien à cette date")
 
-    result = client.table("loyers").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("loyers").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -558,7 +565,8 @@ async def create_bien_bail(
     row["id_bien"] = bien_id
     row["statut"] = "en_cours"
 
-    result = client.table("baux").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("baux").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -573,7 +581,7 @@ async def create_bien_bail(
     locataires = []
     for loc_id in locataire_ids:
         join_row = {"id_bail": bail_id, "id_locataire": loc_id}
-        client.table("bail_locataires").insert(join_row).execute()
+        write_client.table("bail_locataires").insert(join_row).execute()
         loc_detail = (
             client.table("locataires")
             .select("id, nom, email, telephone")
@@ -703,7 +711,8 @@ async def attach_locataire_to_bail(
         raise ResourceNotFoundError("Bail", str(bail_id))
 
     join_row = {"id_bail": bail_id, "id_locataire": locataire_id}
-    result = client.table("bail_locataires").insert(join_row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("bail_locataires").insert(join_row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -794,7 +803,8 @@ async def create_bien_charge(
     row["id_bien"] = bien_id
     # Note: charges table has no id_sci column — scoping is via id_bien → biens.id_sci
 
-    result = client.table("charges").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("charges").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -923,7 +933,8 @@ async def create_bien_assurance_pno(
     row = payload.model_dump(mode="json")
     row["id_bien"] = bien_id
 
-    result = client.table("assurances_pno").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("assurances_pno").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -1052,7 +1063,8 @@ async def create_bien_frais_agence(
     row = payload.model_dump(mode="json")
     row["id_bien"] = bien_id
 
-    result = client.table("frais_agence").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("frais_agence").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -1184,7 +1196,8 @@ async def upload_document(
         "url": url,
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
     }
-    result = client.table("documents_bien").insert(row).execute()
+    write_client = _get_write_client()
+    result = write_client.table("documents_bien").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
