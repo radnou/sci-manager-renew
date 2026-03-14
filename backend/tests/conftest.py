@@ -271,6 +271,9 @@ class _FakeBucket:
     def get_public_url(self, path: str) -> str:
         return f"https://storage.local/storage/v1/object/public/documents/{path}"
 
+    def create_signed_url(self, path: str, expires_in: int = 3600) -> dict:
+        return {"signedURL": f"https://storage.local/storage/v1/object/sign/documents/{path}?token=fake&expires_in={expires_in}"}
+
     def remove(self, paths: list[str]):
         self.removed.append(paths)
 

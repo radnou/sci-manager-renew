@@ -444,3 +444,240 @@ class TestGetRecentActivity:
         assert "description" in item
         assert "id_sci" in item
         assert "created_at" in item
+
+
+# ---------------------------------------------------------------------------
+# 8. _query_in_sci_ids fallback path (no in_ method) — lines 29-35
+# ---------------------------------------------------------------------------
+
+class TestQueryInSciIdsFallback:
+    def test_fallback_without_in_method(self):
+        """When the query object has no in_ method, fallback iterates per-SCI."""
+        from tests.conftest import FakeResult
+
+        class NoInQuery:
+            def __init__(self, store, table):
+                self._store = store
+                self._table = table
+                self._filters = {}
+
+            def select(self, *a, **k):
+                return self
+
+            def eq(self, key, value):
+                self._filters[key] = str(value)
+                return self
+
+            def execute(self):
+                rows = self._store.get(self._table, [])
+                matched = [r for r in rows if all(str(r.get(k)) == v for k, v in self._filters.items())]
+                return FakeResult(data=matched)
+
+        class NoInClient:
+            def __init__(self):
+                self._store = {
+                    "biens": [
+                        {"id": "b1", "id_sci": SCI_1, "adresse": "addr1"},
+                        {"id": "b2", "id_sci": SCI_2, "adresse": "addr2"},
+                        {"id": "b3", "id_sci": "other", "adresse": "addr3"},
+                    ]
+                }
+
+            def table(self, name):
+                return NoInQuery(self._store, name)
+
+        result = _query_in_sci_ids(NoInClient(), "biens", "id,id_sci", [SCI_1, SCI_2])
+        assert len(result) == 2
+        ids = {r["id"] for r in result}
+        assert ids == {"b1", "b2"}
+
+    def test_fallback_raises_on_error(self):
+        """Fallback path raises DatabaseError when result has error (line 33)."""
+        from tests.conftest import FakeResult
+
+        class ErrorQuery:
+            def select(self, *a, **k): return self
+            def eq(self, *a, **k): return self
+            def execute(self): return FakeResult(data=[], error="db fail")
+
+        class ErrorClient:
+            def table(self, name):
+                return ErrorQuery()
+
+        with pytest.raises(DatabaseError):
+            _query_in_sci_ids(ErrorClient(), "biens", "id", [SCI_1])
+
+
+# ---------------------------------------------------------------------------
+# 9. _query_in_sci_ids error after in_ — line 37-38
+# ---------------------------------------------------------------------------
+
+class TestQueryInSciIdsErrorAfterIn:
+    def test_raises_on_error_after_in(self):
+        """When in_ is available but execute() returns an error, raise DatabaseError."""
+        from tests.conftest import FakeResult
+
+        class InErrorQuery:
+            def select(self, *a, **k): return self
+            def in_(self, *a, **k): return self
+            def execute(self): return FakeResult(data=[], error="connection lost")
+
+        class InErrorClient:
+            def table(self, name):
+                return InErrorQuery()
+
+        with pytest.raises(DatabaseError):
+            _query_in_sci_ids(InErrorClient(), "biens", "id", [SCI_1])
+
+
+# ---------------------------------------------------------------------------
+# 10. _format_date_fr edge cases — lines 51-52
+# ---------------------------------------------------------------------------
+
+class TestFormatDateFr:
+    def test_valid_date(self):
+        from app.services.dashboard_service import _format_date_fr
+        assert _format_date_fr("2025-07-01") == "1 juillet 2025"
+
+    def test_invalid_date_returns_input(self):
+        from app.services.dashboard_service import _format_date_fr
+        assert _format_date_fr("not-a-date") == "not-a-date"
+
+    def test_empty_string_returns_input(self):
+        from app.services.dashboard_service import _format_date_fr
+        assert _format_date_fr("") == ""
+
+    def test_january(self):
+        from app.services.dashboard_service import _format_date_fr
+        assert _format_date_fr("2026-01-15") == "15 janvier 2026"
+
+    def test_december(self):
+        from app.services.dashboard_service import _format_date_fr
+        assert _format_date_fr("2026-12-25") == "25 décembre 2026"
+
+
+# ---------------------------------------------------------------------------
+# 11. get_alertes — bail check exception (lines 136-138)
+# ---------------------------------------------------------------------------
+
+class TestGetAlertesBailException:
+    @pytest.mark.asyncio
+    async def test_bail_check_exception_swallowed(self):
+        """When locataires query fails, alertes still returns loyer alerts."""
+        from tests.conftest import FakeResult
+
+        class FailLocatairesClient:
+            """Client where locataires table raises on query."""
+            def __init__(self):
+                self._call_count = 0
+                self._base = _client_with({
+                    "loyers": [
+                        {"id": "l1", "id_sci": SCI_1, "montant": 500,
+                         "statut": "en_retard", "date_loyer": "2024-01-01"},
+                    ]
+                })
+
+            def table(self, name):
+                if name == "locataires":
+                    raise RuntimeError("locataires table broken")
+                return self._base.table(name)
+
+        client = FailLocatairesClient()
+        alertes = await get_alertes(client, USER_ID)
+        # Should still have loyer alerts despite locataires failure
+        loyer_alertes = [a for a in alertes if a["type"] == "loyer_en_retard"]
+        assert len(loyer_alertes) >= 1
+
+
+# ---------------------------------------------------------------------------
+# 12. get_portfolio_kpis — charges exception (lines 194-197)
+# ---------------------------------------------------------------------------
+
+class TestGetPortfolioKpisChargesException:
+    @pytest.mark.asyncio
+    async def test_charges_exception_returns_zero(self):
+        """When charges query fails, charges_total defaults to 0."""
+        from tests.conftest import FakeResult
+
+        class FailChargesClient:
+            def __init__(self):
+                self._base = _client_with({
+                    "loyers": [
+                        {"id": "l1", "id_sci": SCI_1, "montant": 1000, "statut": "paye",
+                         "date_loyer": "2026-01-01"},
+                    ],
+                })
+
+            def table(self, name):
+                if name == "charges":
+                    raise RuntimeError("charges table broken")
+                return self._base.table(name)
+
+        client = FailChargesClient()
+        kpis = await get_portfolio_kpis(client, USER_ID)
+        assert kpis["charges_total"] == 0.0
+        assert kpis["loyers_payes"] == 1000.0
+
+
+# ---------------------------------------------------------------------------
+# 13. get_recent_activity — exception paths (lines 294-295, 310-311)
+# ---------------------------------------------------------------------------
+
+class TestGetRecentActivityExceptions:
+    @pytest.mark.asyncio
+    async def test_loyers_exception_returns_biens_only(self):
+        """When loyers query fails, activity still includes biens."""
+
+        class FailLoyersClient:
+            def __init__(self):
+                self._base = _client_with({
+                    "biens": [
+                        {"id": "b1", "id_sci": SCI_1, "adresse": "10 rue Test",
+                         "created_at": "2024-01-01T00:00:00"},
+                    ],
+                })
+
+            def table(self, name):
+                if name == "loyers":
+                    raise RuntimeError("loyers broken")
+                return self._base.table(name)
+
+        client = FailLoyersClient()
+        activity = await get_recent_activity(client, USER_ID)
+        bien_items = [a for a in activity if a["type"] == "bien"]
+        assert len(bien_items) >= 1
+
+    @pytest.mark.asyncio
+    async def test_biens_exception_returns_loyers_only(self):
+        """When biens query fails, activity still includes loyers."""
+
+        class FailBiensClient:
+            def __init__(self):
+                self._base = _client_with({
+                    "loyers": [
+                        {"id": "l1", "id_sci": SCI_1, "montant": 800, "statut": "paye",
+                         "date_loyer": "2024-03-01", "created_at": "2024-03-01T10:00:00"},
+                    ],
+                })
+
+            def table(self, name):
+                if name == "biens":
+                    raise RuntimeError("biens broken")
+                return self._base.table(name)
+
+        client = FailBiensClient()
+        activity = await get_recent_activity(client, USER_ID)
+        loyer_items = [a for a in activity if a["type"] == "loyer"]
+        assert len(loyer_items) >= 1
+
+    @pytest.mark.asyncio
+    async def test_bien_without_adresse_fallback(self):
+        """Bien without adresse uses 'Bien' as default name."""
+        client = _client_with({
+            "biens": [
+                {"id": "b-noadr", "id_sci": SCI_1, "created_at": "2024-01-01T00:00:00"},
+            ],
+        })
+        activity = await get_recent_activity(client, USER_ID)
+        bien_items = [a for a in activity if a["type"] == "bien"]
+        assert any("Bien" in b["description"] for b in bien_items)

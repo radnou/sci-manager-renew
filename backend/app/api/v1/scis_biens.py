@@ -1159,8 +1159,21 @@ async def upload_document(
         logger.error("document_upload_failed", error=str(exc))
         raise DatabaseError(f"Upload failed: {exc}")
 
-    # Get public URL
-    url = client.storage.from_("documents").get_public_url(storage_path)
+    # Generate a time-limited signed URL (24 h) instead of a public URL
+    signed_payload = client.storage.from_("documents").create_signed_url(
+        storage_path, 86400
+    )
+    if isinstance(signed_payload, dict):
+        url = (
+            signed_payload.get("signedURL")
+            or signed_payload.get("signedUrl")
+            or signed_payload.get("signed_url")
+        )
+    else:
+        url = signed_payload
+    if not url:
+        logger.error("signed_url_empty", storage_path=storage_path)
+        raise DatabaseError("Failed to generate signed URL for uploaded document")
 
     # Insert record into documents table
     from datetime import datetime, timezone
