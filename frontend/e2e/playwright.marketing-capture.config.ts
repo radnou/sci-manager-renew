@@ -1,34 +1,29 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Config for marketing video/screenshot capture.
- * Sequential, video ON, high quality, cookie banner dismissed.
+ * Config for cinematic marketing demo capture.
+ * Single continuous flow, slowMo for readable interactions.
  */
 export default defineConfig({
-  testDir: './validation',
-  testMatch: 'billing-audit.spec.ts',
+  testDir: './showcase/flows',
+  testMatch: '00-marketing-demo.spec.ts',
   fullyParallel: false,
   retries: 0,
   workers: 1,
+  timeout: 300_000, // 5min — long demo
   reporter: [['list']],
-  outputDir: '../marketing/videos',
+  outputDir: '../marketing/demo-output',
   use: {
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
-    screenshot: 'on',
-    video: {
-      mode: 'on',
-      size: { width: 1440, height: 900 },
-    },
+    screenshot: 'off', // We take manual screenshots
+    video: 'off', // Video recorded via browser context in the test
     viewport: { width: 1440, height: 900 },
     locale: 'fr-FR',
     timezoneId: 'Europe/Paris',
-    actionTimeout: 15_000,
-    navigationTimeout: 20_000,
-    launchOptions: {
-      slowMo: 300, // Slow for readable demo videos
-    },
+    actionTimeout: 20_000,
+    navigationTimeout: 30_000,
   },
   projects: [
-    { name: 'marketing', use: { ...devices['Desktop Chrome'] } },
+    { name: 'demo', use: { ...devices['Desktop Chrome'] } },
   ],
 });
