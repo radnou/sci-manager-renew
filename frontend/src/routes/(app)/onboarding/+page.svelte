@@ -7,6 +7,8 @@
 		createSci,
 		createBienForSci,
 		createBail,
+		createLocataire,
+		attachLocataireToBail,
 		completeOnboarding,
 		fetchOnboardingStatus,
 		fetchSciBiensList,
@@ -14,6 +16,7 @@
 		type SCICreatePayload,
 		type BienCreatePayload,
 		type BailCreate,
+		type LocataireCreatePayload,
 		type OnboardingStatus
 	} from '$lib/api';
 
@@ -45,11 +48,13 @@
 	let bienCharges = $state(0);
 	let bienNbLots = $state(1);
 
-	// Step 3: Bail
+	// Step 3: Bail + Locataire
 	let createdBienId = $state('');
 	let bailDateDebut = $state(new Date().toISOString().slice(0, 10));
 	let bailLoyerHc = $state(0);
 	let bailChargesLocatives = $state(0);
+	let locataireNom = $state('');
+	let locataireEmail = $state('');
 
 	// Step 4: Notifications
 	let emailAlertes = $state(true);
@@ -203,7 +208,30 @@
 				loyer_hc: bailLoyerHc,
 				charges_locatives: bailChargesLocatives || undefined
 			};
-			await createBail(createdSciId, createdBienId, bailData);
+			const bail = await createBail(createdSciId, createdBienId, bailData);
+
+			// Create and attach locataire if name is provided
+			if (locataireNom.trim()) {
+				try {
+					const locataire = await createLocataire({
+						id_bien: createdBienId,
+						nom: locataireNom.trim(),
+						email: locataireEmail.trim() || undefined,
+						date_debut: bailDateDebut
+					} as LocataireCreatePayload);
+					if (locataire?.id && bail?.id) {
+						await attachLocataireToBail(
+							createdSciId,
+							createdBienId,
+							bail.id,
+							Number(locataire.id)
+						);
+					}
+				} catch {
+					// Non-blocking: bail is created, locataire attachment is best-effort
+				}
+			}
+
 			currentStep = 4;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bail.';
@@ -501,10 +529,10 @@
 							</div>
 						</div>
 						<div>
-							<label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+							<span id="onboarding-dpe-label" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
 								DPE (Diagnostic de Performance Énergétique)
-							</label>
-							<div class="flex gap-2">
+							</span>
+							<div class="flex gap-2" role="group" aria-labelledby="onboarding-dpe-label">
 								{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as classe}
 									<button
 										type="button"
@@ -597,7 +625,7 @@
 					Configuration du bail
 				</h2>
 				<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
-					Créez un premier bail pour votre bien. Vous pourrez ajouter le locataire depuis la fiche bien.
+					Créez un premier bail et renseignez votre locataire.
 				</p>
 				<div class="space-y-4">
 					<div>
@@ -637,6 +665,37 @@
 								placeholder="50"
 								class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
 							/>
+						</div>
+					</div>
+
+					<!-- Locataire section -->
+					<div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+						<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Locataire (optionnel)</p>
+						<div class="space-y-3">
+							<div>
+								<label for="locataire-nom" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+									Nom du locataire
+								</label>
+								<input
+									id="locataire-nom"
+									type="text"
+									bind:value={locataireNom}
+									placeholder="Jean Dupont"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+								/>
+							</div>
+							<div>
+								<label for="locataire-email" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+									Email du locataire
+								</label>
+								<input
+									id="locataire-email"
+									type="email"
+									bind:value={locataireEmail}
+									placeholder="jean.dupont@email.com"
+									class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+								/>
+							</div>
 						</div>
 					</div>
 				</div>

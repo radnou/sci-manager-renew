@@ -419,6 +419,13 @@ export function updateLoyer(loyerId: EntityId, payload: LoyerUpdatePayload) {
 	});
 }
 
+export function createLocataire(payload: LocataireCreatePayload) {
+	return apiFetch<Locataire>('/api/v1/locataires', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+}
+
 export function updateLocataire(locataireId: EntityId, payload: LocataireUpdatePayload) {
 	return apiFetch<Locataire>(`/api/v1/locataires/${locataireId}`, {
 		method: 'PATCH',
