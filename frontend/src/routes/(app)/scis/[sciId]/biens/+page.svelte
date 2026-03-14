@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
-	import type { SCIDetail, Bien } from '$lib/api';
-	import { fetchSciBiensList, deleteBien } from '$lib/api';
+	import { getContext, onMount } from 'svelte';
+	import type { SCIDetail, Bien, SubscriptionEntitlements } from '$lib/api';
+	import { fetchSciBiensList, deleteBien, fetchSubscriptionEntitlements } from '$lib/api';
 
 	type BienListItem = Bien & {
 		statut?: string | null;
 		bail_actif?: unknown;
 	};
 	import { formatEur } from '$lib/high-value/formatters';
-	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet } from 'lucide-svelte';
+	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet, ArrowUpRight } from 'lucide-svelte';
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
 
@@ -21,10 +21,32 @@
 	let viewMode = $state<'grid' | 'list'>('grid');
 	let deletingId = $state<string | null>(null);
 	let confirmingDeleteId = $state<string | null>(null);
+	let entitlements = $state<SubscriptionEntitlements | null>(null);
+
+	let canCreateBien = $derived(
+		!entitlements || entitlements.remaining_biens == null || entitlements.remaining_biens > 0
+	);
+
+	function handleNewBienClick() {
+		if (canCreateBien) {
+			showBienModal = true;
+		} else if (entitlements) {
+			addToast({
+				title: 'Limite atteinte',
+				description: `Votre plan ${entitlements.plan_name} est limité à ${entitlements.max_biens} biens. Passez au plan supérieur pour en ajouter davantage.`,
+				variant: 'default',
+				timeoutMs: 6000
+			});
+		}
+	}
 
 	let biens: BienListItem[] = $state([]);
 	let loading = $state(true);
 	let error: string | null = $state(null);
+
+	onMount(() => {
+		fetchSubscriptionEntitlements().then((ent) => { entitlements = ent; }).catch(() => {});
+	});
 
 	$effect(() => {
 		loadBiens();
@@ -114,17 +136,42 @@
 				{/if}
 
 				{#if isGerant}
-					<button
-						onclick={() => showBienModal = true}
-						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					>
-						<Plus class="h-4 w-4" />
-						Ajouter un bien
-					</button>
+					{#if canCreateBien}
+						<button
+							onclick={() => showBienModal = true}
+							class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+						>
+							<Plus class="h-4 w-4" />
+							Ajouter un bien
+						</button>
+					{:else}
+						<button
+							onclick={handleNewBienClick}
+							class="inline-flex items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 opacity-75 transition-colors hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-950/50"
+						>
+							<Plus class="h-4 w-4" />
+							Ajouter un bien
+							<span class="text-xs">(Limite atteinte)</span>
+						</button>
+					{/if}
 				{/if}
 			</div>
 		</div>
 	</header>
+	{#if isGerant && !canCreateBien && entitlements}
+		<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/30">
+			<p class="text-sm text-amber-800 dark:text-amber-200">
+				Vous avez atteint la limite de votre plan {entitlements.plan_name} ({entitlements.max_biens} biens). Passez au plan supérieur pour ajouter plus de biens.
+			</p>
+			<a
+				href="/pricing"
+				class="ml-4 inline-flex shrink-0 items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+			>
+				Changer de plan
+				<ArrowUpRight class="h-3.5 w-3.5" />
+			</a>
+		</div>
+	{/if}
 
 	{#if loading}
 		<div class="sci-loading" aria-label="Chargement"></div>
