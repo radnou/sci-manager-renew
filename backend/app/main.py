@@ -34,6 +34,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1 import (
     admin,
+    assemblees_generales,
     associes,
     auth,
     biens,
@@ -48,6 +49,7 @@ from app.api.v1 import (
     health,
     locataires,
     loyers,
+    mouvements_parts,
     notification_preferences,
     notifications,
     onboarding,
@@ -532,4 +534,6 @@ app.include_router(export.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(finances.router, prefix="/api/v1")
 app.include_router(scis_biens.router, prefix="/api/v1")
+app.include_router(mouvements_parts.router, prefix="/api/v1")
+app.include_router(assemblees_generales.router, prefix="/api/v1")
 app.include_router(admin.router)
