@@ -53,8 +53,14 @@
         addToast({ title: 'Associé mis à jour', variant: 'success' });
       } else {
         const data: InviteAssociePayload = { nom: nom.trim(), email: email || undefined, part, role };
-        await inviteAssocie(sciId, data);
-        addToast({ title: 'Associé invité', variant: 'success' });
+        const result = await inviteAssocie(sciId, data);
+        const emailSent = result?.email_sent;
+        addToast({
+          title: emailSent
+            ? 'Associé ajouté — invitation envoyée par email'
+            : 'Associé ajouté',
+          variant: 'success'
+        });
       }
       onSuccess();
       open = false;

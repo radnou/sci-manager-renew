@@ -6,6 +6,7 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, ConfigDict, Field
+from app.core.config import settings
 from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
@@ -13,6 +14,7 @@ from app.core.security import get_current_user
 from app.models.biens import BienResponse
 from app.models.loyers import LoyerResponse
 from app.models.sci import SCICreate, SCIResponse, SCIUpdate
+from app.services.email_service import email_service
 from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/scis", tags=["scis"])
@@ -426,7 +428,11 @@ class InviteAssociePayload(BaseModel):
     role: str = "associe"
 
 
-@router.post("/{sci_id}/associes", response_model=AssocieOverview, status_code=status.HTTP_201_CREATED)
+class InviteAssocieResponse(AssocieOverview):
+    email_sent: bool = False
+
+
+@router.post("/{sci_id}/associes", response_model=InviteAssocieResponse, status_code=status.HTTP_201_CREATED)
 async def invite_sci_associe(
     sci_id: str,
     payload: InviteAssociePayload,
@@ -450,7 +456,44 @@ async def invite_sci_associe(
 
     created = data[0]
     logger.info("associe_invited", associe_id=created.get("id"), sci_id=sci_id)
-    return AssocieOverview(**created)
+
+    # Best-effort email invitation
+    email_sent = False
+    if payload.email:
+        # Fetch SCI name for the email
+        sci_nom = "votre SCI"
+        try:
+            sci_rows = _execute_select(
+                client.table("sci").select("nom").eq("id", sci_id)
+            )
+            if sci_rows:
+                sci_nom = sci_rows[0].get("nom") or sci_nom
+        except Exception:
+            pass
+
+        # Fetch inviter name from their own associé record
+        inviter_nom = "Le gérant"
+        try:
+            inviter_rows = _execute_select(
+                client.table("associes")
+                .select("nom")
+                .eq("id_sci", sci_id)
+                .eq("user_id", membership.user_id)
+            )
+            if inviter_rows and inviter_rows[0].get("nom"):
+                inviter_nom = inviter_rows[0]["nom"]
+        except Exception:
+            pass
+
+        email_sent = await email_service.send_associe_invitation(
+            to_email=payload.email,
+            sci_nom=sci_nom,
+            inviter_nom=inviter_nom,
+            role=payload.role,
+            frontend_url=settings.frontend_url,
+        )
+
+    return InviteAssocieResponse(**created, email_sent=email_sent)
 
 
 # ──────────────────────────────────────────────────────────────

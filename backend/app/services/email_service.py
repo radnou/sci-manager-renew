@@ -177,6 +177,60 @@ class EmailService:
             logger.error("subscription_confirmation_send_failed", email=email, plan=plan, error=str(e), exc_info=True)
             raise ExternalServiceError("Resend", f"Subscription confirmation send failed: {str(e)}")
 
+    async def send_associe_invitation(
+        self,
+        to_email: str,
+        sci_nom: str,
+        inviter_nom: str,
+        role: str,
+        frontend_url: str,
+    ) -> bool:
+        """Send invitation email to a new associé.
+
+        Best-effort: returns True on success, False on failure (never raises).
+        """
+        role_label = "Gérant" if role == "gerant" else "Associé"
+        logger.info(
+            "sending_associe_invitation",
+            to_email=to_email,
+            sci_nom=sci_nom,
+            role=role,
+        )
+
+        try:
+            html = _render_template(
+                "associe_invitation.html",
+                sci_nom=sci_nom,
+                inviter_nom=inviter_nom,
+                role_label=role_label,
+                cta_url=f"{frontend_url}/login",
+                cta_text="Se connecter à GererSCI",
+            )
+
+            payload = {
+                "from": self.from_email,
+                "to": to_email,
+                "subject": f"Vous êtes invité à rejoindre la SCI {sci_nom} sur GererSCI",
+                "html": html,
+            }
+            await run_with_retry(
+                operation="resend.send_associe_invitation",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": to_email, "sci_nom": sci_nom},
+            )
+
+            logger.info("associe_invitation_sent", to_email=to_email, sci_nom=sci_nom)
+            return True
+        except Exception as e:
+            logger.warning(
+                "associe_invitation_send_failed",
+                to_email=to_email,
+                sci_nom=sci_nom,
+                error=str(e),
+                exc_info=True,
+            )
+            return False
+
     async def send_reset_password(self, email: str, reset_link: str) -> dict:
         """Send password reset email
 
