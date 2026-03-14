@@ -7,20 +7,16 @@ test.describe('Paywall et pricing @P0', () => {
     await page.goto('/pricing');
     await page.waitForLoadState('networkidle');
 
-    // Should display 3 plan cards (Essentiel, Gestion, Pro/Premium)
-    const planCards = page.locator('[class*="card"], [class*="Card"]');
-    const planCount = await planCards.count();
-
-    // At minimum, 3 plans should be visible
-    expect(planCount).toBeGreaterThanOrEqual(3);
-
-    // Verify plan names are present
+    // Should display 3 plan names: Essentiel, Gestion, Fiscal
     const content = await page.textContent('body');
-    const hasPlans =
-      (content!.includes('Essentiel') || content!.includes('Standard') || content!.includes('Gratuit')) &&
-      (content!.includes('Gestion') || content!.includes('Starter')) &&
-      (content!.includes('Premium') || content!.includes('Pro'));
-    expect(hasPlans).toBe(true);
+    expect(content).toContain('Essentiel');
+    expect(content).toContain('Gestion');
+    expect(content).toContain('Fiscal');
+
+    // Verify pricing amounts are visible
+    expect(content).toContain('Gratuit');
+    expect(content).toContain('19€');
+    expect(content).toContain('39€');
   });
 
   test('les limites du plan gratuit sont affichees @P1', async ({ page }) => {

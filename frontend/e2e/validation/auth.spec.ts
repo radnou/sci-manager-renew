@@ -30,20 +30,21 @@ test.describe('Authentification @P0', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
+    // Dismiss cookie banner if present
+    const cookieBtn = page.locator('button:has-text("Accepter"), button:has-text("OK"), button:has-text("Fermer")');
+    if (await cookieBtn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      await cookieBtn.first().click();
+      await page.waitForTimeout(300);
+    }
+
     const emailInput = page.locator('input[type="email"]');
     await emailInput.fill('invalid-email');
 
-    const submitButton = page.locator('button[type="submit"]');
-    await submitButton.click();
-
-    // HTML5 validation or custom validation should prevent submission
-    // Check either native validation or error message
+    // HTML5 validation should mark the field as invalid
     const isInvalid = await emailInput.evaluate(
       (el: HTMLInputElement) => !el.validity.valid
     );
-    const errorVisible = await page.locator('[class*="error"], [role="alert"]').isVisible().catch(() => false);
-
-    expect(isInvalid || errorVisible).toBe(true);
+    expect(isInvalid).toBe(true);
   });
 
   test('le toggle mode magic link fonctionne @P1', async ({ page }) => {

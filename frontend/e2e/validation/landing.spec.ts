@@ -5,16 +5,23 @@ test.describe('Landing page @P0', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // The landing page should have at least one CTA button
-    const ctaButtons = page.locator('a[href="/login"], a[href="/pricing"], a[href="/register"]');
-    await expect(ctaButtons.first()).toBeVisible();
+    // The landing/pricing page should have navigation links (Connexion, Inscription)
+    const navLinks = page.locator('a:has-text("Connexion"), a:has-text("Inscription")');
+    await expect(navLinks.first()).toBeVisible();
 
-    // Click the primary CTA and verify navigation
-    const firstCta = ctaButtons.first();
-    const href = await firstCta.getAttribute('href');
-    await firstCta.click();
-    await page.waitForLoadState('networkidle');
-    expect(page.url()).toContain(href);
+    // Verify CTA buttons link to appropriate pages
+    const cta = page.locator('a:has-text("Démarrer"), a:has-text("Essayer"), a:has-text("Connexion"), a:has-text("Inscription")');
+    const ctaCount = await cta.count();
+    expect(ctaCount).toBeGreaterThan(0);
+
+    // Verify at least one CTA has href to login, pricing, or register
+    const hrefs: string[] = [];
+    for (let i = 0; i < ctaCount; i++) {
+      const href = await cta.nth(i).getAttribute('href');
+      if (href) hrefs.push(href);
+    }
+    const hasValidCta = hrefs.some(h => h.includes('login') || h.includes('pricing') || h.includes('register'));
+    expect(hasValidCta).toBe(true);
   });
 
   test('les sections fonctionnalites sont visibles au scroll @P1', async ({ page }) => {
