@@ -732,6 +732,7 @@ export type AssocieEmbed = {
 	email: string | null;
 	role: string | null;
 	part: number | null;
+	email_sent?: boolean;
 };
 
 export type BailCreate = {
