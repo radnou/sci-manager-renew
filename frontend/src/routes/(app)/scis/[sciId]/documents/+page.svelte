@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail, DocumentBienEmbed, Bien } from '$lib/api';
-	import { fetchSciBiens, fetchBienDocuments, uploadDocumentBien, deleteDocumentBien } from '$lib/api';
+	import type { SCIDetail, DocumentBienEmbed, Bien, SciDocumentItem } from '$lib/api';
+	import { fetchSciDocuments, uploadDocumentBien, deleteDocumentBien, fetchSciBiens } from '$lib/api';
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast';
 	import { FileText, Download, FolderOpen, Upload, Trash2, Loader2, Plus } from 'lucide-svelte';
@@ -55,14 +55,19 @@
 		loading = true;
 		error = null;
 		try {
-			const biens = await fetchSciBiens(sciId);
-			const results = await Promise.all(
-				biens.map(async (bien) => {
-					const docs = await fetchBienDocuments(sciId, bien.id!);
-					return { bien, documents: docs } as BienDocs;
-				})
-			);
-			groups = results;
+			// Single API call instead of N+1
+			const allDocs = await fetchSciDocuments(sciId);
+			// Group by id_bien
+			const byBien = new Map<string, SciDocumentItem[]>();
+			for (const doc of allDocs) {
+				const key = String(doc.id_bien);
+				if (!byBien.has(key)) byBien.set(key, []);
+				byBien.get(key)!.push(doc);
+			}
+			groups = Array.from(byBien.entries()).map(([bienId, docs]) => ({
+				bien: { id: bienId, adresse: docs[0]?.bien_adresse ?? bienId } as Bien,
+				documents: docs as unknown as DocumentBienEmbed[],
+			}));
 		} catch (err: any) {
 			error = err?.message ?? 'Impossible de charger les documents.';
 		} finally {

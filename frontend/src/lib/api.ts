@@ -1051,6 +1051,20 @@ export async function fetchFinances(period?: string): Promise<FinancesData> {
 
 // --- Documents Bien ---
 
+export interface SciDocumentItem {
+	id: string | number;
+	id_bien: string | number;
+	bien_adresse?: string;
+	nom: string;
+	categorie: string;
+	url: string;
+	uploaded_at?: string;
+}
+
+export async function fetchSciDocuments(sciId: EntityId): Promise<SciDocumentItem[]> {
+	return apiFetch<SciDocumentItem[]>(`/api/v1/scis/${sciId}/documents`);
+}
+
 export async function fetchBienDocuments(
 	sciId: EntityId,
 	bienId: EntityId

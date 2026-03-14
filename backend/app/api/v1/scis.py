@@ -447,3 +447,59 @@ async def invite_sci_associe(
     created = data[0]
     logger.info("associe_invited", associe_id=created.get("id"), sci_id=sci_id)
     return AssocieOverview(**created)
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST all documents for a SCI (aggregated across all biens)
+# ──────────────────────────────────────────────────────────────
+
+
+class SciDocumentItem(BaseModel):
+    id: str | int
+    id_bien: str | int
+    bien_adresse: str | None = None
+    nom: str
+    categorie: str = "autre"
+    url: str
+    uploaded_at: str | None = None
+
+    model_config = ConfigDict(extra="ignore")
+
+
+@router.get("/{sci_id}/documents", response_model=list[SciDocumentItem])
+async def list_sci_documents(
+    sci_id: str,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste tous les documents d'une SCI (tous les biens confondus)."""
+    client = _get_client()
+
+    # Get all bien IDs for this SCI
+    biens_result = client.table("biens").select("id, adresse").eq("id_sci", sci_id).execute()
+    if getattr(biens_result, "error", None):
+        raise DatabaseError(str(biens_result.error))
+
+    biens = biens_result.data or []
+    if not biens:
+        return []
+
+    bien_ids = [str(b["id"]) for b in biens]
+    bien_map = {str(b["id"]): b.get("adresse", "") for b in biens}
+
+    # Fetch all documents for these biens in one query
+    docs_result = (
+        client.table("documents_bien")
+        .select("*")
+        .in_("id_bien", bien_ids)
+        .order("uploaded_at", desc=True)
+        .execute()
+    )
+    if getattr(docs_result, "error", None):
+        raise DatabaseError(str(docs_result.error))
+
+    docs = docs_result.data or []
+    # Enrich with bien address
+    for doc in docs:
+        doc["bien_adresse"] = bien_map.get(str(doc.get("id_bien", "")), "")
+
+    return docs
