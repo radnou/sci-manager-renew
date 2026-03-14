@@ -12,6 +12,8 @@ class SCIBase(BaseModel):
     capital_social: float | None = Field(default=None, ge=0)
     objet_social: str | None = Field(default=None, max_length=2000)
     rcs_ville: str | None = Field(default=None, max_length=100)
+    nb_parts_total: int | None = None
+    valeur_nominale_part: float | None = None
 
 
 class SCICreate(SCIBase):
@@ -27,6 +29,8 @@ class SCIUpdate(BaseModel):
     capital_social: float | None = Field(default=None, ge=0)
     objet_social: str | None = Field(default=None, max_length=2000)
     rcs_ville: str | None = Field(default=None, max_length=100)
+    nb_parts_total: int | None = None
+    valeur_nominale_part: float | None = None
 
 
 class AssocieCreate(BaseModel):

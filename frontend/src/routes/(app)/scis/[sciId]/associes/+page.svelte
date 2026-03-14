@@ -139,6 +139,13 @@
 							>
 								{associe.part ?? 0}%
 							</span>
+							{#if associe.nb_parts != null}
+								<span
+									class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+								>
+									{associe.nb_parts} parts
+								</span>
+							{/if}
 							{#if isGerant}
 								<button
 									onclick={() => handleEditAssocie(associe)}
@@ -198,6 +205,12 @@
 					<span class="text-sm text-red-600 dark:text-red-400 ml-2">La somme doit être égale à 100%</span>
 				{/if}
 			</div>
+			{@const totalNbParts = associes.reduce((sum: number, a: Associe) => sum + (a.nb_parts ?? 0), 0)}
+			{#if totalNbParts > 0}
+				<div class="mt-2 p-3 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
+					<span class="text-sm font-medium">Nombre de parts : {totalNbParts}{#if sci.nb_parts_total != null} / {sci.nb_parts_total}{/if}</span>
+				</div>
+			{/if}
 		{/if}
 	{:else}
 		<div

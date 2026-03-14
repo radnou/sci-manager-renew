@@ -16,6 +16,7 @@ export type Associe = {
 	nom: string;
 	email?: string | null;
 	part?: number | null;
+	nb_parts?: number | null;
 	role?: string | null;
 	is_account_member?: boolean | null;
 	created_at?: string;
@@ -33,6 +34,8 @@ export type SCIOverview = {
 	capital_social?: number | null;
 	objet_social?: string | null;
 	rcs_ville?: string | null;
+	nb_parts_total?: number | null;
+	valeur_nominale_part?: number | null;
 	associes_count?: number;
 	biens_count?: number;
 	loyers_count?: number;
