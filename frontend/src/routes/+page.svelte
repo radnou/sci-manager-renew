@@ -342,9 +342,137 @@
 	</section>
 
 	<!-- ============================================================ -->
-	<!-- TARGET AUDIENCE -->
+	<!-- PRODUCT SHOWCASE -->
 	<!-- ============================================================ -->
 	<section class="bg-slate-50 py-20 dark:bg-slate-950">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="mb-12 text-center">
+				<Badge variant="outline" class="mb-4 px-3 py-1 text-sm font-medium"
+					>Apercu produit</Badge
+				>
+				<h2 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+					Votre cockpit SCI, simplifie
+				</h2>
+				<p class="mx-auto mt-3 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
+					Dashboard, gestion des biens, finances, quittances — tout en un seul endroit.
+				</p>
+			</div>
+
+			<!-- Main screenshot: Dashboard -->
+			<div class="relative mx-auto max-w-5xl">
+				<div
+					class="overflow-hidden rounded-xl border border-slate-200 shadow-2xl dark:border-slate-700"
+				>
+					<img
+						src="/images/showcase/dashboard-light.png"
+						alt="Dashboard GererSCI — vue d'ensemble avec KPIs, alertes et cartes SCI"
+						class="block w-full dark:hidden"
+						loading="lazy"
+						width="1280"
+						height="800"
+					/>
+					<img
+						src="/images/showcase/dashboard-dark.png"
+						alt="Dashboard GererSCI en mode sombre"
+						class="hidden w-full dark:block"
+						loading="lazy"
+						width="1280"
+						height="800"
+					/>
+				</div>
+			</div>
+
+			<!-- Feature screenshots grid -->
+			<div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+				<div class="group">
+					<div
+						class="overflow-hidden rounded-lg border border-slate-200 shadow-md transition-shadow group-hover:shadow-xl dark:border-slate-700"
+					>
+						<img
+							src="/images/showcase/biens-grid.png"
+							alt="Gestion des biens immobiliers — vue en grille avec statut et loyer par bien"
+							class="w-full"
+							loading="lazy"
+							width="640"
+							height="400"
+						/>
+					</div>
+					<h3 class="mt-3 font-semibold text-slate-900 dark:text-slate-100">
+						Gestion des biens
+					</h3>
+					<p class="text-sm text-slate-500 dark:text-slate-400">
+						Vue en grille avec statut, loyer et rendement par bien.
+					</p>
+				</div>
+
+				<div class="group">
+					<div
+						class="overflow-hidden rounded-lg border border-slate-200 shadow-md transition-shadow group-hover:shadow-xl dark:border-slate-700"
+					>
+						<img
+							src="/images/showcase/finances-consolidated.png"
+							alt="Vue financiere consolidee — revenus, charges et cashflow"
+							class="w-full"
+							loading="lazy"
+							width="640"
+							height="400"
+						/>
+					</div>
+					<h3 class="mt-3 font-semibold text-slate-900 dark:text-slate-100">
+						Finances consolidees
+					</h3>
+					<p class="text-sm text-slate-500 dark:text-slate-400">
+						Revenus, charges et cashflow en un coup d'oeil.
+					</p>
+				</div>
+
+				<div class="group">
+					<div
+						class="overflow-hidden rounded-lg border border-slate-200 shadow-md transition-shadow group-hover:shadow-xl dark:border-slate-700"
+					>
+						<img
+							src="/images/showcase/loyers-with-button.png"
+							alt="Suivi des loyers et generation de quittances en un clic"
+							class="w-full"
+							loading="lazy"
+							width="640"
+							height="400"
+						/>
+					</div>
+					<h3 class="mt-3 font-semibold text-slate-900 dark:text-slate-100">
+						Loyers & quittances
+					</h3>
+					<p class="text-sm text-slate-500 dark:text-slate-400">
+						Suivi mensuel et generation de quittances en 1 clic.
+					</p>
+				</div>
+			</div>
+
+			<!-- Mobile preview -->
+			<div class="mt-16 flex flex-col items-center">
+				<h3 class="mb-6 text-xl font-semibold text-slate-900 dark:text-slate-100">
+					Accessible sur mobile
+				</h3>
+				<div
+					class="w-64 overflow-hidden rounded-[2rem] border-4 border-slate-800 shadow-xl dark:border-slate-600"
+				>
+					<img
+						src="/images/showcase/mobile-dashboard.png"
+						alt="GererSCI sur mobile — tableau de bord responsive"
+						class="w-full"
+						loading="lazy"
+						width="375"
+						height="812"
+					/>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================================================ -->
+	<!-- TARGET AUDIENCE -->
+	<!-- ============================================================ -->
+	<section class="bg-white py-20 dark:bg-slate-900">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-12 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
@@ -378,7 +506,7 @@
 	<!-- ============================================================ -->
 	<!-- FEATURES -->
 	<!-- ============================================================ -->
-	<section id="features" class="bg-white py-20 dark:bg-slate-900">
+	<section id="features" class="bg-slate-50 py-20 dark:bg-slate-950">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-16 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
@@ -419,7 +547,7 @@
 	<!-- ============================================================ -->
 	<!-- PRICING -->
 	<!-- ============================================================ -->
-	<section id="pricing" class="bg-slate-50 py-20 dark:bg-slate-950">
+	<section id="pricing" class="bg-white py-20 dark:bg-slate-900">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-12 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Tarifs</Badge>
@@ -431,7 +559,7 @@
 				</p>
 
 				<!-- Billing toggle -->
-				<div class="mt-8 inline-flex items-center rounded-xl bg-white p-1 shadow-sm dark:bg-slate-800">
+				<div class="mt-8 inline-flex items-center rounded-xl bg-slate-100 p-1 shadow-sm dark:bg-slate-800">
 					<button
 						class="rounded-lg px-5 py-2 text-sm font-medium transition-colors {billingPeriod === 'month'
 							? 'bg-blue-600 text-white shadow-sm'
@@ -547,7 +675,7 @@
 	<!-- ============================================================ -->
 	<!-- MARKET DATA -->
 	<!-- ============================================================ -->
-	<section id="market-data" class="bg-white py-20 dark:bg-slate-900">
+	<section id="market-data" class="bg-slate-50 py-20 dark:bg-slate-950">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-16 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
@@ -563,7 +691,7 @@
 
 			<!-- KPI highlight cards -->
 			<div class="mb-16 grid gap-6 md:grid-cols-3">
-				<div class="rounded-2xl bg-slate-50 p-8 text-center dark:bg-slate-800">
+				<div class="rounded-2xl bg-white p-8 text-center dark:bg-slate-800">
 					<TrendingUp class="mx-auto mb-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
 					<div class="text-3xl font-bold text-slate-900 dark:text-white">3,50%</div>
 					<div class="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -571,7 +699,7 @@
 					</div>
 					<div class="mt-2 text-xs text-slate-500">Source: Lamy Immobilier</div>
 				</div>
-				<div class="rounded-2xl bg-slate-50 p-8 text-center dark:bg-slate-800">
+				<div class="rounded-2xl bg-white p-8 text-center dark:bg-slate-800">
 					<Calculator class="mx-auto mb-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
 					<div class="text-3xl font-bold text-slate-900 dark:text-white">50%</div>
 					<div class="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -579,7 +707,7 @@
 					</div>
 					<div class="mt-2 text-xs text-slate-500">Source: McKinsey / Euodia</div>
 				</div>
-				<div class="rounded-2xl bg-slate-50 p-8 text-center dark:bg-slate-800">
+				<div class="rounded-2xl bg-white p-8 text-center dark:bg-slate-800">
 					<Shield class="mx-auto mb-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
 					<div class="text-3xl font-bold text-slate-900 dark:text-white">72%</div>
 					<div class="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -590,7 +718,7 @@
 			</div>
 
 			<!-- KPI Section -->
-			<div class="mb-16 rounded-2xl bg-slate-50 p-8 dark:bg-slate-800">
+			<div class="mb-16 rounded-2xl bg-white p-8 dark:bg-slate-800">
 				<h3 class="mb-8 text-center text-2xl font-bold text-slate-900 dark:text-slate-100">
 					KPI critiques à suivre (standards sectoriels)
 				</h3>
@@ -614,7 +742,7 @@
 			</div>
 
 			<!-- Studies Section -->
-			<div id="studies" class="rounded-2xl bg-slate-50 p-8 dark:bg-slate-800">
+			<div id="studies" class="rounded-2xl bg-white p-8 dark:bg-slate-800">
 				<div class="mb-8 text-center">
 					<div
 						class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30"
@@ -656,7 +784,7 @@
 	<!-- ============================================================ -->
 	<!-- FAQ -->
 	<!-- ============================================================ -->
-	<section class="bg-slate-50 py-20 dark:bg-slate-950">
+	<section class="bg-white py-20 dark:bg-slate-900">
 		<div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-12 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium"
@@ -670,7 +798,7 @@
 			<div class="space-y-3">
 				{#each faqItems as item, i}
 					<div
-						class="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+						class="rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
 					>
 						<button
 							class="flex w-full items-center justify-between px-6 py-5 text-left"
