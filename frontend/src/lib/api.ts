@@ -1182,6 +1182,44 @@ export function listFiles(folder: string) {
 	return apiFetch<FileListResponse>(`/api/v1/files/list/${encodeURIComponent(folder)}`);
 }
 
+// --- Mouvements de parts ---
+
+export function fetchMouvementsParts(sciId: EntityId) {
+	return apiFetch<any[]>(`/api/v1/scis/${sciId}/mouvements-parts`);
+}
+
+export function createMouvementParts(sciId: EntityId, data: any) {
+	return apiFetch<any>(`/api/v1/scis/${sciId}/mouvements-parts`, {
+		method: 'POST',
+		body: JSON.stringify(data)
+	});
+}
+
+export function deleteMouvementParts(sciId: EntityId, id: EntityId) {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/mouvements-parts/${id}`, {
+		method: 'DELETE'
+	});
+}
+
+// --- Assemblées générales ---
+
+export function fetchAssembleesGenerales(sciId: EntityId) {
+	return apiFetch<any[]>(`/api/v1/scis/${sciId}/assemblees-generales`);
+}
+
+export function createAssembleeGenerale(sciId: EntityId, data: any) {
+	return apiFetch<any>(`/api/v1/scis/${sciId}/assemblees-generales`, {
+		method: 'POST',
+		body: JSON.stringify(data)
+	});
+}
+
+export function deleteAssembleeGenerale(sciId: EntityId, id: EntityId) {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/assemblees-generales/${id}`, {
+		method: 'DELETE'
+	});
+}
+
 // --- GDPR / Privacy ---
 
 export type DataExportResponse = {

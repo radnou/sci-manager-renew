@@ -15,7 +15,8 @@
 		Menu,
 		X,
 		ChevronsUpDown,
-		Check
+		Check,
+		ArrowLeftRight
 	} from 'lucide-svelte';
 	import { fetchScis, type SCIOverview } from '$lib/api';
 	import { supabase } from '$lib/supabase';
@@ -63,6 +64,8 @@
 		{ suffix: '/biens', label: 'Biens', icon: Home },
 		{ suffix: '/associes', label: 'Associés', icon: Users },
 		{ suffix: '/fiscalite', label: 'Fiscalité', icon: Calculator },
+		{ suffix: '/mouvements-parts', label: 'Mouvements de parts', icon: ArrowLeftRight },
+		{ suffix: '/assemblees-generales', label: 'Assemblées générales', icon: Users },
 		{ suffix: '/documents', label: 'Documents', icon: FileText },
 		{ suffix: '/settings', label: 'Paramètres', icon: Settings }
 	];
