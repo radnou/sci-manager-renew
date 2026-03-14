@@ -16,35 +16,31 @@ const SUPABASE_URL = 'http://127.0.0.1:54321';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 async function loginAs(page: Page, email: string, password = 'password123') {
-  // Get JWT from Supabase Auth
-  const resp = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await resp.json();
-  const token = data.access_token;
-  const user = data.user;
+  // Real login via the login form
+  await page.goto('/login');
+  await page.waitForLoadState('networkidle');
 
-  // Inject session into app
-  await page.goto('/');
-  await page.evaluate(({ token, user }) => {
-    const session = {
-      access_token: token,
-      refresh_token: 'audit-refresh',
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      expires_in: 3600,
-      token_type: 'bearer',
-      user,
-    };
-    // Try multiple storage keys for compatibility
-    localStorage.setItem('sb-auth-token', JSON.stringify(session));
-    localStorage.setItem(`sb-127.0.0.1-auth-token`, JSON.stringify(session));
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
-    keys.forEach(k => localStorage.setItem(k, JSON.stringify(session)));
-  }, { token, user });
+  // Dismiss cookie banner if present
+  const cookieBtn = page.locator('button:has-text("Tout accepter")');
+  if (await cookieBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await cookieBtn.click();
+    await page.waitForTimeout(300);
+  }
 
-  await page.reload();
+  // Fill email
+  const emailInput = page.locator('input[type="email"]');
+  await emailInput.fill(email);
+
+  // Fill password
+  const passwordInput = page.locator('input[type="password"]');
+  await passwordInput.fill(password);
+
+  // Submit
+  const submitBtn = page.locator('button[type="submit"]');
+  await submitBtn.click();
+
+  // Wait for navigation to dashboard or app
+  await page.waitForURL(/dashboard|scis|onboarding/, { timeout: 15000 }).catch(() => {});
   await page.waitForLoadState('networkidle');
 }
 
