@@ -453,7 +453,16 @@
 					<div>
 						<h2 id="delete-sci-title" class="text-base font-semibold text-slate-900 dark:text-slate-100">Supprimer {sci.nom} ?</h2>
 						<p id="delete-sci-desc" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Cette action supprimera {biensCount} bien{biensCount > 1 ? 's' : ''}, {sci.loyers_count ?? 0} loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''} et {(sci as any).documents?.length ?? 0} document{((sci as any).documents?.length ?? 0) > 1 ? 's' : ''} de manière irréversible.
+							Cette action supprimera définitivement :
+						</p>
+						<ul class="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+							<li>• <strong>{biensCount}</strong> bien{biensCount > 1 ? 's' : ''}</li>
+							<li>• <strong>{sci.associes_count ?? sci.associes?.length ?? 0}</strong> associé{(sci.associes_count ?? sci.associes?.length ?? 0) > 1 ? 's' : ''}</li>
+							<li>• <strong>{sci.loyers_count ?? 0}</strong> loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''}</li>
+							<li>• <strong>{sci.charges_count ?? 0}</strong> charge{(sci.charges_count ?? 0) > 1 ? 's' : ''}</li>
+						</ul>
+						<p class="mt-2 text-sm text-rose-600 dark:text-rose-400 font-medium">
+							Toutes les données associées (baux, documents, quittances) seront également supprimées. Cette action est irréversible.
 						</p>
 					</div>
 				</div>

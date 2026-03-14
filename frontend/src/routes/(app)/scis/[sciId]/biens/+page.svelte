@@ -45,17 +45,17 @@
 
 	async function handleDeleteBien(bien: BienListItem) {
 		if (!bien.id) return;
-		const confirmed = confirm(`Supprimer le bien "${bien.adresse}" ? Cette action est irréversible.`);
-		if (!confirmed) return;
 
 		deletingId = String(bien.id);
 		try {
 			await deleteBien(bien.id);
+			addToast({ title: 'Bien supprimé', description: `"${bien.adresse}" a été supprimé.`, variant: 'success' });
 			await loadBiens();
 		} catch (err: any) {
-			alert(err?.message ?? 'Erreur lors de la suppression.');
+			addToast({ title: 'Erreur', description: err?.message ?? 'Erreur lors de la suppression.', variant: 'error' });
 		} finally {
 			deletingId = null;
+			confirmingDeleteId = null;
 		}
 	}
 
@@ -245,6 +245,29 @@
 								Quittance
 							</a>
 						</div>
+						{#if confirmingDeleteId != null && bien.id != null && confirmingDeleteId === String(bien.id)}
+							<div class="mt-3 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 dark:border-rose-800 dark:bg-rose-950/30">
+								<p class="text-sm text-rose-700 dark:text-rose-300">Supprimer "{bien.adresse}" ?</p>
+								<div class="flex items-center gap-2">
+									<button
+										onclick={() => { confirmingDeleteId = null; }}
+										class="rounded-md px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+									>
+										Annuler
+									</button>
+									<button
+										onclick={() => handleDeleteBien(bien)}
+										disabled={isDeleting}
+										class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+									>
+										{#if isDeleting}
+											<Loader2 class="h-3.5 w-3.5 animate-spin" />
+										{/if}
+										Confirmer
+									</button>
+								</div>
+							</div>
+						{/if}
 					{/if}
 				</div>
 			{/each}
