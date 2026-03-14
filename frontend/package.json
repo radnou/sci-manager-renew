@@ -16,6 +16,10 @@
 		"test:high-value": "vitest run -c vitest.high-value.config.ts",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
+		"test:e2e:validate": "playwright test --config=e2e/playwright.validation.config.ts",
+		"test:e2e:validate:p0": "playwright test --config=e2e/playwright.validation.config.ts --grep @P0",
+		"test:e2e:showcase": "playwright test --config=e2e/playwright.showcase.config.ts",
+		"test:e2e:showcase:desktop": "playwright test --config=e2e/playwright.showcase.config.ts --project=desktop",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},

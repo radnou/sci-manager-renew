@@ -52,3 +52,7 @@ docker-compose.override.yml
 # Misc
 coverage/
 .worktrees/
+
+# E2E artifacts
+marketing/
+e2e-artifacts/
