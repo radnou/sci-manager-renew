@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError
 from app.core.security import get_current_user
 
@@ -15,8 +15,8 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 class NotificationResponse(BaseModel):
@@ -38,12 +38,13 @@ class NotificationCreate(BaseModel):
 
 @router.get("/", response_model=list[NotificationResponse])
 async def list_notifications(
+    request: Request,
     unread_only: bool = False,
     limit: int = 50,
     user_id: str = Depends(get_current_user),
 ):
     """List notifications for the current user."""
-    client = _get_client()
+    client = _get_client(request)
 
     query = (
         client.table("notifications")
@@ -65,9 +66,9 @@ async def list_notifications(
 
 
 @router.get("/count")
-async def unread_count(user_id: str = Depends(get_current_user)):
+async def unread_count(request: Request, user_id: str = Depends(get_current_user)):
     """Get the count of unread notifications."""
-    client = _get_client()
+    client = _get_client(request)
 
     result = (
         client.table("notifications")
@@ -86,10 +87,11 @@ async def unread_count(user_id: str = Depends(get_current_user)):
 @router.patch("/{notification_id}/read")
 async def mark_as_read(
     notification_id: str,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     """Mark a notification as read."""
-    client = _get_client()
+    client = _get_client(request)
 
     result = (
         client.table("notifications")
@@ -109,9 +111,9 @@ async def mark_as_read(
 
 
 @router.patch("/read-all")
-async def mark_all_as_read(user_id: str = Depends(get_current_user)):
+async def mark_all_as_read(request: Request, user_id: str = Depends(get_current_user)):
     """Mark all notifications as read for the current user."""
-    client = _get_client()
+    client = _get_client(request)
 
     result = (
         client.table("notifications")

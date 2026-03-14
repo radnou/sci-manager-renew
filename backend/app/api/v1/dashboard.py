@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError, SCIManagerException
 from app.core.security import get_current_user
 from app.services.dashboard_service import (
@@ -22,8 +22,8 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +87,7 @@ class DashboardResponse(BaseModel):
 @router.get("", response_model=DashboardResponse)
 @router.get("/", response_model=DashboardResponse)
 async def get_dashboard(
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     """
@@ -96,7 +97,7 @@ async def get_dashboard(
     logger.info("fetching_dashboard", user_id=user_id)
 
     try:
-        client = _get_client()
+        client = _get_client(request)
 
         alertes = await get_alertes(client, user_id)
         kpis = await get_portfolio_kpis(client, user_id)

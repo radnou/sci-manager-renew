@@ -363,22 +363,23 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
 
         for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
                     notifications, dashboard, scis_biens, notification_preferences, quitus]:
-            mp.setattr(mod, "get_supabase_service_client", fake_service)
+            mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
+            mp.setattr(mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
 
         def fake_anon():
             return fake_supabase
         fake_anon.cache_clear = lambda: None
 
-        mp.setattr(auth, "get_supabase_service_client", fake_service)
-        mp.setattr(files, "get_supabase_service_client", fake_service)
-        mp.setattr(gdpr, "get_supabase_service_client", fake_service)
-        mp.setattr(stripe, "get_supabase_service_client", fake_service)
-        mp.setattr(subscription_service, "get_supabase_service_client", fake_service)
-        mp.setattr(onboarding, "get_supabase_service_client", fake_service)
-        mp.setattr(finances, "get_supabase_service_client", fake_service)
+        def fake_user_client(request=None):
+            return fake_supabase
+
+        for _mod in [auth, files, gdpr, stripe, subscription_service, onboarding, finances]:
+            mp.setattr(_mod, "get_supabase_service_client", fake_service, raising=False)
+            mp.setattr(_mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
         mp.setattr(admin, "get_service_client", fake_service)
         mp.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
         mp.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
+        mp.setattr(supabase_client_mod, "get_supabase_user_client", fake_user_client)
         mp.setattr(paywall_mod, "get_supabase_service_client", fake_service)
 
         mp.setattr(main, "shutdown_event", __import__("asyncio").Event())

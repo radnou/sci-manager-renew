@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import structlog
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError
 from app.core.security import get_current_user
 
@@ -38,12 +38,13 @@ def _period_to_date(period: Optional[str]) -> Optional[str]:
 
 @router.get("/loyers/csv")
 async def export_loyers_csv(
+    request: Request,
     user_id: str = Depends(get_current_user),
     period: Optional[str] = Query(None, description="Period filter: 6m, 12m, 24m"),
     sci_id: Optional[str] = Query(None, description="Filter by SCI ID"),
 ):
     """Export loyers as CSV for the current user, optionally filtered by period and SCI."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     # If sci_id provided, validate it belongs to user and narrow the filter
@@ -104,11 +105,12 @@ async def export_loyers_csv(
 
 @router.get("/biens/csv")
 async def export_biens_csv(
+    request: Request,
     user_id: str = Depends(get_current_user),
     sci_id: Optional[str] = Query(None, description="Filter by SCI ID"),
 ):
     """Export biens as CSV for the current user, optionally filtered by SCI."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     # If sci_id provided, validate it belongs to user and narrow the filter

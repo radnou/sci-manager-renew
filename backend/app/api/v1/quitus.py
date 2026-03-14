@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError, FeatureDisabledError, SCIManagerException, ValidationError
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.quitus import QuitusRequest, QuitusResponse
@@ -35,8 +35,8 @@ def _build_inline_filename(periode: str) -> str:
     return f"quittance-{slug or 'periode'}.pdf"
 
 
-def _verify_bien_ownership(user_id: str, id_bien: str) -> None:
-    client = get_supabase_service_client()
+def _verify_bien_ownership(request: Request, user_id: str, id_bien: str) -> None:
+    client = get_supabase_user_client(request)
     sci_check = client.table("biens").select("id_sci").eq("id", id_bien).execute()
     if not sci_check.data:
         raise HTTPException(status_code=404, detail="Bien non trouvé")
@@ -46,8 +46,8 @@ def _verify_bien_ownership(user_id: str, id_bien: str) -> None:
         raise HTTPException(status_code=403, detail="Accès non autorisé à ce bien")
 
 
-def _verify_loyer_belongs_to_bien(id_loyer: str, id_bien: str) -> None:
-    client = get_supabase_service_client()
+def _verify_loyer_belongs_to_bien(request: Request, id_loyer: str, id_bien: str) -> None:
+    client = get_supabase_user_client(request)
     loyer_check = client.table("loyers").select("id_bien").eq("id", id_loyer).execute()
     if not loyer_check.data:
         raise HTTPException(status_code=404, detail="Loyer non trouvé")
@@ -60,10 +60,9 @@ def _verify_loyer_belongs_to_bien(id_loyer: str, id_bien: str) -> None:
 async def generate_quitus(
     request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)
 ):
-    del request
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
-    _verify_bien_ownership(user_id, payload.id_bien)
-    _verify_loyer_belongs_to_bien(payload.id_loyer, payload.id_bien)
+    _verify_bien_ownership(request, user_id, payload.id_bien)
+    _verify_loyer_belongs_to_bien(request, payload.id_loyer, payload.id_bien)
     pdf_bytes = QuitusService.generate_quitus_pdf(payload)
     filename = f"quitus-{uuid4().hex}.pdf"
     storage_path = f"quitus/{user_id}/{filename}"
@@ -85,10 +84,9 @@ async def generate_quitus(
 @router.post("/render")
 @limiter.limit("20/minute")
 async def render_quitus(request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)):
-    del request
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
-    _verify_bien_ownership(user_id, payload.id_bien)
-    _verify_loyer_belongs_to_bien(payload.id_loyer, payload.id_bien)
+    _verify_bien_ownership(request, user_id, payload.id_bien)
+    _verify_loyer_belongs_to_bien(request, payload.id_loyer, payload.id_bien)
     if not settings.feature_pdf_render_direct:
         raise FeatureDisabledError(
             "La prévisualisation PDF directe est désactivée.",
@@ -111,7 +109,6 @@ async def render_quitus(request: Request, payload: QuitusRequest, user_id: str =
 @router.get("/files/{filename}")
 @limiter.limit("30/minute")
 async def download_quitus(request: Request, filename: str, user_id: str = Depends(get_current_user)):
-    del request
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
     safe_filename = _validate_filename(filename)
     storage_path = f"quitus/{user_id}/{safe_filename}"

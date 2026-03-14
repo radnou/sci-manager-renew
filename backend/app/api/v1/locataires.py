@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import date
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request, Response, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -107,6 +107,7 @@ def _enrich_locataire_rows(locataires: list[dict], bien_map: dict[str, dict]) ->
 @router.get("", response_model=list[LocataireResponse])
 @router.get("/", response_model=list[LocataireResponse])
 async def list_locataires(
+    request: Request,
     id_sci: str | None = None,
     id_bien: str | None = None,
     user_id: str = Depends(get_current_user),
@@ -114,7 +115,7 @@ async def list_locataires(
     logger.info("listing_locataires", user_id=user_id, id_sci=id_sci, id_bien=id_bien)
 
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -144,12 +145,12 @@ async def list_locataires(
 
 @router.post("", response_model=LocataireResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=LocataireResponse, status_code=status.HTTP_201_CREATED)
-async def create_locataire(payload: LocataireCreate, user_id: str = Depends(get_current_user)):
+async def create_locataire(payload: LocataireCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_locataire", user_id=user_id, bien_id=payload.id_bien, nom=payload.nom)
 
     try:
         _validate_date_range(payload.date_debut, payload.date_fin)
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         bien = _fetch_bien(client, payload.id_bien)
         bien_sci_id = str(bien.get("id_sci") or "")
@@ -176,6 +177,7 @@ async def create_locataire(payload: LocataireCreate, user_id: str = Depends(get_
 async def update_locataire(
     locataire_id: str,
     payload: LocataireUpdate,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
@@ -190,7 +192,7 @@ async def update_locataire(
         if not update_payload:
             raise ValidationError("No update fields provided")
 
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("locataires").select("*").eq("id", locataire_id).execute()
         if getattr(existing_result, "error", None):
@@ -235,11 +237,11 @@ async def update_locataire(
 
 
 @router.delete("/{locataire_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_locataire(locataire_id: str, user_id: str = Depends(get_current_user)):
+async def delete_locataire(locataire_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_locataire", locataire_id=locataire_id, user_id=user_id)
 
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("locataires").select("*").eq("id", locataire_id).execute()
         if getattr(existing_result, "error", None):

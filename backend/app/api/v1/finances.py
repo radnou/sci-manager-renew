@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
 from app.core.paywall import SubscriptionInfo, require_active_subscription
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.services.finances_service import get_finances_overview
 
 logger = structlog.get_logger(__name__)
@@ -29,6 +29,7 @@ class FinancesResponse(BaseModel):
 @router.get("", response_model=FinancesResponse)
 @router.get("/", response_model=FinancesResponse)
 async def get_finances(
+    request: Request,
     period: str = Query("12m", description="Period: 6m, 12m, 24m"),
     subscription: SubscriptionInfo = Depends(require_active_subscription),
 ):
@@ -40,7 +41,7 @@ async def get_finances(
     elif period == "24m":
         period_months = 24
 
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     data = await get_finances_overview(client, subscription.user_id, period_months)
 
     return FinancesResponse(**data)

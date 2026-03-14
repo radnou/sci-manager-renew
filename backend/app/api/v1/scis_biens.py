@@ -5,8 +5,8 @@ from __future__ import annotations
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.services.subscription_service import SubscriptionService
@@ -25,8 +25,8 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/scis/{sci_id}/biens", tags=["scis-biens"])
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
@@ -116,10 +116,11 @@ def _validate_upload(file_content: bytes, filename: str | None) -> str:
 @router.get("/", response_model=list[BienResponse])
 async def list_sci_biens(
     sci_id: UUID,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les biens d'une SCI."""
-    client = _get_client()
+    client = _get_client(request)
     result = client.table("biens").select("*").eq("id_sci", str(sci_id)).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -135,6 +136,7 @@ async def list_sci_biens(
 async def create_sci_bien(
     sci_id: UUID,
     payload: BienCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un bien dans la SCI (gérant uniquement)."""
@@ -142,7 +144,7 @@ async def create_sci_bien(
 
     logger.info("creating_bien_nested", sci_id=str(sci_id), adresse=payload.adresse)
 
-    client = _get_client()
+    client = _get_client(request)
     row = payload.model_dump(mode="json")
     # Force the sci_id from the URL path
     row["id_sci"] = str(sci_id)
@@ -168,10 +170,11 @@ async def create_sci_bien(
 async def get_fiche_bien(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Retourne la fiche complète d'un bien avec bail, loyers, charges, PNO, frais, documents et rentabilité."""
-    client = _get_client()
+    client = _get_client(request)
     bien = _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # Fetch related data in sequence (Supabase sync client)
@@ -331,6 +334,7 @@ async def update_sci_bien(
     sci_id: UUID,
     bien_id: str,
     payload: BienUpdate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Met à jour un bien (gérant uniquement)."""
@@ -340,7 +344,7 @@ async def update_sci_bien(
     if not update_payload:
         raise DatabaseError("No update fields provided")
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = client.table("biens").update(update_payload).eq("id", bien_id).execute()
@@ -363,12 +367,13 @@ async def update_sci_bien(
 async def delete_sci_bien(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Supprime un bien (gérant uniquement)."""
     logger.info("deleting_bien_nested", bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = client.table("biens").delete().eq("id", bien_id).execute()
@@ -387,10 +392,11 @@ async def delete_sci_bien(
 async def list_bien_loyers(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les loyers d'un bien."""
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -415,6 +421,7 @@ async def create_bien_loyer(
     sci_id: UUID,
     bien_id: str,
     payload: LoyerCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un loyer pour un bien (gérant uniquement)."""
@@ -422,7 +429,7 @@ async def create_bien_loyer(
 
     logger.info("creating_loyer_nested", bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     row = payload.model_dump(mode="json")
@@ -454,10 +461,11 @@ async def create_bien_loyer(
 async def list_bien_baux(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste tous les baux d'un bien (historique complet)."""
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -501,6 +509,7 @@ async def create_bien_bail(
     sci_id: UUID,
     bien_id: str,
     payload: BailCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un bail pour un bien (gérant uniquement). Expire le bail en_cours existant."""
@@ -508,7 +517,7 @@ async def create_bien_bail(
 
     logger.info("creating_bail", bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     bien = _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # Validate minimum bail duration based on type_locatif
@@ -589,6 +598,7 @@ async def update_bien_bail(
     bien_id: str,
     bail_id: int,
     payload: BailUpdate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Met à jour un bail (gérant uniquement)."""
@@ -598,7 +608,7 @@ async def update_bien_bail(
     if not update_payload:
         raise DatabaseError("No update fields provided")
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -644,12 +654,13 @@ async def delete_bien_bail(
     sci_id: UUID,
     bien_id: str,
     bail_id: int,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Supprime un bail (gérant uniquement)."""
     logger.info("deleting_bail", bail_id=bail_id, bien_id=bien_id)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # Delete join table entries first
@@ -673,6 +684,7 @@ async def attach_locataire_to_bail(
     bien_id: str,
     bail_id: int,
     body: dict,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Attache un locataire à un bail (colocation)."""
@@ -682,7 +694,7 @@ async def attach_locataire_to_bail(
 
     logger.info("attaching_locataire", bail_id=bail_id, locataire_id=locataire_id)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # Verify bail exists for this bien
@@ -709,12 +721,13 @@ async def detach_locataire_from_bail(
     bien_id: str,
     bail_id: int,
     locataire_id: int,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Détache un locataire d'un bail."""
     logger.info("detaching_locataire", bail_id=bail_id, locataire_id=locataire_id)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -739,10 +752,11 @@ async def detach_locataire_from_bail(
 async def list_bien_charges(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les charges d'un bien."""
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -767,12 +781,13 @@ async def create_bien_charge(
     sci_id: UUID,
     bien_id: str,
     payload: ChargeCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée une charge pour un bien (gérant uniquement)."""
     logger.info("creating_charge", bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     row = payload.model_dump(mode="json")
@@ -802,6 +817,7 @@ async def update_bien_charge(
     bien_id: str,
     charge_id: str,
     payload: ChargeUpdate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Met à jour une charge (gérant uniquement)."""
@@ -811,7 +827,7 @@ async def update_bien_charge(
     if not update_payload:
         raise DatabaseError("No update fields provided")
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -841,12 +857,13 @@ async def delete_bien_charge(
     sci_id: UUID,
     bien_id: str,
     charge_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Supprime une charge (gérant uniquement)."""
     logger.info("deleting_charge", charge_id=charge_id, bien_id=bien_id)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = client.table("charges").delete().eq("id", charge_id).eq("id_bien", bien_id).execute()
@@ -865,10 +882,11 @@ async def delete_bien_charge(
 async def list_bien_assurance_pno(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les assurances PNO d'un bien."""
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -893,12 +911,13 @@ async def create_bien_assurance_pno(
     sci_id: UUID,
     bien_id: str,
     payload: AssurancePnoCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée une assurance PNO pour un bien (gérant uniquement)."""
     logger.info("creating_assurance_pno", bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     row = payload.model_dump(mode="json")
@@ -927,6 +946,7 @@ async def update_bien_assurance_pno(
     bien_id: str,
     pno_id: int,
     payload: AssurancePnoUpdate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Met à jour une assurance PNO (gérant uniquement)."""
@@ -936,7 +956,7 @@ async def update_bien_assurance_pno(
     if not update_payload:
         raise DatabaseError("No update fields provided")
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -966,12 +986,13 @@ async def delete_bien_assurance_pno(
     sci_id: UUID,
     bien_id: str,
     pno_id: int,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Supprime une assurance PNO (gérant uniquement)."""
     logger.info("deleting_assurance_pno", pno_id=pno_id, bien_id=bien_id)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = client.table("assurances_pno").delete().eq("id", pno_id).eq("id_bien", bien_id).execute()
@@ -990,10 +1011,11 @@ async def delete_bien_assurance_pno(
 async def list_bien_frais_agence(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les frais d'agence d'un bien."""
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -1018,12 +1040,13 @@ async def create_bien_frais_agence(
     sci_id: UUID,
     bien_id: str,
     payload: FraisAgenceCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Crée un frais d'agence pour un bien (gérant uniquement)."""
     logger.info("creating_frais_agence", bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     row = payload.model_dump(mode="json")
@@ -1051,12 +1074,13 @@ async def delete_bien_frais_agence(
     sci_id: UUID,
     bien_id: str,
     frais_id: int,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Supprime un frais d'agence (gérant uniquement)."""
     logger.info("deleting_frais_agence", frais_id=frais_id, bien_id=bien_id)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = client.table("frais_agence").delete().eq("id", frais_id).eq("id_bien", bien_id).execute()
@@ -1075,10 +1099,11 @@ async def delete_bien_frais_agence(
 async def list_bien_documents(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les documents d'un bien."""
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     result = (
@@ -1102,6 +1127,7 @@ async def list_bien_documents(
 async def upload_document(
     sci_id: UUID,
     bien_id: str,
+    request: Request,
     file: UploadFile = File(...),
     nom: str = Form(...),
     categorie: str = Form("autre"),
@@ -1110,7 +1136,7 @@ async def upload_document(
     """Upload un document pour un bien (gérant uniquement)."""
     logger.info("uploading_document", bien_id=bien_id, sci_id=str(sci_id), nom=nom, categorie=categorie)
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # Read file content
@@ -1167,6 +1193,7 @@ async def delete_document(
     sci_id: UUID,
     bien_id: str,
     doc_id: int,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Supprime un document (gérant uniquement).
@@ -1176,7 +1203,7 @@ async def delete_document(
     """
     logger.info("deleting_document", doc_id=doc_id, bien_id=bien_id, sci_id=str(sci_id))
 
-    client = _get_client()
+    client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     # --- Ownership check: confirm the document exists and belongs to this bien ---

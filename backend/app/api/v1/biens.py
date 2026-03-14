@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request, Response, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import AuthorizationError, DatabaseError, ResourceNotFoundError
 from app.core.security import get_current_user
 from app.models.biens import BienCreate, BienResponse, BienUpdate
@@ -14,8 +14,8 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/biens", tags=["biens"])
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
@@ -56,8 +56,8 @@ def _require_sci_access(user_sci_ids: list[str], id_sci: str) -> None:
 
 @router.get("", response_model=list[BienResponse])
 @router.get("/", response_model=list[BienResponse])
-async def list_biens(id_sci: str | None = None, user_id: str = Depends(get_current_user)):
-    client = _get_client()
+async def list_biens(request: Request, id_sci: str | None = None, user_id: str = Depends(get_current_user)):
+    client = _get_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if id_sci:
@@ -72,11 +72,11 @@ async def list_biens(id_sci: str | None = None, user_id: str = Depends(get_curre
 
 @router.post("", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
-async def create_bien(payload: BienCreate, user_id: str = Depends(get_current_user)):
+async def create_bien(payload: BienCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_bien", user_id=user_id, adresse=payload.adresse)
 
     summary = SubscriptionService.enforce_limit(user_id, "biens")
-    client = _get_client()
+    client = _get_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
     _require_sci_access(user_sci_ids, payload.id_sci)
 
@@ -99,7 +99,7 @@ async def create_bien(payload: BienCreate, user_id: str = Depends(get_current_us
 
 
 @router.patch("/{bien_id}", response_model=BienResponse)
-async def update_bien(bien_id: str, payload: BienUpdate, user_id: str = Depends(get_current_user)):
+async def update_bien(bien_id: str, payload: BienUpdate, request: Request, user_id: str = Depends(get_current_user)):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
 
     logger.info("updating_bien", bien_id=bien_id, user_id=user_id, fields=list(update_payload.keys()))
@@ -107,7 +107,7 @@ async def update_bien(bien_id: str, payload: BienUpdate, user_id: str = Depends(
     if not update_payload:
         raise DatabaseError("No update fields provided")
 
-    client = _get_client()
+    client = _get_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
     existing_result = client.table("biens").select("*").eq("id", bien_id).execute()
     if getattr(existing_result, "error", None):
@@ -144,10 +144,10 @@ async def update_bien(bien_id: str, payload: BienUpdate, user_id: str = Depends(
 
 
 @router.delete("/{bien_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_bien(bien_id: str, user_id: str = Depends(get_current_user)):
+async def delete_bien(bien_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_bien", bien_id=bien_id, user_id=user_id)
 
-    client = _get_client()
+    client = _get_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
     existing_result = client.table("biens").select("id,id_sci").eq("id", bien_id).execute()
     if getattr(existing_result, "error", None):

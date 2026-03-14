@@ -7,12 +7,12 @@ from typing import Optional
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 
 logger = structlog.get_logger(__name__)
 
@@ -54,8 +54,8 @@ class AGResponse(BaseModel):
 # ──────────────────────────────────────────────────────────────
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -66,6 +66,7 @@ def _get_client():
 @router.get("", response_model=list[AGResponse])
 @router.get("/", response_model=list[AGResponse])
 async def list_assemblees_generales(
+    request: Request,
     sci_id: UUID,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
@@ -73,7 +74,7 @@ async def list_assemblees_generales(
     logger.info("listing_assemblees_generales", sci_id=str(sci_id), user_id=membership.user_id)
 
     try:
-        client = _get_client()
+        client = _get_client(request)
         result = client.table("assemblees_generales").select("*").eq("id_sci", str(sci_id)).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
@@ -91,6 +92,7 @@ async def list_assemblees_generales(
 @router.post("", response_model=AGResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=AGResponse, status_code=status.HTTP_201_CREATED)
 async def create_assemblee_generale(
+    request: Request,
     sci_id: UUID,
     payload: AGCreate,
     membership: AssocieMembership = Depends(require_gerant_role),
@@ -105,7 +107,7 @@ async def create_assemblee_generale(
     )
 
     try:
-        client = _get_client()
+        client = _get_client(request)
         insert_data = payload.model_dump(mode="json")
         insert_data["id_sci"] = str(sci_id)
 
@@ -127,6 +129,7 @@ async def create_assemblee_generale(
 
 @router.patch("/{ag_id}", response_model=AGResponse)
 async def update_assemblee_generale(
+    request: Request,
     sci_id: UUID,
     ag_id: UUID,
     payload: AGCreate,
@@ -141,7 +144,7 @@ async def update_assemblee_generale(
     )
 
     try:
-        client = _get_client()
+        client = _get_client(request)
 
         # Verify the AG exists and belongs to this SCI
         check = client.table("assemblees_generales").select("id").eq("id", str(ag_id)).eq("id_sci", str(sci_id)).execute()
@@ -169,6 +172,7 @@ async def update_assemblee_generale(
 
 @router.delete("/{ag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_assemblee_generale(
+    request: Request,
     sci_id: UUID,
     ag_id: UUID,
     membership: AssocieMembership = Depends(require_gerant_role),
@@ -182,7 +186,7 @@ async def delete_assemblee_generale(
     )
 
     try:
-        client = _get_client()
+        client = _get_client(request)
 
         # Verify the AG exists and belongs to this SCI
         check = client.table("assemblees_generales").select("id").eq("id", str(ag_id)).eq("id_sci", str(sci_id)).execute()

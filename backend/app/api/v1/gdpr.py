@@ -18,7 +18,7 @@ from app.core.audit_log import AuditLogger
 from app.core.exceptions import SCIManagerException
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/gdpr", tags=["gdpr"])
@@ -64,7 +64,7 @@ async def export_user_data(
     - Données fiscales
     """
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
 
         # Récupérer toutes les données utilisateur
         export_data = {
@@ -202,7 +202,7 @@ async def get_data_summary(
     Retourne un résumé des données personnelles stockées sans données sensibles.
     """
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
 
         # Informations utilisateur
         auth_user = client.auth.admin.get_user_by_id(user_id)
@@ -267,7 +267,7 @@ async def delete_user_account(
     pour respecter l'obligation légale de conservation de 10 ans.
     """
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
 
         # Log AVANT suppression (important pour audit)
         await AuditLogger.log_gdpr_event(

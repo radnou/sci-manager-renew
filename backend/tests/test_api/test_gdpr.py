@@ -102,7 +102,7 @@ def test_data_export_returns_signed_url(client, auth_headers, monkeypatch, fake_
 
     fake_client = build_gdpr_client(fake_supabase)
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     response = client.get("/api/v1/gdpr/data-export", headers=auth_headers)
@@ -129,7 +129,7 @@ def test_account_delete_cleans_user_data(client, auth_headers, monkeypatch, fake
         }
     ]
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     fake_storage.files["gdpr/user-123/export-1.json"] = b"{}"
@@ -158,10 +158,10 @@ def test_account_delete_cleans_user_data(client, auth_headers, monkeypatch, fake
 def test_data_export_failure_returns_structured_error(client, auth_headers, monkeypatch):
     from app.api.v1 import gdpr
 
-    def fake_client():
+    def fake_client(request=None):
         raise RuntimeError("supabase unavailable")
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", fake_client)
 
     response = client.get("/api/v1/gdpr/data-export", headers=auth_headers)
 
@@ -179,7 +179,7 @@ def test_data_summary_returns_counts(client, auth_headers, monkeypatch, fake_sup
     from app.api.v1 import gdpr
 
     fake_client = build_gdpr_client(fake_supabase)
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
 
     response = client.get("/api/v1/gdpr/data-summary", headers=auth_headers)
 
@@ -206,7 +206,7 @@ def test_data_summary_empty_user(client, auth_headers, monkeypatch, fake_supabas
     fake_client.store["biens"] = []
     fake_client.store["loyers"] = []
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
 
     response = client.get("/api/v1/gdpr/data-summary", headers=auth_headers)
 
@@ -221,10 +221,10 @@ def test_data_summary_failure_returns_structured_error(client, auth_headers, mon
     """GET /data-summary returns 500 with code when supabase fails."""
     from app.api.v1 import gdpr
 
-    def boom():
+    def boom(request=None):
         raise RuntimeError("db down")
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", boom)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", boom)
 
     response = client.get("/api/v1/gdpr/data-summary", headers=auth_headers)
 
@@ -243,7 +243,7 @@ def test_data_export_continues_when_gdpr_exports_insert_fails(
     from app.api.v1 import gdpr
 
     fake_client = build_gdpr_client(fake_supabase)
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     # Make gdpr_exports insert raise
@@ -297,7 +297,7 @@ def test_account_delete_continues_when_storage_cleanup_fails(
     fake_client.store["baux"] = []
     fake_client.store["locataires"] = []
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     # Make only the FIRST documents_bien call (select in try block) raise,
@@ -338,7 +338,7 @@ def test_account_delete_continues_when_individual_doc_storage_remove_fails(
     fake_client.store["baux"] = []
     fake_client.store["locataires"] = []
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     # Make storage.from_("documents").remove() raise
@@ -365,7 +365,7 @@ def test_account_delete_continues_when_subscription_anonymize_fails(
     from app.api.v1 import gdpr
 
     fake_client = build_gdpr_client(fake_supabase)
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     original_table = fake_client.table
@@ -407,7 +407,7 @@ def test_account_delete_continues_when_gdpr_exports_cleanup_fails(
     from app.api.v1 import gdpr
 
     fake_client = build_gdpr_client(fake_supabase)
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
     monkeypatch.setattr(gdpr, "storage_service", fake_storage)
 
     original_table = fake_client.table
@@ -435,10 +435,10 @@ def test_account_delete_failure_returns_structured_error(client, auth_headers, m
     """DELETE /account returns 500 with code when supabase fails early."""
     from app.api.v1 import gdpr
 
-    def boom():
+    def boom(request=None):
         raise RuntimeError("db connection lost")
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", boom)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", boom)
 
     response = client.delete("/api/v1/gdpr/account", headers=auth_headers)
 
@@ -459,7 +459,7 @@ def test_data_summary_sci_no_biens(client, auth_headers, monkeypatch, fake_supab
     fake_client.store["biens"] = []
     fake_client.store["loyers"] = []
 
-    monkeypatch.setattr(gdpr, "get_supabase_service_client", lambda: fake_client)
+    monkeypatch.setattr(gdpr, "get_supabase_user_client", lambda request=None: fake_client)
 
     response = client.get("/api/v1/gdpr/data-summary", headers=auth_headers)
 

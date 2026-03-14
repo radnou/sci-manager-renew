@@ -573,7 +573,7 @@ def test_list_loyers_db_error_on_associes(client, auth_headers, monkeypatch):
     """DB error when fetching user SCIs triggers DatabaseError in list."""
     from app.api.v1 import loyers as loyers_mod
 
-    def _broken_get_service_client():
+    def _broken_get_service_client(request=None):
         class BrokenClient:
             def table(self, name):
                 if name == "associes":
@@ -585,7 +585,7 @@ def test_list_loyers_db_error_on_associes(client, auth_headers, monkeypatch):
                 raise RuntimeError("unexpected table")
         return BrokenClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _broken_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _broken_get_service_client)
     resp = client.get("/api/v1/loyers/", headers=auth_headers)
     assert resp.status_code == 503
     assert resp.json()["code"] == "database_error"
@@ -595,10 +595,10 @@ def test_list_loyers_sci_id_db_error_on_query(client, auth_headers, monkeypatch)
     """DB error when querying loyers for a specific SCI triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
     call_count = {"n": 0}
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -616,7 +616,7 @@ def test_list_loyers_sci_id_db_error_on_query(client, auth_headers, monkeypatch)
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.get("/api/v1/loyers/?id_sci=sci-1", headers=auth_headers)
     assert resp.status_code == 503
 
@@ -639,10 +639,10 @@ def test_create_loyer_generic_exception(client, auth_headers, monkeypatch):
     """Non-SCIManagerException in create_loyer is caught and wrapped."""
     from app.api.v1 import loyers as loyers_mod
 
-    def _exploding_get_service_client():
+    def _exploding_get_service_client(request=None):
         raise RuntimeError("unexpected create boom")
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _exploding_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _exploding_get_service_client)
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
@@ -662,9 +662,9 @@ def test_update_loyer_generic_exception(client, auth_headers, monkeypatch, fake_
         {"id": "loyer-ex", "id_bien": "bien-1", "id_sci": "sci-1", "date_loyer": "2026-03-01", "montant": 100.0, "statut": "paye"},
     ]
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -677,7 +677,7 @@ def test_update_loyer_generic_exception(client, auth_headers, monkeypatch, fake_
                 return q
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.patch("/api/v1/loyers/loyer-ex", json={"montant": 200.0}, headers=auth_headers)
     assert resp.status_code == 503
     assert "Unable to update loyer" in resp.json()["error"]
@@ -691,9 +691,9 @@ def test_delete_loyer_generic_exception(client, auth_headers, monkeypatch, fake_
         {"id": "loyer-dex", "id_bien": "bien-1", "id_sci": "sci-1", "date_loyer": "2026-03-01", "montant": 100.0, "statut": "paye"},
     ]
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -706,7 +706,7 @@ def test_delete_loyer_generic_exception(client, auth_headers, monkeypatch, fake_
                 return q
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.delete("/api/v1/loyers/loyer-dex", headers=auth_headers)
     assert resp.status_code == 503
     assert "Unable to delete loyer" in resp.json()["error"]
@@ -748,9 +748,9 @@ def test_stats_db_error(client, auth_headers, monkeypatch):
     """DB error in stats query triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -765,7 +765,7 @@ def test_stats_db_error(client, auth_headers, monkeypatch):
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.get("/api/v1/loyers/stats", headers=auth_headers)
     assert resp.status_code == 503
 
@@ -774,9 +774,9 @@ def test_fetch_bien_db_error(client, auth_headers, monkeypatch):
     """DB error when fetching bien during create triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -790,7 +790,7 @@ def test_fetch_bien_db_error(client, auth_headers, monkeypatch):
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
@@ -805,9 +805,9 @@ def test_create_loyer_insert_db_error(client, auth_headers, monkeypatch):
     """DB error on insert during create triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -821,7 +821,7 @@ def test_create_loyer_insert_db_error(client, auth_headers, monkeypatch):
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
@@ -836,9 +836,9 @@ def test_create_loyer_insert_empty_result(client, auth_headers, monkeypatch):
     """Insert returning empty data during create triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -852,7 +852,7 @@ def test_create_loyer_insert_empty_result(client, auth_headers, monkeypatch):
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
@@ -868,9 +868,9 @@ def test_update_loyer_select_db_error(client, auth_headers, monkeypatch):
     """DB error when selecting existing loyer during update triggers error."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -884,7 +884,7 @@ def test_update_loyer_select_db_error(client, auth_headers, monkeypatch):
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.patch("/api/v1/loyers/loyer-1", json={"montant": 200.0}, headers=auth_headers)
     assert resp.status_code == 503
 
@@ -897,10 +897,10 @@ def test_update_loyer_update_db_error(client, auth_headers, monkeypatch, fake_su
         {"id": "loyer-ude", "id_bien": "bien-1", "id_sci": "sci-1", "date_loyer": "2026-03-01", "montant": 100.0, "statut": "paye"},
     ]
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
     call_count = {"n": 0}
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -918,7 +918,7 @@ def test_update_loyer_update_db_error(client, auth_headers, monkeypatch, fake_su
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.patch("/api/v1/loyers/loyer-ude", json={"montant": 200.0}, headers=auth_headers)
     assert resp.status_code == 503
 
@@ -931,10 +931,10 @@ def test_update_loyer_update_empty_result(client, auth_headers, monkeypatch, fak
         {"id": "loyer-uempty", "id_bien": "bien-1", "id_sci": "sci-1", "date_loyer": "2026-03-01", "montant": 100.0, "statut": "paye"},
     ]
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
     call_count = {"n": 0}
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -952,7 +952,7 @@ def test_update_loyer_update_empty_result(client, auth_headers, monkeypatch, fak
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.patch("/api/v1/loyers/loyer-uempty", json={"montant": 200.0}, headers=auth_headers)
     assert resp.status_code == 404
 
@@ -961,7 +961,7 @@ def test_delete_loyer_select_db_error(client, auth_headers, monkeypatch):
     """DB error when selecting existing loyer during delete triggers error."""
     from app.api.v1 import loyers as loyers_mod
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         from tests.conftest import FakeSupabaseClient
         real_client = FakeSupabaseClient()
 
@@ -976,7 +976,7 @@ def test_delete_loyer_select_db_error(client, auth_headers, monkeypatch):
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.delete("/api/v1/loyers/loyer-1", headers=auth_headers)
     assert resp.status_code == 503
 
@@ -989,10 +989,10 @@ def test_delete_loyer_delete_db_error(client, auth_headers, monkeypatch, fake_su
         {"id": "loyer-dde", "id_bien": "bien-1", "id_sci": "sci-1", "date_loyer": "2026-03-01", "montant": 100.0, "statut": "paye"},
     ]
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
     call_count = {"n": 0}
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -1010,7 +1010,7 @@ def test_delete_loyer_delete_db_error(client, auth_headers, monkeypatch, fake_su
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.delete("/api/v1/loyers/loyer-dde", headers=auth_headers)
     assert resp.status_code == 503
 
@@ -1031,9 +1031,9 @@ def test_select_by_sci_scope_db_error(client, auth_headers, monkeypatch, fake_su
     """DB error in _select_by_sci_scope (line 56) triggers DatabaseError."""
     from app.api.v1 import loyers as loyers_mod
 
-    original_get_service_client = loyers_mod.get_supabase_service_client
+    original_get_service_client = loyers_mod.get_supabase_user_client
 
-    def _patched_get_service_client():
+    def _patched_get_service_client(request=None):
         real_client = original_get_service_client()
 
         class WrappedClient:
@@ -1049,7 +1049,7 @@ def test_select_by_sci_scope_db_error(client, auth_headers, monkeypatch, fake_su
                 return real_client.table(name)
         return WrappedClient()
 
-    monkeypatch.setattr(loyers_mod, "get_supabase_service_client", _patched_get_service_client)
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", _patched_get_service_client)
     resp = client.get("/api/v1/loyers/", headers=auth_headers)
     assert resp.status_code == 503
 

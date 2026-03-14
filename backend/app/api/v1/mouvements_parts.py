@@ -7,12 +7,12 @@ from typing import Optional
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 
 logger = structlog.get_logger(__name__)
 
@@ -56,8 +56,8 @@ class MouvementPartsResponse(BaseModel):
 # ──────────────────────────────────────────────────────────────
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -69,13 +69,14 @@ def _get_client():
 @router.get("/", response_model=list[MouvementPartsResponse])
 async def list_mouvements_parts(
     sci_id: UUID,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """List all share transfer movements for a given SCI."""
     logger.info("listing_mouvements_parts", sci_id=str(sci_id), user_id=membership.user_id)
 
     try:
-        client = _get_client()
+        client = _get_client(request)
         result = client.table("mouvements_parts").select("*").eq("id_sci", str(sci_id)).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
@@ -95,6 +96,7 @@ async def list_mouvements_parts(
 async def create_mouvement_parts(
     sci_id: UUID,
     payload: MouvementPartsCreate,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Create a new share transfer movement. Requires gerant role."""
@@ -106,7 +108,7 @@ async def create_mouvement_parts(
     )
 
     try:
-        client = _get_client()
+        client = _get_client(request)
         insert_data = payload.model_dump(mode="json")
         insert_data["id_sci"] = str(sci_id)
 
@@ -130,6 +132,7 @@ async def create_mouvement_parts(
 async def delete_mouvement_parts(
     sci_id: UUID,
     mouvement_id: UUID,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Delete a share transfer movement. Requires gerant role."""
@@ -141,7 +144,7 @@ async def delete_mouvement_parts(
     )
 
     try:
-        client = _get_client()
+        client = _get_client(request)
 
         # Verify the mouvement exists and belongs to this SCI
         check = client.table("mouvements_parts").select("id").eq("id", str(mouvement_id)).eq("id_sci", str(sci_id)).execute()

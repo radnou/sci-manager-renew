@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request, Response, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -93,6 +93,7 @@ def _serialize_charge(row: dict, bien_map: dict[str, dict]) -> dict:
 @router.get("", response_model=list[ChargeResponse])
 @router.get("/", response_model=list[ChargeResponse])
 async def list_charges(
+    request: Request,
     id_sci: str | None = None,
     id_bien: str | None = None,
     user_id: str = Depends(get_current_user),
@@ -101,7 +102,7 @@ async def list_charges(
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -130,12 +131,12 @@ async def list_charges(
 
 @router.post("", response_model=ChargeResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ChargeResponse, status_code=status.HTTP_201_CREATED)
-async def create_charge(payload: ChargeCreate, user_id: str = Depends(get_current_user)):
+async def create_charge(payload: ChargeCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_charge", user_id=user_id, id_bien=payload.id_bien, type_charge=payload.type_charge)
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         bien = _fetch_bien(client, payload.id_bien)
         id_sci = str(bien.get("id_sci") or "")
@@ -158,7 +159,7 @@ async def create_charge(payload: ChargeCreate, user_id: str = Depends(get_curren
 
 
 @router.patch("/{charge_id}", response_model=ChargeResponse)
-async def update_charge(charge_id: str, payload: ChargeUpdate, user_id: str = Depends(get_current_user)):
+async def update_charge(charge_id: str, payload: ChargeUpdate, request: Request, user_id: str = Depends(get_current_user)):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
     logger.info("updating_charge", charge_id=charge_id, user_id=user_id, fields=list(update_payload.keys()))
 
@@ -167,7 +168,7 @@ async def update_charge(charge_id: str, payload: ChargeUpdate, user_id: str = De
             raise ValidationError("No update fields provided")
 
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_charge(client, charge_id)
         bien = _fetch_bien(client, str(existing.get("id_bien") or ""))
@@ -191,12 +192,12 @@ async def update_charge(charge_id: str, payload: ChargeUpdate, user_id: str = De
 
 
 @router.delete("/{charge_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_charge(charge_id: str, user_id: str = Depends(get_current_user)):
+async def delete_charge(charge_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_charge", charge_id=charge_id, user_id=user_id)
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "charges_enabled")
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_charge(client, charge_id)
         bien = _fetch_bien(client, str(existing.get("id_bien") or ""))

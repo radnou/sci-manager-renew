@@ -4,8 +4,8 @@ from collections import defaultdict
 from datetime import date
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request, Response, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -104,6 +104,7 @@ def _resolve_loyer_sci_id(client, loyer_row: dict) -> str:
 @router.get("", response_model=list[LoyerResponse])
 @router.get("/", response_model=list[LoyerResponse])
 async def list_loyers(
+    request: Request,
     id_sci: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
@@ -119,7 +120,7 @@ async def list_loyers(
 
     try:
         _validate_date_range(date_from, date_to)
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
 
         if id_sci:
@@ -145,13 +146,14 @@ async def list_loyers(
 @router.post("", response_model=LoyerResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=LoyerResponse, status_code=status.HTTP_201_CREATED)
 async def create_loyer(
+    request: Request,
     payload: LoyerCreate,
     id_sci: str | None = None,
     user_id: str = Depends(get_current_user),
 ):
     logger.info("creating_loyer", user_id=user_id, bien_id=payload.id_bien, montant=payload.montant)
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         bien = _fetch_bien(client, payload.id_bien)
         bien_sci_id = str(bien.get("id_sci") or "")
@@ -187,7 +189,7 @@ async def create_loyer(
 
 
 @router.patch("/{loyer_id}", response_model=LoyerResponse)
-async def update_loyer(loyer_id: str, payload: LoyerUpdate, user_id: str = Depends(get_current_user)):
+async def update_loyer(loyer_id: str, payload: LoyerUpdate, request: Request, user_id: str = Depends(get_current_user)):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
 
     logger.info("updating_loyer", loyer_id=loyer_id, user_id=user_id, fields=list(update_payload.keys()))
@@ -196,7 +198,7 @@ async def update_loyer(loyer_id: str, payload: LoyerUpdate, user_id: str = Depen
         if not update_payload:
             raise ValidationError("No update fields provided")
 
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("loyers").select("*").eq("id", loyer_id).execute()
         if getattr(existing_result, "error", None):
@@ -228,10 +230,10 @@ async def update_loyer(loyer_id: str, payload: LoyerUpdate, user_id: str = Depen
 
 
 @router.delete("/{loyer_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)):
+async def delete_loyer(loyer_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_loyer", loyer_id=loyer_id, user_id=user_id)
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing_result = client.table("loyers").select("*").eq("id", loyer_id).execute()
         if getattr(existing_result, "error", None):
@@ -260,11 +262,12 @@ async def delete_loyer(loyer_id: str, user_id: str = Depends(get_current_user)):
 
 @router.get("/stats")
 async def loyer_stats(
+    request: Request,
     months: int = 12,
     user_id: str = Depends(get_current_user),
 ):
     """Return monthly aggregated loyer stats for the current user."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
 
     if not user_sci_ids:

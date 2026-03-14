@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request, Response, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -19,8 +19,8 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/fiscalite", tags=["fiscalite"])
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 def _execute_select(query):
@@ -93,6 +93,7 @@ def _compute_resultat_fiscal(total_revenus: float, total_charges: float) -> floa
 @router.get("", response_model=list[FiscaliteResponse])
 @router.get("/", response_model=list[FiscaliteResponse])
 async def list_fiscalite(
+    request: Request,
     id_sci: str | None = None,
     user_id: str = Depends(get_current_user),
 ):
@@ -100,7 +101,7 @@ async def list_fiscalite(
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "fiscalite_enabled")
-        client = _get_client()
+        client = _get_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -120,12 +121,12 @@ async def list_fiscalite(
 
 @router.post("", response_model=FiscaliteResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=FiscaliteResponse, status_code=status.HTTP_201_CREATED)
-async def create_fiscalite(payload: FiscaliteCreate, user_id: str = Depends(get_current_user)):
+async def create_fiscalite(payload: FiscaliteCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_fiscalite", user_id=user_id, id_sci=payload.id_sci, annee=payload.annee)
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "fiscalite_enabled")
-        client = _get_client()
+        client = _get_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         _require_sci_access(user_sci_ids, payload.id_sci)
         scis = _fetch_scis(client, [payload.id_sci])
@@ -154,6 +155,7 @@ async def create_fiscalite(payload: FiscaliteCreate, user_id: str = Depends(get_
 async def update_fiscalite(
     fiscalite_id: str,
     payload: FiscaliteUpdate,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
@@ -166,7 +168,7 @@ async def update_fiscalite(
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "fiscalite_enabled")
-        client = _get_client()
+        client = _get_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_fiscalite(client, fiscalite_id)
         id_sci = str(existing.get("id_sci") or "")
@@ -195,12 +197,12 @@ async def update_fiscalite(
 
 
 @router.delete("/{fiscalite_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_fiscalite(fiscalite_id: str, user_id: str = Depends(get_current_user)):
+async def delete_fiscalite(fiscalite_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_fiscalite", fiscalite_id=fiscalite_id, user_id=user_id)
 
     try:
         SubscriptionService.ensure_feature_enabled(user_id, "fiscalite_enabled")
-        client = _get_client()
+        client = _get_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_fiscalite(client, fiscalite_id)
         _require_sci_access(user_sci_ids, str(existing.get("id_sci") or ""))

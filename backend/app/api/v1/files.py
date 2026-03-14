@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.core.exceptions import ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -23,7 +23,7 @@ def _validate_storage_path(path: str) -> str:
     return path
 
 
-def _verify_user_owns_path(user_id: str, path: str) -> None:
+def _verify_user_owns_path(request: Request, user_id: str, path: str) -> None:
     """Verify the user is an associe of the SCI referenced in the storage path."""
     match = _SCI_PATH_RE.match(path)
     if not match:
@@ -34,7 +34,7 @@ def _verify_user_owns_path(user_id: str, path: str) -> None:
         )
 
     sci_id = match.group(1)
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     result = (
         client.table("associes")
         .select("id")
@@ -60,9 +60,8 @@ async def upload_quitus(
     Returns public URL for download
     """
     try:
-        del request
         safe_path = _validate_storage_path(file_path)
-        _verify_user_owns_path(user_id, safe_path)
+        _verify_user_owns_path(request, user_id, safe_path)
         # File should be provided as bytes in request body
         # For now, just return placeholder
         url = await storage_service.get_file_url(safe_path)
@@ -83,9 +82,8 @@ async def download_file(
     Download file from storage (quitus, documents, etc.)
     """
     try:
-        del request
         safe_path = _validate_storage_path(file_path)
-        _verify_user_owns_path(user_id, safe_path)
+        _verify_user_owns_path(request, user_id, safe_path)
         url = await storage_service.get_file_url(safe_path)
         return {"success": True, "url": url}
     except Exception as e:
@@ -104,9 +102,8 @@ async def delete_file(
     Delete file from storage
     """
     try:
-        del request
         safe_path = _validate_storage_path(file_path)
-        _verify_user_owns_path(user_id, safe_path)
+        _verify_user_owns_path(request, user_id, safe_path)
         success = await storage_service.delete_file(safe_path)
         if success:
             return {"success": True, "message": "File deleted successfully"}
@@ -127,10 +124,9 @@ async def list_files(
     List files in a folder
     """
     try:
-        del request
         safe_folder = _validate_storage_path(folder) if folder else ""
         if safe_folder:
-            _verify_user_owns_path(user_id, safe_folder)
+            _verify_user_owns_path(request, user_id, safe_folder)
         files = await storage_service.list_files(safe_folder)
         return {"success": True, "files": files}
     except Exception as e:

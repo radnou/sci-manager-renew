@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError
 from app.core.security import get_current_user
 from app.schemas.notification_preferences import (
@@ -26,8 +26,8 @@ DEFAULT_NOTIFICATION_TYPES = [
 ]
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 def _build_defaults() -> list[NotificationPreference]:
@@ -39,10 +39,11 @@ def _build_defaults() -> list[NotificationPreference]:
 
 @router.get("/notification-preferences", response_model=NotificationPreferencesResponse)
 async def get_notification_preferences(
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     """Return the current user's notification preferences, with defaults for missing types."""
-    client = _get_client()
+    client = _get_client(request)
 
     result = (
         client.table("notification_preferences")
@@ -76,10 +77,11 @@ async def get_notification_preferences(
 @router.put("/notification-preferences", response_model=NotificationPreferencesResponse)
 async def update_notification_preferences(
     body: NotificationPreferencesUpdate,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     """Bulk upsert notification preferences for the current user."""
-    client = _get_client()
+    client = _get_client(request)
 
     rows = [
         {
@@ -109,4 +111,4 @@ async def update_notification_preferences(
     )
 
     # Return the full set including defaults for any missing types
-    return await get_notification_preferences(user_id=user_id)
+    return await get_notification_preferences(request=request, user_id=user_id)

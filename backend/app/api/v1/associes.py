@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
-from app.core.supabase_client import get_supabase_service_client
+from fastapi import APIRouter, Depends, Request, Response, status
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import (
     AuthorizationError,
     DatabaseError,
@@ -86,13 +86,14 @@ def _serialize_associe(row: dict) -> dict:
 @router.get("", response_model=list[AssocieResponse])
 @router.get("/", response_model=list[AssocieResponse])
 async def list_associes(
+    request: Request,
     id_sci: str | None = None,
     user_id: str = Depends(get_current_user),
 ):
     logger.info("listing_associes", user_id=user_id, id_sci=id_sci)
 
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         if id_sci:
             _require_sci_access(user_sci_ids, id_sci)
@@ -110,11 +111,11 @@ async def list_associes(
 
 @router.post("", response_model=AssocieResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=AssocieResponse, status_code=status.HTTP_201_CREATED)
-async def create_associe(payload: AssocieCreate, user_id: str = Depends(get_current_user)):
+async def create_associe(payload: AssocieCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_associe", user_id=user_id, id_sci=payload.id_sci, nom=payload.nom)
 
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         _require_sci_access(user_sci_ids, payload.id_sci)
         _ensure_total_parts_within_bounds(client, payload.id_sci, payload.part)
@@ -139,6 +140,7 @@ async def create_associe(payload: AssocieCreate, user_id: str = Depends(get_curr
 async def update_associe(
     associe_id: str,
     payload: AssocieUpdate,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
@@ -153,7 +155,7 @@ async def update_associe(
         if not update_payload:
             raise ValidationError("No update fields provided")
 
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_associe(client, associe_id)
         id_sci = str(existing.get("id_sci") or "")
@@ -179,11 +181,11 @@ async def update_associe(
 
 
 @router.delete("/{associe_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_associe(associe_id: str, user_id: str = Depends(get_current_user)):
+async def delete_associe(associe_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_associe", associe_id=associe_id, user_id=user_id)
 
     try:
-        client = get_supabase_service_client()
+        client = get_supabase_user_client(request)
         user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_associe(client, associe_id)
         id_sci = str(existing.get("id_sci") or "")

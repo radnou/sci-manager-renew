@@ -4,9 +4,9 @@ from collections import defaultdict
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, ConfigDict, Field
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.core.security import get_current_user
@@ -80,8 +80,8 @@ class SCIDetail(SCIOverview):
     fiscalite: list[FiscaliteOverview] = Field(default_factory=list)
 
 
-def _get_client():
-    return get_supabase_service_client()
+def _get_client(request: Request):
+    return get_supabase_user_client(request)
 
 
 def _execute_select(query):
@@ -181,8 +181,8 @@ def _build_sci_overview(
 
 @router.get("", response_model=list[SCIOverview])
 @router.get("/", response_model=list[SCIOverview])
-async def list_scis(user_id: str = Depends(get_current_user)):
-    client = _get_client()
+async def list_scis(request: Request, user_id: str = Depends(get_current_user)):
+    client = _get_client(request)
 
     memberships = _get_user_memberships(client, user_id)
     sci_ids = [str(row.get("id_sci")) for row in memberships if row.get("id_sci")]
@@ -205,8 +205,8 @@ async def list_scis(user_id: str = Depends(get_current_user)):
 
 
 @router.get("/{sci_id}", response_model=SCIDetail)
-async def get_sci_detail(sci_id: str, user_id: str = Depends(get_current_user)):
-    client = _get_client()
+async def get_sci_detail(sci_id: str, request: Request, user_id: str = Depends(get_current_user)):
+    client = _get_client(request)
 
     memberships = _get_user_memberships(client, user_id)
     user_sci_ids = [str(row.get("id_sci")) for row in memberships if row.get("id_sci")]
@@ -254,7 +254,7 @@ async def get_sci_detail(sci_id: str, user_id: str = Depends(get_current_user)):
 
 @router.post("", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
-async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user)):
+async def create_sci(payload: SCICreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_sci", user_id=user_id, nom=payload.nom)
 
     summary = SubscriptionService.enforce_limit(user_id, "scis")
@@ -266,7 +266,7 @@ async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user
             plan_key=plan_key,
         )
 
-    client = _get_client()
+    client = _get_client(request)
     result = client.table("sci").insert(payload.model_dump(mode="json")).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -307,9 +307,9 @@ async def create_sci(payload: SCICreate, user_id: str = Depends(get_current_user
 # UPDATE a SCI
 # ──────────────────────────────────────────────────────────────
 
-async def _require_gerant_for_sci(sci_id: str, user_id: str = Depends(get_current_user)) -> str:
+async def _require_gerant_for_sci(sci_id: str, request: Request, user_id: str = Depends(get_current_user)) -> str:
     """Verify user is gérant of the given SCI. Returns user_id."""
-    client = _get_client()
+    client = _get_client(request)
     rows = _execute_select(
         client.table("associes").select("role").eq("id_sci", sci_id).eq("user_id", user_id)
     )
@@ -326,16 +326,17 @@ async def _require_gerant_for_sci(sci_id: str, user_id: str = Depends(get_curren
 async def update_sci(
     sci_id: str,
     payload: SCIUpdate,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     """Met à jour une SCI (gérant uniquement)."""
-    await _require_gerant_for_sci(sci_id, user_id)
+    await _require_gerant_for_sci(sci_id, request, user_id)
 
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise ResourceNotFoundError("SCI", sci_id)
 
-    client = _get_client()
+    client = _get_client(request)
     result = client.table("sci").update(updates).eq("id", sci_id).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -355,12 +356,13 @@ async def update_sci(
 @router.delete("/{sci_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sci(
     sci_id: str,
+    request: Request,
     user_id: str = Depends(get_current_user),
 ):
     """Supprime une SCI et toutes ses données associées (gérant uniquement)."""
-    await _require_gerant_for_sci(sci_id, user_id)
+    await _require_gerant_for_sci(sci_id, request, user_id)
 
-    client = _get_client()
+    client = _get_client(request)
 
     # Delete biens-linked tables via bien IDs first
     biens_rows = _execute_select(client.table("biens").select("id").eq("id_sci", sci_id))
@@ -404,10 +406,11 @@ async def delete_sci(
 @router.get("/{sci_id}/associes", response_model=list[AssocieOverview])
 async def list_sci_associes(
     sci_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste les associés d'une SCI (membre requis)."""
-    client = _get_client()
+    client = _get_client(request)
     rows = _execute_select(client.table("associes").select("*").eq("id_sci", sci_id))
     return [AssocieOverview(**row) for row in rows]
 
@@ -427,12 +430,13 @@ class InviteAssociePayload(BaseModel):
 async def invite_sci_associe(
     sci_id: str,
     payload: InviteAssociePayload,
+    request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
     """Invite un associé à la SCI (gérant uniquement)."""
     logger.info("inviting_associe", sci_id=sci_id, nom=payload.nom)
 
-    client = _get_client()
+    client = _get_client(request)
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
 
@@ -469,10 +473,11 @@ class SciDocumentItem(BaseModel):
 @router.get("/{sci_id}/documents", response_model=list[SciDocumentItem])
 async def list_sci_documents(
     sci_id: str,
+    request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
     """Liste tous les documents d'une SCI (tous les biens confondus)."""
-    client = _get_client()
+    client = _get_client(request)
 
     # Get all bien IDs for this SCI
     biens_result = client.table("biens").select("id, adresse").eq("id_sci", sci_id).execute()
