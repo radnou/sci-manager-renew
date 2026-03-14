@@ -435,3 +435,115 @@ def test_select_by_field_values_empty():
     from app.api.v1.scis import _select_by_field_values
     result = _select_by_field_values(None, "table", "field", [])
     assert result == []
+
+
+def test_select_by_field_values_fallback_no_in(fake_supabase):
+    """When query object has no in_ method, fallback iterates per value (lines 112-115)."""
+    from tests.conftest import FakeResult
+    from app.api.v1.scis import _select_by_field_values
+
+    class NoInQuery:
+        def __init__(self, store, table):
+            self._store = store
+            self._table = table
+            self._filters = {}
+
+        def select(self, *a, **k): return self
+        def eq(self, k, v):
+            self._filters[k] = str(v)
+            return self
+
+        def execute(self):
+            rows = self._store.get(self._table, [])
+            matched = [r for r in rows if all(str(r.get(k)) == v for k, v in self._filters.items())]
+            return FakeResult(data=matched)
+
+    class NoInClient:
+        def __init__(self):
+            self._store = {
+                "biens": [
+                    {"id": "b1", "id_sci": "sci-1"},
+                    {"id": "b2", "id_sci": "sci-2"},
+                    {"id": "b3", "id_sci": "other"},
+                ]
+            }
+        def table(self, name):
+            return NoInQuery(self._store, name)
+
+    result = _select_by_field_values(NoInClient(), "biens", "id_sci", ["sci-1", "sci-2"])
+    assert len(result) == 2
+    assert {r["id"] for r in result} == {"b1", "b2"}
+
+
+def test_execute_select_raises_on_error(fake_supabase):
+    """_execute_select raises DatabaseError when result has error (line 90)."""
+    from tests.conftest import FakeResult
+    from app.api.v1.scis import _execute_select
+    from app.core.exceptions import DatabaseError
+    import pytest
+
+    class ErrorQuery:
+        def execute(self):
+            return FakeResult(data=[], error="db crashed")
+
+    with pytest.raises(DatabaseError):
+        _execute_select(ErrorQuery())
+
+
+# ──────────────────────────────────────────────────────────────
+# list_sci_documents endpoint (GET /scis/{sci_id}/documents)
+# ──────────────────────────────────────────────────────────────
+
+
+def test_list_sci_documents_empty_biens(client, auth_headers, fake_supabase):
+    """No biens for the SCI -> returns empty list."""
+    _setup_uuid_scis(fake_supabase)
+    fake_supabase.store["biens"] = []
+    response = client.get(f"/api/v1/scis/{_ASSOC_SCI_UUID}/documents", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_sci_documents_with_data(client, auth_headers, fake_supabase):
+    """Returns documents across all biens of the SCI with bien_adresse enriched."""
+    _setup_uuid_scis(fake_supabase)
+    fake_supabase.store["biens"] = [
+        {"id": "bien-d1", "id_sci": _ASSOC_SCI_UUID, "adresse": "10 rue Doc"},
+        {"id": "bien-d2", "id_sci": _ASSOC_SCI_UUID, "adresse": "20 rue Doc"},
+    ]
+    fake_supabase.store["documents_bien"] = [
+        {"id": "doc-1", "id_bien": "bien-d1", "nom": "facture.pdf", "categorie": "facture",
+         "url": "https://storage.local/facture.pdf", "uploaded_at": "2026-01-01T00:00:00"},
+        {"id": "doc-2", "id_bien": "bien-d2", "nom": "bail.pdf", "categorie": "bail",
+         "url": "https://storage.local/bail.pdf", "uploaded_at": "2026-02-01T00:00:00"},
+    ]
+    response = client.get(f"/api/v1/scis/{_ASSOC_SCI_UUID}/documents", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    # Check bien_adresse enrichment
+    doc1 = next(d for d in data if d["id"] == "doc-1")
+    assert doc1["bien_adresse"] == "10 rue Doc"
+
+
+def test_list_sci_documents_no_documents(client, auth_headers, fake_supabase):
+    """Biens exist but no documents -> returns empty list."""
+    _setup_uuid_scis(fake_supabase)
+    fake_supabase.store["biens"] = [
+        {"id": "bien-nd", "id_sci": _ASSOC_SCI_UUID, "adresse": "5 rue Vide"},
+    ]
+    fake_supabase.store["documents_bien"] = []
+    response = client.get(f"/api/v1/scis/{_ASSOC_SCI_UUID}/documents", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_sci_documents_requires_membership(client, auth_headers, fake_supabase):
+    """Non-member cannot list documents."""
+    response = client.get("/api/v1/scis/99999999-9999-9999-9999-999999999999/documents", headers=auth_headers)
+    assert response.status_code == 404
+
+
+def test_list_sci_documents_requires_auth(client):
+    response = client.get(f"/api/v1/scis/{_ASSOC_SCI_UUID}/documents")
+    assert response.status_code == 401

@@ -476,3 +476,63 @@ def test_export_biens_csv_only_user_scis(client, auth_headers, fake_supabase):
     assert len(rows) == 2
     assert rows[1][0] == "My Addr"
     assert "Foreign Addr" not in resp.text
+
+
+# ── sci_id filter parameter tests (lines 52-55, 118-121) ─────────────────
+
+
+def test_export_loyers_csv_sci_id_filter_valid(client, auth_headers, fake_supabase):
+    """sci_id param narrows loyers to a single SCI the user belongs to."""
+    fake_supabase.store["loyers"] = [
+        {"id": "l1", "id_sci": "sci-1", "id_bien": "bien-1",
+         "date_loyer": "2026-01-01", "montant": 500, "statut": "paye"},
+        {"id": "l2", "id_sci": "sci-2", "id_bien": "bien-9",
+         "date_loyer": "2026-02-01", "montant": 800, "statut": "paye"},
+    ]
+    resp = client.get("/api/v1/export/loyers/csv?sci_id=sci-1", headers=auth_headers)
+    assert resp.status_code == 200
+    rows = _parse_csv(resp.text)
+    assert len(rows) == 2  # header + 1 row (only sci-1)
+    assert rows[1][4] == "sci-1"
+
+
+def test_export_loyers_csv_sci_id_filter_invalid(client, auth_headers, fake_supabase):
+    """sci_id param with a SCI the user doesn't belong to returns header-only."""
+    fake_supabase.store["loyers"] = [
+        {"id": "l1", "id_sci": "sci-1", "id_bien": "bien-1",
+         "date_loyer": "2026-01-01", "montant": 500, "statut": "paye"},
+    ]
+    resp = client.get("/api/v1/export/loyers/csv?sci_id=sci-unknown", headers=auth_headers)
+    assert resp.status_code == 200
+    rows = _parse_csv(resp.text)
+    assert len(rows) == 1  # header only
+
+
+def test_export_biens_csv_sci_id_filter_valid(client, auth_headers, fake_supabase):
+    """sci_id param narrows biens to a single SCI the user belongs to."""
+    fake_supabase.store["biens"] = [
+        {"id": "b1", "id_sci": "sci-1", "adresse": "Rue A", "ville": "Paris",
+         "code_postal": "75001", "type_locatif": "T1", "loyer_cc": 500,
+         "charges": 50, "surface_m2": 30, "nb_pieces": 1, "dpe_classe": "C"},
+        {"id": "b2", "id_sci": "sci-2", "adresse": "Rue B", "ville": "Lyon",
+         "code_postal": "69001", "type_locatif": "T2", "loyer_cc": 700,
+         "charges": 60, "surface_m2": 40, "nb_pieces": 2, "dpe_classe": "D"},
+    ]
+    resp = client.get("/api/v1/export/biens/csv?sci_id=sci-1", headers=auth_headers)
+    assert resp.status_code == 200
+    rows = _parse_csv(resp.text)
+    assert len(rows) == 2
+    assert rows[1][0] == "Rue A"
+
+
+def test_export_biens_csv_sci_id_filter_invalid(client, auth_headers, fake_supabase):
+    """sci_id param with a SCI the user doesn't belong to returns header-only."""
+    fake_supabase.store["biens"] = [
+        {"id": "b1", "id_sci": "sci-1", "adresse": "Rue A", "ville": "Paris",
+         "code_postal": "75001", "type_locatif": "T1", "loyer_cc": 500,
+         "charges": 50, "surface_m2": 30, "nb_pieces": 1, "dpe_classe": "C"},
+    ]
+    resp = client.get("/api/v1/export/biens/csv?sci_id=sci-unknown", headers=auth_headers)
+    assert resp.status_code == 200
+    rows = _parse_csv(resp.text)
+    assert len(rows) == 1  # header only
