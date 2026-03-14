@@ -1137,11 +1137,13 @@ async def upload_document(
     url = client.storage.from_("documents").get_public_url(storage_path)
 
     # Insert record into documents table
+    from datetime import datetime, timezone
     row = {
         "id_bien": bien_id,
         "nom": nom,
         "categorie": categorie,
         "url": url,
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
     }
     result = client.table("documents_bien").insert(row).execute()
     if getattr(result, "error", None):

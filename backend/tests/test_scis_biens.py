@@ -1149,3 +1149,874 @@ class TestAssociesEndpoint:
         response = client.get(self.ASSOC_URL, headers=auth_headers)
         # sciS router must exist; if not registered, 404/405 is also acceptable
         assert response.status_code in (200, 404, 405)
+
+
+# ======================================================================
+# COVERAGE BOOST — tests targeting specific uncovered lines
+# ======================================================================
+
+# ──────────────────────────────────────────────────────────────
+# _validate_upload edge cases (lines 97-108)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestValidateUpload:
+    """Unit tests for _validate_upload function."""
+
+    def test_empty_file_raises(self):
+        from app.api.v1.scis_biens import _validate_upload
+        with pytest.raises(Exception, match="vide"):
+            _validate_upload(b"", "test.pdf")
+
+    def test_oversized_file_raises(self):
+        from app.api.v1.scis_biens import _validate_upload
+        big = b"x" * (10 * 1024 * 1024 + 1)
+        with pytest.raises(Exception, match="volumineux"):
+            _validate_upload(big, "test.pdf")
+
+    def test_disallowed_extension_raises(self):
+        from app.api.v1.scis_biens import _validate_upload
+        with pytest.raises(Exception, match="non autorisée"):
+            _validate_upload(b"some content", "test.exe")
+
+    def test_no_extension_raises(self):
+        from app.api.v1.scis_biens import _validate_upload
+        with pytest.raises(Exception, match="non autorisée"):
+            _validate_upload(b"some content", "noext")
+
+    def test_magic_bytes_mismatch_raises(self):
+        """PDF magic bytes with .jpg extension should raise."""
+        from app.api.v1.scis_biens import _validate_upload
+        pdf_content = b"%PDF-1.4 some content"
+        with pytest.raises(Exception, match="ne correspond pas"):
+            _validate_upload(pdf_content, "image.jpg")
+
+    def test_magic_bytes_pdf_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        pdf_content = b"%PDF-1.4 some content"
+        ext = _validate_upload(pdf_content, "document.pdf")
+        assert ext == "pdf"
+
+    def test_magic_bytes_jpg_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        jpg_content = b"\xff\xd8\xff some jpg data here"
+        ext = _validate_upload(jpg_content, "photo.jpg")
+        assert ext == "jpg"
+
+    def test_magic_bytes_jpeg_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        jpg_content = b"\xff\xd8\xff some jpeg data here"
+        ext = _validate_upload(jpg_content, "photo.jpeg")
+        assert ext == "jpeg"
+
+    def test_magic_bytes_png_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        png_content = b"\x89PNG some png data here"
+        ext = _validate_upload(png_content, "image.png")
+        assert ext == "png"
+
+    def test_magic_bytes_docx_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        docx_content = b"PK some ooxml data here"
+        ext = _validate_upload(docx_content, "document.docx")
+        assert ext == "docx"
+
+    def test_magic_bytes_xlsx_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        xlsx_content = b"PK some xlsx archive data"
+        ext = _validate_upload(xlsx_content, "sheet.xlsx")
+        assert ext == "xlsx"
+
+    def test_magic_bytes_webp_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        webp_content = b"RIFF some webp data here"
+        ext = _validate_upload(webp_content, "image.webp")
+        assert ext == "webp"
+
+    def test_no_magic_match_allowed(self):
+        """Txt files have no magic bytes check — should pass."""
+        from app.api.v1.scis_biens import _validate_upload
+        ext = _validate_upload(b"plain text content", "notes.txt")
+        assert ext == "txt"
+
+    def test_csv_no_magic_match(self):
+        from app.api.v1.scis_biens import _validate_upload
+        ext = _validate_upload(b"a,b,c\n1,2,3", "data.csv")
+        assert ext == "csv"
+
+    def test_png_magic_with_jpg_ext_raises(self):
+        """PNG magic bytes + .jpg extension -> mismatch."""
+        from app.api.v1.scis_biens import _validate_upload
+        png_content = b"\x89PNG some png data here"
+        with pytest.raises(Exception, match="ne correspond pas"):
+            _validate_upload(png_content, "fake.jpg")
+
+
+# ──────────────────────────────────────────────────────────────
+# Fiche bien: frais percentage calculation (lines 281-285)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestFicheBienFraisCalc:
+    """Test fiche bien with frais agence percentage calculation."""
+
+    def test_fiche_bien_with_frais_pourcentage(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        bien = seed_bien_int(fake_supabase, bien_id=900, sci_id=SCI_UUID)
+        # Add active bail
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 900, "id_bien": 900, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "date_fin": "2028-01-01",
+            "type_bail": "nu",
+        })
+        # Add frais agence with type pourcentage
+        fake_supabase.store.setdefault("frais_agence", []).append({
+            "id": 900, "id_bien": 900, "nom_agence": "Agence A", "type_frais": "pourcentage",
+            "montant_ou_pourcentage": 8.0, "created_at": "2026-01-01",
+        })
+        # Add frais agence with type fixe (small amount < 100)
+        fake_supabase.store["frais_agence"].append({
+            "id": 901, "id_bien": 900, "nom_agence": "Agence B", "type_frais": "fixe",
+            "montant_ou_pourcentage": 50.0, "created_at": "2026-01-01",
+        })
+        # Add frais agence with type fixe (large amount > 100)
+        fake_supabase.store["frais_agence"].append({
+            "id": 902, "id_bien": 900, "nom_agence": "Agence C", "type_frais": "fixe",
+            "montant_ou_pourcentage": 150.0, "created_at": "2026-01-01",
+        })
+        fake_supabase.store.setdefault("assurances_pno", [])
+        fake_supabase.store.setdefault("documents_bien", [])
+        fake_supabase.store.setdefault("bail_locataires", [])
+
+        response = client.get(f"{BASE}/900", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert "rentabilite" in data
+        assert data["frais_agence"] is not None
+
+
+# ──────────────────────────────────────────────────────────────
+# Update bien empty payload (line 341)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUpdateBienEmptyPayload:
+    def test_update_bien_empty_payload_returns_error(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.patch(
+            f"{BASE}/{BIEN_ID}",
+            json={},
+            headers=auth_headers,
+        )
+        # Empty payload returns 503 (DatabaseError: "No update fields provided")
+        assert response.status_code == 503
+
+
+# ──────────────────────────────────────────────────────────────
+# Create loyer duplicate detection (line 434)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestCreateLoyerDuplicate:
+    def test_create_loyer_duplicate_date_returns_409(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        # Seed existing loyer for the same date
+        fake_supabase.store.setdefault("loyers", []).append({
+            "id": "loyer-existing",
+            "id_bien": BIEN_ID,
+            "id_sci": SCI_UUID,
+            "date_loyer": "2026-05-01",
+            "montant": 1000,
+            "statut": "en_attente",
+        })
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/loyers",
+            json={"id_bien": BIEN_ID, "date_loyer": "2026-05-01", "montant": 1000, "statut": "en_attente"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 409
+
+
+# ──────────────────────────────────────────────────────────────
+# List baux with locataire enrichment (lines 477-490)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestListBauxWithLocataires:
+    def test_list_baux_enriches_locataires(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("baux", []).extend([
+            {"id": 501, "id_bien": BIEN_ID, "statut": "en_cours",
+             "loyer_hc": 800, "charges_provisions": 100,
+             "date_debut": "2025-01-01", "date_fin": "2028-01-01", "type_bail": "nu"},
+            {"id": 502, "id_bien": BIEN_ID, "statut": "expire",
+             "loyer_hc": 700, "charges_provisions": 80,
+             "date_debut": "2022-01-01", "date_fin": "2025-01-01", "type_bail": "nu"},
+        ])
+        # Seed bail_locataires join table entries
+        fake_supabase.store.setdefault("bail_locataires", []).extend([
+            {"id_bail": 501, "id_locataire": 10,
+             "locataires": {"id": 10, "nom": "Dupont", "email": "d@t.com", "telephone": "0600000000"}},
+            {"id_bail": 501, "id_locataire": 11,
+             "locataires": {"id": 11, "nom": "Martin", "email": "m@t.com", "telephone": "0600000001"}},
+            {"id_bail": 502, "id_locataire": 12,
+             "locataires": None},  # Edge case: locataires is None
+        ])
+        response = client.get(f"{BASE}/{BIEN_ID}/baux", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 2
+        # The bail with locataires should be enriched
+        bail_501 = next(b for b in data if b["id"] == 501)
+        assert len(bail_501["locataires"]) == 2
+        # The bail with None locataires should have empty list
+        bail_502 = next(b for b in data if b["id"] == 502)
+        assert bail_502["locataires"] == []
+
+
+# ──────────────────────────────────────────────────────────────
+# Create bail: duration validation (lines 516-525)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestCreateBailDurationValidation:
+    def test_bail_nu_too_short_returns_400(self, client, auth_headers, fake_supabase):
+        """Bail nu requires minimum 3 years (1095 days)."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2027-01-01",  # ~365 days, below 1095
+                "type_bail": "nu",
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 400
+        assert "3 ans" in response.json()["detail"]
+
+    def test_bail_meuble_too_short_returns_400(self, client, auth_headers, fake_supabase):
+        """Bail meuble requires minimum 1 year (365 days)."""
+        setup(fake_supabase)
+        bien = seed_bien(fake_supabase)
+        # Change type_locatif to meuble
+        bien["type_locatif"] = "meuble"
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2026-06-01",  # ~150 days, below 365
+                "type_bail": "meuble",
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 400
+        assert "1 an" in response.json()["detail"]
+
+    def test_bail_nu_valid_duration(self, client, auth_headers, fake_supabase):
+        """Bail nu with sufficient duration should succeed."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2029-06-01",  # ~3.5 years
+                "type_bail": "nu",
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+
+# ──────────────────────────────────────────────────────────────
+# Create bail: locataire attachment (lines 566-575)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestCreateBailWithLocataires:
+    def test_create_bail_attaches_locataires(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        # Seed locataires
+        fake_supabase.store.setdefault("locataires", []).extend([
+            {"id": "100", "nom": "Dupont", "email": "d@t.com", "telephone": "0600000000", "id_bien": BIEN_ID},
+            {"id": "101", "nom": "Martin", "email": "m@t.com", "telephone": "0600000001", "id_bien": BIEN_ID},
+        ])
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 900,
+                "charges_locatives": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2030-01-01",
+                "locataire_ids": ["100", "101"],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert len(data["locataires"]) == 2
+        # Verify bail_locataires entries were created
+        joins = fake_supabase.store.get("bail_locataires", [])
+        assert any(j["id_locataire"] == "100" for j in joins)
+        assert any(j["id_locataire"] == "101" for j in joins)
+
+
+# ──────────────────────────────────────────────────────────────
+# Update bail: empty payload (line 599)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUpdateBailEmptyPayload:
+    def test_update_bail_empty_payload_returns_error(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 600, "id_bien": BIEN_ID, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "type_bail": "nu",
+        })
+        response = client.patch(
+            f"{BASE}/{BIEN_ID}/baux/600",
+            json={},
+            headers=auth_headers,
+        )
+        assert response.status_code == 503
+
+
+# ──────────────────────────────────────────────────────────────
+# Update bail: locataire enrichment (lines 629-631)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUpdateBailWithLocataires:
+    def test_update_bail_enriches_locataires(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 700, "id_bien": BIEN_ID, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "type_bail": "nu",
+        })
+        fake_supabase.store.setdefault("bail_locataires", []).append({
+            "id_bail": 700, "id_locataire": 20,
+            "locataires": {"id": 20, "nom": "Loc", "email": "l@t.com", "telephone": "06"},
+        })
+        response = client.patch(
+            f"{BASE}/{BIEN_ID}/baux/700",
+            json={"loyer_hc": 900},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["loyer_hc"] == 900
+        assert len(data["locataires"]) == 1
+
+
+# ──────────────────────────────────────────────────────────────
+# Attach locataire: missing locataire_id (line 681)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestAttachLocataireErrors:
+    def test_attach_missing_locataire_id(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 800, "id_bien": BIEN_ID, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "type_bail": "nu",
+        })
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux/800/locataires",
+            json={},
+            headers=auth_headers,
+        )
+        assert response.status_code == 503
+
+    def test_attach_locataire_bail_not_found(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux/999/locataires",
+            json={"locataire_id": 1},
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+
+# ──────────────────────────────────────────────────────────────
+# Update charge empty payload (line 812)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUpdateChargeEmptyPayload:
+    CHARGES_URL = f"{BASE}/{BIEN_ID}/charges"
+
+    def test_update_charge_empty_payload(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("charges", []).append({
+            "id": "chg-empty", "id_bien": BIEN_ID, "type_charge": "taxe",
+            "montant": 100, "date_paiement": "2026-01-01",
+        })
+        response = client.patch(
+            f"{self.CHARGES_URL}/chg-empty",
+            json={},
+            headers=auth_headers,
+        )
+        assert response.status_code == 503
+
+
+# ──────────────────────────────────────────────────────────────
+# Update PNO empty payload (line 937)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUpdatePnoEmptyPayload:
+    PNO_URL = f"{BASE}/{BIEN_ID}/assurance-pno"
+
+    def test_update_pno_empty_payload(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("assurances_pno", []).append({
+            "id": 999, "id_bien": BIEN_ID, "compagnie": "Test",
+            "montant_annuel": 400, "date_echeance": "2027-01-01",
+        })
+        response = client.patch(
+            f"{self.PNO_URL}/999",
+            json={},
+            headers=auth_headers,
+        )
+        assert response.status_code == 503
+
+
+# ──────────────────────────────────────────────────────────────
+# Upload document (lines 1122-1156)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUploadDocument:
+    DOC_URL = f"{BASE}/{BIEN_ID}/documents"
+
+    def test_upload_pdf_document(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("documents_bien", [])
+        pdf_content = b"%PDF-1.4 some pdf content"
+        response = client.post(
+            self.DOC_URL,
+            files={"file": ("doc.pdf", pdf_content, "application/pdf")},
+            data={"nom": "Bail scan", "categorie": "bail"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["nom"] == "Bail scan"
+        assert data["categorie"] == "bail"
+
+    def test_upload_txt_document(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("documents_bien", [])
+        response = client.post(
+            self.DOC_URL,
+            files={"file": ("notes.txt", b"hello world", "text/plain")},
+            data={"nom": "Notes", "categorie": "autre"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+    def test_upload_invalid_extension_returns_400(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            self.DOC_URL,
+            files={"file": ("hack.exe", b"malware data", "application/octet-stream")},
+            data={"nom": "Bad", "categorie": "autre"},
+            headers=auth_headers,
+        )
+        # ValidationError (custom) returns 400
+        assert response.status_code == 400
+
+    def test_upload_empty_file_returns_400(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            self.DOC_URL,
+            files={"file": ("empty.pdf", b"", "application/pdf")},
+            data={"nom": "Empty", "categorie": "autre"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 400
+
+    def test_upload_as_associe_returns_403(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase, sci_id=SCI_UUID_ASSOC)
+        response = client.post(
+            f"{BASE_ASSOC}/{BIEN_ID}/documents",
+            files={"file": ("doc.pdf", b"%PDF-1.4 x", "application/pdf")},
+            data={"nom": "Doc", "categorie": "autre"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 403
+
+
+# ──────────────────────────────────────────────────────────────
+# Delete document with storage cleanup (lines 1200-1215)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestDeleteDocumentStorageCleanup:
+    DOC_URL = f"{BASE}/{BIEN_ID}/documents"
+
+    def test_delete_document_cleans_storage_file(self, client, auth_headers, fake_supabase):
+        """Deleting a document also removes the file from storage."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        # Seed a document with a URL matching the storage pattern
+        fake_supabase.store.setdefault("documents_bien", []).append({
+            "id": 2000,
+            "id_bien": BIEN_ID,
+            "nom": "Contract",
+            "categorie": "bail",
+            "url": f"https://storage.local/storage/v1/object/public/documents/sci-{SCI_UUID}/bien-{BIEN_ID}/abc123.pdf",
+            "uploaded_at": "2026-01-01T00:00:00",
+        })
+        response = client.delete(f"{self.DOC_URL}/2000", headers=auth_headers)
+        assert response.status_code == 204
+        # Verify the storage remove was called
+        bucket = fake_supabase.storage.from_("documents")
+        assert len(bucket.removed) > 0
+
+    def test_delete_document_no_url(self, client, auth_headers, fake_supabase):
+        """Document with empty URL should still be deleted from DB."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("documents_bien", []).append({
+            "id": 2001,
+            "id_bien": BIEN_ID,
+            "nom": "Old",
+            "categorie": "autre",
+            "url": "",
+            "uploaded_at": "2026-01-01T00:00:00",
+        })
+        response = client.delete(f"{self.DOC_URL}/2001", headers=auth_headers)
+        assert response.status_code == 204
+
+    def test_delete_document_url_without_storage_prefix(self, client, auth_headers, fake_supabase):
+        """Document with URL that doesn't contain storage prefix -> skip storage delete."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("documents_bien", []).append({
+            "id": 2002,
+            "id_bien": BIEN_ID,
+            "nom": "External",
+            "categorie": "autre",
+            "url": "https://example.com/doc.pdf",
+            "uploaded_at": "2026-01-01T00:00:00",
+        })
+        response = client.delete(f"{self.DOC_URL}/2002", headers=auth_headers)
+        assert response.status_code == 204
+
+
+# ──────────────────────────────────────────────────────────────
+# Fiche bien: locataire extraction from bail (line 201)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestFicheBienLocataireExtraction:
+    def test_fiche_bien_bail_with_locataires(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        bien = seed_bien_int(fake_supabase, bien_id=950, sci_id=SCI_UUID)
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 950, "id_bien": 950, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "date_fin": "2028-01-01",
+            "type_bail": "nu",
+        })
+        fake_supabase.store.setdefault("bail_locataires", []).extend([
+            {"id_bail": 950, "id_locataire": 50,
+             "locataires": {"id": 50, "nom": "Dupont", "email": "d@t.com", "telephone": "06"}},
+            {"id_bail": 950, "id_locataire": 51,
+             "locataires": None},  # Edge: None locataire
+        ])
+        fake_supabase.store.setdefault("assurances_pno", [])
+        fake_supabase.store.setdefault("frais_agence", [])
+        fake_supabase.store.setdefault("documents_bien", [])
+
+        response = client.get(f"{BASE}/950", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["bail_actif"] is not None
+        assert len(data["bail_actif"]["locataires"]) == 1  # Only non-None
+
+
+# ──────────────────────────────────────────────────────────────
+# Delete bail (line 660 + bail_locataires cleanup)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestDeleteBailCleanup:
+    def test_delete_bail_removes_bail_locataires(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 850, "id_bien": BIEN_ID, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "type_bail": "nu",
+        })
+        fake_supabase.store.setdefault("bail_locataires", []).append(
+            {"id_bail": 850, "id_locataire": 30}
+        )
+        response = client.delete(f"{BASE}/{BIEN_ID}/baux/850", headers=auth_headers)
+        assert response.status_code == 204
+        # bail_locataires should be cleaned
+        remaining = [j for j in fake_supabase.store.get("bail_locataires", []) if j.get("id_bail") == 850]
+        assert len(remaining) == 0
+
+
+# ──────────────────────────────────────────────────────────────
+# Detach locataire from bail
+# ──────────────────────────────────────────────────────────────
+
+
+class TestDetachLocataire:
+    def test_detach_locataire_removes_join(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("baux", []).append({
+            "id": 860, "id_bien": BIEN_ID, "statut": "en_cours",
+            "loyer_hc": 800, "charges_provisions": 100,
+            "date_debut": "2025-01-01", "type_bail": "nu",
+        })
+        fake_supabase.store.setdefault("bail_locataires", []).append(
+            {"id_bail": 860, "id_locataire": 40}
+        )
+        response = client.delete(
+            f"{BASE}/{BIEN_ID}/baux/860/locataires/40",
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+
+# ──────────────────────────────────────────────────────────────
+# List charges, PNO, frais, documents for well-covered paths
+# ──────────────────────────────────────────────────────────────
+
+
+class TestListEndpointsReturnData:
+    """Ensure LIST endpoints return seeded data to cover happy path lines."""
+
+    def test_list_loyers_returns_sorted(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("loyers", []).extend([
+            {"id": "l1", "id_bien": BIEN_ID, "id_sci": SCI_UUID,
+             "date_loyer": "2026-01-01", "montant": 1000, "statut": "paye"},
+            {"id": "l2", "id_bien": BIEN_ID, "id_sci": SCI_UUID,
+             "date_loyer": "2026-02-01", "montant": 1000, "statut": "en_attente"},
+        ])
+        response = client.get(f"{BASE}/{BIEN_ID}/loyers", headers=auth_headers)
+        assert response.status_code == 200
+        assert len(response.json()) == 2
+
+    def test_list_pno_returns_data(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("assurances_pno", []).append({
+            "id": 1, "id_bien": BIEN_ID, "compagnie": "AXA",
+            "montant_annuel": 400, "date_echeance": "2027-01-01",
+        })
+        response = client.get(f"{BASE}/{BIEN_ID}/assurance-pno", headers=auth_headers)
+        assert response.status_code == 200
+        assert len(response.json()) >= 1
+
+    def test_list_frais_returns_data(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("frais_agence", []).append({
+            "id": 1, "id_bien": BIEN_ID, "nom_agence": "Agence Test",
+            "type_frais": "fixe", "montant_ou_pourcentage": 100, "created_at": "2026-01-01",
+        })
+        response = client.get(f"{BASE}/{BIEN_ID}/frais-agence", headers=auth_headers)
+        assert response.status_code == 200
+        assert len(response.json()) >= 1
+
+    def test_list_documents_returns_data(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("documents_bien", []).append({
+            "id": 1, "id_bien": BIEN_ID, "nom": "Bail",
+            "categorie": "bail", "url": "https://x.com/doc.pdf",
+            "uploaded_at": "2026-01-01T00:00:00",
+        })
+        response = client.get(f"{BASE}/{BIEN_ID}/documents", headers=auth_headers)
+        assert response.status_code == 200
+        assert len(response.json()) >= 1
+
+    def test_list_charges_returns_data(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("charges", []).append({
+            "id": "chg-1", "id_bien": BIEN_ID, "type_charge": "taxe",
+            "montant": 500, "date_paiement": "2026-01-01",
+        })
+        response = client.get(f"{BASE}/{BIEN_ID}/charges", headers=auth_headers)
+        assert response.status_code == 200
+        assert len(response.json()) >= 1
+
+
+# ──────────────────────────────────────────────────────────────
+# Create PNO, frais agence, charge — id_bien override
+# ──────────────────────────────────────────────────────────────
+
+
+class TestCreateResourcesIdBienOverride:
+    """Verify id_bien is always set from the URL path, not the payload."""
+
+    def test_create_pno_sets_id_bien(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/assurance-pno",
+            json={
+                "compagnie": "Allianz",
+                "montant_annuel": 350,
+                "date_echeance": "2027-01-01",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        assert response.json()["id_bien"] == BIEN_ID
+
+    def test_create_frais_sets_id_bien(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/frais-agence",
+            json={
+                "nom_agence": "Agence Test",
+                "type_frais": "fixe",
+                "montant_ou_pourcentage": 120,
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        assert response.json()["id_bien"] == BIEN_ID
+
+    def test_create_charge_sets_id_bien(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/charges",
+            json={
+                "id_bien": BIEN_ID,
+                "type_charge": "copropriete",
+                "montant": 250,
+                "date_paiement": "2026-03-01",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        assert response.json()["id_bien"] == BIEN_ID
+
+
+# ──────────────────────────────────────────────────────────────
+# Delete PNO, frais, charge — verify deletion
+# ──────────────────────────────────────────────────────────────
+
+
+class TestDeleteResources:
+    def test_delete_pno(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("assurances_pno", []).append({
+            "id": 3000, "id_bien": BIEN_ID, "compagnie": "X",
+            "montant_annuel": 300, "date_echeance": "2027-01-01",
+        })
+        response = client.delete(
+            f"{BASE}/{BIEN_ID}/assurance-pno/3000",
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+    def test_delete_frais(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("frais_agence", []).append({
+            "id": 3001, "id_bien": BIEN_ID, "type_frais": "fixe",
+            "montant_ou_pourcentage": 100, "created_at": "2026-01-01",
+        })
+        response = client.delete(
+            f"{BASE}/{BIEN_ID}/frais-agence/3001",
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+    def test_delete_charge(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("charges", []).append({
+            "id": "chg-3002", "id_bien": BIEN_ID, "type_charge": "taxe",
+            "montant": 100, "date_paiement": "2026-01-01",
+        })
+        response = client.delete(
+            f"{BASE}/{BIEN_ID}/charges/chg-3002",
+            headers=auth_headers,
+        )
+        assert response.status_code == 204
+
+    def test_delete_bien(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.delete(f"{BASE}/{BIEN_ID}", headers=auth_headers)
+        assert response.status_code == 204
+
+    def test_delete_loyer_via_update_bien(self, client, auth_headers, fake_supabase):
+        """Test deleting a bien removes it from the store."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.delete(f"{BASE}/{BIEN_ID}", headers=auth_headers)
+        assert response.status_code == 204
+        remaining = [b for b in fake_supabase.store.get("biens", []) if b["id"] == BIEN_ID]
+        assert len(remaining) == 0
+
+
+# ──────────────────────────────────────────────────────────────
+# Update PNO (lines 933-957)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestUpdatePno:
+    def test_update_pno_fields(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        fake_supabase.store.setdefault("assurances_pno", []).append({
+            "id": 4000, "id_bien": BIEN_ID, "compagnie": "Old",
+            "montant_annuel": 300, "date_echeance": "2027-01-01",
+        })
+        response = client.patch(
+            f"{BASE}/{BIEN_ID}/assurance-pno/4000",
+            json={"compagnie": "Allianz", "montant_annuel": 500},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["compagnie"] == "Allianz"
+        assert data["montant_annuel"] == 500
