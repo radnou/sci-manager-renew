@@ -1,4 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
-<p style="color:#374151;font-size:16px;line-height:1.6;">La quittance de loyer de <strong>{{ locataire_name }}</strong> pour <strong>{{ mois }}</strong> au <strong>{{ bien_adresse }}</strong> est disponible.</p>
+<p style="color:#0f172a;font-size:16px;line-height:1.6;margin:0 0 16px 0;">Bonjour,</p>
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 24px 0;">La quittance de loyer est pr&ecirc;te et disponible au t&eacute;l&eacute;chargement.</p>
+
+<!-- Quittance details card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+  <tr>
+    <td style="background-color:#f8fafc;border-radius:8px;padding:20px 24px;border:1px solid #e2e8f0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:6px 0;border-bottom:1px solid #e2e8f0;">
+            <span style="color:#64748b;font-size:13px;">Locataire</span>
+          </td>
+          <td style="padding:6px 0;border-bottom:1px solid #e2e8f0;text-align:right;">
+            <span style="color:#0f172a;font-size:14px;font-weight:600;">{{ locataire_name }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;border-bottom:1px solid #e2e8f0;">
+            <span style="color:#64748b;font-size:13px;">P&eacute;riode</span>
+          </td>
+          <td style="padding:6px 0;border-bottom:1px solid #e2e8f0;text-align:right;">
+            <span style="color:#0f172a;font-size:14px;font-weight:600;">{{ mois }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;">
+            <span style="color:#64748b;font-size:13px;">Bien</span>
+          </td>
+          <td style="padding:6px 0;text-align:right;">
+            <span style="color:#0f172a;font-size:14px;font-weight:600;">{{ bien_adresse }}</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0;">Cliquez ci-dessous pour t&eacute;l&eacute;charger le document PDF&nbsp;:</p>
 {% endblock %}

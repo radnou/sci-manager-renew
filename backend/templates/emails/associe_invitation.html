@@ -1,12 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<p style="color:#374151;font-size:16px;line-height:1.6;">
-  <strong>{{ inviter_nom }}</strong> vous a ajout&eacute; en tant que <strong>{{ role_label }}</strong> de la SCI <strong>{{ sci_nom }}</strong> sur GererSCI.
-</p>
-<p style="color:#374151;font-size:16px;line-height:1.6;">
-  GererSCI est un outil de gestion pour les Soci&eacute;t&eacute;s Civiles Immobili&egrave;res. Vous pouvez d&egrave;s maintenant acc&eacute;der &agrave; votre espace pour consulter les informations de la SCI, suivre les loyers et les charges.
-</p>
-<p style="color:#374151;font-size:16px;line-height:1.6;">
-  Cliquez sur le bouton ci-dessous pour vous connecter ou cr&eacute;er votre compte&nbsp;:
-</p>
+<p style="color:#0f172a;font-size:16px;line-height:1.6;margin:0 0 16px 0;">Bonjour,</p>
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 20px 0;"><strong style="color:#0f172a;">{{ inviter_nom }}</strong> vous a ajout&eacute; en tant que membre de la SCI <strong style="color:#0284c7;">{{ sci_nom }}</strong> sur GererSCI.</p>
+
+<!-- Role badge -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+  <tr>
+    <td style="background-color:#f0f9ff;border-radius:8px;padding:16px 20px;border:1px solid #bae6fd;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding-right:12px;vertical-align:middle;">
+            <span style="font-size:24px;">&#127970;</span>
+          </td>
+          <td>
+            <p style="color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 4px 0;font-weight:600;">Votre r&ocirc;le</p>
+            <p style="color:#0c4a6e;font-size:18px;font-weight:700;margin:0;">{{ role_label }}</p>
+            <p style="color:#64748b;font-size:13px;margin:4px 0 0 0;">SCI {{ sci_nom }}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 8px 0;">Avec GererSCI, vous pouvez&nbsp;:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+  <tr>
+    <td style="padding:4px 0;color:#334155;font-size:14px;">&#10003;&ensp;Consulter les informations de la SCI</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 0;color:#334155;font-size:14px;">&#10003;&ensp;Suivre les loyers et les charges</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 0;color:#334155;font-size:14px;">&#10003;&ensp;Acc&eacute;der aux documents partag&eacute;s</td>
+  </tr>
+</table>
+
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0;">Cliquez ci-dessous pour vous connecter ou cr&eacute;er votre compte&nbsp;:</p>
 {% endblock %}

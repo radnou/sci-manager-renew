@@ -1,30 +1,114 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
-        <tr><td style="background:#2563eb;padding:24px;text-align:center;">
-          <span style="color:#fff;font-size:24px;font-weight:700;">GererSCI</span>
-        </td></tr>
-        <tr><td style="padding:32px;">
-          <p style="color:#374151;font-size:16px;line-height:1.6;">Bonjour,</p>
-          {% block content %}{% endblock %}
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>GererSCI</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .fallback-font { font-family: Arial, sans-serif; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;">
+  <!-- Outer wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <!-- Email container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:28px 32px;text-align:center;border-bottom:1px solid #e2e8f0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <!-- Inline mini logo -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" style="display:block;">
+                      <rect x="12" y="20" width="40" height="36" rx="2" fill="#0284c7"/>
+                      <path d="M8 22L32 6L56 22" stroke="#0284c7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                      <rect x="19" y="28" width="8" height="6" rx="1" fill="#fff"/>
+                      <rect x="37" y="28" width="8" height="6" rx="1" fill="#fff"/>
+                      <rect x="19" y="40" width="8" height="6" rx="1" fill="#fff"/>
+                      <rect x="37" y="40" width="8" height="6" rx="1" fill="#fff"/>
+                      <rect x="27" y="44" width="10" height="12" rx="1.5" fill="#fff"/>
+                      <circle cx="50" cy="14" r="10" fill="#10b981"/>
+                      <path d="M44.5 14L48 17.5L55.5 10" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <span style="font-size:22px;font-weight:700;color:#0284c7;letter-spacing:-0.3px;">GererSCI</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body content -->
+          <tr>
+            <td style="padding:36px 32px 24px 32px;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+
+          <!-- CTA button -->
           {% if cta_url and cta_text %}
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
-            <tr><td align="center">
-              <a href="{{ cta_url }}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 32px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">{{ cta_text }}</a>
-            </td></tr>
-          </table>
-          <p style="color:#9ca3af;font-size:13px;">Si le bouton ne fonctionne pas, copiez ce lien : <a href="{{ cta_url }}" style="color:#2563eb;">{{ cta_url }}</a></p>
+          <tr>
+            <td style="padding:0 32px 16px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="border-radius:8px;background-color:#0284c7;">
+                          <a href="{{ cta_url }}" target="_blank" style="display:inline-block;background-color:#0284c7;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;line-height:1;">{{ cta_text }}</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 32px 32px;">
+              <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0;text-align:center;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br>
+              <a href="{{ cta_url }}" style="color:#0284c7;word-break:break-all;">{{ cta_url }}</a></p>
+            </td>
+          </tr>
           {% endif %}
-        </td></tr>
-        <tr><td style="background:#f9fafb;padding:16px;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="color:#9ca3af;font-size:12px;margin:0;">GererSCI &middot; gerersci.fr</p>
-        </td></tr>
-      </table>
-    </td></tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid #e2e8f0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <p style="color:#64748b;font-size:14px;font-weight:600;margin:0 0 4px 0;">GererSCI</p>
+                    <p style="color:#94a3b8;font-size:12px;margin:0 0 8px 0;">Gestion simplifi&eacute;e de vos SCI</p>
+                    <a href="https://gerersci.fr" style="color:#0284c7;font-size:12px;text-decoration:none;">gerersci.fr</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Sub-footer -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="padding:16px 32px;text-align:center;">
+              <p style="color:#94a3b8;font-size:11px;margin:0;">Cet email a &eacute;t&eacute; envoy&eacute; par GererSCI. Si vous n&rsquo;avez pas demand&eacute; cet email, vous pouvez l&rsquo;ignorer.</p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
   </table>
 </body>
 </html>
