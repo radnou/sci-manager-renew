@@ -29,11 +29,14 @@ jobs:
             cd /opt/gerersci
 
             echo "=== Backup .env before deploy ==="
-            cp .env .env.pre-deploy-$(date +%Y%m%d-%H%M%S)
+            cp .env.production .env.pre-deploy-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
 
             echo "=== Pulling latest code ==="
             git fetch origin main
             git reset --hard origin/main
+
+            echo "=== Restore .env symlink ==="
+            ln -sf .env.production .env
 
             echo "=== Validating .env (no localhost in production) ==="
             if grep -q 'VITE_API_URL=http://localhost' .env; then
