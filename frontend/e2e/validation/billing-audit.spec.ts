@@ -44,7 +44,16 @@ async function loginAs(page: Page, email: string, password = 'password123') {
   await page.waitForLoadState('networkidle');
 }
 
+async function dismissCookieBanner(page: Page) {
+  const btn = page.locator('button:has-text("Tout accepter")');
+  if (await btn.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await btn.click();
+    await page.waitForTimeout(300);
+  }
+}
+
 async function capture(page: Page, name: string) {
+  await dismissCookieBanner(page);
   await page.waitForTimeout(500);
   await page.screenshot({ path: `e2e-artifacts/billing-audit/${name}.png` });
 }
@@ -56,6 +65,7 @@ test.describe('Audit Billing & Paywall @BILLING', () => {
     test('affiche 3 plans avec les bons prix', async ({ page }) => {
       await page.goto('/pricing');
       await page.waitForLoadState('networkidle');
+      await dismissCookieBanner(page);
 
       const content = await page.textContent('body');
       expect(content).toContain('Essentiel');

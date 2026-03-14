@@ -19,6 +19,12 @@ export const skipIfNoAuth = () => false; // Showcase tests use page.route() mock
 // ---------------------------------------------------------------------------
 export async function capture(page: Page, name: string) {
 	await page.waitForLoadState('networkidle');
+	// Dismiss cookie banner if present
+	const cookieBtn = page.locator('button:has-text("Tout accepter")');
+	if (await cookieBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+		await cookieBtn.click();
+		await page.waitForTimeout(300);
+	}
 	await page.waitForTimeout(800); // Let animations settle
 	const dir = 'marketing/screenshots';
 	await page.screenshot({ path: `${dir}/${name}.png` });
