@@ -74,18 +74,31 @@
 		}
 	}
 
+	let pendingDeleteDoc: { id: number; item: any } | null = $state(null);
+
 	function handleDelete(docId: number) {
+		const item = documents.find(d => d.id === docId);
+		if (!item) return;
+		pendingDeleteDoc = { id: docId, item };
+		documents = documents.filter(d => d.id !== docId);
 		addToast({
 			title: 'Document supprimé',
 			variant: 'undo',
 			undoCallbacks: {
-				onUndo: () => {},
+				onUndo: () => {
+					if (pendingDeleteDoc?.id === docId) {
+						documents = [...documents, pendingDeleteDoc.item].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+						pendingDeleteDoc = null;
+					}
+				},
 				onExpire: async () => {
+					pendingDeleteDoc = null;
 					try {
 						await deleteDocumentBien(sciId, bienId, docId);
-						documents = documents.filter((d) => d.id !== docId);
 					} catch (err: any) {
 						addToast({ title: err?.message ?? 'Erreur lors de la suppression', variant: 'error' });
+						// Restore on error — re-add the deleted item
+						if (item) documents = [...documents, item].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
 					}
 				}
 			}
