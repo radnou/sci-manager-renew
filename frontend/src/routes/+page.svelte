@@ -349,7 +349,7 @@
 </script>
 
 <svelte:head>
-	<title>GererSCI — Gestion simplifiée de vos SCI</title>
+	<title>GérerSCI — Gestion simplifiée de vos SCI</title>
 	<meta
 		name="description"
 		content="Centralisez biens, loyers et documents. Dashboard multi-SCI, quittances PDF, fiscalité CERFA 2044."
@@ -358,7 +358,7 @@
 	{@html `<script type="application/ld+json">${JSON.stringify({
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
-		"name": "GererSCI",
+		"name": "GérerSCI",
 		"applicationCategory": "BusinessApplication",
 		"operatingSystem": "Web",
 		"description": "Gestion simplifiée de Sociétés Civiles Immobilières",
@@ -395,9 +395,8 @@
 					</span>
 				</h1>
 				<p class="mt-6 text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-400">
-					Centralisez biens, loyers et documents en un seul endroit. Moins
-					d'administratif, plus de visibilité sur vos revenus, retards et la performance de
-					chaque bien.
+					Centralisez biens, loyers et documents en un seul endroit. Moins d'administratif, plus
+					de visibilité sur vos revenus, retards et la performance de chaque bien.
 				</p>
 				<div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
 					<a href="#pricing">
@@ -452,10 +451,10 @@
 						</div>
 					</div>
 					<!-- Screenshot -->
-					<button onclick={() => openLightbox(0)} class="block w-full cursor-zoom-in">
+					<button onclick={() => openLightbox(0)} class="block w-full cursor-zoom-in transition-transform duration-300 hover:scale-[1.02]">
 						<img
 							src="/images/showcase/dashboard-light.png"
-							alt="Dashboard GererSCI — 2 SCI, 4 biens, 100% recouvrement, 64 900EUR cashflow"
+							alt="Dashboard GérerSCI — 2 SCI, 4 biens, 100% recouvrement, 64 900EUR cashflow"
 							class="w-full block dark:hidden"
 							fetchpriority="high"
 							decoding="async"
@@ -464,7 +463,7 @@
 						/>
 						<img
 							src="/images/showcase/dashboard-dark.png"
-							alt="Dashboard GererSCI en mode sombre"
+							alt="Dashboard GérerSCI en mode sombre"
 							class="w-full hidden dark:block"
 							fetchpriority="high"
 							decoding="async"
@@ -487,7 +486,7 @@
 					<!-- Image -->
 					<div class="{i % 2 !== 0 ? 'lg:col-start-2' : ''}">
 						<button onclick={() => openLightbox(i + 1)} class="block w-full cursor-zoom-in group">
-							<div class="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden transition-shadow group-hover:shadow-2xl">
+							<div class="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.02] group-hover:border-sky-300 dark:group-hover:border-sky-600">
 								<!-- Browser bar mini -->
 								<div class="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
 									<div class="w-2 h-2 rounded-full bg-red-400"></div>
@@ -581,7 +580,7 @@
 				{#each features as feature}
 					{@const colors = colorMap[feature.color] ?? colorMap.blue}
 					<article
-						class="rounded-2xl border border-slate-200 bg-white p-6 transition-shadow hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
+						class="rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-700"
 					>
 						<div
 							class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl {colors.bg}"
@@ -613,6 +612,9 @@
 				<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
 					Commencez gratuitement, passez au plan supérieur quand vous en avez besoin.
 				</p>
+				<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+					Un comptable facture 1 200€ à 2 000€/an pour la gestion d'une SCI. GérerSCI fait la même chose pour 39€/mois.
+				</p>
 
 				<!-- Billing toggle -->
 				<div class="mt-8 inline-flex items-center rounded-xl bg-slate-100 p-1 shadow-sm dark:bg-slate-800">
@@ -639,9 +641,9 @@
 			<div class="grid gap-8 md:grid-cols-3">
 				{#each plans as plan}
 					<div
-						class="relative flex flex-col rounded-2xl border bg-white p-8 transition-shadow hover:shadow-lg dark:bg-slate-800 {plan.popular
-							? 'border-blue-500 shadow-lg shadow-blue-500/10 dark:border-blue-400'
-							: 'border-slate-200 dark:border-slate-700'}"
+						class="relative flex flex-col rounded-2xl border bg-white p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:bg-slate-800 {plan.popular
+							? 'border-blue-500 shadow-lg shadow-blue-500/10 dark:border-blue-400 hover:shadow-blue-500/20'
+							: 'border-slate-200 dark:border-slate-700 hover:border-sky-200 dark:hover:border-sky-700'}"
 					>
 						{#if plan.popular}
 							<div class="absolute -top-3 left-1/2 -translate-x-1/2">
