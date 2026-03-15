@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
+from app.services.associe_linking import link_user_to_pending_associes
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 logger = structlog.get_logger(__name__)
@@ -148,5 +149,16 @@ async def complete_onboarding(
         client.table("subscriptions").insert(
             {"user_id": user_id, "onboarding_completed": True, "status": "free"}
         ).execute()
+
+    # Auto-link pending associe invitations for this user
+    try:
+        user_resp = client.auth.admin.get_user_by_id(user_id)
+        user_email = getattr(user_resp, "user", None)
+        if user_email:
+            user_email = getattr(user_email, "email", None)
+        if user_email:
+            link_user_to_pending_associes(user_id, user_email)
+    except Exception:
+        logger.warning("associe_linking_during_onboarding_failed", user_id=user_id, exc_info=True)
 
     return OnboardingCompleteResponse(completed=True)

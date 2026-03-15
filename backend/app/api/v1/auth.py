@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.exceptions import AuthenticationError, ExternalServiceError, ValidationError
 from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
+from app.services.associe_linking import link_user_to_pending_associes
 from app.services.auth_service import magic_link_service
 
 # Re-export so tests can patch at module level
@@ -91,6 +92,9 @@ async def activate_session(
     token_hash = ""
     if hasattr(link_result, "properties"):
         token_hash = getattr(link_result.properties, "hashed_token", "")
+
+    # 6. Auto-link pending associe invitations for this email
+    link_user_to_pending_associes(user_id, email)
 
     logger.info("session_activated", session_id=session_id, user_id=user_id)
     return ActivateResponse(token_hash=token_hash, plan_key=plan_key)
