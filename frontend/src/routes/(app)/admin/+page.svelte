@@ -16,7 +16,7 @@
 			const [m, a, f] = await Promise.all([
 				fetchAdminMetrics(),
 				fetchAdminAlerts(),
-				fetchAdminFunnel(),
+				fetchAdminFunnel()
 			]);
 			metrics = m;
 			alerts = a;
@@ -35,10 +35,14 @@
 
 {#if loading}
 	<div class="flex items-center justify-center py-20">
-		<div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"></div>
+		<div
+			class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"
+		></div>
 	</div>
 {:else if error}
-	<div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 dark:border-rose-800 dark:bg-rose-950/30">
+	<div
+		class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 dark:border-rose-800 dark:bg-rose-950/30"
+	>
 		<p class="text-sm text-rose-700 dark:text-rose-300">{error}</p>
 	</div>
 {:else}
@@ -49,7 +53,9 @@
 
 		{#if alerts}
 			<div>
-				<h2 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Alertes business</h2>
+				<h2 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+					Alertes business
+				</h2>
 				<AdminAlerts alerts={alerts.alerts} />
 			</div>
 		{/if}

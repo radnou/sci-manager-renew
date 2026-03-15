@@ -4,7 +4,9 @@
 	let { steps, bottleneck_index }: Props = $props();
 </script>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+<div
+	class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
+>
 	<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Funnel d'activation</h2>
 	<p class="mt-1 text-xs text-slate-500">Parcours des utilisateurs de l'inscription au paiement</p>
 
@@ -36,7 +38,9 @@
 					</span>
 				</div>
 				{#if isBottleneck}
-					<span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+					<span
+						class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+					>
 						Goulot
 					</span>
 				{/if}

@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { Target, Euro, Zap, UserMinus, ArrowUpRight, TrendingUp, TrendingDown, Minus, Info } from 'lucide-svelte';
+	import {
+		Target,
+		Euro,
+		Zap,
+		UserMinus,
+		ArrowUpRight,
+		TrendingUp,
+		TrendingDown,
+		Minus,
+		Info
+	} from 'lucide-svelte';
 
 	type MetricValue = {
 		value: number;
@@ -26,61 +36,61 @@
 			label: 'North Star',
 			subtitle: 'SCIs actives sur 30j',
 			tooltip:
-				'Combien de SCI ont enregistre ≥1 loyer paye ces 30 derniers jours. C\'est ta metrique #1 — si elle monte, ton produit cree de la valeur. Si elle stagne, concentre-toi sur l\'activation.',
+				"Combien de SCI ont enregistre ≥1 loyer paye ces 30 derniers jours. C'est ta metrique #1 — si elle monte, ton produit cree de la valeur. Si elle stagne, concentre-toi sur l'activation.",
 			icon: Target,
 			color: 'indigo',
 			format: 'integer',
 			positiveUp: true,
-			data: metrics.north_star,
+			data: metrics.north_star
 		},
 		{
 			key: 'mrr',
 			label: 'MRR',
 			subtitle: 'Revenu mensuel recurrent',
 			tooltip:
-				'Somme des abonnements actifs ce mois (hors lifetime). C\'est ce qui paie tes serveurs. Surveille la tendance : 2 semaines de baisse = signal d\'alerte.',
+				"Somme des abonnements actifs ce mois (hors lifetime). C'est ce qui paie tes serveurs. Surveille la tendance : 2 semaines de baisse = signal d'alerte.",
 			icon: Euro,
 			color: 'emerald',
 			format: 'currency',
 			positiveUp: true,
-			data: metrics.mrr,
+			data: metrics.mrr
 		},
 		{
 			key: 'activation_rate',
 			label: 'Activation',
 			subtitle: 'Inscrits → 1er loyer',
 			tooltip:
-				'% d\'utilisateurs inscrits qui ont enregistre au moins 1 loyer. En dessous de 30%, ton onboarding a un probleme — simplifie le parcours.',
+				"% d'utilisateurs inscrits qui ont enregistre au moins 1 loyer. En dessous de 30%, ton onboarding a un probleme — simplifie le parcours.",
 			icon: Zap,
 			color: 'sky',
 			format: 'percentage',
 			positiveUp: true,
-			data: metrics.activation_rate,
+			data: metrics.activation_rate
 		},
 		{
 			key: 'churn_30d',
 			label: 'Churn 30j',
 			subtitle: 'Users perdus ce mois',
 			tooltip:
-				'% d\'utilisateurs actifs le mois dernier qui ne le sont plus ce mois-ci. Au-dessus de 5%/mois, il y a une fuite a colmater — contacte les users perdus.',
+				"% d'utilisateurs actifs le mois dernier qui ne le sont plus ce mois-ci. Au-dessus de 5%/mois, il y a une fuite a colmater — contacte les users perdus.",
 			icon: UserMinus,
 			color: 'rose',
 			format: 'percentage',
 			positiveUp: false,
-			data: metrics.churn_30d,
+			data: metrics.churn_30d
 		},
 		{
 			key: 'conversion_rate',
 			label: 'Conversion',
 			subtitle: 'Free vers payant',
 			tooltip:
-				'% d\'utilisateurs gratuits passes a un plan payant. Bon indicateur de la valeur percue et du positionnement de ton paywall.',
+				"% d'utilisateurs gratuits passes a un plan payant. Bon indicateur de la valeur percue et du positionnement de ton paywall.",
 			icon: ArrowUpRight,
 			color: 'amber',
 			format: 'percentage',
 			positiveUp: true,
-			data: metrics.conversion_rate,
-		},
+			data: metrics.conversion_rate
+		}
 	]);
 
 	function formatValue(value: number, format: string): string {
@@ -94,11 +104,11 @@
 		emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-500', darkBg: 'dark:bg-emerald-950/40' },
 		sky: { bg: 'bg-sky-50', icon: 'text-sky-500', darkBg: 'dark:bg-sky-950/40' },
 		rose: { bg: 'bg-rose-50', icon: 'text-rose-500', darkBg: 'dark:bg-rose-950/40' },
-		amber: { bg: 'bg-amber-50', icon: 'text-amber-500', darkBg: 'dark:bg-amber-950/40' },
+		amber: { bg: 'bg-amber-50', icon: 'text-amber-500', darkBg: 'dark:bg-amber-950/40' }
 	};
 </script>
 
-<div class="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 	{#each kpis as kpi (kpi.key)}
 		{@const c = colorMap[kpi.color]}
 		{@const trendGood = kpi.data.trend === 'up'}
@@ -116,7 +126,7 @@
 				<button class="group relative ml-1 inline-flex cursor-help" aria-label="Info">
 					<Info class="h-3.5 w-3.5 text-slate-400" />
 					<div
-						class="pointer-events-none absolute bottom-full right-0 z-50 mb-2 w-64 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+						class="pointer-events-none absolute right-0 bottom-full z-50 mb-2 w-64 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
 					>
 						{kpi.tooltip}
 					</div>
@@ -128,7 +138,13 @@
 					{formatValue(kpi.data.value, kpi.format)}
 				</p>
 				{#if kpi.data.change_pct != null}
-					<div class="flex items-center gap-0.5 text-xs font-semibold {trendGood ? 'text-emerald-600' : trendBad ? 'text-rose-600' : 'text-slate-400'}">
+					<div
+						class="flex items-center gap-0.5 text-xs font-semibold {trendGood
+							? 'text-emerald-600'
+							: trendBad
+								? 'text-rose-600'
+								: 'text-slate-400'}"
+					>
 						{#if trendGood}
 							<TrendingUp class="h-3.5 w-3.5" />
 						{:else if trendBad}

@@ -26,7 +26,7 @@
 				plan: planFilter || undefined,
 				sort: sortBy,
 				page,
-				per_page: perPage,
+				per_page: perPage
 			});
 			users = data.users;
 			total = data.total;
@@ -64,7 +64,7 @@
 		lifetime: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
 		starter: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 		cabinet: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
-		free: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+		free: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
 	};
 </script>
 
@@ -130,10 +130,16 @@
 			</thead>
 			<tbody>
 				{#each users as user (user.id)}
-					<tr class="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800/50 dark:hover:bg-slate-900">
+					<tr
+						class="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800/50 dark:hover:bg-slate-900"
+					>
 						<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{user.email}</td>
 						<td class="px-4 py-3">
-							<span class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize {planBadgeClass[user.plan_key] ?? planBadgeClass.free}">
+							<span
+								class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize {planBadgeClass[
+									user.plan_key
+								] ?? planBadgeClass.free}"
+							>
 								{user.plan_key}
 							</span>
 						</td>
@@ -146,7 +152,9 @@
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="6" class="px-4 py-8 text-center text-slate-500">Aucun utilisateur trouve</td>
+						<td colspan="6" class="px-4 py-8 text-center text-slate-500"
+							>Aucun utilisateur trouve</td
+						>
 					</tr>
 				{/each}
 			</tbody>
@@ -159,7 +167,10 @@
 	<button
 		class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300"
 		disabled={page === 1}
-		onclick={() => { page--; loadUsers(); }}
+		onclick={() => {
+			page--;
+			loadUsers();
+		}}
 	>
 		Precedent
 	</button>
@@ -169,7 +180,10 @@
 	<button
 		class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-300"
 		disabled={page >= totalPages}
-		onclick={() => { page++; loadUsers(); }}
+		onclick={() => {
+			page++;
+			loadUsers();
+		}}
 	>
 		Suivant
 	</button>
