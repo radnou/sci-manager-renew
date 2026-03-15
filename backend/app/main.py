@@ -47,6 +47,7 @@ from app.api.v1 import (
     fiscalite,
     gdpr,
     health,
+    import_csv,
     locataires,
     loyers,
     mouvements_parts,
@@ -536,4 +537,5 @@ app.include_router(finances.router, prefix="/api/v1")
 app.include_router(scis_biens.router, prefix="/api/v1")
 app.include_router(mouvements_parts.router, prefix="/api/v1")
 app.include_router(assemblees_generales.router, prefix="/api/v1")
+app.include_router(import_csv.router, prefix="/api/v1")
 app.include_router(admin.router)

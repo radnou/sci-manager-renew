@@ -8,8 +8,9 @@
 		bail_actif?: unknown;
 	};
 	import { formatEur } from '$lib/high-value/formatters';
-	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet, ArrowUpRight } from 'lucide-svelte';
+	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet, ArrowUpRight, Upload } from 'lucide-svelte';
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
+	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
 
 	const sci = getContext<SCIDetail>('sci');
@@ -18,6 +19,7 @@
 
 	let isGerant = $derived(userRole === 'gerant');
 	let showBienModal = $state(false);
+	let showImportModal = $state(false);
 	let viewMode = $state<'grid' | 'list'>('grid');
 	let deletingId = $state<string | null>(null);
 	let confirmingDeleteId = $state<string | null>(null);
@@ -136,6 +138,13 @@
 				{/if}
 
 				{#if isGerant}
+					<button
+						onclick={() => showImportModal = true}
+						class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+					>
+						<Upload class="h-4 w-4" />
+						Importer (CSV)
+					</button>
 					{#if canCreateBien}
 						<button
 							onclick={() => showBienModal = true}
@@ -453,4 +462,10 @@
 	{/if}
 
 	<BienModal bind:open={showBienModal} {sciId} />
+	<ImportCsvModal
+		open={showImportModal}
+		{sciId}
+		onClose={() => showImportModal = false}
+		onSuccess={() => { showImportModal = false; loadBiens(); }}
+	/>
 </section>
