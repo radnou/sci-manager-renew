@@ -204,7 +204,7 @@
 			popular: false,
 			features: [
 				'1 SCI',
-				'2 biens maximum',
+				'5 biens maximum',
 				'Suivi des loyers',
 				'Suivi des charges',
 				'Quittances PDF'
@@ -518,6 +518,14 @@
 								</li>
 							{/each}
 						</ul>
+						{#if feature.eyebrow === 'Fiscalite'}
+							<p class="mt-3 text-xs text-slate-400 dark:text-slate-500 italic">
+								Les calculs sont fournis à titre indicatif. Nous recommandons une vérification par votre expert-comptable avant déclaration.
+							</p>
+							<a href="/mentions-legales" class="text-xs text-sky-500 hover:text-sky-600 underline underline-offset-2">
+								En savoir plus sur notre méthodologie de calcul
+							</a>
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -613,7 +621,7 @@
 					Commencez gratuitement, passez au plan supérieur quand vous en avez besoin.
 				</p>
 				<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-					Un comptable facture 1 200€ à 2 000€/an pour la gestion d'une SCI. GérerSCI fait la même chose pour 39€/mois.
+					Réduisez de 50% votre temps de gestion administrative — et fournissez à votre comptable des données propres et organisées.
 				</p>
 
 				<!-- Billing toggle -->
@@ -726,6 +734,19 @@
 						{/if}
 					</div>
 				{/each}
+			</div>
+
+			<!-- Cabinet CTA -->
+			<div class="mt-10 text-center">
+				<p class="text-sm text-slate-500 dark:text-slate-400">
+					Vous êtes expert-comptable ?
+					<a
+						href="mailto:contact@gerersci.fr?subject=Offre%20Cabinet"
+						class="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2"
+					>
+						Découvrez notre offre Cabinet
+					</a>
+				</p>
 			</div>
 		</div>
 	</section>

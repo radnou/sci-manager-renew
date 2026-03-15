@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     stripe_starter_annual_price_id: str = "price_starter_annual_placeholder"
     stripe_pro_annual_price_id: str = "price_pro_annual_placeholder"
     stripe_lifetime_price_id: str = "price_lifetime_placeholder"  # DEPRECATED: kept for grandfathered users
+    stripe_cabinet_price_id: str = "price_cabinet_placeholder"
+    stripe_cabinet_annual_price_id: str = "price_cabinet_annual_placeholder"
 
     # Email
     resend_api_key: str = "re_placeholder"

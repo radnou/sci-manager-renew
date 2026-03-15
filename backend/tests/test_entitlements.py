@@ -14,7 +14,7 @@ def test_free_plan_is_public():
     assert plan.is_public is True
     assert plan.display_name == "Essentiel"
     assert plan.max_scis == 1
-    assert plan.max_biens == 2
+    assert plan.max_biens == 5
 
 
 def test_starter_plan_renamed_gestion():

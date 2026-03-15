@@ -12,6 +12,7 @@ class PlanKey(str, Enum):
     STARTER = "starter"
     PRO = "pro"
     LIFETIME = "lifetime"
+    CABINET = "cabinet"
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,8 @@ class PlanEntitlements:
     pno_frais_enabled: bool = False
     rentabilite_enabled: bool = False
     dashboard_complet: bool = False
+    multi_user: bool = False
+    api_access: bool = False
 
     def features_payload(self) -> dict[str, bool]:
         return {
@@ -51,6 +54,8 @@ class PlanEntitlements:
             "pno_frais_enabled": self.pno_frais_enabled,
             "rentabilite_enabled": self.rentabilite_enabled,
             "dashboard_complet": self.dashboard_complet,
+            "multi_user": self.multi_user,
+            "api_access": self.api_access,
         }
 
     def metadata_payload(self) -> dict[str, str]:
@@ -73,7 +78,7 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
         display_name="Essentiel",
         billing_period="none",
         max_scis=1,
-        max_biens=2,
+        max_biens=5,
         multi_sci_enabled=False,
         charges_enabled=False,
         fiscalite_enabled=False,
@@ -122,6 +127,29 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
         rentabilite_enabled=True,
         dashboard_complet=True,
     ),
+    PlanKey.CABINET: PlanEntitlements(
+        plan_key=PlanKey.CABINET,
+        display_name="Cabinet",
+        billing_period="month",
+        max_scis=None,
+        max_biens=None,
+        multi_sci_enabled=True,
+        charges_enabled=True,
+        fiscalite_enabled=True,
+        quitus_enabled=True,
+        cerfa_enabled=True,
+        priority_support=True,
+        checkout_mode="subscription",
+        is_public=False,
+        documents_enabled=True,
+        notifications_enabled=True,
+        associes_enabled=True,
+        pno_frais_enabled=True,
+        rentabilite_enabled=True,
+        dashboard_complet=True,
+        multi_user=True,
+        api_access=True,
+    ),
 }
 
 
@@ -146,6 +174,10 @@ def resolve_price_id_for_plan(plan_key: PlanKey | str, billing_period: str = "mo
         if billing_period == "year":
             return settings.stripe_pro_annual_price_id
         return settings.stripe_pro_price_id
+    if normalized == PlanKey.CABINET:
+        if billing_period == "year":
+            return settings.stripe_cabinet_annual_price_id
+        return settings.stripe_cabinet_price_id
     return None
 
 
@@ -158,6 +190,8 @@ def resolve_plan_key_from_price_id(price_id: str | None) -> PlanKey | None:
         settings.stripe_starter_annual_price_id: PlanKey.STARTER,
         settings.stripe_pro_price_id: PlanKey.PRO,
         settings.stripe_pro_annual_price_id: PlanKey.PRO,
+        settings.stripe_cabinet_price_id: PlanKey.CABINET,
+        settings.stripe_cabinet_annual_price_id: PlanKey.CABINET,
     }
     result = price_mapping.get(price_id)
     if result is not None:

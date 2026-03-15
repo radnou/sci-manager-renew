@@ -60,8 +60,8 @@ def build_store():
         "subscriptions": [],
         "associes": [{"id_sci": "sci-1", "user_id": "user-123"}],
         "biens": [
-            {"id": "bien-1", "id_sci": "sci-1"},
-            {"id": "bien-2", "id_sci": "sci-1"},
+            {"id": f"bien-{i}", "id_sci": "sci-1"}
+            for i in range(1, 6)
         ],
     }
 
@@ -80,9 +80,9 @@ def test_get_subscription_summary_defaults_to_free(monkeypatch):
     summary = SubscriptionService.get_subscription_summary("user-123")
     assert summary["plan_key"] == "free"
     assert summary["max_scis"] == 1
-    assert summary["max_biens"] == 2
+    assert summary["max_biens"] == 5
     assert summary["current_scis"] == 1
-    assert summary["current_biens"] == 2
+    assert summary["current_biens"] == 5
 
 
 def test_enforce_limit_raises_when_enforcement_active(monkeypatch):
@@ -251,7 +251,7 @@ def test_enforce_limit_within_limits_returns_summary(monkeypatch):
 
     summary = SubscriptionService.enforce_limit("user-123", "biens")
     assert summary["plan_key"] == "pro"
-    assert summary["current_biens"] == 2
+    assert summary["current_biens"] == 5
     assert summary["over_limit"] is False
 
 
