@@ -64,18 +64,20 @@ Returns hero KPIs with trend comparison (current vs previous period).
 
 | KPI | Current period | Previous period | Formula |
 |-----|---------------|-----------------|---------|
-| North Star | SCIs with ≥1 loyer (statut=paye) where date_loyer > now()-30d | Same for days -60 to -30 | COUNT DISTINCT sci_id via biens → loyers join |
-| MRR | SUM of plan monthly prices for active subscriptions | Same calculation 30d ago (snapshot approximation) | Map plan_key → price from entitlements catalog |
+| North Star | SCIs with ≥1 loyer (statut=paye) where date_loyer > now()-30d | Same for days -60 to -30 | COUNT DISTINCT id_sci via biens → loyers join (column is `id_sci`, not `sci_id`) |
+| MRR (estimated) | SUM of plan monthly prices for active subscriptions | Same calculation 30d ago (snapshot approximation) | Map plan_key → monthly price. Annual subscribers normalized: annual_price / 12 |
 | Activation rate | Users with ≥1 loyer / total users × 100 | Same 30d ago | associes (distinct user_id) + loyers join |
-| Churn 30d | Users active M-1 but not active M / active M-1 × 100 | M-2 vs M-1 | Active = ≥1 loyer in period |
-| Conversion | Paid users / total users × 100 | Same 30d ago | subscriptions (status in active,trialing,paid) / total |
+| Churn 30d | Users active M-1 but not active M / active M-1 × 100 | M-2 vs M-1 | Active = ≥1 loyer in period. Guard: if active M-1 == 0, churn = 0 |
+| Conversion | Paid users / total users × 100 | Same 30d ago | subscriptions (status in active,trialing,paid) / total. Guard: if total == 0, rate = 0 |
 
-**Price map for MRR** (from entitlements):
+**Price map for MRR** (from entitlements, monthly equivalent):
 - free: 0 EUR
-- starter: 9.90 EUR/month
-- pro: 19.90 EUR/month
+- starter: 9.90 EUR/month (annual: Stripe price / 12)
+- pro: 19.90 EUR/month (annual: Stripe price / 12)
 - lifetime: 0 EUR/month (one-time, excluded from MRR)
-- cabinet: 49.90 EUR/month
+- cabinet: 49.90 EUR/month (annual: Stripe price / 12)
+
+> **Note**: MRR is labeled "estimated" because annual subscription prices are not stored in entitlements — they must be hardcoded or fetched from Stripe. At early stage this approximation is acceptable.
 
 #### `GET /api/v1/admin/alerts`
 
@@ -103,7 +105,9 @@ Returns business alerts based on threshold analysis.
 | `low_activation` | Activation rate < 30% | medium |
 | `high_churn` | Churn > 5%/month | medium |
 | `no_signups` | 0 new users in last 7 days | medium |
-| `all_clear` | No alerts triggered | info |
+
+
+When no alert rules trigger, the backend returns `alerts: []` (empty list). The frontend handles this state.
 
 #### `GET /api/v1/admin/funnel`
 
@@ -124,14 +128,16 @@ Returns activation funnel counts.
 
 **Step calculations**:
 1. **Inscrits**: COUNT DISTINCT user_id from associes
-2. **Onboarding complété**: COUNT where subscriptions.onboarding_completed = true
-3. **1er bien créé**: COUNT DISTINCT user_id from associes WHERE sci_id IN (SELECT id_sci FROM biens)
-4. **1er loyer enregistré**: COUNT DISTINCT user_id from associes WHERE sci_id IN (SELECT DISTINCT b.id_sci FROM loyers l JOIN biens b ON l.id_bien = b.id)
+2. **Onboarding complété**: COUNT where subscriptions.onboarding_completed = true. Note: only counts users with a subscriptions row. Users without a subscription row are excluded — this is an acceptable approximation since the onboarding wizard creates/updates the subscription row.
+3. **1er bien créé**: COUNT DISTINCT user_id from associes WHERE id_sci IN (SELECT id_sci FROM biens)
+4. **1er loyer enregistré**: COUNT DISTINCT user_id from associes WHERE id_sci IN (SELECT DISTINCT b.id_sci FROM loyers l JOIN biens b ON l.id_bien = b.id)
 5. **Passé en paid**: COUNT where subscriptions.status IN (active, trialing, paid) AND plan_key != 'free'
 
-**Bottleneck**: Index of step with largest drop-off percentage.
+**Bottleneck**: 0-based index of the step with the largest absolute drop-off percentage (rate[i] - rate[i+1]). Tie-breaking: first step wins (earlier in funnel = higher leverage).
 
 #### `GET /api/v1/admin/users` (enhanced — replaces current)
+
+**Data source strategy**: Fetch all auth users via `client.auth.admin.list_users()`, then enrich each user in-memory by querying `associes`, `biens`, `loyers`, and `subscriptions` tables. Filtering (`search`, `status`, `plan`) and sorting (`sort`) are applied in-memory after enrichment. Pagination is applied last on the filtered/sorted result. This approach is acceptable at early stage (<1000 users). At scale, consider a materialized view.
 
 New query params: `?search=email&status=power_user|prospect|at_risk|new&plan=free|starter|pro|lifetime&sort=last_activity|created_at&page=1&per_page=50`
 
@@ -162,8 +168,8 @@ Returns enriched user objects:
 
 **Status auto-calculation**:
 - `power_user`: ≥3 loyers recorded in last 30 days
-- `prospect`: free plan AND biens_count ≥ 4 (close to limit of 5)
-- `at_risk`: no activity (no loyer) in last 30 days AND account age > 7 days
+- `prospect`: free plan AND biens_count ≥ 4 (at or approaching the 5-bien limit — 1 slot left or blocked)
+- `at_risk`: no activity (no loyer) in last 30 days AND account age > 7 days. `last_activity` is `MAX(loyers.created_at)` for the user's SCIs → biens → loyers. If None (no loyer ever), display "Jamais" in frontend.
 - `new`: account created < 7 days ago
 - `active`: none of the above (normal active user)
 
@@ -200,6 +206,7 @@ class MetricValue(BaseModel):
     value: float
     previous: float
     trend: TrendDirection
+    change_pct: float | None  # None when previous == 0 (no prior data)
 
 class HeroMetrics(BaseModel):
     north_star: MetricValue
@@ -243,7 +250,7 @@ class EnrichedUser(BaseModel):
     sci_count: int
     biens_count: int
     loyers_30d: int
-    last_activity: str | None
+    last_activity: str | None  # MAX(loyers.created_at) for user's SCIs. None = no loyer ever. Frontend renders None as "Jamais"
     status: UserStatus
     stripe_customer_id: str | None
 
@@ -309,6 +316,8 @@ Card structure:
 └─────────────────────────┘
 ```
 
+Trend display: if `change_pct` is null (no prior data), show "—" instead of a percentage. If `change_pct` is 0, show "stable" with a grey Minus icon.
+
 KPI config (icon, color, formatting):
 
 | KPI | Icon | Color | Format | Positive direction |
@@ -331,10 +340,10 @@ Tooltip content (hardcoded in component — educational, not dynamic):
 
 #### `AdminAlerts.svelte` (new)
 
-Reuses DashboardAlerts visual pattern (icon + colored border + message + detail).
+New component visually modeled after DashboardAlerts but with its own `BusinessAlert[]` prop (different data shape — no `entity_id`, `sci_nom`, `bien_adresse`). Does NOT reuse or wrap DashboardAlerts.
 - Severity mapping: high → rose, medium → amber, info → emerald
 - Each alert shows `tooltip` field as a subtle italic helper below the main message
-- If no alerts: emerald "all clear" banner
+- Backend returns empty `alerts: []` when all clear. Frontend handles the empty case by showing an emerald banner "Tout va bien — aucune alerte business"
 
 #### `AdminFunnel.svelte` (new)
 
@@ -416,7 +425,7 @@ Pure CSS tooltip via group-hover — no JS, no library, works with dark mode.
 | `backend/app/api/v1/admin.py` | Replace endpoints: metrics, alerts, funnel, enhanced users |
 | `frontend/src/routes/(app)/admin/+page.svelte` | Rewrite with 3 sections (KPIs, alerts, funnel) |
 | `frontend/src/routes/(app)/admin/users/+page.svelte` | Add filters, enriched columns, status badges |
-| `frontend/src/routes/(app)/admin/+layout.svelte` | Minor: update nav labels if needed |
+| `frontend/src/routes/(app)/admin/+layout.svelte` | Update auth check to use `/admin/metrics` instead of `/admin/stats` (which is removed). Update nav labels. |
 | `frontend/src/lib/api.ts` | Add 4 admin API functions, remove old ones |
 
 ### Unchanged
