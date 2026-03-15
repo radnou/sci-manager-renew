@@ -2,6 +2,7 @@
 
 import jwt
 import pytest
+from unittest.mock import patch
 
 from app.core.config import settings
 
@@ -18,101 +19,83 @@ def _non_admin_headers(user_id: str = "user-non-admin") -> dict[str, str]:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# GET /api/v1/admin/stats
+# GET /api/v1/admin/metrics
 # ═══════════════════════════════════════════════════════════════════════
 
 
-class TestAdminStats:
-    """Tests for the admin_stats endpoint."""
+class TestAdminMetrics:
+    """Tests for the admin_metrics endpoint."""
 
     def test_no_auth_returns_401(self, client):
-        response = client.get("/api/v1/admin/stats")
+        response = client.get("/api/v1/admin/metrics")
         assert response.status_code == 401
 
     def test_non_admin_returns_403(self, client, fake_supabase):
         fake_supabase.store["admins"] = []
-        response = client.get("/api/v1/admin/stats", headers=_non_admin_headers())
+        response = client.get("/api/v1/admin/metrics", headers=_non_admin_headers())
         assert response.status_code == 403
 
-    def test_admin_removed_returns_403(self, client, auth_headers, fake_supabase):
-        """Even a previously-valid admin gets 403 if removed from admins table."""
+    @patch("app.api.v1.admin.compute_hero_metrics")
+    def test_returns_metrics(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {
+            "north_star": {"value": 5, "previous": 3, "trend": "up", "change_pct": 66.7},
+        }
+        response = client.get("/api/v1/admin/metrics", headers=auth_headers)
+        assert response.status_code == 200
+        assert "north_star" in response.json()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# GET /api/v1/admin/alerts
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestAdminAlerts:
+    """Tests for the admin_alerts endpoint."""
+
+    def test_no_auth_returns_401(self, client):
+        response = client.get("/api/v1/admin/alerts")
+        assert response.status_code == 401
+
+    def test_non_admin_returns_403(self, client, fake_supabase):
         fake_supabase.store["admins"] = []
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
+        response = client.get("/api/v1/admin/alerts", headers=_non_admin_headers())
         assert response.status_code == 403
 
-    def test_returns_all_stat_keys(self, client, auth_headers):
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
+    @patch("app.api.v1.admin.compute_business_alerts")
+    def test_returns_alerts(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {"alerts": []}
+        response = client.get("/api/v1/admin/alerts", headers=auth_headers)
         assert response.status_code == 200
-        data = response.json()
-        for key in ("total_users", "total_scis", "total_biens", "active_subscriptions", "plan_breakdown"):
-            assert key in data
+        assert "alerts" in response.json()
 
-    def test_counts_match_seed_data(self, client, auth_headers, fake_supabase):
-        """Verify counts reflect the seed data in the fake store."""
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
+
+# ═══════════════════════════════════════════════════════════════════════
+# GET /api/v1/admin/funnel
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestAdminFunnel:
+    """Tests for the admin_funnel endpoint."""
+
+    def test_no_auth_returns_401(self, client):
+        response = client.get("/api/v1/admin/funnel")
+        assert response.status_code == 401
+
+    def test_non_admin_returns_403(self, client, fake_supabase):
+        fake_supabase.store["admins"] = []
+        response = client.get("/api/v1/admin/funnel", headers=_non_admin_headers())
+        assert response.status_code == 403
+
+    @patch("app.api.v1.admin.compute_activation_funnel")
+    def test_returns_funnel(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {
+            "steps": [{"label": "Inscrits", "count": 10, "rate": 100.0}],
+            "bottleneck_index": 0,
+        }
+        response = client.get("/api/v1/admin/funnel", headers=auth_headers)
         assert response.status_code == 200
-        data = response.json()
-        assert data["total_users"] == len(fake_supabase.store["associes"])
-        assert data["total_scis"] == len(fake_supabase.store["sci"])
-        assert data["total_biens"] == len(fake_supabase.store["biens"])
-
-    def test_active_subscriptions_count(self, client, auth_headers, fake_supabase):
-        """Only active/trialing/paid subscriptions are counted."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "u1", "stripe_price_id": "price_pro_demo", "status": "active"},
-            {"user_id": "u2", "stripe_price_id": "price_starter_demo", "status": "trialing"},
-            {"user_id": "u3", "stripe_price_id": "price_pro_demo", "status": "paid"},
-            {"user_id": "u4", "stripe_price_id": "price_pro_demo", "status": "canceled"},
-            {"user_id": "u5", "stripe_price_id": None, "status": "past_due"},
-        ]
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["active_subscriptions"] == 3
-
-    def test_plan_breakdown_keys(self, client, auth_headers, fake_supabase):
-        """Plan breakdown groups by resolved plan key."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "u1", "stripe_price_id": settings.stripe_pro_price_id, "status": "active"},
-            {"user_id": "u2", "stripe_price_id": settings.stripe_starter_price_id, "status": "active"},
-            {"user_id": "u3", "stripe_price_id": "unknown_price", "status": "active"},
-        ]
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
-        data = response.json()
-        breakdown = data["plan_breakdown"]
-        assert isinstance(breakdown, dict)
-        # The unknown price_id resolves to "free" via resolve_plan_key_from_price_id
-        assert breakdown.get("free", 0) >= 1
-
-    def test_empty_subscriptions(self, client, auth_headers, fake_supabase):
-        """No subscriptions at all -> active_subscriptions=0, empty breakdown."""
-        fake_supabase.store["subscriptions"] = []
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
-        data = response.json()
-        assert data["active_subscriptions"] == 0
-        assert data["plan_breakdown"] == {}
-
-    def test_no_scis_or_biens(self, client, auth_headers, fake_supabase):
-        """Empty tables return zero counts."""
-        fake_supabase.store["sci"] = []
-        fake_supabase.store["biens"] = []
-        fake_supabase.store["associes"] = []
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
-        data = response.json()
-        assert data["total_scis"] == 0
-        assert data["total_biens"] == 0
-        assert data["total_users"] == 0
-
-    def test_null_stripe_price_id_in_active_sub(self, client, auth_headers, fake_supabase):
-        """Active subscription with null price_id resolves to 'free' plan."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "u1", "stripe_price_id": None, "status": "active"},
-        ]
-        response = client.get("/api/v1/admin/stats", headers=auth_headers)
-        data = response.json()
-        assert data["active_subscriptions"] == 1
-        # resolve_plan_key_from_price_id(None) returns None -> key falls to "free"
-        assert data["plan_breakdown"].get("free") == 1
+        assert "steps" in response.json()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -132,21 +115,31 @@ class TestAdminListUsers:
         response = client.get("/api/v1/admin/users", headers=_non_admin_headers())
         assert response.status_code == 403
 
-    def test_returns_user_list(self, client, auth_headers):
+    @patch("app.api.v1.admin.compute_enriched_users")
+    def test_returns_user_list(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {"users": [], "total": 0, "page": 1, "per_page": 50}
         response = client.get("/api/v1/admin/users", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "users" in data
-        assert "page" in data
-        assert "per_page" in data
+        assert "total" in data
 
-    def test_default_pagination(self, client, auth_headers):
-        response = client.get("/api/v1/admin/users", headers=auth_headers)
-        data = response.json()
-        assert data["page"] == 1
-        assert data["per_page"] == 50
+    @patch("app.api.v1.admin.compute_enriched_users")
+    def test_default_pagination(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {"users": [], "total": 0, "page": 1, "per_page": 50}
+        client.get("/api/v1/admin/users", headers=auth_headers)
+        mock_compute.assert_called_once_with(
+            search=None,
+            status_filter=None,
+            plan_filter=None,
+            sort="created_at",
+            page=1,
+            per_page=50,
+        )
 
-    def test_custom_pagination(self, client, auth_headers):
+    @patch("app.api.v1.admin.compute_enriched_users")
+    def test_custom_pagination(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {"users": [], "total": 0, "page": 2, "per_page": 10}
         response = client.get("/api/v1/admin/users?page=2&per_page=10", headers=auth_headers)
         data = response.json()
         assert data["page"] == 2
@@ -162,43 +155,21 @@ class TestAdminListUsers:
         response = client.get("/api/v1/admin/users?per_page=200", headers=auth_headers)
         assert response.status_code == 422
 
-    def test_user_fields(self, client, auth_headers, fake_supabase):
-        """Each user object has expected fields."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "user-123", "stripe_price_id": settings.stripe_pro_price_id, "status": "active", "stripe_customer_id": "cus_test"},
-        ]
-        response = client.get("/api/v1/admin/users", headers=auth_headers)
-        data = response.json()
-        assert len(data["users"]) > 0
-        user = data["users"][0]
-        for field in ("id", "email", "created_at", "plan_key", "is_active", "stripe_customer_id"):
-            assert field in user
-
-    def test_user_with_active_subscription(self, client, auth_headers, fake_supabase):
-        """User with active subscription shows is_active=True."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "user-123", "stripe_price_id": settings.stripe_pro_price_id, "status": "active", "stripe_customer_id": "cus_x"},
-        ]
-        response = client.get("/api/v1/admin/users", headers=auth_headers)
-        user = response.json()["users"][0]
-        assert user["is_active"] is True
-
-    def test_user_with_no_subscription(self, client, auth_headers, fake_supabase):
-        """User without any subscription shows plan_key='free' and is_active=False."""
-        fake_supabase.store["subscriptions"] = []
-        response = client.get("/api/v1/admin/users", headers=auth_headers)
-        user = response.json()["users"][0]
-        assert user["plan_key"] == "free"
-        assert user["is_active"] is False
-
-    def test_user_with_canceled_subscription(self, client, auth_headers, fake_supabase):
-        """Canceled subscription -> is_active=False."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "user-123", "stripe_price_id": settings.stripe_pro_price_id, "status": "canceled", "stripe_customer_id": "cus_c"},
-        ]
-        response = client.get("/api/v1/admin/users", headers=auth_headers)
-        user = response.json()["users"][0]
-        assert user["is_active"] is False
+    @patch("app.api.v1.admin.compute_enriched_users")
+    def test_filters_forwarded(self, mock_compute, client, auth_headers):
+        mock_compute.return_value = {"users": [], "total": 0, "page": 1, "per_page": 50}
+        client.get(
+            "/api/v1/admin/users?search=test@example.com&status=power_user&plan=pro&sort=last_activity",
+            headers=auth_headers,
+        )
+        mock_compute.assert_called_once_with(
+            search="test@example.com",
+            status_filter="power_user",
+            plan_filter="pro",
+            sort="last_activity",
+            page=1,
+            per_page=50,
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -241,7 +212,6 @@ class TestAdminGetUser:
         """SCIs are returned via associes join."""
         response = client.get("/api/v1/admin/users/user-123", headers=auth_headers)
         data = response.json()
-        # user-123 is associe in sci-1 and sci-2 per seed data
         assert isinstance(data["scis"], list)
         assert len(data["scis"]) >= 1
 
@@ -272,53 +242,6 @@ class TestAdminGetUser:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# GET /api/v1/admin/subscriptions
-# ═══════════════════════════════════════════════════════════════════════
-
-
-class TestAdminListSubscriptions:
-    """Tests for the admin_list_subscriptions endpoint."""
-
-    def test_no_auth_returns_401(self, client):
-        response = client.get("/api/v1/admin/subscriptions")
-        assert response.status_code == 401
-
-    def test_non_admin_returns_403(self, client, fake_supabase):
-        fake_supabase.store["admins"] = []
-        response = client.get("/api/v1/admin/subscriptions", headers=_non_admin_headers())
-        assert response.status_code == 403
-
-    def test_returns_subscriptions_list(self, client, auth_headers, fake_supabase):
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "u1", "stripe_price_id": "p1", "status": "active", "created_at": "2026-01-01"},
-            {"user_id": "u2", "stripe_price_id": "p2", "status": "canceled", "created_at": "2026-02-01"},
-        ]
-        response = client.get("/api/v1/admin/subscriptions", headers=auth_headers)
-        assert response.status_code == 200
-        data = response.json()
-        assert "subscriptions" in data
-        assert len(data["subscriptions"]) == 2
-
-    def test_empty_subscriptions(self, client, auth_headers, fake_supabase):
-        fake_supabase.store["subscriptions"] = []
-        response = client.get("/api/v1/admin/subscriptions", headers=auth_headers)
-        data = response.json()
-        assert data["subscriptions"] == []
-
-    def test_ordered_by_created_at_desc(self, client, auth_headers, fake_supabase):
-        """Subscriptions are ordered by created_at descending."""
-        fake_supabase.store["subscriptions"] = [
-            {"user_id": "u1", "stripe_price_id": "p1", "status": "active", "created_at": "2026-01-01"},
-            {"user_id": "u2", "stripe_price_id": "p2", "status": "active", "created_at": "2026-03-01"},
-            {"user_id": "u3", "stripe_price_id": "p3", "status": "active", "created_at": "2026-02-01"},
-        ]
-        response = client.get("/api/v1/admin/subscriptions", headers=auth_headers)
-        subs = response.json()["subscriptions"]
-        dates = [s["created_at"] for s in subs]
-        assert dates == sorted(dates, reverse=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════
 # Cross-cutting: Auth & admin gating on ALL endpoints
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -327,10 +250,11 @@ class TestAdminGating:
     """Ensure all admin endpoints are protected by the admin dependency."""
 
     ENDPOINTS = [
-        "/api/v1/admin/stats",
+        "/api/v1/admin/metrics",
+        "/api/v1/admin/alerts",
+        "/api/v1/admin/funnel",
         "/api/v1/admin/users",
         "/api/v1/admin/users/user-123",
-        "/api/v1/admin/subscriptions",
     ]
 
     @pytest.mark.parametrize("endpoint", ENDPOINTS)
@@ -347,7 +271,7 @@ class TestAdminGating:
     def test_invalid_token_returns_401(self, client):
         """A completely invalid JWT token should return 401."""
         response = client.get(
-            "/api/v1/admin/stats",
+            "/api/v1/admin/metrics",
             headers={"Authorization": "Bearer invalid.jwt.token"},
         )
         assert response.status_code == 401
@@ -360,7 +284,7 @@ class TestAdminGating:
             algorithm="HS256",
         )
         response = client.get(
-            "/api/v1/admin/stats",
+            "/api/v1/admin/metrics",
             headers={"Authorization": token},
         )
         assert response.status_code == 401

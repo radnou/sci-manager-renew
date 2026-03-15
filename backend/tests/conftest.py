@@ -381,7 +381,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         for _mod in [auth, files, gdpr, stripe, subscription_service, onboarding, finances]:
             mp.setattr(_mod, "get_supabase_service_client", fake_service, raising=False)
             mp.setattr(_mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
-        mp.setattr(admin, "get_service_client", fake_service)
+        mp.setattr(admin, "get_service_client", fake_service, raising=False)
         mp.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
         mp.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
         mp.setattr(supabase_client_mod, "get_supabase_user_client", fake_user_client)
