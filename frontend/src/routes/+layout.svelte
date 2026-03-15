@@ -147,6 +147,12 @@
 						>
 							Tarifs
 						</a>
+						<a
+							href="/simulateur-cerfa"
+							class="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+						>
+							Simulateur
+						</a>
 					</div>
 					<div class="flex items-center gap-3">
 						<a href="/login">
@@ -176,6 +182,12 @@
 							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
 							Tarifs
+						</a>
+						<a
+							href="/simulateur-cerfa"
+							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							Simulateur
 						</a>
 						<a
 							href="/login"
@@ -235,6 +247,13 @@
 									href="/pricing"
 									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 									>Tarifs</a
+								>
+							</li>
+							<li>
+								<a
+									href="/simulateur-cerfa"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Simulateur CERFA 2044</a
 								>
 							</li>
 							<li>

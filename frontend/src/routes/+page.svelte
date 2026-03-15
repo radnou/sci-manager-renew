@@ -519,6 +519,9 @@
 							{/each}
 						</ul>
 						{#if feature.eyebrow === 'Fiscalite'}
+							<a href="/simulateur-cerfa" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+								Essayer le simulateur gratuit →
+							</a>
 							<p class="mt-3 text-xs text-slate-400 dark:text-slate-500 italic">
 								Les calculs sont fournis à titre indicatif. Nous recommandons une vérification par votre expert-comptable avant déclaration.
 							</p>
