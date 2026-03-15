@@ -22,7 +22,7 @@
 		}
 
 		try {
-			await apiFetch('/api/v1/admin/stats');
+			await apiFetch('/api/v1/admin/metrics');
 			authorized = true;
 		} catch {
 			goto('/dashboard');

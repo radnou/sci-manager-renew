@@ -1,82 +1,61 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiFetch } from '$lib/api';
+	import { fetchAdminMetrics, fetchAdminAlerts, fetchAdminFunnel } from '$lib/api';
+	import AdminHeroKpis from '$lib/components/admin/AdminHeroKpis.svelte';
+	import AdminAlerts from '$lib/components/admin/AdminAlerts.svelte';
+	import AdminFunnel from '$lib/components/admin/AdminFunnel.svelte';
 
-	let stats = $state<{
-		total_users: number;
-		total_scis: number;
-		total_biens: number;
-		active_subscriptions: number;
-		plan_breakdown: Record<string, number>;
-	} | null>(null);
+	let metrics = $state<Awaited<ReturnType<typeof fetchAdminMetrics>> | null>(null);
+	let alerts = $state<Awaited<ReturnType<typeof fetchAdminAlerts>> | null>(null);
+	let funnel = $state<Awaited<ReturnType<typeof fetchAdminFunnel>> | null>(null);
+	let loading = $state(true);
+	let error = $state('');
 
 	onMount(async () => {
 		try {
-			stats = await apiFetch('/api/v1/admin/stats');
-		} catch {
-			// handled by layout guard
+			const [m, a, f] = await Promise.all([
+				fetchAdminMetrics(),
+				fetchAdminAlerts(),
+				fetchAdminFunnel(),
+			]);
+			metrics = m;
+			alerts = a;
+			funnel = f;
+		} catch (e) {
+			error = 'Erreur lors du chargement des metriques';
+		} finally {
+			loading = false;
 		}
 	});
 </script>
 
 <svelte:head>
-	<title>Admin | GererSCI</title>
+	<title>Cockpit Business | Admin | GererSCI</title>
 </svelte:head>
 
-{#if stats}
-	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-		<div
-			class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
-		>
-			<p class="text-xs font-semibold tracking-widest text-slate-500 uppercase">Utilisateurs</p>
-			<p class="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.total_users}</p>
-		</div>
-		<div
-			class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
-		>
-			<p class="text-xs font-semibold tracking-widest text-slate-500 uppercase">SCI</p>
-			<p class="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.total_scis}</p>
-		</div>
-		<div
-			class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
-		>
-			<p class="text-xs font-semibold tracking-widest text-slate-500 uppercase">Biens</p>
-			<p class="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.total_biens}</p>
-		</div>
-		<div
-			class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
-		>
-			<p class="text-xs font-semibold tracking-widest text-slate-500 uppercase">
-				Abonnements actifs
-			</p>
-			<p class="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
-				{stats.active_subscriptions}
-			</p>
-		</div>
+{#if loading}
+	<div class="flex items-center justify-center py-20">
+		<div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"></div>
 	</div>
-
-	{#if Object.keys(stats.plan_breakdown).length > 0}
-		<div
-			class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950"
-		>
-			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-				Répartition par plan
-			</h2>
-			<div class="mt-4 space-y-3">
-				{#each Object.entries(stats.plan_breakdown) as [plan, count]}
-					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium capitalize text-slate-700 dark:text-slate-300"
-							>{plan}</span
-						>
-						<span
-							class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-100"
-							>{count}</span
-						>
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
+{:else if error}
+	<div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 dark:border-rose-800 dark:bg-rose-950/30">
+		<p class="text-sm text-rose-700 dark:text-rose-300">{error}</p>
+	</div>
 {:else}
-	<p class="text-sm text-slate-500">Chargement...</p>
+	<div class="space-y-6">
+		{#if metrics}
+			<AdminHeroKpis {metrics} />
+		{/if}
+
+		{#if alerts}
+			<div>
+				<h2 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Alertes business</h2>
+				<AdminAlerts alerts={alerts.alerts} />
+			</div>
+		{/if}
+
+		{#if funnel}
+			<AdminFunnel steps={funnel.steps} bottleneck_index={funnel.bottleneck_index} />
+		{/if}
+	</div>
 {/if}
