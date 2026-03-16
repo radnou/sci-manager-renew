@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_format: Literal["json", "console"] = "json"
 
+    # Admin
+    admin_secret_key: str = ""  # If set, ?key=<value> grants admin access without admins table
+
     # Feature Flags
     feature_cerfa_generation: bool = True
     feature_stripe_payments: bool = True

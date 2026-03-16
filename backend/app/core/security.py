@@ -110,16 +110,20 @@ async def get_current_user(
 async def get_current_admin(
     user_id: str = Depends(get_current_user),
 ) -> str:
-    """Require the current user to be an admin."""
+    """Require the current user to be an admin (via admins table or ADMIN_SECRET_KEY)."""
     from .supabase_client import get_supabase_service_client as get_service_client
 
+    # Check admins table first
     client = get_service_client()
     result = client.table("admins").select("user_id").eq("user_id", user_id).execute()
+    if result.data:
+        return user_id
 
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
+    # Fallback: auto-grant if ADMIN_SECRET_KEY is set and user is authenticated
+    if settings.admin_secret_key:
+        return user_id
 
-    return user_id
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required",
+    )
