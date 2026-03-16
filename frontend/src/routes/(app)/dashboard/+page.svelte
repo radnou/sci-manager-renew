@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Rocket, Building2, HandCoins, FileText } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { page } from '$app/state';
 	import {
 		fetchDashboard,
 		type DashboardData,
@@ -13,6 +14,8 @@
 	import DashboardKpisComponent from '$lib/components/dashboard/DashboardKpis.svelte';
 	import DashboardSciCards from '$lib/components/dashboard/DashboardSciCards.svelte';
 	import DashboardActivity from '$lib/components/dashboard/DashboardActivity.svelte';
+
+	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
 
 	let loading = $state(true);
 	let errorMessage = $state('');
@@ -61,6 +64,14 @@
 		<p class="sci-eyebrow">Gestion SCI</p>
 		<h1 class="sci-page-title">Dashboard</h1>
 	</header>
+
+	{#if upgraded}
+		<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 dark:border-emerald-800 dark:bg-emerald-950/30">
+			<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+				Votre abonnement a été activé avec succès !
+			</p>
+		</div>
+	{/if}
 
 	{#if loading}
 		<div class="sci-loading" aria-label="Chargement"></div>

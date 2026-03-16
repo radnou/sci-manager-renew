@@ -204,9 +204,8 @@
 			popular: false,
 			features: [
 				'1 SCI',
-				'5 biens maximum',
+				'2 biens maximum',
 				'Suivi des loyers',
-				'Suivi des charges',
 				'Quittances PDF'
 			],
 			cta: 'Commencer gratuitement',
@@ -224,7 +223,6 @@
 				'10 biens maximum',
 				'Gestion documentaire',
 				'Notifications email',
-				'Gestion des associés',
 				'Assurance PNO & frais agence',
 				'Support email prioritaire'
 			],
