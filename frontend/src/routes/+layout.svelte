@@ -135,7 +135,7 @@
 						href="/"
 						class="text-xl font-bold tracking-tight text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
 					>
-						GererSCI
+						GérerSCI
 					</a>
 				</div>
 
@@ -233,7 +233,7 @@
 			<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 				<div class="grid gap-8 md:grid-cols-4">
 					<div class="space-y-4">
-						<h3 class="font-semibold text-slate-900 dark:text-slate-100">GererSCI</h3>
+						<h3 class="font-semibold text-slate-900 dark:text-slate-100">GérerSCI</h3>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
 							Plateforme de gestion et d'intelligence fiscale pour SCI.
 						</p>
@@ -345,7 +345,7 @@
 				<div class="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
 					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
 						<p class="text-sm text-slate-600 dark:text-slate-400">
-							© 2026 GererSCI. Tous droits réservés.
+							© 2026 GérerSCI. Tous droits réservés.
 						</p>
 						<div class="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
 							<a href="/mentions-legales" class="transition-colors hover:text-slate-900 dark:hover:text-slate-100">Mentions légales</a>

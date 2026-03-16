@@ -131,7 +131,7 @@
 	}
 </script>
 
-<svelte:head><title>Paramètres | GererSCI</title></svelte:head>
+<svelte:head><title>Paramètres | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<WorkspaceHeader

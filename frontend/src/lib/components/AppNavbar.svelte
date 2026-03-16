@@ -152,7 +152,7 @@
 			href="/dashboard"
 			class="mr-4 text-lg font-bold tracking-tight text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
 		>
-			GererSCI
+			GérerSCI
 		</a>
 
 		<!-- Main nav links -->

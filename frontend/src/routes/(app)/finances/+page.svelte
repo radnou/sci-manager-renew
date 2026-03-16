@@ -71,7 +71,7 @@
 	}
 </script>
 
-<svelte:head><title>Finances | GererSCI</title></svelte:head>
+<svelte:head><title>Finances | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

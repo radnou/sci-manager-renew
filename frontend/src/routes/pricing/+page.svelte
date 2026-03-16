@@ -126,11 +126,13 @@
 </script>
 
 <svelte:head>
-	<title>Tarifs — GererSCI</title>
+	<title>Tarifs — GérerSCI</title>
 	<meta
 		name="description"
-		content="Comparez les offres GererSCI : Essentiel (gratuit), Gestion (19€/mois) et Fiscal (39€/mois)."
+		content="Comparez les offres GérerSCI : Essentiel (gratuit), Gestion (19€/mois) et Fiscal (39€/mois)."
 	/>
+	<link rel="canonical" href="https://gerersci.fr/pricing" />
+	<meta property="og:url" content="https://gerersci.fr/pricing" />
 </svelte:head>
 
 <section class="bg-slate-50 py-20 dark:bg-slate-950">

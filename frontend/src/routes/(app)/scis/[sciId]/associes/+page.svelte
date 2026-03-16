@@ -77,7 +77,7 @@
 	}
 </script>
 
-<svelte:head><title>Associés | {sci.nom} | GererSCI</title></svelte:head>
+<svelte:head><title>Associés | {sci.nom} | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

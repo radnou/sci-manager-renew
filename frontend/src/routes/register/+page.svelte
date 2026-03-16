@@ -83,8 +83,9 @@
 </script>
 
 <svelte:head>
-	<title>Inscription — GererSCI</title>
+	<title>Inscription — GérerSCI</title>
 	<meta name="robots" content="noindex, nofollow" />
+	<link rel="canonical" href="https://gerersci.fr/register" />
 </svelte:head>
 
 <section class="sci-page-shell">

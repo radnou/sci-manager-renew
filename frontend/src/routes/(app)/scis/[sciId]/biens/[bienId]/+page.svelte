@@ -158,7 +158,7 @@
 	}
 </script>
 
-<svelte:head><title>{bien?.adresse ?? 'Bien'} | GererSCI</title></svelte:head>
+<svelte:head><title>{bien?.adresse ?? 'Bien'} | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	{#if loading}

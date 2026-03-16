@@ -51,7 +51,7 @@
 	}
 </script>
 
-<svelte:head><title>Paramètres — {sci.nom} | GererSCI</title></svelte:head>
+<svelte:head><title>Paramètres — {sci.nom} | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

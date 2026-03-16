@@ -125,7 +125,7 @@
 </script>
 
 <svelte:head>
-	<title>Bienvenue — GererSCI</title>
+	<title>Bienvenue — GérerSCI</title>
 </svelte:head>
 
 <section class="sci-page-shell">

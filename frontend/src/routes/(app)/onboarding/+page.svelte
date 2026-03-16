@@ -282,12 +282,12 @@
 	}
 </script>
 
-<svelte:head><title>Onboarding | GererSCI</title></svelte:head>
+<svelte:head><title>Onboarding | GérerSCI</title></svelte:head>
 
 <section class="mx-auto max-w-2xl px-4 py-12">
 	<div class="mb-8 text-center">
 		<h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
-			Bienvenue sur GererSCI
+			Bienvenue sur GérerSCI
 		</h1>
 		<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
 			Configurons votre espace en quelques étapes.

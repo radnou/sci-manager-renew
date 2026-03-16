@@ -1,6 +1,7 @@
 <svelte:head>
-	<title>Conditions Generales d'Utilisation - GererSCI</title>
-	<meta name="description" content="Conditions Generales d'Utilisation du service GererSCI." />
+	<title>Conditions Générales d'Utilisation — GérerSCI</title>
+	<meta name="description" content="Conditions Générales d'Utilisation du service GérerSCI." />
+	<link rel="canonical" href="https://gerersci.fr/cgu" />
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-12">
@@ -24,7 +25,7 @@
 				1. Objet du service
 			</h2>
 			<p class="mt-3 text-sm">
-				GererSCI est une application en ligne (SaaS) destinee a la gestion de Societes Civiles
+				GérerSCI est une application en ligne (SaaS) destinee a la gestion de Societes Civiles
 				Immobilieres (SCI). Le service permet la gestion des biens immobiliers, des locataires,
 				des loyers, des charges, de la fiscalite et de la generation de documents associes
 				(quittances, declarations fiscales).
@@ -58,7 +59,7 @@
 				3. Abonnements et paiements
 			</h2>
 			<p class="mt-3 text-sm">
-				GererSCI propose plusieurs formules d'abonnement :
+				GérerSCI propose plusieurs formules d'abonnement :
 			</p>
 			<ul class="mt-2 list-inside list-disc space-y-1 text-sm">
 				<li>
@@ -74,7 +75,7 @@
 				</li>
 			</ul>
 			<p class="mt-3 text-sm">
-				Les paiements sont traites par <strong>Stripe</strong>. GererSCI ne stocke pas les
+				Les paiements sont traites par <strong>Stripe</strong>. GérerSCI ne stocke pas les
 				informations de carte bancaire. Les abonnements mensuels ou annuels sont renouveles
 				automatiquement sauf resiliation par l'utilisateur avant la date de renouvellement.
 			</p>
@@ -91,17 +92,17 @@
 			</h2>
 			<p class="mt-3 text-sm">
 				L'utilisateur reste seul responsable des donnees qu'il saisit dans le service.
-				GererSCI ne saurait etre tenu responsable de l'exactitude, de la completude ou de la
+				GérerSCI ne saurait etre tenu responsable de l'exactitude, de la completude ou de la
 				conformite des informations saisies par l'utilisateur.
 			</p>
 			<p class="mt-2 text-sm">
 				Les documents generes par le service (quittances, declarations fiscales) sont fournis a
 				titre d'aide a la gestion. L'utilisateur doit verifier leur conformite avec la
-				reglementation applicable. GererSCI ne se substitue pas a un conseil juridique ou
+				reglementation applicable. GérerSCI ne se substitue pas a un conseil juridique ou
 				comptable.
 			</p>
 			<p class="mt-2 text-sm">
-				GererSCI s'engage a prendre les mesures raisonnables pour assurer la sauvegarde et la
+				GérerSCI s'engage a prendre les mesures raisonnables pour assurer la sauvegarde et la
 				securite des donnees conformement a sa
 				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialite</a>.
 			</p>
@@ -112,8 +113,8 @@
 				5. Propriete intellectuelle
 			</h2>
 			<p class="mt-3 text-sm">
-				L'ensemble des elements du service GererSCI (code source, interface, textes, graphismes,
-				logos, base de donnees) est la propriete exclusive de GererSCI (Radnoumane Mossabely, entrepreneur individuel) et est protege
+				L'ensemble des elements du service GérerSCI (code source, interface, textes, graphismes,
+				logos, base de donnees) est la propriete exclusive de GérerSCI (Radnoumane Mossabely, entrepreneur individuel) et est protege
 				par le droit de la propriete intellectuelle.
 			</p>
 			<p class="mt-2 text-sm">
@@ -128,10 +129,10 @@
 				6. Limitation de responsabilite
 			</h2>
 			<p class="mt-3 text-sm">
-				GererSCI est fourni "en l'etat". Nous nous efforcons d'assurer la disponibilite et le
+				GérerSCI est fourni "en l'etat". Nous nous efforcons d'assurer la disponibilite et le
 				bon fonctionnement du service, mais ne pouvons garantir une disponibilite ininterrompue.
 			</p>
-			<p class="mt-2 text-sm">GererSCI ne saurait etre tenu responsable :</p>
+			<p class="mt-2 text-sm">GérerSCI ne saurait etre tenu responsable :</p>
 			<ul class="mt-2 list-inside list-disc space-y-1 text-sm">
 				<li>Des interruptions temporaires du service pour maintenance ou mise a jour</li>
 				<li>Des dommages indirects resultant de l'utilisation ou de l'impossibilite d'utiliser le service</li>
@@ -139,7 +140,7 @@
 				<li>Des consequences de l'utilisation des documents generes sans verification prealable</li>
 			</ul>
 			<p class="mt-3 text-sm">
-				En tout etat de cause, la responsabilite de GererSCI est limitee au montant des sommes
+				En tout etat de cause, la responsabilite de GérerSCI est limitee au montant des sommes
 				effectivement versees par l'utilisateur au cours des 12 derniers mois.
 			</p>
 		</section>
@@ -151,7 +152,7 @@
 				compte. La resiliation prend effet a la fin de la periode d'abonnement en cours.
 			</p>
 			<p class="mt-2 text-sm">
-				GererSCI se reserve le droit de suspendre ou de resilier l'acces au service en cas de
+				GérerSCI se reserve le droit de suspendre ou de resilier l'acces au service en cas de
 				violation des presentes CGU, d'utilisation abusive ou frauduleuse, ou de non-paiement.
 			</p>
 			<p class="mt-2 text-sm">
@@ -166,7 +167,7 @@
 				8. Modification des CGU
 			</h2>
 			<p class="mt-3 text-sm">
-				GererSCI se reserve le droit de modifier les presentes CGU a tout moment. Les
+				GérerSCI se reserve le droit de modifier les presentes CGU a tout moment. Les
 				utilisateurs seront informes de toute modification substantielle par email ou par
 				notification dans l'application. L'utilisation du service apres modification vaut
 				acceptation des nouvelles CGU.

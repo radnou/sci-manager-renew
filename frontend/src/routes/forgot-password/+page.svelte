@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-	<title>Mot de passe oublié — GererSCI</title>
+	<title>Mot de passe oublié — GérerSCI</title>
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 

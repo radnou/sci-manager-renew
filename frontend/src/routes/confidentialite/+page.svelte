@@ -1,6 +1,7 @@
 <svelte:head>
-	<title>Politique de confidentialite - GererSCI</title>
-	<meta name="description" content="Politique de confidentialite et protection des donnees personnelles de GererSCI." />
+	<title>Politique de confidentialité — GérerSCI</title>
+	<meta name="description" content="Politique de confidentialité et protection des données personnelles de GérerSCI." />
+	<link rel="canonical" href="https://gerersci.fr/confidentialite" />
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-12">
@@ -24,7 +25,7 @@
 				1. Responsable du traitement
 			</h2>
 			<p class="mt-3 text-sm">
-				Le responsable du traitement des donnees collectees sur le site GererSCI est GererSCI
+				Le responsable du traitement des donnees collectees sur le site GérerSCI est GérerSCI
 				(Radnoumane Mossabely, entrepreneur individuel), dont le siege social est situe a Paris, France.
 			</p>
 			<p class="mt-2 text-sm">
@@ -37,7 +38,7 @@
 				2. Donnees collectees
 			</h2>
 			<p class="mt-3 text-sm">
-				Dans le cadre de l'utilisation du service GererSCI, nous collectons les donnees
+				Dans le cadre de l'utilisation du service GérerSCI, nous collectons les donnees
 				suivantes :
 			</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
@@ -89,7 +90,7 @@
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>
 					<strong>Execution du contrat :</strong> le traitement est necessaire a la fourniture du service
-					GererSCI auquel vous avez souscrit
+					GérerSCI auquel vous avez souscrit
 				</li>
 				<li>
 					<strong>Consentement :</strong> pour les cookies non essentiels et les communications marketing
@@ -209,7 +210,7 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">8. Cookies</h2>
-			<p class="mt-3 text-sm">Le site GererSCI utilise les cookies suivants :</p>
+			<p class="mt-3 text-sm">Le site GérerSCI utilise les cookies suivants :</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>
 					<strong>Cookies essentiels :</strong> necessaires au fonctionnement du site (session

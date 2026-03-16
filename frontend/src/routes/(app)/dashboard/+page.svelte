@@ -57,7 +57,7 @@
 	}
 </script>
 
-<svelte:head><title>Cockpit | GererSCI</title></svelte:head>
+<svelte:head><title>Cockpit | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">
@@ -95,7 +95,7 @@
 				<Rocket class="h-7 w-7 text-indigo-500 dark:text-indigo-400" />
 			</div>
 			<h2 class="mt-5 text-lg font-semibold text-slate-900 dark:text-slate-100">
-				Bienvenue sur GererSCI
+				Bienvenue sur GérerSCI
 			</h2>
 			<p class="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
 				Votre tableau de bord prendra vie dès votre première SCI. En quelques minutes, suivez vos biens, loyers et charges depuis une interface consolidée.

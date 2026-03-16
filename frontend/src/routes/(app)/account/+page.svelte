@@ -72,7 +72,7 @@
 	}
 </script>
 
-<svelte:head><title>Compte | GererSCI</title></svelte:head>
+<svelte:head><title>Compte | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<WorkspaceHeader

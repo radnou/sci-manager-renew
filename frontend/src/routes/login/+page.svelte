@@ -101,8 +101,9 @@
 </script>
 
 <svelte:head>
-	<title>Connexion — GererSCI</title>
+	<title>Connexion — GérerSCI</title>
 	<meta name="robots" content="noindex, nofollow" />
+	<link rel="canonical" href="https://gerersci.fr/login" />
 </svelte:head>
 
 <section class="sci-page-shell">

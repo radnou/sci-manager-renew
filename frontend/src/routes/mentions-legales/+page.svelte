@@ -1,6 +1,7 @@
 <svelte:head>
-	<title>Mentions legales - GererSCI</title>
-	<meta name="description" content="Mentions legales du site GererSCI.fr" />
+	<title>Mentions légales — GérerSCI</title>
+	<meta name="description" content="Mentions légales du site GérerSCI.fr" />
+	<link rel="canonical" href="https://gerersci.fr/mentions-legales" />
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-12">
@@ -22,7 +23,7 @@
 				1. Editeur du site
 			</h2>
 			<div class="mt-3 space-y-1 text-sm">
-				<p><strong>Raison sociale :</strong> GererSCI (exploite par Radnoumane Mossabely, entrepreneur individuel)</p>
+				<p><strong>Raison sociale :</strong> GérerSCI (exploite par Radnoumane Mossabely, entrepreneur individuel)</p>
 				<p><strong>Forme juridique :</strong> Entrepreneur individuel (EI)</p>
 				<p><strong>Capital social :</strong> N/A (entreprise individuelle)</p>
 				<p><strong>Siege social :</strong> Paris, France</p>
@@ -70,7 +71,7 @@
 				5. Propriete intellectuelle
 			</h2>
 			<p class="mt-3 text-sm">
-				L'ensemble du contenu du site GererSCI (textes, graphismes, logiciels, images, bases de
+				L'ensemble du contenu du site GérerSCI (textes, graphismes, logiciels, images, bases de
 				donnees, etc.) est protege par le droit d'auteur et le droit des bases de donnees. Toute
 				reproduction, representation, modification, publication ou adaptation de tout ou partie des
 				elements du site est interdite sans autorisation ecrite prealable.

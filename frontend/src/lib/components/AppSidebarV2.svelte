@@ -169,7 +169,7 @@
 					<Building2 class="h-4 w-4 text-slate-600 dark:text-slate-400" />
 				</div>
 				<div class="flex-1 min-w-0 text-left">
-					<p class="text-sm font-semibold text-slate-900 dark:text-white">GererSCI</p>
+					<p class="text-sm font-semibold text-slate-900 dark:text-white">GérerSCI</p>
 					<p class="text-xs text-slate-500 dark:text-slate-400">
 						{scis.length} SCI{scis.length > 1 ? 's' : ''}
 					</p>

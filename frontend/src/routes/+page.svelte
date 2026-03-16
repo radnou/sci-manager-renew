@@ -377,6 +377,43 @@
 			{ "@type": "Offer", "price": "39", "priceCurrency": "EUR", "name": "Fiscal" }
 		]
 	})}</script>`}
+	{@html `<script type="application/ld+json">${JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "FAQPage",
+		"mainEntity": [
+			{
+				"@type": "Question",
+				"name": "Le produit est-il adapté à une petite SCI familiale ?",
+				"acceptedAnswer": { "@type": "Answer", "text": "Absolument. L'interface est pensée pour démarrer simple avec 1-2 biens, puis monter en sophistication sans refonte." }
+			},
+			{
+				"@type": "Question",
+				"name": "Puis-je l'utiliser avec mon expert-comptable actuel ?",
+				"acceptedAnswer": { "@type": "Answer", "text": "Oui. Les données sont structurées pour faciliter les échanges avec votre comptable. Un résumé fiscal PDF par exercice est disponible sur le plan Fiscal." }
+			},
+			{
+				"@type": "Question",
+				"name": "Mes données sont-elles sécurisées (RGPD) ?",
+				"acceptedAnswer": { "@type": "Answer", "text": "Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité dédié (résumé des données, export JSON, suppression de compte)." }
+			},
+			{
+				"@type": "Question",
+				"name": "Comment migrer depuis Excel ou autre outil ?",
+				"acceptedAnswer": { "@type": "Answer", "text": "La version actuelle privilégie une saisie structurée rapide pour repartir sur des bases fiables. Un module d'import CSV/Excel est prévu dans la roadmap." }
+			},
+			{
+				"@type": "Question",
+				"name": "L'outil gère-t-il la conformité fiscale (2044, 2072) ?",
+				"acceptedAnswer": { "@type": "Answer", "text": "Un calcul simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. Le CERFA 2072 (SCI à l'IS) est prévu dans une version future." }
+			},
+			{
+				"@type": "Question",
+				"name": "Que se passe-t-il si je veux arrêter ?",
+				"acceptedAnswer": { "@type": "Answer", "text": "Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander la suppression de votre compte depuis l'espace confidentialité." }
+			}
+		]
+	})}</script>`}
+	<link rel="alternate" hreflang="fr" href="https://gerersci.fr/" />
 </svelte:head>
 
 <main class="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -908,11 +945,11 @@
 								/>
 							{/if}
 						</button>
-						{#if openFaqIndex === i}
-							<div class="px-6 pb-5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-								{item.answer}
-							</div>
-						{/if}
+						<div
+							class="overflow-hidden px-6 text-sm leading-relaxed text-slate-600 transition-all duration-200 dark:text-slate-400 {openFaqIndex === i ? 'max-h-96 pb-5' : 'max-h-0'}"
+						>
+							{item.answer}
+						</div>
 					</div>
 				{/each}
 			</div>

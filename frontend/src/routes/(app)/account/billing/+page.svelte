@@ -26,7 +26,7 @@
 	});
 </script>
 
-<svelte:head><title>Abonnement | GererSCI</title></svelte:head>
+<svelte:head><title>Abonnement | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

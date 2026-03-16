@@ -202,7 +202,7 @@
 </script>
 
 <svelte:head>
-	<title>Mes Donnees Personnelles - GererSCI</title>
+	<title>Mes Donnees Personnelles - GérerSCI</title>
 </svelte:head>
 
 <section class="sci-page-shell">

@@ -79,6 +79,7 @@
 		content="Estimez votre déclaration de revenus fonciers 2044 en 3 minutes. Gratuit, sans inscription."
 	/>
 	<link rel="canonical" href="https://gerersci.fr/simulateur-cerfa" />
+	<meta property="og:url" content="https://gerersci.fr/simulateur-cerfa" />
 </svelte:head>
 
 <main class="min-h-screen bg-slate-50 dark:bg-slate-950">

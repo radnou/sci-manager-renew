@@ -97,7 +97,7 @@
 </script>
 
 <svelte:head>
-	<title>User Detail | Admin | GererSCI</title>
+	<title>User Detail | Admin | GérerSCI</title>
 </svelte:head>
 
 <a

@@ -1,6 +1,7 @@
 <svelte:head>
-	<title>Conditions Generales de Vente - GererSCI</title>
-	<meta name="description" content="Conditions Generales de Vente du service GererSCI." />
+	<title>Conditions Générales de Vente — GérerSCI</title>
+	<meta name="description" content="Conditions Générales de Vente du service GérerSCI." />
+	<link rel="canonical" href="https://gerersci.fr/cgv" />
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-12">
@@ -23,8 +24,8 @@
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">1. Objet</h2>
 			<p class="mt-3 text-sm">
 				Les presentes Conditions Generales de Vente (ci-apres "CGV") regissent la vente
-				d'abonnements au service GererSCI, application en ligne (SaaS) de gestion de Societes
-				Civiles Immobilieres (SCI), edite par GererSCI (Radnoumane Mossabely, entrepreneur individuel), dont le
+				d'abonnements au service GérerSCI, application en ligne (SaaS) de gestion de Societes
+				Civiles Immobilieres (SCI), edite par GérerSCI (Radnoumane Mossabely, entrepreneur individuel), dont le
 				siege social est situe a Paris, France (SIRET : en cours d'immatriculation) (ci-apres "le Prestataire").
 			</p>
 			<p class="mt-2 text-sm">
@@ -39,7 +40,7 @@
 				2. Prix et modalites de paiement
 			</h2>
 			<p class="mt-3 text-sm">
-				GererSCI propose les formules d'abonnement suivantes :
+				GérerSCI propose les formules d'abonnement suivantes :
 			</p>
 
 			<h3 class="mt-4 text-base font-medium text-slate-900 dark:text-slate-100">
@@ -163,7 +164,7 @@
 				retractation.
 			</p>
 			<p class="mt-2 text-sm">
-				En souscrivant a un abonnement GererSCI, l'utilisateur reconnait et accepte que
+				En souscrivant a un abonnement GérerSCI, l'utilisateur reconnait et accepte que
 				l'acces au Service est active immediatement apres la validation du paiement. En
 				consequence, l'utilisateur renonce expressement a son droit de retractation
 				conformement aux dispositions legales precitees.

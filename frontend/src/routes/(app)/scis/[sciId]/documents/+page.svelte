@@ -123,7 +123,7 @@
 	}
 </script>
 
-<svelte:head><title>Documents | {sci.nom} | GererSCI</title></svelte:head>
+<svelte:head><title>Documents | {sci.nom} | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

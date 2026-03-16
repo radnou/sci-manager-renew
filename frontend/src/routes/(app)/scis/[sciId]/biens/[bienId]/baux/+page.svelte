@@ -61,7 +61,7 @@
 	}
 </script>
 
-<svelte:head><title>Baux | GererSCI</title></svelte:head>
+<svelte:head><title>Baux | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

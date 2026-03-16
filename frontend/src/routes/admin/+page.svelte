@@ -66,7 +66,7 @@
 </script>
 
 <svelte:head>
-	<title>Cockpit Business | Admin | GererSCI</title>
+	<title>Cockpit Business | Admin | GérerSCI</title>
 </svelte:head>
 
 {#if loading}

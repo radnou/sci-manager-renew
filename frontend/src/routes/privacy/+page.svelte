@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>Politique de Confidentialité - GererSCI</title>
+	<title>Politique de Confidentialité - GérerSCI</title>
 	<meta name="description" content="Politique de confidentialité et protection des données personnelles conforme au RGPD" />
 </svelte:head>
 
@@ -25,7 +25,7 @@
 				<CardTitle>1. Responsable du Traitement</CardTitle>
 			</CardHeader>
 			<CardContent class="space-y-3">
-				<p><strong>GererSCI</strong></p>
+				<p><strong>GérerSCI</strong></p>
 				<p>Email : <a href="mailto:privacy@gerersci.fr" class="text-blue-600 dark:text-blue-400 hover:underline">privacy@gerersci.fr</a></p>
 				<p>Site web : <a href="https://gerersci.fr" class="text-blue-600 dark:text-blue-400 hover:underline">https://gerersci.fr</a></p>
 			</CardContent>
@@ -70,7 +70,7 @@
 			</CardHeader>
 			<CardContent class="space-y-3">
 				<ul class="list-disc list-inside space-y-2">
-					<li><strong>Exécution du contrat</strong> : fourniture du service GererSCI (Art. 6.1.b RGPD)</li>
+					<li><strong>Exécution du contrat</strong> : fourniture du service GérerSCI (Art. 6.1.b RGPD)</li>
 					<li><strong>Obligation légale</strong> : conservation des données fiscales et de facturation (Art. 6.1.c RGPD)</li>
 					<li><strong>Consentement</strong> : cookies non-essentiels (Art. 6.1.a RGPD)</li>
 				</ul>
@@ -230,7 +230,7 @@
 
 				<h3 class="font-semibold text-slate-900 dark:text-slate-100 mt-4">Cookies non-essentiels</h3>
 				<p class="text-slate-600 dark:text-slate-400">
-					<strong>GererSCI n'utilise AUCUN cookie de tracking, analytics ou publicitaire.</strong>
+					<strong>GérerSCI n'utilise AUCUN cookie de tracking, analytics ou publicitaire.</strong>
 				</p>
 				<p class="text-sm">
 					Nous ne partageons vos données avec aucun service de : Google Analytics, Facebook Pixel, réseaux sociaux, ou tracking comportemental.

@@ -97,7 +97,7 @@
 </script>
 
 <svelte:head>
-	<title>Utilisateurs | Admin | GererSCI</title>
+	<title>Utilisateurs | Admin | GérerSCI</title>
 </svelte:head>
 
 <!-- Filters -->

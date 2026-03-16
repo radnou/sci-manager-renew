@@ -112,7 +112,7 @@
 	}
 </script>
 
-<svelte:head><title>Mouvements de parts | {sci.nom} | GererSCI</title></svelte:head>
+<svelte:head><title>Mouvements de parts | {sci.nom} | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

@@ -46,7 +46,7 @@
 	});
 </script>
 
-<svelte:head><title>Portefeuille | GererSCI</title></svelte:head>
+<svelte:head><title>Portefeuille | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">

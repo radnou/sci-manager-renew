@@ -75,7 +75,7 @@
 </script>
 
 <svelte:head>
-	<title>Réinitialiser le mot de passe — GererSCI</title>
+	<title>Réinitialiser le mot de passe — GérerSCI</title>
 </svelte:head>
 
 <section class="sci-page-shell">
