@@ -74,14 +74,10 @@ def test_activate_replay_blocked(client):
     fake_client = MagicMock()
     fake_client.table.return_value = fake_table
 
-    async def _fake_jwks():
-        return []
-
     with (
         patch("stripe.checkout.Session.retrieve", return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value="user-uuid-123"),
         patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client),
-        patch("app.core.security._get_supabase_jwks", _fake_jwks),
     ):
         response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
     assert response.status_code == 401
@@ -110,14 +106,10 @@ def test_activate_success(client, fake_supabase):
     fake_client.table.return_value = fake_table
     fake_client.auth.admin.generate_link.return_value = fake_link_result
 
-    async def _fake_jwks():
-        return []
-
     with (
         patch("stripe.checkout.Session.retrieve", return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value="user-uuid-123"),
         patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client),
-        patch("app.core.security._get_supabase_jwks", _fake_jwks),
     ):
         response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
 

@@ -389,6 +389,12 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
 
         mp.setattr(main, "shutdown_event", __import__("asyncio").Event())
 
+        # Pre-fill JWKS cache to prevent real network calls in CI
+        from app.core.security import _jwks_cache
+        from time import monotonic
+        _jwks_cache["keys"] = []
+        _jwks_cache["expires_at"] = monotonic() + 999999  # never expires during tests
+
         settings.allowed_hosts = ["testserver", "localhost", "*.gerersci.fr"]
         with TestClient(app, base_url="http://testserver") as test_client:
             yield test_client
