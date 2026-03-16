@@ -84,7 +84,7 @@ def test_activate_replay_blocked(client):
     assert "already been used" in response.json()["error"]
 
 
-def test_activate_success(client):
+def test_activate_success(client, fake_supabase):
     """Happy path: valid paid session, user found, first activation."""
     fake_session = MagicMock()
     fake_session.payment_status = "paid"
