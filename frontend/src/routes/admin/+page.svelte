@@ -1,22 +1,58 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchAdminMetrics, fetchAdminAlerts, fetchAdminFunnel } from '$lib/api';
+	import { page } from '$app/state';
 	import AdminHeroKpis from '$lib/components/admin/AdminHeroKpis.svelte';
 	import AdminAlerts from '$lib/components/admin/AdminAlerts.svelte';
 	import AdminFunnel from '$lib/components/admin/AdminFunnel.svelte';
 
-	let metrics = $state<Awaited<ReturnType<typeof fetchAdminMetrics>> | null>(null);
-	let alerts = $state<Awaited<ReturnType<typeof fetchAdminAlerts>> | null>(null);
-	let funnel = $state<Awaited<ReturnType<typeof fetchAdminFunnel>> | null>(null);
+	type MetricValue = {
+		value: number;
+		previous: number;
+		trend: string;
+		change_pct: number | null;
+	};
+	type Metrics = {
+		north_star: MetricValue;
+		mrr: MetricValue;
+		activation_rate: MetricValue;
+		churn_30d: MetricValue;
+		conversion_rate: MetricValue;
+	};
+	type Alerts = {
+		alerts: Array<{
+			type: string;
+			severity: 'high' | 'medium' | 'info';
+			message: string;
+			detail: string;
+			tooltip: string;
+		}>;
+	};
+	type Funnel = {
+		steps: Array<{ label: string; count: number; rate: number }>;
+		bottleneck_index: number;
+	};
+
+	let metrics = $state<Metrics | null>(null);
+	let alerts = $state<Alerts | null>(null);
+	let funnel = $state<Funnel | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 
+	const adminKey = $derived(page.url.searchParams.get('secret') ?? '');
+
+	async function adminFetch<T>(path: string): Promise<T> {
+		const resp = await fetch(`${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(adminKey)}`);
+		if (!resp.ok) throw new Error(`${resp.status}`);
+		return resp.json();
+	}
+
 	onMount(async () => {
+		if (!adminKey) return;
 		try {
 			const [m, a, f] = await Promise.all([
-				fetchAdminMetrics(),
-				fetchAdminAlerts(),
-				fetchAdminFunnel()
+				adminFetch<Metrics>('/api/v1/admin/metrics'),
+				adminFetch<Alerts>('/api/v1/admin/alerts'),
+				adminFetch<Funnel>('/api/v1/admin/funnel')
 			]);
 			metrics = m;
 			alerts = a;

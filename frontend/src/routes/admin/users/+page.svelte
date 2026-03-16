@@ -1,9 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchAdminUsers } from '$lib/api';
+	import { page as pageState } from '$app/state';
 	import AdminUserStatusBadge from '$lib/components/admin/AdminUserStatusBadge.svelte';
 
-	type EnrichedUser = Awaited<ReturnType<typeof fetchAdminUsers>>['users'][number];
+	type EnrichedUser = {
+		id: string;
+		email: string;
+		created_at: string;
+		plan_key: string;
+		is_active: boolean;
+		sci_count: number;
+		biens_count: number;
+		loyers_30d: number;
+		last_activity: string | null;
+		status: string;
+		stripe_customer_id: string | null;
+	};
 
 	let users = $state<EnrichedUser[]>([]);
 	let total = $state(0);
@@ -16,18 +28,34 @@
 
 	const perPage = 50;
 	const totalPages = $derived(Math.ceil(total / perPage));
+	const adminKey = $derived(pageState.url.searchParams.get('secret') ?? '');
+
+	async function adminFetch<T>(path: string): Promise<T> {
+		const resp = await fetch(
+			`${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(adminKey)}`
+		);
+		if (!resp.ok) throw new Error(`${resp.status}`);
+		return resp.json();
+	}
 
 	async function loadUsers() {
 		loading = true;
 		try {
-			const data = await fetchAdminUsers({
-				search: search || undefined,
-				status: statusFilter || undefined,
-				plan: planFilter || undefined,
-				sort: sortBy,
-				page,
-				per_page: perPage
-			});
+			const params = new URLSearchParams();
+			if (search) params.set('search', search);
+			if (statusFilter) params.set('status', statusFilter);
+			if (planFilter) params.set('plan', planFilter);
+			params.set('sort', sortBy);
+			params.set('page', String(page));
+			params.set('per_page', String(perPage));
+			const qs = params.toString();
+
+			const data = await adminFetch<{
+				users: EnrichedUser[];
+				total: number;
+				page: number;
+				per_page: number;
+			}>(`/api/v1/admin/users?${qs}`);
 			users = data.users;
 			total = data.total;
 		} catch {
@@ -133,7 +161,9 @@
 					<tr
 						class="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800/50 dark:hover:bg-slate-900"
 					>
-						<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{user.email}</td>
+						<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100"
+							>{user.email}</td
+						>
 						<td class="px-4 py-3">
 							<span
 								class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize {planBadgeClass[

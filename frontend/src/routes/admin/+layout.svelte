@@ -2,8 +2,6 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { getCurrentSession } from '$lib/auth/session';
-	import { apiFetch } from '$lib/api';
 
 	let { children } = $props();
 	let authorized = $state(false);
@@ -14,18 +12,22 @@
 		{ href: '/admin/users', label: 'Utilisateurs' }
 	];
 
+	const adminKey = $derived(page.url.searchParams.get('secret') ?? '');
+
 	onMount(async () => {
-		const session = await getCurrentSession();
-		if (!session?.user) {
-			goto('/login');
+		if (!adminKey) {
+			goto('/');
 			return;
 		}
 
 		try {
-			await apiFetch('/api/v1/admin/metrics');
+			const resp = await fetch(
+				`/api/v1/admin/metrics?key=${encodeURIComponent(adminKey)}`
+			);
+			if (!resp.ok) throw new Error('Unauthorized');
 			authorized = true;
 		} catch {
-			goto('/dashboard');
+			goto('/');
 		} finally {
 			loading = false;
 		}
@@ -50,7 +52,7 @@
 		<nav class="mb-8 flex gap-2">
 			{#each adminNav as item}
 				<a
-					href={item.href}
+					href="{item.href}?secret={adminKey}"
 					class="rounded-lg px-4 py-2 text-sm font-medium transition-colors {page.url.pathname ===
 					item.href
 						? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
