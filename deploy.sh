@@ -155,6 +155,33 @@ if [ $FAILURES -gt 0 ]; then
     exit 1
 fi
 
+# ------------------------------------------------------------------
+# INSTALL MAINTENANCE CRONS (idempotent)
+# ------------------------------------------------------------------
+echo -e "${GREEN}Setting up maintenance crons...${NC}"
+
+# Docker cleanup — every Sunday at 4am
+CLEANUP_SCRIPT="$(pwd)/scripts/docker-cleanup-cron.sh"
+if [ -f "$CLEANUP_SCRIPT" ]; then
+    CRON_LINE="0 4 * * 0 $CLEANUP_SCRIPT"
+    (crontab -l 2>/dev/null | grep -v "docker-cleanup-cron" ; echo "$CRON_LINE") | crontab -
+    echo -e "  ${GREEN}✓${NC} Docker cleanup cron — Sunday 4am"
+fi
+
+# Log rotation for cleanup logs
+if [ ! -f /etc/logrotate.d/gerersci-docker-cleanup ]; then
+    sudo tee /etc/logrotate.d/gerersci-docker-cleanup > /dev/null <<'LOGROTATE'
+/var/log/gerersci-docker-cleanup.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+}
+LOGROTATE
+    echo -e "  ${GREEN}✓${NC} Log rotation configured"
+fi
+
 echo ""
 echo -e "${GREEN}=== Deployment successful! ===${NC}"
 echo -e "  Frontend: https://app.gerersci.fr"
