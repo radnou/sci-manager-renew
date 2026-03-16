@@ -107,7 +107,7 @@ async def admin_get_user(
         "scis": associes.data or [],
         "biens": biens_data,
         "loyers_count": loyers_count,
-        "subscription": sub.data if sub.data else None,
+        "subscription": sub.data if sub and sub.data else None,
     }
 
 
