@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { getCurrentSession } from '$lib/auth/session';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -18,6 +21,13 @@
 		Loader2
 	} from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
+
+	onMount(async () => {
+		const session = await getCurrentSession();
+		if (session?.user) {
+			goto('/dashboard');
+		}
+	});
 
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);

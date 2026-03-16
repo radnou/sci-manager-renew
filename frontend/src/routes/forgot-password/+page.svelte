@@ -35,6 +35,7 @@
 
 <svelte:head>
 	<title>Mot de passe oublié — GererSCI</title>
+	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
 <section class="sci-page-shell">

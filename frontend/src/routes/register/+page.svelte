@@ -84,6 +84,7 @@
 
 <svelte:head>
 	<title>Inscription — GererSCI</title>
+	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
 <section class="sci-page-shell">
