@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     resend_api_key: str = "re_placeholder"
     resend_from_email: str = "noreply@email.radnoumane.com"
 
+    # Supabase public URL (used in magic link emails, must be reachable by end users)
+    supabase_public_url: str = ""
+
     # Frontend
     cors_origins: Annotated[list[str], NoDecode] = [
         "http://localhost:5173",
