@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import structlog
 
+from app.core.entitlements import resolve_plan_key_from_price_id
 from app.core.supabase_client import get_supabase_service_client
 from app.schemas.admin import (
     BusinessAlert,
@@ -15,6 +16,14 @@ from app.schemas.admin import (
     TrendDirection,
     UserStatus,
 )
+
+
+def _resolve_plan(stripe_price_id: str | None) -> str:
+    """Resolve stripe_price_id to plan key string."""
+    if not stripe_price_id:
+        return "free"
+    resolved = resolve_plan_key_from_price_id(stripe_price_id)
+    return resolved.value if resolved else "free"
 
 logger = structlog.get_logger(__name__)
 
@@ -105,17 +114,11 @@ def _get_total_users(client) -> int:
 
 def _compute_mrr(client) -> float:
     """Sum monthly revenue from active subscriptions."""
-    from app.core.entitlements import resolve_plan_key_from_price_id
-
-    subs = client.table("subscriptions").select("plan_key, stripe_price_id, status").execute()
+    subs = client.table("subscriptions").select("stripe_price_id, status").execute()
     total = 0.0
     for s in subs.data or []:
         if s.get("status") in ACTIVE_STATUSES:
-            # Prefer plan_key column, fallback to resolving from stripe_price_id
-            plan = s.get("plan_key")
-            if not plan:
-                resolved = resolve_plan_key_from_price_id(s.get("stripe_price_id"))
-                plan = resolved.value if resolved else "free"
+            plan = _resolve_plan(s.get("stripe_price_id"))
             total += MRR_MONTHLY_PRICES.get(plan, 0.0)
     return round(total, 2)
 
@@ -157,11 +160,11 @@ def compute_hero_metrics() -> dict:
     churn_previous = (len(churned_prev) / len(active_m2) * 100) if active_m2 else 0
 
     # Conversion free → paid
-    subs = client.table("subscriptions").select("user_id, status, plan_key").execute()
+    subs = client.table("subscriptions").select("user_id, status, stripe_price_id").execute()
     paid_users = {
         s["user_id"]
         for s in (subs.data or [])
-        if s.get("status") in ACTIVE_STATUSES and s.get("plan_key") != "free"
+        if s.get("status") in ACTIVE_STATUSES and _resolve_plan(s.get("stripe_price_id")) != "free"
     }
     conversion_current = (len(paid_users) / total_users * 100) if total_users > 0 else 0
     conversion_previous = conversion_current  # simplified
@@ -256,7 +259,7 @@ def compute_activation_funnel() -> dict:
     total = len(all_users)
 
     # Step 2: Onboarding completed (users with subscription row + onboarding_completed)
-    subs = client.table("subscriptions").select("user_id, onboarding_completed, status, plan_key").execute()
+    subs = client.table("subscriptions").select("user_id, onboarding_completed, status, stripe_price_id").execute()
     subs_data = subs.data or []
     onboarded = {s["user_id"] for s in subs_data if s.get("onboarding_completed")}
 
@@ -276,7 +279,7 @@ def compute_activation_funnel() -> dict:
     paid = {
         s["user_id"]
         for s in subs_data
-        if s.get("status") in ACTIVE_STATUSES and s.get("plan_key") != "free"
+        if s.get("status") in ACTIVE_STATUSES and _resolve_plan(s.get("stripe_price_id")) != "free"
     } & all_users
 
     counts = [total, len(onboarded), len(users_with_biens), len(users_with_loyers), len(paid)]
@@ -331,7 +334,7 @@ def compute_enriched_users(
     all_loyers = client.table("loyers").select("created_at, biens!inner(id_sci)").order("created_at", desc=True).execute()
     all_loyers_data = all_loyers.data or []
 
-    subs = client.table("subscriptions").select("user_id, plan_key, status, stripe_customer_id").execute()
+    subs = client.table("subscriptions").select("user_id, stripe_price_id, status, stripe_customer_id").execute()
     subs_data = subs.data or []
     subs_by_user = {s["user_id"]: s for s in subs_data}
 
@@ -375,7 +378,7 @@ def compute_enriched_users(
         last_activity = max(last_acts) if last_acts else None
 
         sub = subs_by_user.get(uid, {})
-        plan_key = sub.get("plan_key", "free")
+        plan_key = _resolve_plan(sub.get("stripe_price_id"))
         is_active = sub.get("status", "") in ACTIVE_STATUSES
 
         # Status classification (priority order)
