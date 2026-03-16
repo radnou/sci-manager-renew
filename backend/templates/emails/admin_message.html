@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 style="font-size:22px;font-weight:700;color:#0f172a;margin:0 0 16px 0;">{{ subject }}</h1>
+
+<p style="font-size:15px;line-height:1.7;color:#334155;margin:0 0 16px 0;">Bonjour,</p>
+
+<p style="font-size:15px;line-height:1.7;color:#334155;margin:0 0 24px 0;">{{ message }}</p>
+
+<p style="font-size:15px;line-height:1.7;color:#334155;margin:0;">
+  Cordialement,<br>
+  <strong>L'&eacute;quipe GererSCI</strong>
+</p>
+{% endblock %}

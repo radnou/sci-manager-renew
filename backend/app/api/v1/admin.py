@@ -153,9 +153,10 @@ async def admin_send_email(
     subject: str = Body(...),
     message: str = Body(...),
 ):
-    """Send a custom email to a user."""
+    """Send a custom email to a user using the branded email template."""
     verify_admin_secret(key)
     from app.core.supabase_client import get_supabase_service_client
+    from app.services.email_service import EmailService, _render_template
 
     client = get_supabase_service_client()
     user = client.auth.admin.get_user_by_id(user_id)
@@ -165,6 +166,8 @@ async def admin_send_email(
     if not email:
         raise HTTPException(status_code=400, detail="User has no email")
 
+    html = _render_template("admin_message.html", subject=subject, message=message)
+
     import resend
     from app.core.config import settings
     resend.api_key = settings.resend_api_key
@@ -173,7 +176,7 @@ async def admin_send_email(
         "from": settings.resend_from_email,
         "to": email,
         "subject": subject,
-        "html": f"<p>{message}</p><br><p>— L'equipe GererSCI</p>",
+        "html": html,
     })
 
     logger.info("admin_email_sent", user_id=user_id, email=email, subject=subject)
