@@ -8,6 +8,7 @@ from app.core.entitlements import PlanKey
 class CheckoutSessionCreateRequest(BaseModel):
     plan_key: PlanKey
     mode: Literal["subscription", "payment"] | None = None
+    billing_period: str = "month"
 
 
 class CheckoutSessionCreateResponse(BaseModel):

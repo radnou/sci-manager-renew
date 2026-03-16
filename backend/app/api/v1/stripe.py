@@ -102,11 +102,8 @@ def _sync_subscription(
         current_period_end=current_period_end,
     )
 
-    try:
-        client = get_supabase_service_client()
-        client.table("subscriptions").upsert(payload, on_conflict="user_id").execute()
-    except Exception:
-        logger.warning("Unable to persist Stripe subscription state", exc_info=True)
+    client = get_supabase_service_client()
+    client.table("subscriptions").upsert(payload, on_conflict="user_id").execute()
 
 
 def _sync_subscription_deleted(subscription_data: dict[str, Any]) -> None:
@@ -115,16 +112,13 @@ def _sync_subscription_deleted(subscription_data: dict[str, Any]) -> None:
     if not customer_id and not subscription_id:
         return
 
-    try:
-        client = get_supabase_service_client()
-        query = client.table("subscriptions").update({"status": "canceled", "is_active": False})
-        if subscription_id:
-            query = query.eq("stripe_subscription_id", subscription_id)
-        elif customer_id:
-            query = query.eq("stripe_customer_id", customer_id)
-        query.execute()
-    except Exception:
-        logger.warning("Unable to persist Stripe cancellation state", exc_info=True)
+    client = get_supabase_service_client()
+    query = client.table("subscriptions").update({"status": "canceled", "is_active": False})
+    if subscription_id:
+        query = query.eq("stripe_subscription_id", subscription_id)
+    elif customer_id:
+        query = query.eq("stripe_customer_id", customer_id)
+    query.execute()
 
 
 def _handle_event(event: Any) -> None:
@@ -201,6 +195,27 @@ def _handle_event(event: Any) -> None:
             current_period_end=obj.get("current_period_end"),
         )
 
+    if event_type == "invoice.payment_failed":
+        customer_id = _to_str(obj.get("customer"))
+        if customer_id:
+            try:
+                client = get_supabase_service_client()
+                result = client.table("subscriptions").select("user_id").eq("stripe_customer_id", customer_id).limit(1).execute()
+                if result.data:
+                    user_id = result.data[0].get("user_id")
+                    if user_id:
+                        client.table("notifications").insert({
+                            "user_id": user_id,
+                            "type": "payment_failed",
+                            "title": "Paiement échoué",
+                            "message": "Votre paiement a échoué. Mettez à jour votre moyen de paiement pour maintenir votre accès.",
+                            "read": False,
+                        }).execute()
+                        logger.info("payment_failed_notification_created", user_id=user_id)
+            except Exception:
+                logger.warning("payment_failed_notification_error", exc_info=True)
+        return
+
 
 @router.get("/subscription", response_model=SubscriptionEntitlementsResponse)
 async def get_subscription(user_id: str = Depends(get_current_user)) -> SubscriptionEntitlementsResponse:
@@ -248,7 +263,7 @@ async def create_checkout_session(
     if payload.plan_key == PlanKey.FREE:
         raise ValidationError("Le plan gratuit ne passe pas par Stripe.")
 
-    price_id = resolve_price_id_for_plan(payload.plan_key)
+    price_id = resolve_price_id_for_plan(payload.plan_key, billing_period=payload.billing_period)
     if not price_id:
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
@@ -386,8 +401,39 @@ async def create_guest_checkout(
     return CheckoutSessionCreateResponse(url=session_url, session_id=session_id or "")
 
 
+@router.post("/customer-portal")
+@limiter.limit("5/minute")
+async def create_customer_portal(
+    request: Request,
+    user_id: str = Depends(get_current_user),
+):
+    """Create a Stripe Billing Portal session for self-service subscription management."""
+    del request
+    if not settings.feature_stripe_payments:
+        raise FeatureDisabledError("Les paiements Stripe sont désactivés.", flag_name="feature_stripe_payments")
+
+    client = get_supabase_service_client()
+    result = client.table("subscriptions").select("stripe_customer_id").eq("user_id", user_id).limit(1).execute()
+
+    if not result.data or not result.data[0].get("stripe_customer_id"):
+        raise ValidationError("Aucun abonnement Stripe trouvé pour cet utilisateur.")
+
+    stripe_customer_id = result.data[0]["stripe_customer_id"]
+    stripe.api_key = settings.stripe_secret_key
+
+    try:
+        portal_session = stripe.billing_portal.Session.create(
+            customer=stripe_customer_id,
+            return_url=f"{settings.frontend_url}/settings",
+        )
+    except stripe.error.StripeError as exc:
+        raise ExternalServiceError("Stripe", f"Portal session creation failed: {str(exc)}")
+
+    return {"url": portal_session.url}
+
+
 @router.post("/webhook", response_model=StripeWebhookResponse)
-@limiter.limit("10/minute")
+@limiter.limit("30/minute")
 async def stripe_webhook(request: Request) -> StripeWebhookResponse:
     logger.info("stripe_webhook_received")
 

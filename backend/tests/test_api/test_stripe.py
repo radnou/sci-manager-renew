@@ -618,30 +618,32 @@ def test_update_subscription_metadata_exception(monkeypatch):
 
 
 def test_sync_subscription_exception_path(monkeypatch):
-    """_sync_subscription logs warning when DB fails."""
+    """_sync_subscription propagates DB exception so Stripe webhook returns 500 and retries."""
 
     def _boom():
         raise RuntimeError("db down")
 
     monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
 
-    # Should not raise
-    stripe_api._sync_subscription(
-        {"client_reference_id": "user-1", "customer": "cus_1"},
-        "active",
-    )
+    import pytest as _pytest
+    with _pytest.raises(RuntimeError, match="db down"):
+        stripe_api._sync_subscription(
+            {"client_reference_id": "user-1", "customer": "cus_1"},
+            "active",
+        )
 
 
 def test_sync_subscription_deleted_exception_path(monkeypatch):
-    """_sync_subscription_deleted logs warning when DB fails."""
+    """_sync_subscription_deleted propagates DB exception so Stripe webhook returns 500 and retries."""
 
     def _boom():
         raise RuntimeError("db down")
 
     monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
 
-    # Should not raise
-    stripe_api._sync_subscription_deleted({"id": "sub_99", "customer": "cus_99"})
+    import pytest as _pytest
+    with _pytest.raises(RuntimeError, match="db down"):
+        stripe_api._sync_subscription_deleted({"id": "sub_99", "customer": "cus_99"})
 
 
 def test_sync_subscription_no_user_id_returns_early(monkeypatch):
