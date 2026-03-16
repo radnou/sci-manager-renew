@@ -34,6 +34,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-WARNING}
       LOG_FORMAT: ${LOG_FORMAT:-json}
       FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT: ${FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT:-enforce}
+      ADMIN_SECRET_KEY: ${ADMIN_SECRET_KEY:-}
     networks:
       - internal
     extra_hosts:
