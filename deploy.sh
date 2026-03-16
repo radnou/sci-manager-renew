@@ -2,10 +2,9 @@
 set -e
 
 # GererSCI — Production Deployment Script
-# Usage: ./deploy.sh [--initial] [--with-staging]
+# Usage: ./deploy.sh [--initial]
 #
 # --initial      First-time setup (installs Docker, configures firewall, gets SSL)
-# --with-staging Also deploy the staging environment
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -13,12 +12,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 INITIAL=false
-WITH_STAGING=false
 
 for arg in "$@"; do
     case $arg in
         --initial) INITIAL=true ;;
-        --with-staging) WITH_STAGING=true ;;
     esac
 done
 
@@ -105,14 +102,8 @@ fi
 # Build and deploy
 echo -e "${GREEN}Building and deploying...${NC}"
 
-if [ "$WITH_STAGING" = true ]; then
-    echo -e "${YELLOW}Including staging environment...${NC}"
-    docker compose -f docker-compose.yml -f docker-compose.staging.yml build
-    docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
-else
-    docker compose build
-    docker compose up -d
-fi
+docker compose build
+docker compose up -d
 
 # Wait for services
 echo -e "${GREEN}Waiting for services to start...${NC}"

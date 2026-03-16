@@ -5,10 +5,13 @@ from unittest.mock import patch
 
 from app.core.config import settings
 
+# Ensure ADMIN_SECRET_KEY is set for tests
+if not settings.admin_secret_key:
+    settings.admin_secret_key = "test-admin-key"
 
 # ── Helper: build URL with admin key ──────────────────────────────────
 
-ADMIN_KEY = settings.admin_secret_key or "test-admin-key"
+ADMIN_KEY = settings.admin_secret_key
 
 
 def _url(path: str, key: str | None = ADMIN_KEY) -> str:
