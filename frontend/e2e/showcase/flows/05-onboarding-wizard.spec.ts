@@ -28,7 +28,7 @@ const SUBSCRIPTION_ONBOARDING = {
 	is_active: true,
 	entitlements_version: 1,
 	max_scis: 1,
-	max_biens: 5,
+	max_biens: 2,
 	current_scis: 0,
 	current_biens: 0,
 	remaining_scis: 1,

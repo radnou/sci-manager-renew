@@ -92,7 +92,7 @@
 		ctaHref="/scis"
 	/>
 {:else}
-	<div class="grid gap-4 grid-cols-2 md:grid-cols-4">
+	<div data-testid="dashboard-kpis" class="grid gap-4 grid-cols-2 md:grid-cols-4">
 		{#each cards as card (card.label)}
 			<div
 				class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
