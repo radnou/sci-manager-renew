@@ -44,6 +44,12 @@ class MagicLinkService:
                 logger.error("magic_link_no_action_link", email=email)
                 return {"success": False, "message": "Failed to generate magic link", "data": None}
 
+            # Rewrite internal Supabase URL to public URL for email links
+            if settings.supabase_public_url:
+                action_link = action_link.replace(
+                    settings.supabase_url, settings.supabase_public_url, 1
+                )
+
             # Send via Resend with custom HTML template
             await email_service.send_magic_link(email, action_link)
 
