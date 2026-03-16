@@ -161,9 +161,14 @@
 					<tr
 						class="border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800/50 dark:hover:bg-slate-900"
 					>
-						<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100"
-							>{user.email}</td
-						>
+						<td class="px-4 py-3 font-medium">
+							<a
+								href="/admin/users/{user.id}?secret={adminKey}"
+								class="text-slate-900 underline decoration-slate-300 underline-offset-2 hover:text-sky-600 dark:text-slate-100 dark:decoration-slate-600"
+							>
+								{user.email}
+							</a>
+						</td>
 						<td class="px-4 py-3">
 							<span
 								class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize {planBadgeClass[
