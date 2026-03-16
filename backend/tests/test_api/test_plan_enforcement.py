@@ -44,9 +44,9 @@ def enforce_mode(monkeypatch):
 
 
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """FREE plan: max_biens=5, user already has 5 biens -> 402 PlanLimitError."""
+    """FREE plan: max_biens=2, user already has 2 biens -> 402 PlanLimitError."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
-    # Put five existing biens so the user is at the limit.
+    # Put two existing biens so the user is at the limit.
     fake_supabase.store["biens"] = [
         {
             "id": f"bien-existing-{i}",
@@ -59,9 +59,9 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "charges": 0,
             "tmi": 0,
         }
-        for i in range(1, 6)
+        for i in range(1, 3)
     ]
-    # No subscription row -> defaults to FREE (max_biens=5).
+    # No subscription row -> defaults to FREE (max_biens=2).
     fake_supabase.store["subscriptions"] = []
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
@@ -87,7 +87,7 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
             "charges": 0,
             "tmi": 0,
         }
-        for i in range(1, 6)
+        for i in range(1, 3)
     ]
     fake_supabase.store["subscriptions"] = []
 
@@ -99,8 +99,8 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
-    assert body["details"]["limit"] == 5
-    assert body["details"]["current"] == 5
+    assert body["details"]["limit"] == 2
+    assert body["details"]["current"] == 2
     assert body["details"]["plan_key"] == "free"
     assert "request_id" in body
 
