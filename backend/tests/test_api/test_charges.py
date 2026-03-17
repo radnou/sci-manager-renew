@@ -46,7 +46,7 @@ def test_create_update_and_delete_charge(client, auth_headers, fake_supabase):
         "/api/v1/charges/",
         json={
             "id_bien": bien_id,
-            "type_charge": "assurance",
+            "type_charge": "assurance_pno",
             "montant": 240.0,
             "date_paiement": "2026-03-05",
         },
@@ -64,12 +64,12 @@ def test_create_update_and_delete_charge(client, auth_headers, fake_supabase):
 
     updated = client.patch(
         f"/api/v1/charges/{charge_id}",
-        json={"montant": 310.0, "type_charge": "travaux"},
+        json={"montant": 310.0, "type_charge": "travaux_entretien"},
         headers=auth_headers,
     )
     assert updated.status_code == 200
     assert updated.json()["montant"] == 310.0
-    assert updated.json()["type_charge"] == "travaux"
+    assert updated.json()["type_charge"] == "travaux_entretien"
 
     deleted = client.delete(f"/api/v1/charges/{charge_id}", headers=auth_headers)
     assert deleted.status_code == 204
@@ -80,7 +80,7 @@ def test_create_charge_requires_feature_upgrade(client, auth_headers, free_plan)
         "/api/v1/charges/",
         json={
             "id_bien": "bien-unknown",
-            "type_charge": "assurance",
+            "type_charge": "assurance_pno",
             "montant": 120.0,
             "date_paiement": "2026-03-05",
         },
@@ -101,7 +101,7 @@ def test_list_charges_filter_by_bien(client, auth_headers, fake_supabase):
     # Seed a charge on bien-1 (owned by user-123 via sci-1)
     fake_supabase.store["charges"] = [
         {"id": "ch-1", "id_bien": "bien-1", "type_charge": "taxe_fonciere", "montant": 500.0, "date_paiement": "2026-01-15"},
-        {"id": "ch-2", "id_bien": "bien-9", "type_charge": "assurance", "montant": 200.0, "date_paiement": "2026-02-10"},
+        {"id": "ch-2", "id_bien": "bien-9", "type_charge": "assurance_pno", "montant": 200.0, "date_paiement": "2026-02-10"},
     ]
     resp = client.get("/api/v1/charges/?id_bien=bien-1", headers=auth_headers)
     assert resp.status_code == 200
@@ -134,8 +134,8 @@ def test_list_charges_filter_by_sci(client, auth_headers, fake_supabase):
     """Covers L106-111: list_charges filtered by id_sci narrows accessible_biens."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-a", "id_bien": "bien-1", "type_charge": "copro", "montant": 300.0, "date_paiement": "2026-06-01"},
-        {"id": "ch-b", "id_bien": "bien-9", "type_charge": "copro", "montant": 400.0, "date_paiement": "2026-06-01"},
+        {"id": "ch-a", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 300.0, "date_paiement": "2026-06-01"},
+        {"id": "ch-b", "id_bien": "bien-9", "type_charge": "copropriete", "montant": 400.0, "date_paiement": "2026-06-01"},
     ]
     resp = client.get("/api/v1/charges/?id_sci=sci-1", headers=auth_headers)
     assert resp.status_code == 200
@@ -163,8 +163,8 @@ def test_list_charges_sorts_by_date_desc(client, auth_headers, fake_supabase):
     """Covers L122: charges sorted by date_paiement descending."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-old", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2025-01-01"},
-        {"id": "ch-new", "id_bien": "bien-1", "type_charge": "copro", "montant": 200.0, "date_paiement": "2026-06-01"},
+        {"id": "ch-old", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2025-01-01"},
+        {"id": "ch-new", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 200.0, "date_paiement": "2026-06-01"},
     ]
     resp = client.get("/api/v1/charges/", headers=auth_headers)
     assert resp.status_code == 200
@@ -183,7 +183,7 @@ def test_create_charge_unknown_bien(client, auth_headers, fake_supabase):
     _enable_pro_subscription(fake_supabase)
     resp = client.post(
         "/api/v1/charges/",
-        json={"id_bien": "does-not-exist", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+        json={"id_bien": "does-not-exist", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
         headers=auth_headers,
     )
     assert resp.status_code == 400
@@ -199,7 +199,7 @@ def test_create_charge_sci_not_owned(client, auth_headers, fake_supabase):
     )
     resp = client.post(
         "/api/v1/charges/",
-        json={"id_bien": "bien-alien", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+        json={"id_bien": "bien-alien", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
         headers=auth_headers,
     )
     assert resp.status_code == 403
@@ -210,14 +210,14 @@ def test_create_charge_validation_montant(client, auth_headers, fake_supabase):
     _enable_pro_subscription(fake_supabase)
     resp = client.post(
         "/api/v1/charges/",
-        json={"id_bien": "bien-1", "type_charge": "assurance", "montant": -5.0, "date_paiement": "2026-01-01"},
+        json={"id_bien": "bien-1", "type_charge": "assurance_pno", "montant": -5.0, "date_paiement": "2026-01-01"},
         headers=auth_headers,
     )
     assert resp.status_code == 422
 
 
-def test_create_charge_validation_type_too_short(client, auth_headers, fake_supabase):
-    """Pydantic validation: type_charge min_length=2."""
+def test_create_charge_validation_type_invalid(client, auth_headers, fake_supabase):
+    """Pydantic validation: type_charge must be a valid CHARGE_TYPES enum value."""
     _enable_pro_subscription(fake_supabase)
     resp = client.post(
         "/api/v1/charges/",
@@ -236,7 +236,7 @@ def test_update_charge_empty_payload(client, auth_headers, fake_supabase):
     """Covers L166-167: empty update payload -> ValidationError 400."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-upd", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-upd", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
     resp = client.patch("/api/v1/charges/ch-upd", json={}, headers=auth_headers)
     assert resp.status_code == 400
@@ -262,7 +262,7 @@ def test_update_charge_sci_not_owned(client, auth_headers, fake_supabase):
         {"id": "bien-alien2", "id_sci": "sci-alien", "adresse": "2 rue Alien", "ville": "Mars", "code_postal": "00000"}
     )
     fake_supabase.store["charges"] = [
-        {"id": "ch-alien", "id_bien": "bien-alien2", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-alien", "id_bien": "bien-alien2", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
     resp = client.patch(
         "/api/v1/charges/ch-alien",
@@ -303,7 +303,7 @@ def test_delete_charge_sci_not_owned(client, auth_headers, fake_supabase):
         {"id": "bien-alien3", "id_sci": "sci-alien", "adresse": "3 rue Alien", "ville": "Mars", "code_postal": "00000"}
     )
     fake_supabase.store["charges"] = [
-        {"id": "ch-del-alien", "id_bien": "bien-alien3", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-del-alien", "id_bien": "bien-alien3", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
     resp = client.delete("/api/v1/charges/ch-del-alien", headers=auth_headers)
     assert resp.status_code == 403
@@ -326,7 +326,7 @@ def test_serialize_charge_missing_bien_in_map(client, auth_headers, fake_supabas
     _enable_pro_subscription(fake_supabase)
     # Insert a charge with id_bien that exists but won't match after SCI filtering
     fake_supabase.store["charges"] = [
-        {"id": "ch-orphan", "id_bien": "bien-1", "type_charge": "copro", "montant": 50.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-orphan", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 50.0, "date_paiement": "2026-01-01"},
     ]
     resp = client.get("/api/v1/charges/", headers=auth_headers)
     assert resp.status_code == 200
@@ -340,7 +340,7 @@ def test_serialize_charge_with_null_id_bien(client, auth_headers, fake_supabase)
     _enable_pro_subscription(fake_supabase)
     # Charge with no id_bien — still returned with null enrichment fields
     fake_supabase.store["charges"] = [
-        {"id": "ch-null", "id_bien": None, "type_charge": "copro", "montant": 50.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-null", "id_bien": None, "type_charge": "copropriete", "montant": 50.0, "date_paiement": "2026-01-01"},
     ]
     # This charge's id_bien is None, so in_ filter won't match it — it won't appear
     # Instead, let's test the list: it should return 0 because the bien_ids won't include None
@@ -362,7 +362,7 @@ def test_require_sci_access_missing_id_sci(client, auth_headers, fake_supabase):
     )
     resp = client.post(
         "/api/v1/charges/",
-        json={"id_bien": "bien-no-sci", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+        json={"id_bien": "bien-no-sci", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
         headers=auth_headers,
     )
     assert resp.status_code == 503
@@ -400,7 +400,7 @@ def test_create_charge_no_trailing_slash(client, auth_headers, fake_supabase):
     _enable_pro_subscription(fake_supabase)
     resp = client.post(
         "/api/v1/charges",
-        json={"id_bien": "bien-1", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+        json={"id_bien": "bien-1", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -497,7 +497,7 @@ def test_create_charge_insert_error(client, auth_headers, fake_supabase):
     with patch.object(fake_supabase, "table", side_effect=patched_table):
         resp = client.post(
             "/api/v1/charges/",
-            json={"id_bien": "bien-1", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+            json={"id_bien": "bien-1", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
             headers=auth_headers,
         )
     assert resp.status_code == 503
@@ -531,7 +531,7 @@ def test_create_charge_insert_empty_result(client, auth_headers, fake_supabase):
     with patch.object(fake_supabase, "table", side_effect=patched_table):
         resp = client.post(
             "/api/v1/charges/",
-            json={"id_bien": "bien-1", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+            json={"id_bien": "bien-1", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
             headers=auth_headers,
         )
     assert resp.status_code == 503
@@ -553,7 +553,7 @@ def test_create_charge_generic_exception(client, auth_headers, fake_supabase):
     with patch.object(fake_supabase, "table", side_effect=patched_table):
         resp = client.post(
             "/api/v1/charges/",
-            json={"id_bien": "bien-1", "type_charge": "assurance", "montant": 100.0, "date_paiement": "2026-01-01"},
+            json={"id_bien": "bien-1", "type_charge": "assurance_pno", "montant": 100.0, "date_paiement": "2026-01-01"},
             headers=auth_headers,
         )
     assert resp.status_code == 503
@@ -564,7 +564,7 @@ def test_update_charge_update_db_error(client, auth_headers, fake_supabase):
     """Covers L178-179: update returns result.error -> DatabaseError 503."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-uperr", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-uperr", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
 
     original_table = fake_supabase.table
@@ -604,7 +604,7 @@ def test_update_charge_returns_empty(client, auth_headers, fake_supabase):
     """Covers L182-183: update returns no rows -> ResourceNotFoundError 404."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-ghost", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-ghost", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
 
     original_table = fake_supabase.table
@@ -645,7 +645,7 @@ def test_update_charge_generic_exception(client, auth_headers, fake_supabase):
     """Covers L188-190: generic exception in update_charge -> DatabaseError 503."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-exc", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-exc", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
 
     original_table = fake_supabase.table
@@ -679,7 +679,7 @@ def test_delete_charge_db_error(client, auth_headers, fake_supabase):
     """Covers L207-208: delete returns result.error -> DatabaseError 503."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-delerr", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-delerr", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
 
     original_table = fake_supabase.table
@@ -715,7 +715,7 @@ def test_delete_charge_generic_exception(client, auth_headers, fake_supabase):
     """Covers L213-215: generic exception in delete_charge -> DatabaseError 503."""
     _enable_pro_subscription(fake_supabase)
     fake_supabase.store["charges"] = [
-        {"id": "ch-delexc", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-delexc", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
     ]
 
     original_table = fake_supabase.table
@@ -770,8 +770,8 @@ def test_fetch_charges_fallback_no_in(fake_supabase):
     from tests.conftest import FakeQuery
 
     fake_supabase.store["charges"] = [
-        {"id": "ch-fb2", "id_bien": "bien-1", "type_charge": "copro", "montant": 100.0, "date_paiement": "2026-01-01"},
-        {"id": "ch-fb3", "id_bien": "bien-9", "type_charge": "copro", "montant": 200.0, "date_paiement": "2026-02-01"},
+        {"id": "ch-fb2", "id_bien": "bien-1", "type_charge": "copropriete", "montant": 100.0, "date_paiement": "2026-01-01"},
+        {"id": "ch-fb3", "id_bien": "bien-9", "type_charge": "copropriete", "montant": 200.0, "date_paiement": "2026-02-01"},
     ]
 
     original_in = FakeQuery.in_

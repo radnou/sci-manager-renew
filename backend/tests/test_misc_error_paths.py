@@ -55,7 +55,7 @@ class TestChargesEndpointErrors:
     async def test_create_charge_db_error(self):
         from app.api.v1 import charges as charges_mod
         from app.models.charges import ChargeCreate
-        payload = ChargeCreate(id_bien="b1", type_charge="copro", montant=200, date_paiement="2026-01-01")
+        payload = ChargeCreate(id_bien="b1", type_charge="copropriete", montant=200, date_paiement="2026-01-01")
         with patch.object(charges_mod, "get_supabase_user_client", return_value=ErrorClient()), \
              patch.object(charges_mod, "SubscriptionService") as mock_sub:
             mock_sub.ensure_feature_enabled.return_value = None

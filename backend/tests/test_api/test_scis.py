@@ -72,14 +72,14 @@ def test_get_sci_detail_returns_identity_card(client, auth_headers, fake_supabas
         {
             "id": "charge-1",
             "id_bien": "bien-1",
-            "type_charge": "assurance",
+            "type_charge": "assurance_pno",
             "montant": 240,
             "date_paiement": "2026-02-10",
         },
         {
             "id": "charge-2",
             "id_bien": "bien-2",
-            "type_charge": "travaux",
+            "type_charge": "travaux_entretien",
             "montant": 600,
             "date_paiement": "2026-03-02",
         },
@@ -298,7 +298,7 @@ def test_delete_sci_cascades_child_tables(client, auth_headers, fake_supabase):
         {"id_bail": "bail-del", "id_locataire": "loc-del"},
     ]
     fake_supabase.store["charges"] = [
-        {"id": "charge-del", "id_bien": "bien-del", "type_charge": "taxe", "montant": 100, "date_paiement": "2026-01-01"},
+        {"id": "charge-del", "id_bien": "bien-del", "type_charge": "taxe_fonciere", "montant": 100, "date_paiement": "2026-01-01"},
     ]
     fake_supabase.store["loyers"] = [
         {"id": "loyer-del", "id_bien": "bien-del", "id_sci": "sci-1", "date_loyer": "2026-01-01", "montant": 500, "statut": "paye"},

@@ -68,7 +68,7 @@ def build_gdpr_client(fake_supabase):
                 {
                     "id": "charge-1",
                     "id_bien": "bien-1",
-                    "type_charge": "copro",
+                    "type_charge": "copropriete",
                     "montant": 120,
                     "date_paiement": "2026-03-05",
                 }

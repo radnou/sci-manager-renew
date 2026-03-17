@@ -1,11 +1,27 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# Categories de charges deductibles conformes a l'Article 31 CGI
+CHARGE_TYPES = Literal[
+    "copropriete",           # Charges de copropriete deductibles
+    "taxe_fonciere",         # Taxe fonciere
+    "assurance_pno",         # Assurance proprietaire non-occupant
+    "frais_gestion",         # Frais de gestion (agence ou forfait 20 EUR/local)
+    "interets_emprunt",      # Interets d'emprunt immobilier
+    "travaux_entretien",     # Travaux d'entretien et reparation
+    "travaux_amelioration",  # Travaux d'amelioration
+    "prime_assurance",       # Primes d'assurance (autre que PNO)
+    "frais_procedure",       # Frais de procedure (contentieux locataire)
+    "indemnite_eviction",    # Indemnite d'eviction / frais de relogement
+    "autre_deductible",      # Autre charge deductible (a preciser)
+]
 
 
 class ChargeBase(BaseModel):
     id_bien: str
-    type_charge: str = Field(min_length=2, max_length=80)
+    type_charge: CHARGE_TYPES
     montant: float = Field(gt=0)
     date_paiement: date
 
@@ -15,7 +31,7 @@ class ChargeCreate(ChargeBase):
 
 
 class ChargeUpdate(BaseModel):
-    type_charge: str | None = Field(default=None, min_length=2, max_length=80)
+    type_charge: CHARGE_TYPES | None = None
     montant: float | None = Field(default=None, gt=0)
     date_paiement: date | None = None
 

@@ -347,7 +347,7 @@ class TestSCILifecycle:
         _seed_bail(fake_supabase)
         _seed_loyer(fake_supabase)
         fake_supabase.store["charges"] = [
-            {"id": "ch-del", "id_bien": BIEN_ID, "type_charge": "taxe", "montant": 500, "date_paiement": "2026-01-01"},
+            {"id": "ch-del", "id_bien": BIEN_ID, "type_charge": "taxe_fonciere", "montant": 500, "date_paiement": "2026-01-01"},
         ]
         fake_supabase.store["fiscalite"] = [
             {"id": "fisc-del", "id_sci": SCI_UUID, "annee": 2025, "total_revenus": 12000, "total_charges": 2000},
@@ -960,7 +960,7 @@ class TestGDPRCompliance:
         _seed_bien(fake_supabase)
         _seed_loyer(fake_supabase)
         fake_supabase.store["charges"] = [
-            {"id": "ch-gdpr", "id_bien": BIEN_ID, "type_charge": "taxe", "montant": 300, "date_paiement": "2026-01-01"},
+            {"id": "ch-gdpr", "id_bien": BIEN_ID, "type_charge": "taxe_fonciere", "montant": 300, "date_paiement": "2026-01-01"},
         ]
 
         resp = client.get("/api/v1/gdpr/data-export", headers=auth_headers)
@@ -1220,7 +1220,7 @@ class TestChargesJourney:
 
         resp = client.post(
             f"/api/v1/scis/{SCI_UUID_2}/biens/bien-ro/charges",
-            json={"id_bien": "bien-ro", "type_charge": "taxe", "montant": 100.0, "date_paiement": "2026-01-01"},
+            json={"id_bien": "bien-ro", "type_charge": "taxe_fonciere", "montant": 100.0, "date_paiement": "2026-01-01"},
             headers=auth_headers,
         )
         assert resp.status_code == 403
@@ -1232,7 +1232,7 @@ class TestChargesJourney:
         charges_data = [
             {"type_charge": "copropriete", "montant": 250.0, "date_paiement": "2026-01-01"},
             {"type_charge": "taxe_fonciere", "montant": 800.0, "date_paiement": "2026-10-01"},
-            {"type_charge": "assurance", "montant": 180.0, "date_paiement": "2026-03-01"},
+            {"type_charge": "assurance_pno", "montant": 180.0, "date_paiement": "2026-03-01"},
         ]
         for ch in charges_data:
             resp = client.post(
