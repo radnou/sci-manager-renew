@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 import stripe
 
 from app.api.v1 import auth
