@@ -1030,7 +1030,7 @@ class TestCharges:
     CHARGES_URL = f"{BASE}/{BIEN_ID}/charges"
     CHARGE_PAYLOAD = {
         "id_bien": BIEN_ID,
-        "type_charge": "taxe fonciere",
+        "type_charge": "taxe_fonciere",
         "montant": 1500.0,
         "date_paiement": "2024-10-15",
     }
@@ -1054,7 +1054,7 @@ class TestCharges:
         response = client.post(self.CHARGES_URL, json=self.CHARGE_PAYLOAD, headers=auth_headers)
         assert response.status_code == 201
         data = response.json()
-        assert data["type_charge"] == "taxe fonciere"
+        assert data["type_charge"] == "taxe_fonciere"
         assert data["montant"] == 1500.0
 
     def test_create_charge_as_associe_returns_403(self, client, auth_headers, fake_supabase):
@@ -1072,7 +1072,7 @@ class TestCharges:
             {
                 "id": charge_id,
                 "id_bien": BIEN_ID,
-                "type_charge": "assurance",
+                "type_charge": "assurance_pno",
                 "montant": 500.0,
                 "date_paiement": "2024-05-01",
             }
@@ -1093,7 +1093,7 @@ class TestCharges:
             {
                 "id": charge_id,
                 "id_bien": BIEN_ID,
-                "type_charge": "syndic",
+                "type_charge": "copropriete",
                 "montant": 800.0,
                 "date_paiement": "2024-06-01",
             }
@@ -1444,6 +1444,111 @@ class TestCreateBailDurationValidation:
 
 
 # ──────────────────────────────────────────────────────────────
+# Create bail: dépôt de garantie validation (Art. 22 loi 1989)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestCreateBailDepotGarantieValidation:
+    def test_depot_over_cap_nu_rejected(self, client, auth_headers, fake_supabase):
+        """Dépôt > 1 mois de loyer HC pour bail nu doit être rejeté (400)."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)  # type_locatif="nu" by default
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2029-06-01",
+                "depot_garantie": 1700,  # > 800 EUR (1 mois HC)
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 400
+        detail = response.json()["detail"]
+        assert "plafond" in detail.lower()
+        assert "Article 22" in detail
+
+    def test_depot_over_cap_meuble_rejected(self, client, auth_headers, fake_supabase):
+        """Dépôt > 2 mois de loyer HC pour bail meublé doit être rejeté (400)."""
+        setup(fake_supabase)
+        bien = seed_bien(fake_supabase)
+        bien["type_locatif"] = "meuble"
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2027-06-01",
+                "depot_garantie": 1700,  # > 1600 EUR (2 mois HC)
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 400
+        detail = response.json()["detail"]
+        assert "plafond" in detail.lower()
+        assert "meuble" in detail.lower()
+
+    def test_depot_at_exact_cap_nu_accepted(self, client, auth_headers, fake_supabase):
+        """Dépôt = 1 mois HC exact pour bail nu doit être accepté."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)  # type_locatif="nu"
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2029-06-01",
+                "depot_garantie": 800,  # exactly 1 month HC
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+    def test_depot_zero_skips_validation(self, client, auth_headers, fake_supabase):
+        """Dépôt = 0 doit bypasser la validation (pas de plafond à vérifier)."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2029-06-01",
+                "depot_garantie": 0,
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+    def test_depot_unknown_type_locatif_skips_validation(self, client, auth_headers, fake_supabase):
+        """Type locatif inconnu (ex: commercial) doit bypasser la validation."""
+        setup(fake_supabase)
+        bien = seed_bien(fake_supabase)
+        bien["type_locatif"] = "commercial"
+        response = client.post(
+            f"{BASE}/{BIEN_ID}/baux",
+            json={
+                "loyer_hc": 800,
+                "charges_provisions": 100,
+                "date_debut": "2026-01-01",
+                "date_fin": "2029-06-01",
+                "depot_garantie": 9999,  # any amount, no cap for commercial
+                "locataire_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+
+
+# ──────────────────────────────────────────────────────────────
 # Create bail: locataire attachment (lines 566-575)
 # ──────────────────────────────────────────────────────────────
 
@@ -1572,7 +1677,7 @@ class TestUpdateChargeEmptyPayload:
         setup(fake_supabase)
         seed_bien(fake_supabase)
         fake_supabase.store.setdefault("charges", []).append({
-            "id": "chg-empty", "id_bien": BIEN_ID, "type_charge": "taxe",
+            "id": "chg-empty", "id_bien": BIEN_ID, "type_charge": "taxe_fonciere",
             "montant": 100, "date_paiement": "2026-01-01",
         })
         response = client.patch(
@@ -1874,7 +1979,7 @@ class TestListEndpointsReturnData:
         setup(fake_supabase)
         seed_bien(fake_supabase)
         fake_supabase.store.setdefault("charges", []).append({
-            "id": "chg-1", "id_bien": BIEN_ID, "type_charge": "taxe",
+            "id": "chg-1", "id_bien": BIEN_ID, "type_charge": "taxe_fonciere",
             "montant": 500, "date_paiement": "2026-01-01",
         })
         response = client.get(f"{BASE}/{BIEN_ID}/charges", headers=auth_headers)
@@ -1973,7 +2078,7 @@ class TestDeleteResources:
         setup(fake_supabase)
         seed_bien(fake_supabase)
         fake_supabase.store.setdefault("charges", []).append({
-            "id": "chg-3002", "id_bien": BIEN_ID, "type_charge": "taxe",
+            "id": "chg-3002", "id_bien": BIEN_ID, "type_charge": "taxe_fonciere",
             "montant": 100, "date_paiement": "2026-01-01",
         })
         response = client.delete(

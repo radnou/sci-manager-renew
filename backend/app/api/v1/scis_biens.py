@@ -546,6 +546,26 @@ async def create_bien_bail(
                     ),
                 )
 
+    # Validate depot de garantie cap based on type_locatif
+    if payload.depot_garantie > 0 and payload.loyer_hc > 0:
+        type_locatif = (bien.get("type_locatif") or "").lower()
+        _DEPOT_CAPS = {
+            "nu": (1, "1 mois de loyer HC"),
+            "meuble": (2, "2 mois de loyer HC"),
+        }
+        if type_locatif in _DEPOT_CAPS:
+            max_months, label = _DEPOT_CAPS[type_locatif]
+            max_depot = payload.loyer_hc * max_months
+            if payload.depot_garantie > max_depot:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Dépôt de garantie ({payload.depot_garantie:.2f} EUR) dépasse le plafond légal "
+                        f"pour un bail {type_locatif} : {label} ({max_depot:.2f} EUR). "
+                        f"Article 22 loi du 6 juillet 1989."
+                    ),
+                )
+
     # 1. Expire existing en_cours bail
     existing = (
         client.table("baux")
