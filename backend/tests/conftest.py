@@ -390,6 +390,15 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         mp.setattr(main, "shutdown_event", __import__("asyncio").Event())
 
         settings.allowed_hosts = ["testserver", "localhost", "*.gerersci.fr"]
+
+        # Pre-fill JWKS cache to prevent real network calls in CI.
+        # This must happen before any request that triggers JWT verification.
+        # The _jwks_cache dict is module-level in security.py; mutating it
+        # in-place ensures all references see the update.
+        import app.core.security as _sec_mod
+        _sec_mod._jwks_cache["keys"] = []
+        _sec_mod._jwks_cache["expires_at"] = 1e15  # ~year 33658, never expires
+
         with TestClient(app, base_url="http://testserver") as test_client:
             yield test_client
 
