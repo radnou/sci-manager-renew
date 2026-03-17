@@ -20,16 +20,13 @@ test.describe('Tableau de bord @P0', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // KPI cards section should be present (look for KPI-related elements)
-    const kpiSection = page.locator(
-      '[data-testid="dashboard-kpis"], [class*="kpi"], [class*="Kpi"]'
-    );
-    // Fallback: look for stat cards with numbers
+    // KPI section: either the data-testid grid or the empty state prompt
+    const kpiSection = page.locator('[data-testid="dashboard-kpis"]');
+    const emptyState = page.locator('text=Vos indicateurs');
     const statCards = page.locator('[class*="card"], [class*="Card"]');
-    const kpiVisible = await kpiSection.first().isVisible().catch(() => false);
-    const cardsCount = await statCards.count();
 
-    expect(kpiVisible || cardsCount > 0).toBe(true);
+    // Wait for either KPIs or empty state to render (up to 15s)
+    await expect(kpiSection.or(emptyState).or(statCards.first())).toBeVisible({ timeout: 15_000 });
   });
 
   test('la section alertes est visible @P1', async ({ page }) => {
