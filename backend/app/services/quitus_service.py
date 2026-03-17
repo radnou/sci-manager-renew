@@ -122,7 +122,8 @@ class QuitusService:
 
         pdf.setStrokeColor(HexColor("#cbd5e1"))
         pdf.setFillColor(HexColor("#f8fafc"))
-        pdf.roundRect(56, height - 278, width - 112, 88, 12, stroke=1, fill=1)
+        box_height = 120 if quitus.loyer_hc > 0 else 88
+        pdf.roundRect(56, height - 310, width - 112, box_height, 12, stroke=1, fill=1)
         pdf.setFillColor(HexColor("#475569"))
         pdf.setFont(_FONT_NAME_BOLD, 10)
         pdf.drawString(76, height - 214, "Montant acquitté")
@@ -130,15 +131,28 @@ class QuitusService:
         pdf.setFont(_FONT_NAME_BOLD, 22)
         pdf.drawString(76, height - 246, amount_label)
 
+        # Decomposition loyer HC + charges (Article 21 loi du 6 juillet 1989)
+        if quitus.loyer_hc > 0:
+            pdf.setFont(_FONT_NAME, 10)
+            pdf.setFillColor(HexColor("#475569"))
+            pdf.drawString(76, height - 270, f"Loyer hors charges : {quitus.loyer_hc:.2f} EUR")
+            pdf.drawString(76, height - 286, f"Charges locatives : {quitus.charges_locatives:.2f} EUR")
+
         pdf.setFont(_FONT_NAME, 11)
-        text = pdf.beginText(56, height - 324)
+        text = pdf.beginText(56, height - 356)
         text.setLeading(18)
         text.textLine(
             f"Nous attestons avoir reçu de {quitus.nom_locataire} la somme de {amount_label}"
         )
-        text.textLine(
-            f"au titre du loyer et des charges de la période {quitus.periode}."
-        )
+        if quitus.loyer_hc > 0:
+            text.textLine(
+                f"au titre du loyer ({quitus.loyer_hc:.2f} EUR) et des charges locatives "
+                f"({quitus.charges_locatives:.2f} EUR) de la période {quitus.periode}."
+            )
+        else:
+            text.textLine(
+                f"au titre du loyer et des charges de la période {quitus.periode}."
+            )
         text.textLine(f"Le paiement concerne le bien situé {property_label}.")
         text.textLine("")
         text.textLine(f"Document établi le {issue_date} pour justificatif.")
