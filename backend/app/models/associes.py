@@ -30,5 +30,6 @@ class AssocieResponse(AssocieBase):
     is_account_member: bool | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    warning: str | None = None
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")

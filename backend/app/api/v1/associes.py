@@ -81,11 +81,29 @@ def _ensure_total_parts_within_bounds(client, id_sci: str, part: float, associe_
         raise ValidationError("La répartition du capital ne peut pas dépasser 100%.")
 
 
-def _serialize_associe(row: dict) -> dict:
-    return {
+def _serialize_associe(row: dict, warning: str | None = None) -> dict:
+    data = {
         **row,
         "is_account_member": bool(row.get("user_id")),
     }
+    if warning:
+        data["warning"] = warning
+    return data
+
+
+def _compute_parts_warning(client, id_sci: str) -> str | None:
+    """Return a warning string if total parts for a SCI are below 100%, else None."""
+    rows = _execute_select(client.table("associes").select("part").eq("id_sci", id_sci))
+    total = 0.0
+    for row in rows:
+        try:
+            total += float(row.get("part") or 0)
+        except (TypeError, ValueError):
+            continue
+    total = round(total, 2)
+    if total < 100:
+        return f"Attention : les parts totalisent {total}% — elles devraient totaliser 100%."
+    return None
 
 
 @router.get("", response_model=list[AssocieResponse])
@@ -134,7 +152,8 @@ async def create_associe(payload: AssocieCreate, request: Request, user_id: str 
         if not rows:
             raise DatabaseError("Unable to create associe")
 
-        return _serialize_associe(rows[0])
+        warning = _compute_parts_warning(client, payload.id_sci)
+        return _serialize_associe(rows[0], warning=warning)
     except SCIManagerException:
         raise
     except Exception as exc:
@@ -178,7 +197,8 @@ async def update_associe(
         if not rows:
             raise ResourceNotFoundError("Associe", associe_id)
 
-        return _serialize_associe(rows[0])
+        warning = _compute_parts_warning(client, id_sci)
+        return _serialize_associe(rows[0], warning=warning)
     except SCIManagerException:
         raise
     except Exception as exc:

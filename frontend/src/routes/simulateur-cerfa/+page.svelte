@@ -352,6 +352,12 @@
 									<strong class="text-rose-600 dark:text-rose-400">{formatCurrency(deficitImputable)}</strong>
 									(plafond 10 700 &euro;)
 								</p>
+								{#if resultatReel < 0 && Math.abs(resultatReel) > 10700}
+									<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+										Le surplus de <strong class="text-rose-600 dark:text-rose-400">{formatCurrency(Math.abs(resultatReel) - 10700)}</strong> est reportable
+										sur vos revenus fonciers des 10 années suivantes.
+									</p>
+								{/if}
 							{/if}
 						</div>
 

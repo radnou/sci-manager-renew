@@ -196,6 +196,9 @@ async def check_expiring_pno(supabase_client) -> int:
 FISCAL_DEADLINES = [
     {"key": "declaration_2072", "label": "Déclaration 2072", "month": 5, "day": 20, "regime": "IR", "advance_days": 30},
     {"key": "declaration_2044", "label": "Déclaration 2044 (associés)", "month": 5, "day": 31, "regime": "IR", "advance_days": 30},
+    # TODO: La date du 31/03 est valable pour les exercices clos au 31/12 uniquement.
+    # Pour un exercice non-standard, le délai légal est de 3 mois après la clôture.
+    # Le modèle SCI ne stocke pas encore la date de clôture d'exercice — à implémenter.
     {"key": "liasse_fiscale_is", "label": "Liasse fiscale IS", "month": 3, "day": 31, "regime": "IS", "advance_days": 30},
     {"key": "taxe_fonciere", "label": "Taxe foncière", "month": 10, "day": 15, "regime": None, "advance_days": 30},
     {"key": "cfe", "label": "CFE (Cotisation Foncière)", "month": 12, "day": 15, "regime": None, "advance_days": 30},
@@ -240,13 +243,21 @@ async def check_fiscal_deadlines(supabase_client) -> int:
             )
 
             for owner in owners.data or []:
+                # For IS liasse, append a caveat: the March 31 deadline is only
+                # correct for SCIs with a December 31 fiscal year-end.
+                base_message = f"Échéance le {deadline_date.strftime('%d/%m/%Y')} ({days_until} jours restants)."
+                if deadline["key"] == "liasse_fiscale_is":
+                    base_message += (
+                        " (date pour exercice clos au 31/12 — vérifiez si votre exercice a une clôture différente)"
+                    )
+
                 await create_notification_with_email(
                     supabase_client,
                     user_id=owner["user_id"],
                     notification_type="fiscal_deadline",
                     data={
                         "title": f"{deadline['label']} — {sci['nom']}",
-                        "message": f"Échéance le {deadline_date.strftime('%d/%m/%Y')} ({days_until} jours restants).",
+                        "message": base_message,
                         "metadata": {
                             "sci_id": sci["id"],
                             "deadline_key": deadline["key"],
