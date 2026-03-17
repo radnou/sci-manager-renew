@@ -267,13 +267,18 @@ PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 8. **Paywall**: Les endpoints protégés utilisent `@require_plan("pro")`. Tester avec un user ayant un plan actif, ou mocker `get_subscription_status`.
 9. **Nested Routes**: Les routes frontend `(app)/scis/[sciId]/...` dépendent du layout `[sciId]/+layout.ts` qui charge le contexte SCI. Toujours vérifier que `sciId` est propagé.
 10. **AppSidebar**: L'ancien `AppSidebar.svelte` est supprimé. Utiliser uniquement `AppSidebarV2.svelte`.
+11. **Admin**: Le dashboard admin est à `/admin?secret=ADMIN_SECRET_KEY`. Pas de login requis — protégé par secret URL. Route hors du groupe `(app)` et dans `PUBLIC_ROUTE_PREFIXES`.
+12. **Subscriptions table**: Pas de colonne `plan_key` — toujours résoudre via `stripe_price_id` + `resolve_plan_key_from_price_id()`.
+13. **VPS git**: Ne jamais faire `sudo git pull` sur le VPS — casse les permissions `.git/objects` pour l'auto-deploy CI. Utiliser `git pull` sans sudo.
+14. **Nginx /api proxy**: Le server block frontend (`gerersci.fr`) a un `location /api/` qui proxy vers le backend. Nécessaire pour les appels API depuis les pages publiques (admin).
+15. **SUPABASE_PUBLIC_URL**: Configuré dans `.env` production pour réécrire les magic links de `host.docker.internal:54321` vers `api.gerersci.fr`.
 
 ## Business Context
 
 Ce projet suit une approche produit/marketing avec:
 - **Target**: Gérants de SCI indépendants, cabinets comptables, opérateurs patrimoniaux
 - **Value Prop**: Passer du tableur bricolé au cockpit SCI professionnel
-- **Pricing**: Freemium (Standard jusqu'à 5 biens) + Pro (multi-biens illimités) + Lifetime deal
+- **Pricing**: Freemium (Essentiel, 2 biens max) + Gestion (19€/mois, 10 biens) + Fiscal (39€/mois, illimité)
 - **North Star Metric**: Nombre de SCI actives avec ≥1 loyer enregistré sur 30 jours
 
 Documentation business complète dans `/docs/` (functional requirements, GTM strategy, audit Big4).
