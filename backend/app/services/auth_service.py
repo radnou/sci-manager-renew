@@ -44,10 +44,16 @@ class MagicLinkService:
                 logger.error("magic_link_no_action_link", email=email)
                 return {"success": False, "message": "Failed to generate magic link", "data": None}
 
-            # Rewrite internal Supabase URL to public URL for email links
+            # Rewrite internal Supabase URL to public URL for email links.
+            # GoTrue may return 127.0.0.1, localhost, or host.docker.internal
+            # depending on its own API_EXTERNAL_URL config. We match all variants.
             if settings.supabase_public_url:
-                action_link = action_link.replace(
-                    settings.supabase_url, settings.supabase_public_url, 1
+                import re
+                action_link = re.sub(
+                    r"https?://(?:127\.0\.0\.1|localhost|host\.docker\.internal)(?::\d+)?",
+                    settings.supabase_public_url.rstrip("/"),
+                    action_link,
+                    count=1,
                 )
 
             # Send via Resend with custom HTML template
