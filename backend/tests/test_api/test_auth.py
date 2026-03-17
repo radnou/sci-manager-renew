@@ -84,8 +84,11 @@ def test_activate_replay_blocked(client):
     assert "already been used" in response.json()["error"]
 
 
-def test_activate_success(client, fake_supabase):
+def test_activate_success(client, fake_supabase, monkeypatch):
     """Happy path: valid paid session, user found, first activation."""
+    # Prevent real JWKS fetch (no Supabase in CI)
+    from app.core import security as _sec
+    monkeypatch.setattr(_sec, "_jwks_cache", {"keys": [], "expires_at": 1e15})
     fake_session = MagicMock()
     fake_session.payment_status = "paid"
     fake_session.customer_details.email = "buyer@example.com"
