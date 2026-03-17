@@ -48,6 +48,25 @@
 	let notifLoading = $state(true);
 	let notifSaving = $state(false);
 	let notifError = $state('');
+	let portalLoading = $state(false);
+
+	async function openCustomerPortal() {
+		portalLoading = true;
+		try {
+			const { apiFetch } = await import('$lib/api');
+			const data: { url: string } = await apiFetch('/api/v1/stripe/customer-portal', {
+				method: 'POST',
+			});
+			window.location.href = data.url;
+		} catch {
+			addToast({
+				title: 'Erreur',
+				description: "Impossible d'ouvrir le portail de gestion d'abonnement.",
+				variant: 'error',
+			});
+			portalLoading = false;
+		}
+	}
 
 	let landingRouteLabel = $derived(
 		landingRouteOptions.find((option) => option.value === preferences.defaultLandingRoute)?.label ??
@@ -396,6 +415,16 @@
 							-
 							{subscription.max_biens == null ? 'Biens illimites' : `${subscription.remaining_biens ?? 0} biens restants`}
 						</p>
+						{#if subscription.plan_key !== 'free'}
+							<Button
+								variant="outline"
+								class="mt-3 w-full justify-start text-xs"
+								onclick={openCustomerPortal}
+								disabled={portalLoading}
+							>
+								{portalLoading ? 'Ouverture...' : 'Gérer mon abonnement'}
+							</Button>
+						{/if}
 					</div>
 				{:else if subscriptionError}
 					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
