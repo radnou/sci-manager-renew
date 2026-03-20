@@ -70,7 +70,7 @@
 	onMount(async () => {
 		try {
 			status = await fetchOnboardingStatus();
-			if (status.completed) {
+			if (status.completed && status.sci_created) {
 				goto('/dashboard');
 				return;
 			}
