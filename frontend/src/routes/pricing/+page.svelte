@@ -23,7 +23,7 @@
 		checkoutLoading = planKey;
 		try {
 			const endpoint = isAuthenticated
-				? `${API_URL}/api/v1/stripe/create-checkout`
+				? `${API_URL}/api/v1/stripe/create-checkout-session`
 				: `${API_URL}/api/v1/stripe/create-guest-checkout`;
 			const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 			if (isAuthenticated) {
