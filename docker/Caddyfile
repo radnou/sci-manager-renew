@@ -123,7 +123,8 @@ status.gerersci.fr {
 
 # =============================================================
 # OBSERVABILITY — grafana.gerersci.fr
+# Uncomment after adding DNS A record for grafana.gerersci.fr
 # =============================================================
-grafana.gerersci.fr {
-	reverse_proxy grafana:3000
-}
+# grafana.gerersci.fr {
+# 	reverse_proxy grafana:3000
+# }
