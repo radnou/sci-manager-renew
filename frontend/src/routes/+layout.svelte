@@ -24,6 +24,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import OfflineBanner from '$lib/components/OfflineBanner.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -368,4 +369,5 @@
 
 	<Toaster />
 	<CookieConsent />
+	<OfflineBanner />
 </div>

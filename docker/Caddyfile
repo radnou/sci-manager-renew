@@ -1,0 +1,129 @@
+# =============================================================
+# GérerSCI — Caddy Reverse Proxy Configuration
+# Auto-HTTPS via Let's Encrypt (ACME) — no certbot needed
+# =============================================================
+
+# Global options
+{
+	email admin@gerersci.fr
+	acme_ca https://acme-v02.api.letsencrypt.org/directory
+}
+
+# =============================================================
+# FRONTEND — gerersci.fr / app.gerersci.fr / www
+# =============================================================
+gerersci.fr, www.gerersci.fr, app.gerersci.fr {
+	# Maintenance mode — when /tmp/maintenance exists, serve static page
+	@maintenance file /srv/maintenance/index.html
+	handle @maintenance {
+		root * /srv/maintenance
+		file_server
+		header Cache-Control "no-cache, no-store"
+	}
+
+	# API calls from frontend (admin dashboard, etc.)
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# Frontend SvelteKit (with WebSocket support)
+	handle {
+		reverse_proxy frontend:4173
+	}
+
+	# Security headers
+	header {
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(self)"
+	}
+}
+
+# =============================================================
+# API — api.gerersci.fr
+# =============================================================
+api.gerersci.fr {
+	# Maintenance mode
+	@maintenance file /srv/maintenance/index.html
+	handle @maintenance {
+		root * /srv/maintenance
+		file_server
+		header Cache-Control "no-cache, no-store"
+	}
+
+	# Health checks — no rate limit
+	handle /health/* {
+		reverse_proxy backend:8000
+	}
+
+	# Stripe webhooks — pass raw body for signature verification
+	handle /api/v1/stripe/webhook {
+		reverse_proxy backend:8000
+	}
+
+	# ---- Supabase proxy (browser → Kong) ----
+	handle /auth/* {
+		reverse_proxy host.docker.internal:54321 {
+			header_up apikey {header.apikey}
+			header_up Authorization {header.Authorization}
+		}
+	}
+
+	handle /rest/* {
+		reverse_proxy host.docker.internal:54321 {
+			header_up apikey {header.apikey}
+			header_up Authorization {header.Authorization}
+		}
+	}
+
+	handle /realtime/* {
+		reverse_proxy host.docker.internal:54321 {
+			header_up apikey {header.apikey}
+			header_up Authorization {header.Authorization}
+		}
+	}
+
+	handle /storage/* {
+		reverse_proxy host.docker.internal:54321 {
+			header_up apikey {header.apikey}
+			header_up Authorization {header.Authorization}
+		}
+		request_body {
+			max_size 50MB
+		}
+	}
+
+	handle /functions/* {
+		reverse_proxy host.docker.internal:54321 {
+			header_up apikey {header.apikey}
+			header_up Authorization {header.Authorization}
+		}
+	}
+
+	# Default — FastAPI backend (catch-all)
+	handle {
+		reverse_proxy backend:8000
+	}
+}
+
+# =============================================================
+# ANALYTICS — analytics.gerersci.fr (Matomo)
+# =============================================================
+analytics.gerersci.fr {
+	reverse_proxy matomo:80
+}
+
+# =============================================================
+# MONITORING — status.gerersci.fr (Uptime Kuma)
+# =============================================================
+status.gerersci.fr {
+	reverse_proxy uptime-kuma:3001
+}
+
+# =============================================================
+# OBSERVABILITY — grafana.gerersci.fr
+# =============================================================
+grafana.gerersci.fr {
+	reverse_proxy grafana:3000
+}

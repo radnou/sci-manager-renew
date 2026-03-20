@@ -1,0 +1,47 @@
+# docker-compose.caddy.yml — Caddy override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+#
+# This replaces nginx + certbot with Caddy (auto-HTTPS).
+# Step 1: Stop nginx/certbot: docker compose stop nginx certbot
+# Step 2: Start with Caddy:   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d caddy
+
+services:
+  # Disable nginx and certbot
+  nginx:
+    profiles: ["disabled"]
+
+  certbot:
+    profiles: ["disabled"]
+
+  # Caddy replaces nginx + certbot
+  caddy:
+    image: caddy:2-alpine
+    container_name: gerersci_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3 (QUIC)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/maintenance:/srv/maintenance:ro
+      - caddy_data:/data       # TLS certificates (auto-managed)
+      - caddy_config:/config   # Caddy runtime config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  caddy_data:
+  caddy_config:
