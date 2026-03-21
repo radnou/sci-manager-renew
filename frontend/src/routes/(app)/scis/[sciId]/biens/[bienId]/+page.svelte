@@ -224,7 +224,7 @@
 			</div>
 			{:else if activeSection === 'rentabilite'}
 			<div id="section-rentabilite" role="tabpanel" aria-label="Rentabilité">
-				<FicheBienRentabilite rentabilite={bien.rentabilite} hasSourceData={bien.prix_acquisition != null && bien.bail_actif != null} />
+				<FicheBienRentabilite rentabilite={bien.rentabilite} hasSourceData={bien.prix_acquisition != null && bien.bail_actif != null} {sciId} {bienId} />
 			</div>
 			{:else if activeSection === 'documents'}
 			<div id="section-documents" role="tabpanel" aria-label="Documents">

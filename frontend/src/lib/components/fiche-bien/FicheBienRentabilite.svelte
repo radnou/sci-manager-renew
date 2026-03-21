@@ -1,14 +1,59 @@
 <script lang="ts">
 	import type { RentabiliteCalculee } from '$lib/api';
+	import { apiFetch } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
-	import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-svelte';
+	import { TrendingUp, TrendingDown, BarChart3, Table2, Loader2 } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 
 	interface Props {
 		rentabilite: RentabiliteCalculee;
 		hasSourceData?: boolean;
+		sciId?: string;
+		bienId?: string;
 	}
 
-	let { rentabilite, hasSourceData = true }: Props = $props();
+	let { rentabilite, hasSourceData = true, sciId = '', bienId = '' }: Props = $props();
+
+	// Vue comptable annuelle
+	type AnneeComptable = {
+		annee: number;
+		revenus: number;
+		charges: number;
+		evenements: number;
+		resultat: number;
+	};
+
+	let vueComptable: AnneeComptable[] = $state([]);
+	let comptaLoading = $state(false);
+
+	onMount(async () => {
+		if (!sciId || !bienId) return;
+		comptaLoading = true;
+		try {
+			const currentYear = new Date().getFullYear();
+			const years = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4];
+			const results: AnneeComptable[] = [];
+
+			for (const year of years) {
+				try {
+					const compta = await apiFetch<any>(`/api/v1/scis/${sciId}/comptabilite/${year}`);
+					const bien = (compta.biens || []).find((b: any) => b.bien_id === bienId);
+					if (bien && (bien.revenus > 0 || bien.charges > 0)) {
+						results.push({
+							annee: year,
+							revenus: bien.revenus || 0,
+							charges: bien.charges || 0,
+							evenements: bien.evenements_deductibles || 0,
+							resultat: bien.resultat || 0,
+						});
+					}
+				} catch { /* year not available */ }
+			}
+
+			vueComptable = results;
+		} catch { /* ignore */ }
+		comptaLoading = false;
+	});
 
 	// G12: Show warning only when source data (prix_acquisition + bail) is missing,
 	// not when calculated values are legitimately 0.
@@ -94,4 +139,42 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Vue comptable annuelle -->
+	{#if comptaLoading}
+		<div class="mt-6 flex items-center justify-center py-6">
+			<Loader2 class="h-5 w-5 animate-spin text-slate-400" />
+		</div>
+	{:else if vueComptable.length > 0}
+		<div class="mt-6">
+			<div class="mb-3 flex items-center gap-2">
+				<Table2 class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+				<h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Historique comptable</h3>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:text-slate-400">
+							<th class="py-2.5 pr-4">Année</th>
+							<th class="py-2.5 pr-4 text-right">Revenus</th>
+							<th class="py-2.5 pr-4 text-right">Charges</th>
+							<th class="py-2.5 pr-4 text-right">Événements</th>
+							<th class="py-2.5 text-right">Résultat</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each vueComptable as row}
+							<tr class="border-b border-slate-100 dark:border-slate-800">
+								<td class="py-2.5 pr-4 font-semibold text-slate-900 dark:text-slate-100">{row.annee}</td>
+								<td class="py-2.5 pr-4 text-right text-slate-700 dark:text-slate-300">{formatEur(row.revenus)}</td>
+								<td class="py-2.5 pr-4 text-right text-slate-700 dark:text-slate-300">{formatEur(row.charges)}</td>
+								<td class="py-2.5 pr-4 text-right text-slate-700 dark:text-slate-300">{formatEur(row.evenements)}</td>
+								<td class="py-2.5 text-right font-semibold {row.resultat >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">{formatEur(row.resultat)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	{/if}
 </div>
