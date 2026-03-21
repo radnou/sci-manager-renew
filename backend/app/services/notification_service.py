@@ -24,7 +24,7 @@ def _find_duplicate(supabase_client, user_id: str, notification_type: str, dedup
         .select("id, metadata")
         .eq("user_id", user_id)
         .eq("type", notification_type)
-        .is_("read", "null")
+        .is_("read_at", "null")
         .gte("created_at", cutoff)
         .execute()
     )
