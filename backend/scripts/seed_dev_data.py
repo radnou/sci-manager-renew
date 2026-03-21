@@ -91,7 +91,7 @@ def clean_all_data():
         "mouvements_parts", "assemblees_generales",
         "bail_locataires", "loyers",
         "frais_agence", "assurances_pno", "documents_bien",
-        "charges", "baux", "locataires",
+        "evenements_bien", "charges", "baux", "locataires",
         "fiscalite", "biens", "associes", "sci",
         "subscriptions", "admins",
     ]
@@ -354,6 +354,54 @@ def main():
                 })
                 charge_count += 1
     print(f"  ✅ {charge_count} charges (copro, TF, entretien, assurance, intérêts)")
+
+    # ── Événements bien ──────────────────────────────────────────
+    print("\n📅 Événements bien ...")
+    evenements = [
+        {
+            "id": uid(), "id_bien": biens_sci1[0]["id"],
+            "type": "reparation", "titre": "Remplacement chaudière",
+            "description": "Remplacement de la chaudière gaz par un modèle à condensation",
+            "date_evenement": "2025-03-15", "montant": 2800,
+            "prestataire": "Plomberie Martin & Fils",
+            "deductible_fiscalement": True,
+        },
+        {
+            "id": uid(), "id_bien": biens_sci1[0]["id"],
+            "type": "diagnostic", "titre": "Diagnostic DPE",
+            "description": "Diagnostic de performance énergétique réalisé par bureau certifié",
+            "date_evenement": "2025-01-20", "montant": 150,
+            "prestataire": "DiagImmo Paris",
+            "deductible_fiscalement": False,
+        },
+        {
+            "id": uid(), "id_bien": biens_sci1[1]["id"],
+            "type": "sinistre", "titre": "Dégât des eaux",
+            "description": "Fuite canalisation salle de bain — dégâts plafond et mur",
+            "date_evenement": "2025-06-10", "montant": 1200,
+            "prestataire": "Assurance MAIF — sinistre n°2025-4421",
+            "deductible_fiscalement": False,
+        },
+        {
+            "id": uid(), "id_bien": biens_sci1[2]["id"],
+            "type": "travaux", "titre": "Peinture rafraîchissement",
+            "description": "Remise en peinture complète du studio (murs + plafond)",
+            "date_evenement": "2025-08-01", "montant": 950,
+            "prestataire": "Peinture Express",
+            "deductible_fiscalement": True,
+        },
+        {
+            "id": uid(), "id_bien": biens_sci2[0]["id"],
+            "type": "controle", "titre": "Contrôle annuel cheminée",
+            "description": "Ramonage et contrôle annuel obligatoire du conduit de cheminée",
+            "date_evenement": "2025-10-05", "montant": 120,
+            "prestataire": "Ramonage Lyon Sud",
+            "deductible_fiscalement": False,
+        },
+    ]
+    for evt in evenements:
+        insert("evenements_bien", evt)
+    print(f"  ✅ {len(evenements)} événements (réparation, diagnostic, sinistre, travaux, contrôle)")
 
     # ── Assurances PNO ────────────────────────────────────────────
     print("\n🛡️  Assurances PNO ...")

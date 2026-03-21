@@ -14,8 +14,12 @@
 	import DashboardKpisComponent from '$lib/components/dashboard/DashboardKpis.svelte';
 	import DashboardSciCards from '$lib/components/dashboard/DashboardSciCards.svelte';
 	import DashboardActivity from '$lib/components/dashboard/DashboardActivity.svelte';
+	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
 
 	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
+
+	const currentYear = new Date().getFullYear();
+	let selectedYear = $state(currentYear);
 
 	let loading = $state(true);
 	let errorMessage = $state('');
@@ -27,6 +31,7 @@
 		taux_recouvrement: 0,
 		cashflow_net: 0
 	});
+	let previousKpis = $state<DashboardKpis | null>(null);
 	let scis = $state<SCICard[]>([]);
 	let activite = $state<ActivityItem[]>([]);
 
@@ -35,18 +40,22 @@
 	);
 
 	$effect(() => {
-		loadDashboard();
+		loadDashboard(selectedYear);
 	});
 
-	async function loadDashboard() {
+	async function loadDashboard(annee: number) {
 		loading = true;
 		errorMessage = '';
 		try {
-			const data: DashboardData = await fetchDashboard();
+			const [data, prevData] = await Promise.all([
+				fetchDashboard(annee),
+				fetchDashboard(annee - 1).catch(() => null)
+			]);
 			alertes = data.alertes ?? [];
 			kpis = data.kpis ?? { sci_count: 0, biens_count: 0, taux_recouvrement: 0, cashflow_net: 0 };
 			scis = data.scis ?? [];
 			activite = data.activite ?? [];
+			previousKpis = prevData?.kpis ?? null;
 		} catch (err) {
 			const message =
 				err instanceof Error ? err.message : 'Impossible de charger le tableau de bord.';
@@ -55,6 +64,29 @@
 			loading = false;
 		}
 	}
+
+	function computeVariation(current: number, previous: number | undefined | null): { text: string; color: string } | null {
+		if (previous == null || previous === 0) return null;
+		const pct = Math.round(((current - previous) / Math.abs(previous)) * 100);
+		if (pct === 0) return null;
+		return {
+			text: pct > 0 ? `+${pct}%` : `${pct}%`,
+			color: pct > 0 ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40' : 'text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-950/40'
+		};
+	}
+
+	function handleYearChange(year: number) {
+		selectedYear = year;
+	}
+
+	const kpiVariations = $derived(
+		previousKpis
+			? [
+					{ label: 'Recouvrement', v: computeVariation(kpis.taux_recouvrement, previousKpis.taux_recouvrement) },
+					{ label: 'Cashflow', v: computeVariation(kpis.cashflow_net, previousKpis.cashflow_net) }
+				].filter(item => item.v != null)
+			: []
+	);
 </script>
 
 <svelte:head><title>Cockpit | GérerSCI</title></svelte:head>
@@ -62,7 +94,10 @@
 <section class="sci-page-shell">
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Gestion SCI</p>
-		<h1 class="sci-page-title">Dashboard</h1>
+		<div class="flex items-center gap-3">
+			<h1 class="sci-page-title">Dashboard</h1>
+			<AnneeSelector value={selectedYear} onchange={handleYearChange} />
+		</div>
 	</header>
 
 	{#if upgraded}
@@ -83,7 +118,7 @@
 			<button
 				type="button"
 				class="mt-2 text-sm font-semibold text-rose-600 underline underline-offset-2 hover:no-underline dark:text-rose-400"
-				onclick={loadDashboard}
+				onclick={() => loadDashboard(selectedYear)}
 			>
 				Réessayer
 			</button>
@@ -130,9 +165,20 @@
 				<DashboardAlerts {alertes} />
 			</div>
 
-			<!-- KPIs -->
+			<!-- KPIs with N-1 variation -->
 			<div class="mt-6">
 				<DashboardKpisComponent {kpis} />
+				{#if kpiVariations.length > 0}
+					<div class="mt-2 flex flex-wrap gap-3">
+						{#each kpiVariations as item}
+							{#if item.v}
+								<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold {item.v.color}">
+									{item.label} vs N-1 : {item.v.text}
+								</span>
+							{/if}
+						{/each}
+					</div>
+				{/if}
 			</div>
 
 			<!-- SCI Cards -->

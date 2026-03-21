@@ -703,6 +703,8 @@ export type ActivityItem = {
 	description: string;
 	created_at: string;
 	sci_nom?: string;
+	id_sci?: string;
+	id_bien?: string;
 };
 
 export type DashboardData = {
@@ -712,8 +714,9 @@ export type DashboardData = {
 	activite: ActivityItem[];
 };
 
-export async function fetchDashboard(): Promise<DashboardData> {
-	return apiFetch<DashboardData>('/api/v1/dashboard');
+export async function fetchDashboard(annee?: number): Promise<DashboardData> {
+	const params = annee ? `?annee=${annee}` : '';
+	return apiFetch<DashboardData>(`/api/v1/dashboard${params}`);
 }
 
 // --- Nested SCI/Biens API ---
@@ -1491,4 +1494,115 @@ export function fetchAdminUsers(params: {
 		page: number;
 		per_page: number;
 	}>(`/api/v1/admin/users${qs ? `?${qs}` : ''}`);
+}
+
+// --- Comptabilité annuelle ---
+
+export type ComptabiliteLigne = {
+	bien_id: EntityId;
+	bien_adresse: string;
+	revenus: number;
+	charges: number;
+	evenements: number;
+	resultat: number;
+};
+
+export type ComptabiliteAnnuelle = {
+	annee: number;
+	lignes: ComptabiliteLigne[];
+	total_revenus: number;
+	total_charges: number;
+	total_evenements: number;
+	total_resultat: number;
+	variation_revenus?: number | null;
+	variation_charges?: number | null;
+	variation_resultat?: number | null;
+};
+
+export async function fetchComptabiliteAnnuelle(
+	sciId: EntityId,
+	annee: number
+): Promise<ComptabiliteAnnuelle> {
+	return apiFetch<ComptabiliteAnnuelle>(`/api/v1/scis/${sciId}/comptabilite/${annee}`);
+}
+
+// --- Événements bien ---
+
+export type EvenementType = 'reparation' | 'travaux' | 'sinistre' | 'visite' | 'controle' | 'diagnostic' | 'autre';
+
+export type Evenement = {
+	id: EntityId;
+	id_bien: EntityId;
+	type_evenement: EvenementType;
+	titre: string;
+	date_evenement: string;
+	montant?: number | null;
+	prestataire?: string | null;
+	deductible_fiscal: boolean;
+	created_at?: string;
+};
+
+export type EvenementCreatePayload = {
+	type_evenement: EvenementType;
+	titre: string;
+	date_evenement: string;
+	montant?: number | null;
+	prestataire?: string | null;
+	deductible_fiscal?: boolean;
+};
+
+export async function fetchEvenements(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<Evenement[]> {
+	return apiFetch<Evenement[]>(`/api/v1/scis/${sciId}/biens/${bienId}/evenements`);
+}
+
+export async function createEvenement(
+	sciId: EntityId,
+	bienId: EntityId,
+	data: EvenementCreatePayload
+): Promise<Evenement> {
+	return apiFetch<Evenement>(`/api/v1/scis/${sciId}/biens/${bienId}/evenements`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function deleteEvenement(
+	sciId: EntityId,
+	bienId: EntityId,
+	eventId: EntityId
+): Promise<void> {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/evenements/${eventId}`, {
+		method: 'DELETE'
+	});
+}
+
+// --- Obligations bien ---
+
+export type ObligationStatus = 'ok' | 'warning' | 'danger' | 'unknown';
+
+export type ObligationItem = {
+	key: string;
+	label: string;
+	status: ObligationStatus;
+	detail: string;
+	date_expiration?: string | null;
+};
+
+export type ObligationsData = {
+	pno: ObligationItem;
+	dpe: ObligationItem;
+	bail: ObligationItem;
+	locataire: ObligationItem;
+	depot_garantie: ObligationItem;
+};
+
+export async function fetchObligations(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<ObligationsData> {
+	return apiFetch<ObligationsData>(`/api/v1/scis/${sciId}/biens/${bienId}/obligations`);
 }

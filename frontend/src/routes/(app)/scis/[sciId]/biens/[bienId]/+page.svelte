@@ -12,7 +12,8 @@
 	import FicheBienCharges from '$lib/components/fiche-bien/FicheBienCharges.svelte';
 	import FicheBienRentabilite from '$lib/components/fiche-bien/FicheBienRentabilite.svelte';
 	import FicheBienDocuments from '$lib/components/fiche-bien/FicheBienDocuments.svelte';
-	import { Home, FileSignature, Receipt, Wallet, TrendingUp, FolderOpen } from 'lucide-svelte';
+	import FicheBienEvenements from '$lib/components/fiche-bien/FicheBienEvenements.svelte';
+	import { Home, FileSignature, Receipt, Wallet, TrendingUp, FolderOpen, CalendarClock } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -39,7 +40,8 @@
 		{ id: 'loyers', label: 'Loyers', icon: Receipt },
 		{ id: 'charges', label: 'Charges', icon: Wallet },
 		{ id: 'rentabilite', label: 'Rentabilité', icon: TrendingUp },
-		{ id: 'documents', label: 'Documents', icon: FolderOpen }
+		{ id: 'documents', label: 'Documents', icon: FolderOpen },
+		{ id: 'evenements', label: 'Événements', icon: CalendarClock }
 	];
 
 	$effect(() => {
@@ -228,6 +230,14 @@
 			<div id="section-documents" role="tabpanel" aria-label="Documents">
 				<FicheBienDocuments
 					documents={bien.documents}
+					{isGerant}
+					sciId={sciId}
+					bienId={String(bien.id)}
+				/>
+			</div>
+			{:else if activeSection === 'evenements'}
+			<div id="section-evenements" role="tabpanel" aria-label="Événements">
+				<FicheBienEvenements
 					{isGerant}
 					sciId={sciId}
 					bienId={String(bien.id)}

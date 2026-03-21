@@ -66,7 +66,7 @@
 
 	const DPE_OPTIONS = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
 	const TYPE_OPTIONS: Array<{ value: string; label: string }> = [
-		{ value: 'nu', label: 'Nu' },
+		{ value: 'nu', label: 'Location nue' },
 		{ value: 'meuble', label: 'Meublé' },
 		{ value: 'mixte', label: 'Mixte' }
 	];

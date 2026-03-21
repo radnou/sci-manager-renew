@@ -281,12 +281,13 @@ async def get_recent_activity(client, user_id: str, limit: int = 10) -> list[dic
 
     # Recent loyers
     try:
-        loyers = _query_in_sci_ids(client, "loyers", "id,id_sci,montant,statut,date_loyer,created_at", sci_ids)
+        loyers = _query_in_sci_ids(client, "loyers", "id,id_sci,id_bien,montant,statut,date_loyer,created_at", sci_ids)
         for l in loyers:
             activities.append({
                 "type": "loyer",
                 "id": l.get("id"),
                 "id_sci": l.get("id_sci"),
+                "id_bien": l.get("id_bien"),
                 "description": "Loyer de {} € — {}".format(
                     f"{float(l.get('montant') or 0):,.0f}".replace(",", " "),
                     {"paye": "payé", "en_attente": "en attente", "en_retard": "en retard"}.get(l.get("statut", ""), l.get("statut", "en attente")),

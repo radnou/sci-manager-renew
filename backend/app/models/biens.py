@@ -41,6 +41,11 @@ class BienUpdate(BaseModel):
     nb_pieces: int | None = Field(default=None, ge=0)
     dpe_classe: str | None = Field(default=None, max_length=1, pattern=r"^[A-G]$")
     photo_url: str | None = Field(default=None, max_length=500)
+    dpe_date: date | None = None
+    diagnostic_amiante_date: date | None = None
+    diagnostic_electricite_date: date | None = None
+    diagnostic_gaz_date: date | None = None
+    diagnostic_plomb_date: date | None = None
 
 
 class BienResponse(BaseModel):

@@ -5,13 +5,14 @@ from __future__ import annotations
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.services.subscription_service import SubscriptionService
 from app.models.biens import BienCreate, BienResponse, BienUpdate
 from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
+from app.models.evenements import EvenementCreate, EvenementResponse, EvenementUpdate
 from app.models.loyers import LoyerCreate, LoyerResponse
 from app.schemas.assurance_pno import AssurancePnoCreate, AssurancePnoResponse, AssurancePnoUpdate
 from app.schemas.baux import BailCreate, BailResponse, BailUpdate
@@ -1319,3 +1320,157 @@ async def delete_document(
 
     logger.info("document_deleted", doc_id=doc_id, bien_id=bien_id, sci_id=str(sci_id))
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# LIST evenements for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/evenements", response_model=list[EvenementResponse])
+async def list_bien_evenements(
+    sci_id: UUID,
+    bien_id: str,
+    request: Request,
+    annee: int | None = Query(default=None, description="Filtrer par année"),
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Liste les événements d'un bien, avec filtre optionnel par année."""
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    query = (
+        client.table("evenements_bien")
+        .select("*")
+        .eq("id_bien", bien_id)
+    )
+
+    if annee is not None:
+        query = query.gte("date_evenement", f"{annee}-01-01").lte("date_evenement", f"{annee}-12-31")
+
+    result = query.order("date_evenement", desc=True).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    return result.data or []
+
+
+# ──────────────────────────────────────────────────────────────
+# CREATE evenement for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/{bien_id}/evenements", response_model=EvenementResponse, status_code=status.HTTP_201_CREATED)
+async def create_bien_evenement(
+    sci_id: UUID,
+    bien_id: str,
+    payload: EvenementCreate,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Crée un événement pour un bien (gérant uniquement)."""
+    logger.info("creating_evenement", bien_id=bien_id, sci_id=str(sci_id), type=payload.type)
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    row = payload.model_dump(mode="json")
+    row["id_bien"] = bien_id
+
+    write_client = _get_write_client()
+    result = write_client.table("evenements_bien").insert(row).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise DatabaseError("Unable to create evenement")
+
+    created = data[0]
+    logger.info("evenement_created", event_id=created.get("id"), bien_id=bien_id)
+    return created
+
+
+# ──────────────────────────────────────────────────────────────
+# UPDATE evenement
+# ──────────────────────────────────────────────────────────────
+
+@router.patch("/{bien_id}/evenements/{event_id}", response_model=EvenementResponse)
+async def update_bien_evenement(
+    sci_id: UUID,
+    bien_id: str,
+    event_id: str,
+    payload: EvenementUpdate,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Met à jour un événement (gérant uniquement)."""
+    update_payload = payload.model_dump(exclude_unset=True, mode="json")
+    logger.info("updating_evenement", event_id=event_id, bien_id=bien_id, fields=list(update_payload.keys()))
+
+    if not update_payload:
+        raise DatabaseError("No update fields provided")
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = (
+        client.table("evenements_bien")
+        .update(update_payload)
+        .eq("id", event_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("Evenement", event_id)
+
+    logger.info("evenement_updated", event_id=event_id)
+    return data[0]
+
+
+# ──────────────────────────────────────────────────────────────
+# DELETE evenement
+# ──────────────────────────────────────────────────────────────
+
+@router.delete("/{bien_id}/evenements/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bien_evenement(
+    sci_id: UUID,
+    bien_id: str,
+    event_id: str,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Supprime un événement (gérant uniquement)."""
+    logger.info("deleting_evenement", event_id=event_id, bien_id=bien_id)
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    result = client.table("evenements_bien").delete().eq("id", event_id).eq("id_bien", bien_id).execute()
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    logger.info("evenement_deleted", event_id=event_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# GET obligations for a bien
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/obligations")
+async def get_bien_obligations(
+    sci_id: UUID,
+    bien_id: str,
+    request: Request,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Retourne le statut des obligations réglementaires d'un bien."""
+    from app.services.obligations_service import get_obligations
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    return get_obligations(client, bien_id)

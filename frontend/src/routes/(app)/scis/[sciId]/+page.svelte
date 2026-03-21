@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { Building2, Users, FileText, MapPin, FolderOpen, Download, Wallet, TrendingUp, Receipt, AlertTriangle, CalendarDays, Clock, CheckCircle2, Pencil, Trash2, Loader2 } from 'lucide-svelte';
-	import type { SCIDetail } from '$lib/api';
-	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci } from '$lib/api';
+	import type { SCIDetail, ComptabiliteAnnuelle } from '$lib/api';
+	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci, fetchComptabiliteAnnuelle } from '$lib/api';
+	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { Button } from '$lib/components/ui/button';
 	import { addToast } from '$lib/components/ui/toast';
@@ -21,6 +22,75 @@
 	// Delete SCI state
 	let showDeleteConfirm = $state(false);
 	let deletingSci = $state(false);
+
+	// ── Comptabilité annuelle ──────────────────────────────────────
+	let comptaYear = $state(new Date().getFullYear());
+	let comptaData = $state<ComptabiliteAnnuelle | null>(null);
+	let comptaLoading = $state(false);
+	let comptaError = $state('');
+
+	$effect(() => {
+		loadComptabilite(comptaYear);
+	});
+
+	async function loadComptabilite(annee: number) {
+		comptaLoading = true;
+		comptaError = '';
+		try {
+			comptaData = await fetchComptabiliteAnnuelle(sciId, annee);
+		} catch (err: any) {
+			comptaError = err?.message ?? 'Impossible de charger la comptabilité.';
+			comptaData = null;
+		} finally {
+			comptaLoading = false;
+		}
+	}
+
+	function handleComptaYearChange(year: number) {
+		comptaYear = year;
+	}
+
+	function exportComptaCsv() {
+		if (!comptaData) return;
+		const headers = ['Bien', 'Revenus', 'Charges', 'Événements', 'Résultat'];
+		const rows = comptaData.lignes.map(l => [
+			l.bien_adresse,
+			l.revenus.toFixed(2),
+			l.charges.toFixed(2),
+			l.evenements.toFixed(2),
+			l.resultat.toFixed(2)
+		]);
+		rows.push([
+			'TOTAL',
+			comptaData.total_revenus.toFixed(2),
+			comptaData.total_charges.toFixed(2),
+			comptaData.total_evenements.toFixed(2),
+			comptaData.total_resultat.toFixed(2)
+		]);
+		const csvContent = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `comptabilite_${sci.nom}_${comptaYear}.csv`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
+	function formatVariation(value: number | null | undefined): { text: string; color: string } | null {
+		if (value == null || value === 0) return null;
+		const pct = Math.round(value);
+		return {
+			text: pct > 0 ? `+${pct}%` : `${pct}%`,
+			color: pct > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+		};
+	}
+
+	const comptaVarRevenus = $derived(comptaData ? formatVariation(comptaData.variation_revenus) : null);
+	const comptaVarCharges = $derived(comptaData ? formatVariation(comptaData.variation_charges) : null);
+	const comptaVarResultat = $derived(comptaData ? formatVariation(comptaData.variation_resultat) : null);
 
 	const isGerant = $derived(userRole === 'gerant');
 	const hasFinancials = $derived(
@@ -390,6 +460,82 @@
 			<p class="mt-3 text-xs text-amber-600 dark:text-amber-400">
 				Renseignez le régime fiscal (IR/IS) de cette SCI pour afficher les échéances spécifiques.
 			</p>
+		{/if}
+	</div>
+
+	<!-- Comptabilité annuelle -->
+	<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+		<div class="flex items-center justify-between gap-3">
+			<div class="flex items-center gap-2">
+				<Wallet class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Comptabilité</h2>
+				<AnneeSelector value={comptaYear} onchange={handleComptaYearChange} />
+			</div>
+			{#if comptaData && comptaData.lignes.length > 0}
+				<button
+					type="button"
+					onclick={exportComptaCsv}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+				>
+					<Download class="h-3.5 w-3.5" />
+					Exporter (CSV)
+				</button>
+			{/if}
+		</div>
+
+		{#if comptaLoading}
+			<div class="mt-4 flex items-center justify-center py-8">
+				<Loader2 class="h-5 w-5 animate-spin text-slate-400" />
+			</div>
+		{:else if comptaError}
+			<p class="mt-4 text-sm text-rose-600 dark:text-rose-400">{comptaError}</p>
+		{:else if comptaData && comptaData.lignes.length > 0}
+			<div class="mt-4 overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="border-b border-slate-200 dark:border-slate-700">
+							<th class="pb-2 text-left font-semibold text-slate-600 dark:text-slate-400">Bien</th>
+							<th class="pb-2 text-right font-semibold text-slate-600 dark:text-slate-400">Revenus</th>
+							<th class="pb-2 text-right font-semibold text-slate-600 dark:text-slate-400">Charges</th>
+							<th class="pb-2 text-right font-semibold text-slate-600 dark:text-slate-400">Événements</th>
+							<th class="pb-2 text-right font-semibold text-slate-600 dark:text-slate-400">Résultat</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each comptaData.lignes as ligne}
+							<tr class="border-b border-slate-100 dark:border-slate-800">
+								<td class="py-2.5 font-medium text-slate-900 dark:text-slate-100">{ligne.bien_adresse}</td>
+								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.revenus)}</td>
+								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.charges)}</td>
+								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.evenements)}</td>
+								<td class="py-2.5 text-right font-semibold {ligne.resultat >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">{formatEur(ligne.resultat)}</td>
+							</tr>
+						{/each}
+					</tbody>
+					<tfoot>
+						<tr class="border-t-2 border-slate-300 dark:border-slate-600">
+							<td class="pt-3 font-bold text-slate-900 dark:text-slate-100">Total</td>
+							<td class="pt-3 text-right font-bold text-slate-900 dark:text-slate-100">
+								{formatEur(comptaData.total_revenus)}
+								{#if comptaVarRevenus}<span class="ml-1 text-xs {comptaVarRevenus.color}">{comptaVarRevenus.text}</span>{/if}
+							</td>
+							<td class="pt-3 text-right font-bold text-slate-900 dark:text-slate-100">
+								{formatEur(comptaData.total_charges)}
+								{#if comptaVarCharges}<span class="ml-1 text-xs {comptaVarCharges.color}">{comptaVarCharges.text}</span>{/if}
+							</td>
+							<td class="pt-3 text-right font-bold text-slate-900 dark:text-slate-100">
+								{formatEur(comptaData.total_evenements)}
+							</td>
+							<td class="pt-3 text-right font-bold {comptaData.total_resultat >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">
+								{formatEur(comptaData.total_resultat)}
+								{#if comptaVarResultat}<span class="ml-1 text-xs {comptaVarResultat.color}">{comptaVarResultat.text}</span>{/if}
+							</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+		{:else}
+			<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Aucune donnée comptable pour {comptaYear}.</p>
 		{/if}
 	</div>
 

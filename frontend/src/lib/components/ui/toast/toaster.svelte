@@ -4,15 +4,15 @@
 
 	function cardClass(toast: ToastItem) {
 		if (toast.variant === 'success') {
-			return 'border-emerald-200 bg-emerald-50 text-emerald-900';
+			return 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-100';
 		}
 		if (toast.variant === 'error') {
-			return 'border-rose-200 bg-rose-50 text-rose-900';
+			return 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-100';
 		}
 		if (toast.variant === 'undo') {
-			return 'border-amber-200 bg-amber-50 text-amber-900';
+			return 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/80 dark:text-amber-100';
 		}
-		return 'border-slate-200 bg-white text-slate-900';
+		return 'border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
 	}
 </script>
 
@@ -48,9 +48,9 @@
 				{/if}
 			</div>
 			{#if toast.variant === 'undo'}
-				<div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-amber-200">
+				<div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-amber-200 dark:bg-amber-900">
 					<div
-						class="h-full rounded-full bg-amber-500"
+						class="h-full rounded-full bg-amber-500 dark:bg-amber-400"
 						style="animation: shrink {toast.timeoutMs}ms linear forwards"
 					></div>
 				</div>

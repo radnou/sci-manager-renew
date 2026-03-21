@@ -5,7 +5,7 @@
 
 	type BienListItem = Bien;
 	import { formatEur } from '$lib/high-value/formatters';
-	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet, ArrowUpRight, Upload } from 'lucide-svelte';
+	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet, ArrowUpRight, Upload, CircleCheck, CircleAlert, TriangleAlert } from 'lucide-svelte';
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
 	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
@@ -125,6 +125,52 @@
 		if (bien.type_locatif) return typeLocatifLabel[bien.type_locatif] ?? bien.type_locatif;
 		return null;
 	}
+
+	type ObligationStatus = { level: 'green' | 'orange' | 'red'; tooltip: string };
+
+	function getObligationStatus(bien: BienListItem): ObligationStatus {
+		const statut = bien.statut || 'vacant';
+		const hasBail = statut === 'loue';
+		const missing: string[] = [];
+
+		if (!hasBail) {
+			missing.push('Pas de bail actif');
+		}
+
+		// If the bien is marked as "loue" but lacks data that indicates a locataire,
+		// we consider it met. We can only check from the list data.
+		// PNO and locataire presence are inferred from statut: if loue, locataire is assumed present.
+		// Without extra API data on the list endpoint, we use statut as proxy.
+
+		if (statut === 'vacant') {
+			return { level: 'red', tooltip: 'Critique : ' + missing.join(', ') };
+		}
+
+		if (statut === 'travaux') {
+			return { level: 'orange', tooltip: 'En travaux — bail et locataire en attente' };
+		}
+
+		// loue — all met
+		return { level: 'green', tooltip: 'Toutes les obligations sont remplies' };
+	}
+
+	const obligationDot: Record<string, string> = {
+		green: 'bg-emerald-500 dark:bg-emerald-400',
+		orange: 'bg-amber-500 dark:bg-amber-400',
+		red: 'bg-rose-500 dark:bg-rose-400'
+	};
+
+	const obligationIcon: Record<string, typeof CircleCheck> = {
+		green: CircleCheck,
+		orange: TriangleAlert,
+		red: CircleAlert
+	};
+
+	const obligationIconColor: Record<string, string> = {
+		green: 'text-emerald-500 dark:text-emerald-400',
+		orange: 'text-amber-500 dark:text-amber-400',
+		red: 'text-rose-500 dark:text-rose-400'
+	};
 </script>
 
 <svelte:head><title>Biens | {sci.nom} | GérerSCI</title></svelte:head>
@@ -238,17 +284,25 @@
 				{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
 				{@const label = statutLabel[statut] ?? statut}
 				{@const isDeleting = deletingId != null && bien.id != null && deletingId === String(bien.id)}
+				{@const obligation = getObligationStatus(bien)}
 				<div
 					class="group rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
 				>
 					<!-- Header: address + badge -->
 					<div class="flex items-start justify-between gap-2">
-						<a
-							href={`/scis/${sciId}/biens/${bien.id}`}
-							class="font-semibold text-slate-900 hover:text-sky-600 dark:text-slate-100 dark:hover:text-sky-400"
-						>
-							{bien.adresse}
-						</a>
+						<div class="flex items-center gap-2">
+							<span
+								class="relative inline-block h-2.5 w-2.5 shrink-0 rounded-full {obligationDot[obligation.level]}"
+								title={obligation.tooltip}
+								aria-label={obligation.tooltip}
+							></span>
+							<a
+								href={`/scis/${sciId}/biens/${bien.id}`}
+								class="font-semibold text-slate-900 hover:text-sky-600 dark:text-slate-100 dark:hover:text-sky-400"
+							>
+								{bien.adresse}
+							</a>
+						</div>
 						<span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium {badgeClass}">
 							{label}
 						</span>
@@ -381,14 +435,22 @@
 						{@const badgeClass = statutBadge[statut] ?? statutBadge['vacant']}
 						{@const label = statutLabel[statut] ?? statut}
 						{@const isDeleting = deletingId != null && bien.id != null && deletingId === String(bien.id)}
+						{@const obligation = getObligationStatus(bien)}
 						<tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
 							<td class="px-4 py-3">
-								<a
-									href={`/scis/${sciId}/biens/${bien.id}`}
-									class="font-medium text-slate-900 hover:text-sky-600 dark:text-slate-100 dark:hover:text-sky-400"
-								>
-									{bien.adresse}
-								</a>
+								<div class="flex items-center gap-2">
+									<span
+										class="inline-block h-2 w-2 shrink-0 rounded-full {obligationDot[obligation.level]}"
+										title={obligation.tooltip}
+										aria-label={obligation.tooltip}
+									></span>
+									<a
+										href={`/scis/${sciId}/biens/${bien.id}`}
+										class="font-medium text-slate-900 hover:text-sky-600 dark:text-slate-100 dark:hover:text-sky-400"
+									>
+										{bien.adresse}
+									</a>
+								</div>
 							</td>
 							<td class="whitespace-nowrap px-4 py-3 text-slate-500 dark:text-slate-400">
 								{bien.ville ?? '--'} {bien.code_postal ?? ''}

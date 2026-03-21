@@ -40,6 +40,7 @@ from app.api.v1 import (
     biens,
     cerfa,
     charges,
+    comptabilite,
     dashboard,
     export,
     files,
@@ -538,6 +539,7 @@ app.include_router(finances.router, prefix="/api/v1")
 app.include_router(scis_biens.router, prefix="/api/v1")
 app.include_router(mouvements_parts.router, prefix="/api/v1")
 app.include_router(assemblees_generales.router, prefix="/api/v1")
+app.include_router(comptabilite.router, prefix="/api/v1")
 app.include_router(import_csv.router, prefix="/api/v1")
 app.include_router(import_csv.templates_router, prefix="/api/v1")
 app.include_router(admin.router)

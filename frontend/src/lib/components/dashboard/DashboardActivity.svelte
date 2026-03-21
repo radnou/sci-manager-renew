@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { HandCoins, Building2, FileText, ScrollText, Clock } from 'lucide-svelte';
+	import { HandCoins, Building2, FileText, ScrollText, Clock, ChevronRight } from 'lucide-svelte';
 	import type { ActivityItem } from '$lib/api';
 
 	interface Props {
@@ -11,7 +11,7 @@
 	const maxItems = 10;
 	const displayed = $derived(activite.slice(0, maxItems));
 
-	const typeConfig = {
+	const typeConfig: Record<string, { icon: typeof HandCoins; color: string; bg: string }> = {
 		loyer: {
 			icon: HandCoins,
 			color: 'text-emerald-500 dark:text-emerald-400',
@@ -33,6 +33,22 @@
 			bg: 'bg-amber-50 dark:bg-amber-950/40'
 		}
 	};
+
+	function getActivityLink(item: ActivityItem): string | null {
+		if (item.type === 'bien' && item.id_sci && item.id) {
+			return `/scis/${item.id_sci}/biens/${item.id}`;
+		}
+		if (item.type === 'loyer' && item.id_sci && item.id_bien) {
+			return `/scis/${item.id_sci}/biens/${item.id_bien}#loyers`;
+		}
+		if (item.type === 'bail' && item.id_sci && item.id_bien) {
+			return `/scis/${item.id_sci}/biens/${item.id_bien}`;
+		}
+		if (item.type === 'quittance' && item.id_sci && item.id_bien) {
+			return `/scis/${item.id_sci}/biens/${item.id_bien}#loyers`;
+		}
+		return null;
+	}
 
 	function relativeTime(dateStr: string): string {
 		const now = Date.now();
@@ -77,23 +93,45 @@
 		<div class="divide-y divide-slate-100 dark:divide-slate-800">
 			{#each displayed as item (item.id)}
 				{@const config = typeConfig[item.type] ?? typeConfig['loyer']}
-				<div class="flex items-start gap-3 px-5 py-3.5">
-					<div
-						class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {config.bg}"
-					>
-						<config.icon class="h-4 w-4 {config.color}" />
-					</div>
-					<div class="min-w-0 flex-1">
-						<p class="text-sm text-slate-700 dark:text-slate-300">{item.description}</p>
-						<div class="mt-0.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
-							<span>{relativeTime(item.created_at)}</span>
-							{#if item.sci_nom}
-								<span class="text-slate-300 dark:text-slate-600">|</span>
-								<span>{item.sci_nom}</span>
-							{/if}
+				{@const link = getActivityLink(item)}
+				{#if link}
+					<a href={link} class="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+						<div
+							class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {config.bg}"
+						>
+							<config.icon class="h-4 w-4 {config.color}" />
+						</div>
+						<div class="min-w-0 flex-1">
+							<p class="text-sm text-slate-700 dark:text-slate-300">{item.description}</p>
+							<div class="mt-0.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+								<span>{relativeTime(item.created_at)}</span>
+								{#if item.sci_nom}
+									<span class="text-slate-300 dark:text-slate-600">|</span>
+									<span>{item.sci_nom}</span>
+								{/if}
+							</div>
+						</div>
+						<ChevronRight class="mt-1 h-4 w-4 flex-shrink-0 text-slate-300 dark:text-slate-600" />
+					</a>
+				{:else}
+					<div class="flex items-start gap-3 px-5 py-3.5">
+						<div
+							class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {config.bg}"
+						>
+							<config.icon class="h-4 w-4 {config.color}" />
+						</div>
+						<div class="min-w-0 flex-1">
+							<p class="text-sm text-slate-700 dark:text-slate-300">{item.description}</p>
+							<div class="mt-0.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+								<span>{relativeTime(item.created_at)}</span>
+								{#if item.sci_nom}
+									<span class="text-slate-300 dark:text-slate-600">|</span>
+									<span>{item.sci_nom}</span>
+								{/if}
+							</div>
 						</div>
 					</div>
-				</div>
+				{/if}
 			{/each}
 		</div>
 	{/if}
