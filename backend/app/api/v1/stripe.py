@@ -61,7 +61,11 @@ def _create_or_get_user(email: str) -> str | None:
         })
         if hasattr(result, "user") and result.user:
             return str(result.user.id)
-    except Exception:
+    except Exception as exc:
+        # Handle race condition: user was created between find and create
+        if "already been registered" in str(exc):
+            logger.info("guest_user_already_exists_retrying_find", email=email)
+            return _find_user_by_email(email)
         logger.error("guest_user_creation_failed", email=email, exc_info=True)
     return None
 
