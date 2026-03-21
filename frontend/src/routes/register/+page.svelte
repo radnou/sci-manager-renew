@@ -26,7 +26,7 @@
 		pro: 'Fiscal (39€/mois)',
 		lifetime: 'Lifetime',
 	};
-	const selectedPlan = $derived($page.url.searchParams.get('plan'));
+	const selectedPlan = $derived($page.url?.searchParams.get('plan') ?? null);
 	const planLabel = $derived(selectedPlan ? planLabels[selectedPlan] ?? selectedPlan : null);
 
 	const passwordMinLength = 8;

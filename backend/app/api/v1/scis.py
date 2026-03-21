@@ -14,6 +14,7 @@ from app.core.security import get_current_user
 from app.models.biens import BienResponse
 from app.models.loyers import LoyerResponse
 from app.models.sci import SCICreate, SCIResponse, SCIUpdate
+from app.services.document_links import create_document_signed_url
 from app.services.email_service import email_service
 from app.services.subscription_service import SubscriptionService
 
@@ -557,8 +558,11 @@ async def list_sci_documents(
         raise DatabaseError(str(docs_result.error))
 
     docs = docs_result.data or []
+    bucket = client.storage.from_("documents")
     # Enrich with bien address
     for doc in docs:
         doc["bien_adresse"] = bien_map.get(str(doc.get("id_bien", "")), "")
+        if isinstance(doc.get("url"), str) and doc["url"]:
+            doc["url"] = create_document_signed_url(bucket, doc["url"])
 
     return docs

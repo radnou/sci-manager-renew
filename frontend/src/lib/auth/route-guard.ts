@@ -1,7 +1,8 @@
 const PROTECTED_ROUTE_PREFIXES = [
 	'/account',
 	'/settings',
-	'/onboarding'
+	'/onboarding',
+	'/admin'
 ];
 
 const GUEST_ONLY_ROUTE_PREFIXES = ['/login', '/register', '/forgot-password'];
@@ -19,8 +20,7 @@ const PUBLIC_ROUTE_PREFIXES = [
 	'/confidentialite',
 	'/mentions-legales',
 	'/privacy',
-	'/simulateur-cerfa',
-	'/admin'
+	'/simulateur-cerfa'
 ];
 
 function matchesRoutePrefix(pathname: string, routePrefix: string) {

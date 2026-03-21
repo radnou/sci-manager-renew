@@ -4,6 +4,7 @@ import socket
 from datetime import datetime, timezone
 from time import perf_counter
 from urllib.parse import urlparse
+from collections import OrderedDict
 
 import stripe
 import structlog
@@ -71,10 +72,57 @@ async def _check_stripe() -> dict:
 
     stripe.api_key = settings.stripe_secret_key
     if settings.stripe_secret_key.startswith("sk_test"):
-        return {"healthy": True, "mode": "test"}
-    if settings.stripe_secret_key.startswith("sk_live"):
-        return {"healthy": True, "mode": "live"}
-    return {"healthy": False, "error": "invalid stripe key format"}
+        mode = "test"
+    elif settings.stripe_secret_key.startswith("sk_live"):
+        mode = "live"
+    else:
+        return {"healthy": False, "error": "invalid stripe key format"}
+
+    configured_prices = OrderedDict(
+        (
+            ("starter_monthly", settings.stripe_starter_price_id),
+            ("starter_annual", settings.stripe_starter_annual_price_id),
+            ("pro_monthly", settings.stripe_pro_price_id),
+            ("pro_annual", settings.stripe_pro_annual_price_id),
+            ("cabinet_monthly", settings.stripe_cabinet_price_id),
+            ("cabinet_annual", settings.stripe_cabinet_annual_price_id),
+        )
+    )
+
+    missing_price_ids = [name for name, value in configured_prices.items() if not value]
+    if missing_price_ids:
+        return {
+            "healthy": False,
+            "mode": mode,
+            "error": "missing stripe price ids",
+            "missing_price_ids": missing_price_ids,
+        }
+
+    invalid_price_ids: list[str] = []
+    inactive_price_ids: list[str] = []
+
+    for name, price_id in configured_prices.items():
+        try:
+            price = stripe.Price.retrieve(price_id)
+        except Exception as exc:  # pragma: no cover - network dependent
+            logger.warning("stripe_price_validation_failed", price_id=price_id, price_name=name, exc_info=True)
+            invalid_price_ids.append(name)
+            continue
+
+        is_active = bool(price.get("active", True)) if hasattr(price, "get") else bool(getattr(price, "active", True))
+        if not is_active:
+            inactive_price_ids.append(name)
+
+    if invalid_price_ids or inactive_price_ids:
+        return {
+            "healthy": False,
+            "mode": mode,
+            "error": "stripe checkout catalog invalid",
+            "invalid_price_ids": invalid_price_ids,
+            "inactive_price_ids": inactive_price_ids,
+        }
+
+    return {"healthy": True, "mode": mode, "validated_price_count": len(configured_prices)}
 
 
 async def _check_resend() -> dict:

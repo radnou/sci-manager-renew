@@ -191,7 +191,7 @@
 				{/if}
 				{#each scis as sci (sci.id)}
 					<a
-						href="/scis/{sci.id}"
+						href={`/scis/${sci.id}`}
 						role="option"
 						aria-selected={String(sci.id) === String(activeSciId)}
 						class="flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 {String(sci.id) === String(activeSciId) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"
@@ -257,7 +257,7 @@
 				</p>
 				{#each scis as sci (sci.id)}
 					<a
-						href="/scis/{sci.id}"
+						href={`/scis/${sci.id}`}
 						onclick={closeMobileOnNavigate}
 						class="mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
 					>

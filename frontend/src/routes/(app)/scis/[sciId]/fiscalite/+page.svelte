@@ -60,7 +60,8 @@
 				total_revenus: exercice.total_revenus ?? 0,
 				total_charges: exercice.total_charges ?? 0,
 				sci_nom: sci.nom,
-				siren: sci.siren ?? ''
+				siren: sci.siren ?? '',
+				regime_fiscal: sci.regime_fiscal ?? undefined
 			});
 			const url = URL.createObjectURL(blob);
 			window.open(url, '_blank');

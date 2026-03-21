@@ -13,7 +13,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.config import settings
-from app.core.exceptions import FeatureDisabledError
+from app.core.exceptions import FeatureDisabledError, ValidationError
 from app.core.security import get_current_user
 from app.services.subscription_service import SubscriptionService
 
@@ -26,6 +26,20 @@ class Cerfa2044Request(BaseModel):
     total_charges: float = Field(ge=0)
     sci_nom: str = ""
     siren: str = ""
+    regime_fiscal: str | None = None
+
+
+def _ensure_cerfa_2044_allowed(payload: Cerfa2044Request) -> None:
+    if not settings.feature_cerfa_generation:
+        raise FeatureDisabledError(
+            "La génération Cerfa est désactivée.",
+            flag_name="feature_cerfa_generation",
+        )
+
+    if (payload.regime_fiscal or "").upper() == "IS":
+        raise ValidationError(
+            "Le CERFA 2044 ne s'applique pas aux SCI à l'IS. Utilisez la liasse fiscale 2065."
+        )
 
 
 @router.post("/2044")
@@ -35,11 +49,7 @@ async def generate_cerfa_2044(
 ) -> dict[str, float | int | str]:
     """Simplified CERFA 2044 fiscal calculation (JSON)."""
     SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
-    if not settings.feature_cerfa_generation:
-        raise FeatureDisabledError(
-            "La génération Cerfa est désactivée.",
-            flag_name="feature_cerfa_generation",
-        )
+    _ensure_cerfa_2044_allowed(payload)
     resultat_fiscal = round(payload.total_revenus - payload.total_charges, 2)
     return {
         "status": "generated",
@@ -58,6 +68,7 @@ async def generate_cerfa_2044_pdf(
 ):
     """Generate a simplified CERFA 2044 summary as PDF."""
     SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
+    _ensure_cerfa_2044_allowed(payload)
 
     resultat_fiscal = round(payload.total_revenus - payload.total_charges, 2)
 

@@ -146,6 +146,56 @@ test.describe('Gestion des biens @P0', () => {
     }
   });
 
+  test('les modales de fiche bien restent exclusives @P1', async ({ page }) => {
+    const navigated = await goToFicheBien(page);
+    if (!navigated) return;
+
+    await page.getByRole('button', { name: 'Modifier' }).click();
+    await expect(page.getByRole('dialog', { name: 'Modifier le bail' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Enregistrer un loyer' }).click();
+    await expect(page.getByRole('dialog', { name: 'Enregistrer un loyer' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Modifier le bail' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Ajouter une charge' }).click();
+    await expect(page.getByRole('dialog', { name: 'Ajouter une charge' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Enregistrer un loyer' })).toHaveCount(0);
+    await expect(page.locator('[role="dialog"]')).toHaveCount(1);
+  });
+
+  test('la quittance explique qu un bail actif est requis @P1', async ({ page }) => {
+    await page.route('**/api/v1/scis/aaa11111-1111-1111-1111-111111111111/biens/101', async route => {
+      const response = {
+        id: 101,
+        id_sci: 'aaa11111-1111-1111-1111-111111111111',
+        adresse: '12 rue de Belleville',
+        ville: 'Paris',
+        bail_actif: null,
+        loyers_recents: [],
+        charges_list: [],
+        assurance_pno: null,
+        frais_agence: [],
+        documents: [],
+        rentabilite: {
+          brute: 4.07,
+          nette: 3.2,
+          cashflow_mensuel: 200,
+          cashflow_annuel: 2400
+        }
+      };
+      await route.fulfill({ json: response });
+    });
+
+    const navigated = await goToFicheBien(page);
+    if (!navigated) return;
+
+    await page.getByRole('button', { name: 'Générer quittance' }).click();
+    await expect(page.getByText('Aucun bail actif')).toBeVisible();
+    await expect(
+      page.getByText("Créez d'abord un bail actif pour ce bien avant de générer une quittance.")
+    ).toBeVisible();
+  });
+
   test('enregistrer un paiement de loyer @P1', async ({ page }) => {
     const navigated = await goToFicheBien(page);
     if (!navigated) return;

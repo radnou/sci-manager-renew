@@ -17,6 +17,12 @@ from app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/quitus", tags=["quitus"])
 
+_LEGACY_QUITUS_FILENAME_RE = re.compile(r"^quitus-(?P<token>[a-f0-9]{32})\.pdf$", re.IGNORECASE)
+_SCOPED_QUITUS_FILENAME_RE = re.compile(
+    r"^quitus-(?P<sci_id>.+)-(?P<token>[a-f0-9]{32})\.pdf$",
+    re.IGNORECASE,
+)
+
 
 def _validate_filename(filename: str) -> str:
     if (
@@ -35,7 +41,7 @@ def _build_inline_filename(periode: str) -> str:
     return f"quittance-{slug or 'periode'}.pdf"
 
 
-def _verify_bien_ownership(request: Request, user_id: str, id_bien: str) -> None:
+def _verify_bien_ownership(request: Request, user_id: str, id_bien: str) -> str:
     client = get_supabase_user_client(request)
     sci_check = client.table("biens").select("id_sci").eq("id", id_bien).execute()
     if not sci_check.data:
@@ -44,6 +50,7 @@ def _verify_bien_ownership(request: Request, user_id: str, id_bien: str) -> None
     member_check = client.table("associes").select("id").eq("id_sci", sci_id).eq("user_id", user_id).execute()
     if not member_check.data:
         raise HTTPException(status_code=403, detail="Accès non autorisé à ce bien")
+    return str(sci_id)
 
 
 def _verify_loyer_belongs_to_bien(request: Request, id_loyer: str, id_bien: str) -> None:
@@ -55,17 +62,38 @@ def _verify_loyer_belongs_to_bien(request: Request, id_loyer: str, id_bien: str)
         raise HTTPException(status_code=403, detail="Le loyer n'appartient pas à ce bien")
 
 
+def _build_quitus_filename(sci_id: str) -> str:
+    return f"quitus-{sci_id}-{uuid4().hex}.pdf"
+
+
+def _extract_quitus_sci_id(filename: str) -> str | None:
+    if _LEGACY_QUITUS_FILENAME_RE.fullmatch(filename):
+        return None
+
+    match = _SCOPED_QUITUS_FILENAME_RE.fullmatch(filename)
+    if not match:
+        raise ValidationError("Nom de fichier invalide.")
+    return match.group("sci_id")
+
+
+def _verify_quitus_download_access(request: Request, user_id: str, sci_id: str) -> None:
+    client = get_supabase_user_client(request)
+    member_check = client.table("associes").select("id").eq("id_sci", sci_id).eq("user_id", user_id).execute()
+    if not member_check.data:
+        raise HTTPException(status_code=403, detail="Accès non autorisé à cette quittance")
+
+
 @router.post("/generate", response_model=QuitusResponse)
 @limiter.limit("15/minute")
 async def generate_quitus(
     request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)
 ):
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
-    _verify_bien_ownership(request, user_id, payload.id_bien)
+    sci_id = _verify_bien_ownership(request, user_id, payload.id_bien)
     _verify_loyer_belongs_to_bien(request, payload.id_loyer, payload.id_bien)
     pdf_bytes = QuitusService.generate_quitus_pdf(payload)
-    filename = f"quitus-{uuid4().hex}.pdf"
-    storage_path = f"quitus/{user_id}/{filename}"
+    filename = _build_quitus_filename(sci_id)
+    storage_path = f"quitus/{sci_id}/{filename}"
 
     await storage_service.create_bucket_if_not_exists()
     await storage_service.upload_file(
@@ -111,7 +139,12 @@ async def render_quitus(request: Request, payload: QuitusRequest, user_id: str =
 async def download_quitus(request: Request, filename: str, user_id: str = Depends(get_current_user)):
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
     safe_filename = _validate_filename(filename)
-    storage_path = f"quitus/{user_id}/{safe_filename}"
+    sci_id = _extract_quitus_sci_id(safe_filename)
+    if sci_id is not None:
+        _verify_quitus_download_access(request, user_id, sci_id)
+        storage_path = f"quitus/{sci_id}/{safe_filename}"
+    else:
+        storage_path = f"quitus/{user_id}/{safe_filename}"
 
     try:
         pdf_bytes = await storage_service.download_file(storage_path)

@@ -3,6 +3,10 @@
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { Plus, Pencil, Users, Calendar, History } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
+	import {
+		announceFicheBienModal,
+		subscribeExclusiveFicheBienModal
+	} from '$lib/components/fiche-bien/modal-coordinator';
 
 	interface Props {
 		bail: BailEmbed | null;
@@ -16,6 +20,18 @@
 
 	let showBailModal = $state(false);
 	let editBail: BailEmbed | null = $state(null);
+
+	$effect(() => {
+		return subscribeExclusiveFicheBienModal('bail', () => {
+			showBailModal = false;
+		});
+	});
+
+	function openBailModal(item: BailEmbed | null = null) {
+		editBail = item;
+		announceFicheBienModal('bail');
+		showBailModal = true;
+	}
 
 	const statutConfig: Record<string, { label: string; class: string }> = {
 		en_cours: {
@@ -48,7 +64,7 @@
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Bail</h2>
 		<div class="flex items-center gap-2">
 			<a
-				href="/scis/{sciId}/biens/{bienId}/baux"
+				href={`/scis/${sciId}/biens/${bienId}/baux`}
 				class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
 			>
 				<History class="h-4 w-4" />
@@ -56,7 +72,7 @@
 			</a>
 			{#if isGerant && (!bail || bail.statut === 'expire' || bail.statut === 'resilie')}
 				<button
-					onclick={() => { editBail = null; showBailModal = true; }}
+					onclick={() => openBailModal()}
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
 				>
 					<Plus class="h-4 w-4" />
@@ -90,7 +106,7 @@
 				</span>
 				{#if isGerant}
 					<button
-						onclick={() => { editBail = bail; showBailModal = true; }}
+						onclick={() => openBailModal(bail)}
 						class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
 					>
 						<Pencil class="h-3.5 w-3.5" />

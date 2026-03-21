@@ -4,6 +4,10 @@
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { FileText, Upload, Trash2, Download } from 'lucide-svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import {
+		announceFicheBienModal,
+		subscribeExclusiveFicheBienModal
+	} from '$lib/components/fiche-bien/modal-coordinator';
 
 	interface Props {
 		documents: DocumentBienEmbed[];
@@ -20,6 +24,12 @@
 	let uploadFile: File | null = $state(null);
 	let uploading = $state(false);
 	let uploadError: string | null = $state(null);
+
+	$effect(() => {
+		return subscribeExclusiveFicheBienModal('document', () => {
+			showUploadForm = false;
+		});
+	});
 
 	const categorieLabels: Record<string, string> = {
 		bail: 'Bail',
@@ -43,6 +53,17 @@
 
 	function getCategorieBadge(cat: string): string {
 		return categorieBadgeColors[cat] ?? categorieBadgeColors['autre'];
+	}
+
+	function getDocumentDate(doc: DocumentBienEmbed): string | undefined {
+		return doc.uploaded_at ?? doc.created_at;
+	}
+
+	function toggleUploadForm() {
+		if (!showUploadForm) {
+			announceFicheBienModal('document');
+		}
+		showUploadForm = !showUploadForm;
 	}
 
 	function handleFileChange(e: Event) {
@@ -114,7 +135,7 @@
 		</div>
 		{#if isGerant}
 			<button
-				onclick={() => (showUploadForm = !showUploadForm)}
+				onclick={toggleUploadForm}
 				class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
 			>
 				<Upload class="h-4 w-4" />
@@ -220,7 +241,7 @@
 							</span>
 						</div>
 						<p class="text-xs text-slate-500 dark:text-slate-400">
-							{formatFrDate(doc.created_at)}
+							{formatFrDate(getDocumentDate(doc))}
 						</p>
 					</div>
 					<div class="mt-3 flex items-center gap-2">

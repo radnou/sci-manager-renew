@@ -18,6 +18,7 @@ from app.schemas.baux import BailCreate, BailResponse, BailUpdate
 from app.schemas.documents import DocumentBienResponse
 from app.schemas.fiche_bien import FicheBienResponse, RentabiliteCalculee
 from app.schemas.frais_agence import FraisAgenceCreate, FraisAgenceResponse
+from app.services.document_links import create_document_signed_url, extract_document_storage_path
 from app.services.rentabilite_service import calculate_rentabilite
 
 logger = structlog.get_logger(__name__)
@@ -111,6 +112,19 @@ def _validate_upload(file_content: bytes, filename: str | None) -> str:
             )
 
     return ext
+
+
+def _refresh_documents_urls(client, docs: list[dict]) -> list[dict]:
+    """Return docs with fresh signed URLs for internal storage objects."""
+    bucket = client.storage.from_("documents")
+    refreshed_docs: list[dict] = []
+    for doc in docs:
+        refreshed = dict(doc)
+        url = refreshed.get("url")
+        if isinstance(url, str) and url:
+            refreshed["url"] = create_document_signed_url(bucket, url)
+        refreshed_docs.append(refreshed)
+    return refreshed_docs
 
 
 # ──────────────────────────────────────────────────────────────
@@ -275,7 +289,7 @@ async def get_fiche_bien(
     )
     documents = []
     if not getattr(docs_result, "error", None):
-        documents = docs_result.data or []
+        documents = _refresh_documents_urls(client, docs_result.data or [])
 
     # Calculate rentabilite
     prime_pno = 0
@@ -1148,7 +1162,7 @@ async def list_bien_documents(
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
-    return result.data or []
+    return _refresh_documents_urls(client, result.data or [])
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1192,20 +1206,11 @@ async def upload_document(
         raise DatabaseError(f"Upload failed: {exc}")
 
     # Generate a time-limited signed URL (24 h) instead of a public URL
-    signed_payload = client.storage.from_("documents").create_signed_url(
-        storage_path, 86400
-    )
-    if isinstance(signed_payload, dict):
-        url = (
-            signed_payload.get("signedURL")
-            or signed_payload.get("signedUrl")
-            or signed_payload.get("signed_url")
-        )
-    else:
-        url = signed_payload
-    if not url:
+    try:
+        url = create_document_signed_url(client.storage.from_("documents"), storage_path, 86400)
+    except DatabaseError:
         logger.error("signed_url_empty", storage_path=storage_path)
-        raise DatabaseError("Failed to generate signed URL for uploaded document")
+        raise
 
     # Insert record into documents table
     from datetime import datetime, timezone
@@ -1275,12 +1280,8 @@ async def delete_document(
     # --- Delete the file from Supabase Storage ---
     doc_url = doc.get("url", "")
     if doc_url:
-        # Extract storage path from public URL.
-        # Public URLs have the pattern: .../storage/v1/object/public/documents/<path>
-        _STORAGE_PREFIX = "/storage/v1/object/public/documents/"
-        idx = doc_url.find(_STORAGE_PREFIX)
-        if idx != -1:
-            storage_path = doc_url[idx + len(_STORAGE_PREFIX):]
+        storage_path = extract_document_storage_path(doc_url)
+        if storage_path:
             try:
                 client.storage.from_("documents").remove([storage_path])
                 logger.info("storage_file_deleted", path=storage_path)

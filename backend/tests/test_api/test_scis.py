@@ -526,6 +526,28 @@ def test_list_sci_documents_with_data(client, auth_headers, fake_supabase):
     assert doc1["bien_adresse"] == "10 rue Doc"
 
 
+def test_list_sci_documents_refreshes_internal_signed_urls(client, auth_headers, fake_supabase):
+    """Aggregated list should return a fresh signed URL for internal storage objects."""
+    _setup_uuid_scis(fake_supabase)
+    storage_path = f"sci-{_ASSOC_SCI_UUID}/bien-d1/bail.pdf"
+    fake_supabase.store["biens"] = [
+        {"id": "bien-d1", "id_sci": _ASSOC_SCI_UUID, "adresse": "10 rue Doc"},
+    ]
+    fake_supabase.store["documents_bien"] = [
+        {"id": "doc-1", "id_bien": "bien-d1", "nom": "bail.pdf", "categorie": "bail",
+         "url": f"https://storage.local/storage/v1/object/sign/documents/{storage_path}?token=expired",
+         "uploaded_at": "2026-02-01T00:00:00"},
+    ]
+
+    response = client.get(f"/api/v1/scis/{_ASSOC_SCI_UUID}/documents", headers=auth_headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["url"].startswith("https://storage.local/storage/v1/object/sign/documents/")
+    assert "expires_in=86400" in data[0]["url"]
+
+
 def test_list_sci_documents_no_documents(client, auth_headers, fake_supabase):
     """Biens exist but no documents -> returns empty list."""
     _setup_uuid_scis(fake_supabase)

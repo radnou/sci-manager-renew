@@ -34,6 +34,28 @@ test.describe('Paywall et pricing @P0', () => {
     expect(hasLimits).toBe(true);
   });
 
+  test('un echec checkout affiche un message explicite @P0', async ({ page }) => {
+    await page.route('**/api/v1/stripe/create-guest-checkout', async route => {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          detail: 'Checkout session creation failed: No such price.'
+        })
+      });
+    });
+
+    await page.goto('/pricing');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: 'Choisir Gestion' }).click();
+
+    await expect(page.getByText('Paiement temporairement indisponible')).toBeVisible();
+    await expect(
+      page.getByText('Le checkout Stripe est temporairement indisponible.').first()
+    ).toBeVisible();
+  });
+
   test.describe('Fonctionnalites pro accessibles @P1', () => {
 
     test.beforeEach(async ({ page }) => {

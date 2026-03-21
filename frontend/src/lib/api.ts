@@ -508,6 +508,7 @@ export interface Cerfa2044Request {
 	total_charges: number;
 	sci_nom?: string;
 	siren?: string;
+	regime_fiscal?: 'IR' | 'IS' | string;
 }
 
 export function generateCerfa2044Pdf(payload: Cerfa2044Request): Promise<Blob> {
@@ -751,7 +752,8 @@ export type DocumentBienEmbed = {
 	nom: string;
 	categorie: string;
 	url: string;
-	created_at: string;
+	created_at?: string;
+	uploaded_at?: string;
 };
 
 export type RentabiliteCalculee = {
@@ -1134,6 +1136,7 @@ export type Cerfa2044RequestPayload = {
 	total_charges: number;
 	sci_nom?: string;
 	siren?: string;
+	regime_fiscal?: 'IR' | 'IS' | string;
 };
 
 export type Cerfa2044ResponsePayload = {

@@ -4,10 +4,12 @@
 	import { Check, ArrowRight, Loader2 } from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
 	import { supabase } from '$lib/supabase';
+	import { addToast } from '$lib/components/ui/toast';
 
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);
 	let isAuthenticated = $state(false);
+	let checkoutError = $state<string | null>(null);
 
 	$effect(() => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
@@ -20,6 +22,7 @@
 			window.location.href = href;
 			return;
 		}
+		checkoutError = null;
 		checkoutLoading = planKey;
 		try {
 			const endpoint = isAuthenticated
@@ -37,12 +40,36 @@
 				headers,
 				body: JSON.stringify({ plan_key: planKey, billing_period: billingPeriod })
 			});
-			const data = await res.json();
+
+			let data: { url?: string; detail?: string; message?: string; error?: string } = {};
+			try {
+				data = await res.json();
+			} catch {
+				data = {};
+			}
+
+			if (!res.ok) {
+				const message =
+					res.status === 503
+						? 'Le checkout Stripe est temporairement indisponible. Réessayez dans quelques minutes ou contactez le support.'
+						: data.detail ?? data.message ?? data.error ?? "Impossible d'ouvrir le tunnel de souscription.";
+				throw new Error(message);
+			}
+
 			if (data.url) {
 				window.location.href = data.url;
+				return;
 			}
-		} catch {
-			window.location.href = '/register';
+			throw new Error("L'URL de paiement est indisponible.");
+		} catch (err: any) {
+			const message = err?.message ?? "Impossible d'ouvrir le tunnel de souscription.";
+			checkoutError = message;
+			addToast({
+				title: 'Paiement indisponible',
+				description: message,
+				variant: 'error',
+				timeoutMs: 6000
+			});
 		} finally {
 			checkoutLoading = null;
 		}
@@ -170,6 +197,13 @@
 					<span class="ml-1 text-xs font-normal opacity-80">-2 mois</span>
 				</button>
 			</div>
+
+			{#if checkoutError}
+				<div class="mx-auto mt-6 max-w-2xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-left text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+					<p class="font-medium">Paiement temporairement indisponible</p>
+					<p class="mt-1">{checkoutError}</p>
+				</div>
+			{/if}
 		</div>
 
 		<div class="grid gap-8 md:grid-cols-3">

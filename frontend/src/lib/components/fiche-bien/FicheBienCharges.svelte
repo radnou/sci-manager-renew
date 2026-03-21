@@ -8,6 +8,10 @@
 	import PnoModal from '$lib/components/fiche-bien/modals/PnoModal.svelte';
 	import FraisModal from '$lib/components/fiche-bien/modals/FraisModal.svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import {
+		announceFicheBienModal,
+		subscribeExclusiveFicheBienModal
+	} from '$lib/components/fiche-bien/modal-coordinator';
 
 	interface Props {
 		charges: any[];
@@ -26,6 +30,10 @@
 	let showFraisModal = $state(false);
 	let editPno: AssurancePnoEmbed | null = $state(null);
 
+	$effect(() => subscribeExclusiveFicheBienModal('charge', () => { showChargeModal = false; }));
+	$effect(() => subscribeExclusiveFicheBienModal('pno', () => { showPnoModal = false; }));
+	$effect(() => subscribeExclusiveFicheBienModal('frais', () => { showFraisModal = false; }));
+
 	const typeFraisLabels: Record<string, string> = {
 		gestion_locative: 'Gestion locative',
 		mise_en_location: 'Mise en location',
@@ -34,6 +42,22 @@
 
 	function getFraisLabel(type: string): string {
 		return typeFraisLabels[type] ?? type;
+	}
+
+	function openChargeModal() {
+		announceFicheBienModal('charge');
+		showChargeModal = true;
+	}
+
+	function openPnoModal(item: AssurancePnoEmbed | null = null) {
+		editPno = item;
+		announceFicheBienModal('pno');
+		showPnoModal = true;
+	}
+
+	function openFraisModal() {
+		announceFicheBienModal('frais');
+		showFraisModal = true;
 	}
 
 	// Deferred-delete state: store removed items for undo restoration
@@ -142,7 +166,7 @@
 			{#if isGerant}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={() => showChargeModal = true}
+					onclick={openChargeModal}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter une charge
@@ -234,7 +258,7 @@
 			{#if isGerant && !assurancePno}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={() => { editPno = null; showPnoModal = true; }}
+					onclick={() => openPnoModal()}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter
@@ -280,7 +304,7 @@
 				<div class="mt-4 flex gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
 					<button
 						class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-						onclick={() => { editPno = assurancePno; showPnoModal = true; }}
+						onclick={() => openPnoModal(assurancePno)}
 					>
 						Modifier
 					</button>
@@ -315,7 +339,7 @@
 			{#if isGerant}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={() => showFraisModal = true}
+					onclick={openFraisModal}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter

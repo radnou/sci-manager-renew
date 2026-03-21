@@ -68,7 +68,7 @@
 		<p class="sci-eyebrow">{sci.nom} / Biens / Baux</p>
 		<div class="flex items-center gap-3">
 			<a
-				href="/scis/{sciId}/biens/{bienId}"
+				href={`/scis/${sciId}/biens/${bienId}`}
 				class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
 			>
 				<ArrowLeft class="h-4 w-4" />

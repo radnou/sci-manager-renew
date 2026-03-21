@@ -910,6 +910,28 @@ class TestDocuments:
         assert data[0]["nom"] == "Bail signé"
         assert data[0]["categorie"] == "bail"
 
+    def test_list_documents_refreshes_signed_url_for_internal_storage(self, client, auth_headers, fake_supabase):
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        storage_path = f"sci-{SCI_UUID}/bien-{BIEN_ID}/doc.pdf"
+        fake_supabase.store["documents_bien"] = [
+            {
+                "id": 22,
+                "id_bien": BIEN_ID,
+                "nom": "Bail signé",
+                "categorie": "bail",
+                "url": f"https://storage.local/storage/v1/object/sign/documents/{storage_path}?token=expired",
+                "uploaded_at": "2024-01-15T10:00:00",
+            }
+        ]
+
+        response = client.get(self.DOCS_URL, headers=auth_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data[0]["url"].startswith("https://storage.local/storage/v1/object/sign/documents/")
+        assert "expires_in=86400" in data[0]["url"]
+
     def test_delete_document_requires_auth(self, client):
         response = client.delete(f"{self.DOCS_URL}/20")
         assert response.status_code == 401
@@ -1020,6 +1042,28 @@ class TestDocuments:
         assert bucket.removed[0] == [storage_path]
         # Verify DB record was removed
         assert fake_supabase.store["documents_bien"] == []
+
+    def test_delete_document_removes_storage_file_from_signed_url(self, client, auth_headers, fake_supabase):
+        """Signed URLs should still map back to the storage object for cleanup."""
+        setup(fake_supabase)
+        seed_bien(fake_supabase)
+        storage_path = f"sci-{SCI_UUID}/bien-{BIEN_ID}/signed.pdf"
+        fake_supabase.store["documents_bien"] = [
+            {
+                "id": 41,
+                "id_bien": BIEN_ID,
+                "nom": "Bail signé",
+                "categorie": "bail",
+                "url": f"https://storage.local/storage/v1/object/sign/documents/{storage_path}?token=stale",
+                "uploaded_at": "2024-01-15T10:00:00",
+            }
+        ]
+
+        response = client.delete(f"{self.DOCS_URL}/41", headers=auth_headers)
+
+        assert response.status_code == 204
+        bucket = fake_supabase.storage.from_("documents")
+        assert bucket.removed[0] == [storage_path]
 
 
 # ──────────────────────────────────────────────────────────────

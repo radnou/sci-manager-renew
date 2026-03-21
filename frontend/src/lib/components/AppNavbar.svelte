@@ -193,7 +193,7 @@
 					{/if}
 					{#each scis as sci (sci.id)}
 						<a
-							href="/scis/{sci.id}"
+							href={`/scis/${sci.id}`}
 							role="option"
 							aria-selected={String(sci.id) === String(activeSciId)}
 							class="flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 {String(sci.id) === String(activeSciId) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"

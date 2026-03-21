@@ -119,13 +119,29 @@
 	}
 
 	async function handleGenerateQuittance() {
-		if (!bien?.bail_actif?.locataires?.length) {
-			addToast({ title: 'Aucun locataire associé au bail', variant: 'error' });
+		if (!bien?.bail_actif) {
+			addToast({
+				title: 'Aucun bail actif',
+				description: "Créez d'abord un bail actif pour ce bien avant de générer une quittance.",
+				variant: 'error'
+			});
+			return;
+		}
+		if (!bien.bail_actif.locataires?.length) {
+			addToast({
+				title: 'Aucun locataire associé au bail',
+				description: 'Rattachez un locataire au bail actif avant de générer une quittance.',
+				variant: 'error'
+			});
 			return;
 		}
 		const lastPaidLoyer = [...(bien.loyers_recents ?? [])].reverse().find((l: any) => l.statut === 'paye');
 		if (!lastPaidLoyer) {
-			addToast({ title: 'Aucun loyer payé pour générer une quittance', variant: 'error' });
+			addToast({
+				title: 'Aucun loyer payé',
+				description: "Enregistrez au moins un loyer payé pour générer une quittance.",
+				variant: 'error'
+			});
 			return;
 		}
 		generatingQuittance = true;

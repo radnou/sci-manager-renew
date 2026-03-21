@@ -1,4 +1,15 @@
+import jwt
+
 from app.core.config import settings
+
+
+def _auth_headers_for(user_id: str) -> dict[str, str]:
+    token = jwt.encode(
+        {"sub": user_id, "role": "authenticated"},
+        settings.supabase_jwt_secret,
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_generate_and_download_quitus(client, auth_headers):
@@ -17,6 +28,7 @@ def test_generate_and_download_quitus(client, auth_headers):
     assert generated.status_code == 200
     data = generated.json()
     assert data["filename"].startswith("quitus-")
+    assert "sci-1" in data["filename"]
     assert data["size_bytes"] > 0
 
     downloaded = client.get(data["pdf_url"], headers=auth_headers)
@@ -73,12 +85,36 @@ def test_download_quitus_missing_file_returns_structured_404(client, auth_header
 
     monkeypatch.setattr(quitus.storage_service, "download_file", fake_download_file)
 
-    response = client.get("/api/v1/quitus/files/missing.pdf", headers=auth_headers)
+    response = client.get(
+        "/api/v1/quitus/files/quitus-1234567890abcdef1234567890abcdef.pdf",
+        headers=auth_headers,
+    )
 
     assert response.status_code == 404
     data = response.json()
     assert data["code"] == "resource_not_found"
     assert data["error"] == "Quittance introuvable."
+
+
+def test_download_quitus_blocks_non_member_before_storage_access(client, monkeypatch):
+    from app.api.v1 import quitus
+
+    called = {"value": False}
+
+    async def fake_download_file(_path: str):
+        called["value"] = True
+        return b"%PDF-1.4 fake"
+
+    monkeypatch.setattr(quitus.storage_service, "download_file", fake_download_file)
+
+    response = client.get(
+        "/api/v1/quitus/files/quitus-sci-2-1234567890abcdef1234567890abcdef.pdf",
+        headers=_auth_headers_for("user-456"),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Accès non autorisé à cette quittance"
+    assert called["value"] is False
 
 
 def test_quitus_generate_allowed_for_free_plan(client, auth_headers):

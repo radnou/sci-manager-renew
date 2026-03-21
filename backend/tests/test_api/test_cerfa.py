@@ -113,6 +113,54 @@ def test_cerfa_2044_pdf_success(client, auth_headers, fake_supabase):
     assert response.content[:4] == b"%PDF"
 
 
+def test_cerfa_2044_blocked_for_sci_is_regime(client, auth_headers, fake_supabase):
+    _enable_pro_subscription(fake_supabase)
+    payload = {
+        "annee": 2025,
+        "total_revenus": 24000.0,
+        "total_charges": 7000.0,
+        "regime_fiscal": "IS",
+    }
+
+    response = client.post("/api/v1/cerfa/2044", json=payload, headers=auth_headers)
+    assert response.status_code == 400
+    data = response.json()
+    assert data["code"] == "validation_error"
+    assert "SCI à l'IS" in data["error"]
+
+
+def test_cerfa_2044_pdf_blocked_for_sci_is_regime(client, auth_headers, fake_supabase):
+    _enable_pro_subscription(fake_supabase)
+    payload = {
+        "annee": 2025,
+        "total_revenus": 24000.0,
+        "total_charges": 7000.0,
+        "regime_fiscal": "IS",
+    }
+
+    response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
+    assert response.status_code == 400
+    data = response.json()
+    assert data["code"] == "validation_error"
+    assert "SCI à l'IS" in data["error"]
+
+
+def test_cerfa_2044_pdf_honors_feature_flag(client, auth_headers, monkeypatch, fake_supabase):
+    _enable_pro_subscription(fake_supabase)
+    monkeypatch.setattr(settings, "feature_cerfa_generation", False)
+    payload = {
+        "annee": 2025,
+        "total_revenus": 24000.0,
+        "total_charges": 7000.0,
+    }
+
+    response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
+    assert response.status_code == 503
+    data = response.json()
+    assert data["code"] == "feature_disabled"
+    assert data["details"]["flag"] == "feature_cerfa_generation"
+
+
 def test_cerfa_2044_invalid_annee(client, auth_headers, fake_supabase):
     """Year below 2000 is rejected by Pydantic validation."""
     _enable_pro_subscription(fake_supabase)

@@ -78,14 +78,25 @@ test.describe('Fiscalite @P1', () => {
     expect(cerfaVisible || liasseVisible || content!.includes('Aucun')).toBe(true);
   });
 
-  test('SCI IS affiche message liasse au lieu de CERFA @P2', async ({ page }) => {
+  test('si le CERFA 2044 est visible, l action utilisateur declenche bien la generation @P1', async ({ page }) => {
+    let cerfaPdfCalled = false;
+
+    await page.route('**/api/v1/cerfa/2044/pdf*', async (route) => {
+      cerfaPdfCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        body: Buffer.from('%PDF-1.4 cerfa mock')
+      });
+    });
+
     const navigated = await goToFiscalite(page);
     if (!navigated) return;
 
-    // This test is conditional on whether the test SCI is IS
-    // Just verify the page loads correctly
-    const content = await page.textContent('body');
-    const pageLoaded = content!.length > 100;
-    expect(pageLoaded).toBe(true);
+    const cerfaButton = page.getByRole('button', { name: /CERFA 2044/i }).first();
+    if (!(await cerfaButton.isVisible().catch(() => false))) return;
+    await cerfaButton.click();
+
+    await expect.poll(() => cerfaPdfCalled).toBe(true);
   });
 });

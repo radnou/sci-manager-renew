@@ -96,7 +96,7 @@
 		<div class="sci-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each scis as sci (String(sci.id))}
 				<a
-					href="/scis/{sci.id}"
+					href={`/scis/${sci.id}`}
 					class="group rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700"
 				>
 					<div class="flex items-start justify-between">

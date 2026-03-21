@@ -238,7 +238,7 @@
 				{/if}
 				{#if isGerant}
 					<a
-						href="/scis/{sciId}/settings"
+						href={`/scis/${sciId}/settings`}
 						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 					>
 						<Pencil class="h-3.5 w-3.5" />
@@ -342,7 +342,7 @@
 					<p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
 						Enregistrez des loyers et charges pour voir les KPIs financiers de cette SCI.
 					</p>
-					<a href="/scis/{sciId}/biens" class="mt-2 inline-flex text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400">
+					<a href={`/scis/${sciId}/biens`} class="mt-2 inline-flex text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400">
 						Accéder aux biens →
 					</a>
 				</div>

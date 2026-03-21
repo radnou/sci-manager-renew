@@ -158,9 +158,18 @@ async def test_stripe_check_live_key():
 
     with patch("app.api.v1.health.settings") as mock_settings:
         mock_settings.stripe_secret_key = "sk_live_abc123"
-        result = await _check_stripe()
+        mock_settings.stripe_starter_price_id = "price_starter_month"
+        mock_settings.stripe_starter_annual_price_id = "price_starter_year"
+        mock_settings.stripe_pro_price_id = "price_pro_month"
+        mock_settings.stripe_pro_annual_price_id = "price_pro_year"
+        mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
+        mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
+        with patch("app.api.v1.health.stripe.Price.retrieve", return_value={"active": True}) as retrieve:
+            result = await _check_stripe()
+    assert retrieve.call_count == 6
     assert result["healthy"] is True
     assert result["mode"] == "live"
+    assert result["validated_price_count"] == 6
 
 
 @pytest.mark.asyncio
@@ -187,6 +196,35 @@ async def test_stripe_check_missing_key():
         result = await _check_stripe()
     assert result["healthy"] is False
     assert "missing" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_stripe_check_detects_invalid_price_id():
+    """Stripe readiness fails when one configured price id cannot be retrieved."""
+    from unittest.mock import patch
+    from app.api.v1.health import _check_stripe
+
+    with patch("app.api.v1.health.settings") as mock_settings:
+        mock_settings.stripe_secret_key = "sk_live_abc123"
+        mock_settings.stripe_starter_price_id = "price_starter_month"
+        mock_settings.stripe_starter_annual_price_id = "price_starter_year"
+        mock_settings.stripe_pro_price_id = "price_pro_month"
+        mock_settings.stripe_pro_annual_price_id = "price_pro_year"
+        mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
+        mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
+
+        def retrieve(price_id: str):
+            if price_id == "price_starter_month":
+                raise Exception("No such price")
+            return {"active": True}
+
+        with patch("app.api.v1.health.stripe.Price.retrieve", side_effect=retrieve):
+            result = await _check_stripe()
+
+    assert result["healthy"] is False
+    assert result["error"] == "stripe checkout catalog invalid"
+    assert result["invalid_price_ids"] == ["starter_monthly"]
+    assert result["inactive_price_ids"] == []
 
 
 @pytest.mark.asyncio

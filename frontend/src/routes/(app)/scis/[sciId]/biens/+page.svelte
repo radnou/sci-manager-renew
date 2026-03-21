@@ -220,7 +220,7 @@
 					<!-- Header: address + badge -->
 					<div class="flex items-start justify-between gap-2">
 						<a
-							href="/scis/{sciId}/biens/{bien.id}"
+							href={`/scis/${sciId}/biens/${bien.id}`}
 							class="font-semibold text-slate-900 hover:text-sky-600 dark:text-slate-100 dark:hover:text-sky-400"
 						>
 							{bien.adresse}
@@ -275,7 +275,7 @@
 					{#if isGerant}
 						<div class="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
 							<a
-								href="/scis/{sciId}/biens/{bien.id}"
+								href={`/scis/${sciId}/biens/${bien.id}`}
 								class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 							>
 								<Pencil class="h-3.5 w-3.5" />
@@ -294,7 +294,7 @@
 								Supprimer
 							</button>
 							<a
-								href="/scis/{sciId}/biens/{bien.id}#loyers"
+								href={`/scis/${sciId}/biens/${bien.id}#loyers`}
 								class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-sky-600 transition-colors hover:bg-sky-50 hover:text-sky-700 dark:text-sky-400 dark:hover:bg-sky-950/30 dark:hover:text-sky-300"
 							>
 								<Receipt class="h-3.5 w-3.5" />
@@ -355,7 +355,7 @@
 						<tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
 							<td class="px-4 py-3">
 								<a
-									href="/scis/{sciId}/biens/{bien.id}"
+									href={`/scis/${sciId}/biens/${bien.id}`}
 									class="font-medium text-slate-900 hover:text-sky-600 dark:text-slate-100 dark:hover:text-sky-400"
 								>
 									{bien.adresse}
@@ -397,7 +397,7 @@
 								<td class="whitespace-nowrap px-4 py-3">
 									<div class="flex items-center gap-1">
 										<a
-											href="/scis/{sciId}/biens/{bien.id}"
+											href={`/scis/${sciId}/biens/${bien.id}`}
 											class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 											title="Modifier"
 											aria-label="Modifier {bien.adresse}"
@@ -418,7 +418,7 @@
 											{/if}
 										</button>
 										<a
-											href="/scis/{sciId}/biens/{bien.id}#loyers"
+											href={`/scis/${sciId}/biens/${bien.id}#loyers`}
 											class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
 											title="Quittance"
 											aria-label="Quittance {bien.adresse}"

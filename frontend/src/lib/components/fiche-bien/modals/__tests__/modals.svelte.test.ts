@@ -10,7 +10,8 @@ vi.mock('$lib/api', () => ({
 	createLoyerForBien: vi.fn(),
 	createChargeForBien: vi.fn(),
 	createSci: vi.fn(),
-	inviteAssocie: vi.fn()
+	inviteAssocie: vi.fn(),
+	updateAssocie: vi.fn()
 }));
 
 vi.mock('$lib/components/ui/toast/toast-store', () => ({
@@ -89,6 +90,6 @@ describe('AssocieModal', () => {
 		});
 		await expect.element(page.getByRole('dialog')).toBeInTheDocument();
 		await expect.element(page.getByText(/Inviter un associ/)).toBeInTheDocument();
-		await expect.element(page.getByText('Associé')).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Associé' })).toBeInTheDocument();
 	});
 });

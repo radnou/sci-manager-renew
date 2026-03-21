@@ -5,6 +5,10 @@
 	import DatePopover from '$lib/components/ui/DatePopover.svelte';
 	import { updateLoyer, renderQuitus, type EntityId, type QuitusRequestPayload } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import {
+		announceFicheBienModal,
+		subscribeExclusiveFicheBienModal
+	} from '$lib/components/fiche-bien/modal-coordinator';
 
 	interface Props {
 		loyers: Array<any>;
@@ -24,6 +28,17 @@
 	let payDateLoyerId: EntityId | null = $state(null);
 	let payDateOpen = $state(false);
 	let generatingQuittanceFor: string | null = $state(null);
+
+	$effect(() => {
+		return subscribeExclusiveFicheBienModal('loyer', () => {
+			showLoyerModal = false;
+		});
+	});
+
+	function openLoyerModal() {
+		announceFicheBienModal('loyer');
+		showLoyerModal = true;
+	}
 
 	async function handleMarkPaid(date: string) {
 		if (!payDateLoyerId) return;
@@ -126,7 +141,7 @@
 		{#if isGerant}
 			<button
 				class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-				onclick={() => showLoyerModal = true}
+				onclick={openLoyerModal}
 			>
 				<Plus class="h-4 w-4" />
 				Enregistrer un loyer

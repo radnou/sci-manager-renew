@@ -5,6 +5,7 @@
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast';
 	import { FileText, Download, FolderOpen, Upload, Trash2, Loader2, Plus } from 'lucide-svelte';
+	import { announceFicheBienModal, subscribeExclusiveFicheBienModal } from '$lib/components/fiche-bien/modal-coordinator';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -31,6 +32,12 @@
 	let loading = $state(true);
 	let error: string | null = $state(null);
 
+	$effect(() => {
+		return subscribeExclusiveFicheBienModal('documents-page-upload', () => {
+			showUploadForm = false;
+		});
+	});
+
 	const categorieLabels: Record<string, string> = {
 		bail: 'Bail',
 		quittance: 'Quittance',
@@ -47,6 +54,10 @@
 		autre: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 	};
 
+	function getDocumentDate(doc: DocumentBienEmbed): string | undefined {
+		return doc.uploaded_at ?? doc.created_at;
+	}
+
 	$effect(() => {
 		loadDocuments();
 	});
@@ -55,19 +66,25 @@
 		loading = true;
 		error = null;
 		try {
-			// Single API call instead of N+1
-			const allDocs = await fetchSciDocuments(sciId);
-			// Group by id_bien
-			const byBien = new Map<string, SciDocumentItem[]>();
+			const [biens, allDocs] = await Promise.all([fetchSciBiens(sciId), fetchSciDocuments(sciId)]);
+			const byBien = new Map<string, BienDocs>();
+			for (const bien of biens) {
+				byBien.set(String(bien.id), {
+					bien,
+					documents: []
+				});
+			}
 			for (const doc of allDocs) {
 				const key = String(doc.id_bien);
-				if (!byBien.has(key)) byBien.set(key, []);
-				byBien.get(key)!.push(doc);
+				if (!byBien.has(key)) {
+					byBien.set(key, {
+						bien: { id: key, adresse: doc.bien_adresse ?? key } as Bien,
+						documents: []
+					});
+				}
+				byBien.get(key)!.documents.push(doc as unknown as DocumentBienEmbed);
 			}
-			groups = Array.from(byBien.entries()).map(([bienId, docs]) => ({
-				bien: { id: bienId, adresse: docs[0]?.bien_adresse ?? bienId } as Bien,
-				documents: docs as unknown as DocumentBienEmbed[],
-			}));
+			groups = Array.from(byBien.values());
 		} catch (err: any) {
 			error = err?.message ?? 'Impossible de charger les documents.';
 		} finally {
@@ -82,6 +99,7 @@
 		uploadFile = null;
 		uploadNom = '';
 		uploadCategorie = 'autre';
+		announceFicheBienModal('documents-page-upload');
 		showUploadForm = true;
 	}
 
@@ -147,7 +165,25 @@
 				Réessayer
 			</button>
 		</div>
-	{:else if totalDocs === 0 && groups.every(g => g.documents.length === 0) && !isGerant}
+	{:else if groups.length === 0}
+		<div
+			class="mt-6 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-16 dark:border-slate-700"
+		>
+			<FolderOpen class="mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" />
+			<p class="text-sm text-slate-500 dark:text-slate-400">
+				Aucun bien rattaché à cette SCI pour le moment.
+			</p>
+			{#if isGerant}
+				<a
+					href={`/scis/${sciId}/biens`}
+					class="mt-4 inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+				>
+					<Plus class="h-4 w-4" />
+					Ajouter un bien
+				</a>
+			{/if}
+		</div>
+	{:else if totalDocs === 0 && !isGerant}
 		<div
 			class="mt-6 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-16 dark:border-slate-700"
 		>
@@ -204,7 +240,7 @@
 												{categorieLabels[doc.categorie] ?? doc.categorie}
 											</span>
 											<span class="text-xs text-slate-400 dark:text-slate-500">
-												{formatFrDate(doc.created_at)}
+												{formatFrDate(getDocumentDate(doc))}
 											</span>
 										</div>
 									</div>
