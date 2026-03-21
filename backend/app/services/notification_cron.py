@@ -148,9 +148,9 @@ async def check_expiring_pno(supabase_client) -> int:
 
     result = (
         supabase_client.table("assurances_pno")
-        .select("id, id_bien, assureur, date_fin, biens(id_sci, adresse, ville)")
-        .gte("date_fin", now)
-        .lte("date_fin", horizon)
+        .select("id, id_bien, compagnie, date_echeance, biens(id_sci, adresse, ville)")
+        .gte("date_echeance", now)
+        .lte("date_echeance", horizon)
         .execute()
     )
 
@@ -176,7 +176,7 @@ async def check_expiring_pno(supabase_client) -> int:
                 notification_type="pno_expiring",
                 data={
                     "title": "PNO expirant",
-                    "message": f"L'assurance PNO ({pno.get('assureur', 'N/A')}) pour {bien.get('adresse', 'un bien')} expire le {pno['date_fin']}.",
+                    "message": f"L'assurance PNO ({pno.get('compagnie', 'N/A')}) pour {bien.get('adresse', 'un bien')} expire le {pno['date_echeance']}.",
                     "metadata": {"pno_id": pno["id"], "bien_adresse": bien.get("adresse")},
                 },
             )
