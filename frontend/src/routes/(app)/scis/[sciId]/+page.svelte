@@ -53,19 +53,19 @@
 	function exportComptaCsv() {
 		if (!comptaData) return;
 		const headers = ['Bien', 'Revenus', 'Charges', 'Événements', 'Résultat'];
-		const rows = comptaData.lignes.map(l => [
-			l.bien_adresse,
+		const rows = (comptaData.biens || []).map(l => [
+			l.adresse,
 			l.revenus.toFixed(2),
 			l.charges.toFixed(2),
-			l.evenements.toFixed(2),
+			l.evenements_deductibles.toFixed(2),
 			l.resultat.toFixed(2)
 		]);
 		rows.push([
 			'TOTAL',
-			comptaData.total_revenus.toFixed(2),
-			comptaData.total_charges.toFixed(2),
-			comptaData.total_evenements.toFixed(2),
-			comptaData.total_resultat.toFixed(2)
+			comptaData.totaux?.revenus.toFixed(2),
+			comptaData.totaux?.charges.toFixed(2),
+			comptaData.totaux?.evenements_deductibles.toFixed(2),
+			comptaData.totaux?.resultat.toFixed(2)
 		]);
 		const csvContent = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
 		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
@@ -88,9 +88,9 @@
 		};
 	}
 
-	const comptaVarRevenus = $derived(comptaData ? formatVariation(comptaData.variation_revenus) : null);
-	const comptaVarCharges = $derived(comptaData ? formatVariation(comptaData.variation_charges) : null);
-	const comptaVarResultat = $derived(comptaData ? formatVariation(comptaData.variation_resultat) : null);
+	const comptaVarRevenus = $derived(comptaData ? formatVariation(comptaData.variation_n1?.revenus) : null);
+	const comptaVarCharges = $derived(comptaData ? formatVariation(comptaData.variation_n1?.charges) : null);
+	const comptaVarResultat = $derived(comptaData ? formatVariation(comptaData.variation_n1?.resultat) : null);
 
 	const isGerant = $derived(userRole === 'gerant');
 	const hasFinancials = $derived(
@@ -471,7 +471,7 @@
 				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Comptabilité</h2>
 				<AnneeSelector value={comptaYear} onchange={handleComptaYearChange} />
 			</div>
-			{#if comptaData && comptaData.lignes.length > 0}
+			{#if comptaData && (comptaData.biens || (comptaData.biens || []) || []).length > 0}
 				<button
 					type="button"
 					onclick={exportComptaCsv}
@@ -489,7 +489,7 @@
 			</div>
 		{:else if comptaError}
 			<p class="mt-4 text-sm text-rose-600 dark:text-rose-400">{comptaError}</p>
-		{:else if comptaData && comptaData.lignes.length > 0}
+		{:else if comptaData && (comptaData.biens || (comptaData.biens || []) || []).length > 0}
 			<div class="mt-4 overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead>
@@ -502,12 +502,12 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each comptaData.lignes as ligne}
+						{#each (comptaData.biens || []) as ligne}
 							<tr class="border-b border-slate-100 dark:border-slate-800">
-								<td class="py-2.5 font-medium text-slate-900 dark:text-slate-100">{ligne.bien_adresse}</td>
+								<td class="py-2.5 font-medium text-slate-900 dark:text-slate-100">{ligne.adresse}</td>
 								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.revenus)}</td>
 								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.charges)}</td>
-								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.evenements)}</td>
+								<td class="py-2.5 text-right text-slate-700 dark:text-slate-300">{formatEur(ligne.evenements_deductibles)}</td>
 								<td class="py-2.5 text-right font-semibold {ligne.resultat >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">{formatEur(ligne.resultat)}</td>
 							</tr>
 						{/each}
@@ -516,18 +516,18 @@
 						<tr class="border-t-2 border-slate-300 dark:border-slate-600">
 							<td class="pt-3 font-bold text-slate-900 dark:text-slate-100">Total</td>
 							<td class="pt-3 text-right font-bold text-slate-900 dark:text-slate-100">
-								{formatEur(comptaData.total_revenus)}
+								{formatEur(comptaData.totaux?.revenus)}
 								{#if comptaVarRevenus}<span class="ml-1 text-xs {comptaVarRevenus.color}">{comptaVarRevenus.text}</span>{/if}
 							</td>
 							<td class="pt-3 text-right font-bold text-slate-900 dark:text-slate-100">
-								{formatEur(comptaData.total_charges)}
+								{formatEur(comptaData.totaux?.charges)}
 								{#if comptaVarCharges}<span class="ml-1 text-xs {comptaVarCharges.color}">{comptaVarCharges.text}</span>{/if}
 							</td>
 							<td class="pt-3 text-right font-bold text-slate-900 dark:text-slate-100">
-								{formatEur(comptaData.total_evenements)}
+								{formatEur(comptaData.totaux?.evenements_deductibles)}
 							</td>
-							<td class="pt-3 text-right font-bold {comptaData.total_resultat >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">
-								{formatEur(comptaData.total_resultat)}
+							<td class="pt-3 text-right font-bold {comptaData.totaux?.resultat >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">
+								{formatEur(comptaData.totaux?.resultat)}
 								{#if comptaVarResultat}<span class="ml-1 text-xs {comptaVarResultat.color}">{comptaVarResultat.text}</span>{/if}
 							</td>
 						</tr>

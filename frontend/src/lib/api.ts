@@ -1500,23 +1500,28 @@ export function fetchAdminUsers(params: {
 
 export type ComptabiliteLigne = {
 	bien_id: EntityId;
-	bien_adresse: string;
+	adresse: string;
+	ville: string;
 	revenus: number;
 	charges: number;
-	evenements: number;
+	evenements_deductibles: number;
 	resultat: number;
 };
 
 export type ComptabiliteAnnuelle = {
 	annee: number;
-	lignes: ComptabiliteLigne[];
-	total_revenus: number;
-	total_charges: number;
-	total_evenements: number;
-	total_resultat: number;
-	variation_revenus?: number | null;
-	variation_charges?: number | null;
-	variation_resultat?: number | null;
+	biens: ComptabiliteLigne[];
+	totaux: {
+		revenus: number;
+		charges: number;
+		evenements_deductibles: number;
+		resultat: number;
+	};
+	variation_n1: {
+		revenus: number | null;
+		charges: number | null;
+		resultat: number | null;
+	} | null;
 };
 
 export async function fetchComptabiliteAnnuelle(
