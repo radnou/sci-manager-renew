@@ -23,7 +23,7 @@ CLEAN_ALL=false
 VERBOSE=false
 
 # ── Ports fixes ──────────────────────────────────────────────
-BACKEND_PORT=8000
+BACKEND_PORT=8001  # 8000 is used by Supabase Kong
 FRONTEND_PORT=5173
 SUPABASE_API_PORT=54321
 SUPABASE_STUDIO_PORT=54323
