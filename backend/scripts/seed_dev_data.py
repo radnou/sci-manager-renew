@@ -85,10 +85,9 @@ def clean_all_data():
     # Ordre inverse des dépendances FK
     tables = [
         "notification_preferences", "notifications",
-        "activated_sessions",
         "mouvements_parts", "assemblees_generales",
         "bail_locataires", "loyers",
-        "frais_agence", "assurances_pno", "documents",
+        "frais_agence", "assurances_pno", "documents_bien",
         "charges", "baux", "locataires",
         "fiscalite", "biens", "associes", "sci",
         "subscriptions", "admins",
@@ -504,50 +503,47 @@ def main():
 
     # ── Assemblées générales ──────────────────────────────────
     print("\n📋 Assemblées générales ...")
-    insert("assemblees_generales", [
-        {
-            "id": uid(), "id_sci": sci1_id,
-            "date_ag": "2025-06-15", "type_ag": "ordinaire",
-            "exercice_concerne": 2024,
-            "ordre_du_jour": "Approbation des comptes 2024 et affectation du résultat",
-            "notes": "Comptes approuvés à l'unanimité. Résultat net de 29 720€ affecté en report à nouveau.",
-            "resolutions": "Résolution 1 : approbation des comptes 2024.\nRésolution 2 : affectation du résultat en report à nouveau.\nRésolution 3 : renouvellement du mandat de gérant.",
-            "quorum_atteint": True,
-            "pv_url": "https://example.com/pv-ago-2025.pdf",
-        },
-        {
-            "id": uid(), "id_sci": sci1_id,
-            "date_ag": "2025-11-20", "type_ag": "extraordinaire",
-            "exercice_concerne": 2025,
-            "ordre_du_jour": "Modification des statuts — augmentation de capital",
-            "notes": "Capital porté de 150 000€ à 200 000€ par création de 333 parts nouvelles.",
-            "resolutions": "Résolution unique : augmentation du capital social de 50 000€.",
-            "quorum_atteint": True,
-        },
-    ])
+    insert("assemblees_generales", {
+        "id": uid(), "id_sci": sci1_id,
+        "date_ag": "2025-06-15", "type_ag": "ordinaire",
+        "exercice_concerne": 2024,
+        "ordre_du_jour": "Approbation des comptes 2024 et affectation du résultat",
+        "notes": "Comptes approuvés à l'unanimité. Résultat net de 29 720€ affecté en report à nouveau.",
+        "resolutions": "Résolution 1 : approbation des comptes 2024.\nRésolution 2 : affectation du résultat en report à nouveau.\nRésolution 3 : renouvellement du mandat de gérant.",
+        "quorum_atteint": True,
+        "pv_url": "https://example.com/pv-ago-2025.pdf",
+    })
+    insert("assemblees_generales", {
+        "id": uid(), "id_sci": sci1_id,
+        "date_ag": "2025-11-20", "type_ag": "extraordinaire",
+        "exercice_concerne": 2025,
+        "ordre_du_jour": "Modification des statuts — augmentation de capital",
+        "notes": "Capital porté de 150 000€ à 200 000€ par création de 333 parts nouvelles.",
+        "resolutions": "Résolution unique : augmentation du capital social de 50 000€.",
+        "quorum_atteint": True,
+        "pv_url": None,
+    })
     print("  ✅ 2 AG (1 AGO + 1 AGE)")
 
     # ── Mouvements de parts ───────────────────────────────────
     if user2_id:
         print("\n📊 Mouvements de parts ...")
-        insert("mouvements_parts", [
-            {
-                "id": uid(), "id_sci": sci1_id,
-                "type_mouvement": "cession",
-                "cedant": "Marie Dupont", "cessionnaire": "Pierre Martin",
-                "nombre_parts": 40, "prix_unitaire": 150,
-                "date_mouvement": "2023-03-15",
-                "acte_reference": "Acte notarié Me Lefèvre — Paris 20e",
-            },
-            {
-                "id": uid(), "id_sci": sci1_id,
-                "type_mouvement": "souscription",
-                "cessionnaire": "Marie Dupont",
-                "nombre_parts": 100, "prix_unitaire": 150,
-                "date_mouvement": "2022-01-15",
-                "acte_reference": "Statuts constitutifs SCI Belleville Patrimoine",
-            },
-        ])
+        insert("mouvements_parts", {
+            "id": uid(), "id_sci": sci1_id,
+            "type_mouvement": "cession",
+            "cedant": "Marie Dupont", "cessionnaire": "Pierre Martin",
+            "nombre_parts": 40, "prix_unitaire": 150,
+            "date_mouvement": "2023-03-15",
+            "acte_reference": "Acte notarié Me Lefèvre — Paris 20e",
+        })
+        insert("mouvements_parts", {
+            "id": uid(), "id_sci": sci1_id,
+            "type_mouvement": "souscription",
+            "cedant": None, "cessionnaire": "Marie Dupont",
+            "nombre_parts": 100, "prix_unitaire": 150,
+            "date_mouvement": "2022-01-15",
+            "acte_reference": "Statuts constitutifs SCI Belleville Patrimoine",
+        })
         print("  ✅ 2 mouvements de parts")
 
     # ── Admin flag ──────────────────────────────────────────────
