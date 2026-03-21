@@ -4,7 +4,7 @@ from typing import Optional
 import structlog
 from supabase import create_client
 
-from app.core.config import settings
+from app.core.config import Environment, settings
 from app.core.external_services import run_with_retry
 from app.services.email_service import email_service
 
@@ -56,10 +56,14 @@ class MagicLinkService:
                     count=1,
                 )
 
-            # Send via Resend with custom HTML template
-            await email_service.send_magic_link(email, action_link)
+            # Production: send via Resend with custom template
+            # Development: generate_link already created the action_link above — just log it
+            if settings.app_env == Environment.PRODUCTION:
+                await email_service.send_magic_link(email, action_link)
+                logger.info("magic_link_sent_via_resend", email=email)
+            else:
+                logger.info("magic_link_dev_mode", email=email, action_link=action_link)
 
-            logger.info("magic_link_sent_via_resend", email=email)
             return {
                 "success": True,
                 "message": "Magic link sent to email",
