@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { SCIDetail, Fiscalite } from '$lib/api';
-	import { fetchFiscalite, generateCerfa2044Pdf, createFiscalite, deleteFiscalite } from '$lib/api';
+	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, createFiscalite, deleteFiscalite } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp } from 'lucide-svelte';
@@ -14,6 +14,8 @@
 	let upgradeRequired = $state(false);
 	let generatingCerfa = $state(false);
 	let cerfaError = $state('');
+	let generatingResume: number | null = $state(null);
+	let resumeError = $state('');
 	let showCreateForm = $state(false);
 	let creating = $state(false);
 	let deletingId: string | null = $state(null);
@@ -82,6 +84,26 @@
 			cerfaError = err?.message ?? 'Erreur lors de la génération du résumé fiscal.';
 		} finally {
 			generatingCerfa = false;
+		}
+	}
+
+	async function handleDownloadResumeFiscal(annee: number) {
+		generatingResume = annee;
+		resumeError = '';
+		try {
+			const blob = await downloadResumeFiscalPdf(sci.id, annee);
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `resume_fiscal_${annee}_${sci.nom}.pdf`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (err: any) {
+			resumeError = err?.message ?? 'Erreur lors de la génération du résumé fiscal détaillé.';
+		} finally {
+			generatingResume = null;
 		}
 	}
 
@@ -262,14 +284,24 @@
 								)}
 							</span>
 						</div>
-						<button
-							class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
-							disabled={generatingCerfa}
-							onclick={() => handleGenerateCerfa(ex)}
-						>
-							<Download class="h-3.5 w-3.5" />
-							{generatingCerfa ? 'Génération…' : 'Résumé fiscal PDF'}
-						</button>
+						<div class="flex items-center gap-2">
+							<button
+								class="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-400 dark:hover:bg-slate-800"
+								disabled={generatingResume === ex.annee}
+								onclick={() => handleDownloadResumeFiscal(ex.annee)}
+							>
+								<FileText class="h-3.5 w-3.5" />
+								{generatingResume === ex.annee ? 'Génération…' : 'Résumé détaillé'}
+							</button>
+							<button
+								class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+								disabled={generatingCerfa}
+								onclick={() => handleGenerateCerfa(ex)}
+							>
+								<Download class="h-3.5 w-3.5" />
+								{generatingCerfa ? 'Génération…' : 'Résumé fiscal PDF'}
+							</button>
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -281,6 +313,9 @@
 
 		{#if cerfaError}
 			<p class="mt-3 text-sm text-rose-600 dark:text-rose-400">{cerfaError}</p>
+		{/if}
+		{#if resumeError}
+			<p class="mt-3 text-sm text-rose-600 dark:text-rose-400">{resumeError}</p>
 		{/if}
 	</div>
 	{/if}

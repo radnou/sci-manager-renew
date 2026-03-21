@@ -173,6 +173,11 @@ def main():
         "nom": "SCI Belleville Patrimoine",
         "siren": "912345678",
         "regime_fiscal": "IR",
+        "capital_social": 150000,
+        "rcs_ville": "Paris",
+        "rcs_numero": "912 345 678",
+        "nom_gerant": "Marie Dupont",
+        "adresse_siege": "12 rue de Belleville, 75020 Paris",
     })
     print(f"  ✅ SCI 1: {sci1_id}")
 
@@ -205,6 +210,11 @@ def main():
         "nom": "SCI Horizon Lyon",
         "siren": "987654321",
         "regime_fiscal": "IS",
+        "capital_social": 200000,
+        "rcs_ville": "Lyon",
+        "rcs_numero": "987 654 321",
+        "nom_gerant": "Marie Dupont",
+        "adresse_siege": "15 rue de la République, 69002 Lyon",
     })
     insert("associes", {
         "id": uid(), "id_sci": sci2_id, "user_id": user_id,

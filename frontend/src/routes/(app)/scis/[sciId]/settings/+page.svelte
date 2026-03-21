@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { Building2, MapPin, Landmark, Scale, Loader2, ArrowLeft } from 'lucide-svelte';
+	import { Building2, MapPin, Landmark, Scale, Loader2, ArrowLeft, ChevronDown } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import type { SCIDetail } from '$lib/api';
 	import { updateSci } from '$lib/api';
@@ -21,6 +21,12 @@
 	let rcsVille = $state(sci.rcs_ville ?? '');
 	let capitalSocial = $state<string>(sci.capital_social != null ? String(sci.capital_social) : '');
 	let regimeFiscal = $state<'IR' | 'IS'>((sci.regime_fiscal as 'IR' | 'IS') ?? 'IR');
+	let rcsNumero = $state(sci.rcs_numero ?? '');
+	let formeJuridique = $state(sci.forme_juridique ?? '');
+	let nomGerant = $state(sci.nom_gerant ?? '');
+
+	// Legal section collapsible state — open if any legal field is filled
+	let legalOpen = $state(!!(sci.rcs_numero || sci.forme_juridique || sci.nom_gerant));
 
 	let saving = $state(false);
 
@@ -39,7 +45,10 @@
 				date_creation: dateCreation || null,
 				capital_social: capitalSocial ? parseFloat(capitalSocial) : null,
 				objet_social: objetSocial.trim() || null,
-				rcs_ville: rcsVille.trim() || null
+				rcs_ville: rcsVille.trim() || null,
+			rcs_numero: rcsNumero.trim() || null,
+			forme_juridique: formeJuridique || null,
+			nom_gerant: nomGerant.trim() || null
 			});
 			await invalidateAll();
 			addToast({ title: 'SCI modifiée', description: 'Les informations ont été mises à jour.', variant: 'success' });
@@ -229,6 +238,75 @@
 					</div>
 				</fieldset>
 			</div>
+		</div>
+
+		<!-- Section 4: Informations légales (collapsible) -->
+		<div class="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+			<button
+				type="button"
+				onclick={() => legalOpen = !legalOpen}
+				class="flex w-full items-center justify-between p-6"
+			>
+				<div class="flex items-center gap-2">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40">
+						<Scale class="h-4 w-4 text-amber-600 dark:text-amber-400" />
+					</div>
+					<div class="text-left">
+						<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Informations légales</h2>
+						<p class="text-xs text-slate-500 dark:text-slate-400">Pour quittances et documents</p>
+					</div>
+				</div>
+				<ChevronDown class="h-4 w-4 text-slate-400 transition-transform {legalOpen ? 'rotate-180' : ''}" />
+			</button>
+			{#if legalOpen}
+				<div class="border-t border-slate-200 p-6 pt-4 dark:border-slate-800">
+					<div class="grid gap-4 sm:grid-cols-2">
+						<div>
+							<label for="sci-rcs-numero" class="mb-1.5 block text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+								RCS Numéro
+							</label>
+							<input
+								id="sci-rcs-numero"
+								type="text"
+								bind:value={rcsNumero}
+								placeholder="123 456 789"
+								disabled={!isGerant}
+								class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
+							/>
+						</div>
+						<div>
+							<label for="sci-nom-gerant" class="mb-1.5 block text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+								Nom du gérant
+							</label>
+							<input
+								id="sci-nom-gerant"
+								type="text"
+								bind:value={nomGerant}
+								placeholder="Marie Dupont"
+								disabled={!isGerant}
+								class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
+							/>
+						</div>
+						<div>
+							<label for="sci-forme-juridique" class="mb-1.5 block text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+								Forme juridique
+							</label>
+							<select
+								id="sci-forme-juridique"
+								bind:value={formeJuridique}
+								disabled={!isGerant}
+								class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
+							>
+								<option value="">Non renseignée</option>
+								<option value="SCI">SCI</option>
+								<option value="SARL">SARL</option>
+								<option value="SAS">SAS</option>
+								<option value="Autre">Autre</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Save button -->

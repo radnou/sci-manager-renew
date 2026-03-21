@@ -34,6 +34,9 @@ export type SCIOverview = {
 	capital_social?: number | null;
 	objet_social?: string | null;
 	rcs_ville?: string | null;
+	rcs_numero?: string | null;
+	forme_juridique?: string | null;
+	nom_gerant?: string | null;
 	nb_parts_total?: number | null;
 	valeur_nominale_part?: number | null;
 	associes_count?: number;
@@ -53,6 +56,9 @@ export type SCICreatePayload = {
 	capital_social?: number | null;
 	objet_social?: string | null;
 	rcs_ville?: string | null;
+	rcs_numero?: string | null;
+	forme_juridique?: string | null;
+	nom_gerant?: string | null;
 };
 
 export type Charge = {
@@ -543,6 +549,10 @@ export function generateCerfa2044Pdf(payload: Cerfa2044Request): Promise<Blob> {
 	});
 }
 
+export function downloadResumeFiscalPdf(sciId: EntityId, annee: number): Promise<Blob> {
+	return apiFetchBlob(`/api/v1/cerfa/scis/${sciId}/resume-fiscal/${annee}/pdf`);
+}
+
 export function createCheckoutSession(payload: CheckoutSessionRequestPayload) {
 	return apiFetch<CheckoutSessionResponsePayload>('/api/v1/stripe/create-checkout-session', {
 		method: 'POST',
@@ -1026,6 +1036,9 @@ export type SCIUpdatePayload = {
 	capital_social?: number | null;
 	objet_social?: string | null;
 	rcs_ville?: string | null;
+	rcs_numero?: string | null;
+	forme_juridique?: string | null;
+	nom_gerant?: string | null;
 };
 
 export async function updateSci(

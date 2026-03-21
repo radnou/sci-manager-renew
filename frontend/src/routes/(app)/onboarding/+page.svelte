@@ -33,6 +33,13 @@
 	let sciSiren = $state('');
 	let sciRegime = $state<'IR' | 'IS'>('IR');
 	let createdSciId = $state('');
+	// Optional legal fields
+	let sciLegalOpen = $state(false);
+	let sciCapitalSocial = $state('');
+	let sciRcsVille = $state('');
+	let sciRcsNumero = $state('');
+	let sciNomGerant = $state('');
+	let sciFormeJuridique = $state('');
 
 	// Step 2: Bien (sub-steps: type → adresse → details → financier)
 	let bienSubStep = $state(1);
@@ -109,7 +116,12 @@
 			const sci = await createSci({
 				nom: sciNom.trim(),
 				siren: sciSiren.trim() || undefined,
-				regime_fiscal: sciRegime
+				regime_fiscal: sciRegime,
+			capital_social: sciCapitalSocial ? parseFloat(sciCapitalSocial) : undefined,
+			rcs_ville: sciRcsVille.trim() || undefined,
+			rcs_numero: sciRcsNumero.trim() || undefined,
+			nom_gerant: sciNomGerant.trim() || undefined,
+			forme_juridique: sciFormeJuridique || undefined
 			} as SCICreatePayload);
 			createdSciId = String(sci.id);
 			currentStep = 2;
@@ -393,6 +405,94 @@
 						</select>
 					</div>
 				</div>
+
+				<!-- Optional legal fields (collapsible) -->
+				<div class="mt-4 rounded-lg border border-slate-200 dark:border-slate-700">
+					<button
+						type="button"
+						onclick={() => sciLegalOpen = !sciLegalOpen}
+						class="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+					>
+						<span>Informations légales (optionnel)</span>
+						<svg class="h-4 w-4 transition-transform {sciLegalOpen ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+					</button>
+					{#if sciLegalOpen}
+						<div class="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+							<div class="space-y-3">
+								<div class="grid grid-cols-2 gap-3">
+									<div>
+										<label for="sci-capital" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+											Capital social (EUR)
+										</label>
+										<input
+											id="sci-capital"
+											type="number"
+											bind:value={sciCapitalSocial}
+											min="0"
+											placeholder="150 000"
+											class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+										/>
+									</div>
+									<div>
+										<label for="sci-rcs-ville" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+											RCS Ville
+										</label>
+										<input
+											id="sci-rcs-ville"
+											type="text"
+											bind:value={sciRcsVille}
+											placeholder="Paris"
+											class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+										/>
+									</div>
+								</div>
+								<div class="grid grid-cols-2 gap-3">
+									<div>
+										<label for="sci-rcs-numero" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+											RCS Numéro
+										</label>
+										<input
+											id="sci-rcs-numero"
+											type="text"
+											bind:value={sciRcsNumero}
+											placeholder="123 456 789"
+											class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+										/>
+									</div>
+									<div>
+										<label for="sci-nom-gerant" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+											Nom du gérant
+										</label>
+										<input
+											id="sci-nom-gerant"
+											type="text"
+											bind:value={sciNomGerant}
+											placeholder="Marie Dupont"
+											class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+										/>
+									</div>
+								</div>
+								<div>
+									<label for="sci-forme-juridique" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+										Forme juridique
+									</label>
+									<select
+										id="sci-forme-juridique"
+										bind:value={sciFormeJuridique}
+										class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+									>
+										<option value="">Non renseignée</option>
+										<option value="SCI">SCI</option>
+										<option value="SARL">SARL</option>
+										<option value="SAS">SAS</option>
+										<option value="Autre">Autre</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+
 				<div class="mt-6 flex justify-end">
 					<Button onclick={handleStep1} disabled={submitting}>
 						{submitting ? 'Création...' : 'Créer la SCI'}

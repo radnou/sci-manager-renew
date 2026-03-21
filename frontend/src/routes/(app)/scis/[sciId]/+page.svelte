@@ -416,6 +416,30 @@
 					<span class="text-sm text-slate-500 dark:text-slate-400">Associés</span>
 					<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{sci.associes_count ?? sci.associes?.length ?? 0}</span>
 				</div>
+				{#if sci.capital_social}
+					<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+						<span class="text-sm text-slate-500 dark:text-slate-400">Capital social</span>
+						<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{formatEur(sci.capital_social)}</span>
+					</div>
+				{/if}
+				{#if sci.nom_gerant}
+					<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+						<span class="text-sm text-slate-500 dark:text-slate-400">Gérant</span>
+						<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{sci.nom_gerant}</span>
+					</div>
+				{/if}
+				{#if sci.rcs_numero || sci.rcs_ville}
+					<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+						<span class="text-sm text-slate-500 dark:text-slate-400">RCS</span>
+						<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{[sci.rcs_numero, sci.rcs_ville].filter(Boolean).join(' — ')}</span>
+					</div>
+				{/if}
+				{#if sci.forme_juridique}
+					<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+						<span class="text-sm text-slate-500 dark:text-slate-400">Forme juridique</span>
+						<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{sci.forme_juridique}</span>
+					</div>
+				{/if}
 			</div>
 		</div>
 
