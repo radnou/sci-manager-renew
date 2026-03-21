@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { AssurancePnoEmbed, FraisAgenceEmbed } from '$lib/api';
-	import { deleteChargeForBien, deletePnoForBien, deleteFraisForBien } from '$lib/api';
+	import { createChargeForBien, deleteChargeForBien, deletePnoForBien, deleteFraisForBien } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { mapChargeTypeLabel } from '$lib/high-value/presentation';
-	import { Plus, Trash2, Shield, Building2 } from 'lucide-svelte';
-	import ChargeModal from '$lib/components/fiche-bien/modals/ChargeModal.svelte';
+	import { Plus, Trash2, Shield, Building2, X } from 'lucide-svelte';
 	import PnoModal from '$lib/components/fiche-bien/modals/PnoModal.svelte';
 	import FraisModal from '$lib/components/fiche-bien/modals/FraisModal.svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import { CHARGE_TYPE_OPTIONS } from '$lib/high-value/charges';
 	import {
 		announceFicheBienModal,
 		subscribeExclusiveFicheBienModal
@@ -25,12 +25,15 @@
 
 	let { charges, assurancePno, fraisAgence, isGerant, sciId, bienId, onRefresh }: Props = $props();
 
-	let showChargeModal = $state(false);
+	let showChargeComposer = $state(false);
+	let chargeSaving = $state(false);
 	let showPnoModal = $state(false);
 	let showFraisModal = $state(false);
 	let editPno: AssurancePnoEmbed | null = $state(null);
+	let type_charge = $state('copropriete');
+	let montant = $state(0);
+	let date_paiement = $state(new Date().toISOString().slice(0, 10));
 
-	$effect(() => subscribeExclusiveFicheBienModal('charge', () => { showChargeModal = false; }));
 	$effect(() => subscribeExclusiveFicheBienModal('pno', () => { showPnoModal = false; }));
 	$effect(() => subscribeExclusiveFicheBienModal('frais', () => { showFraisModal = false; }));
 
@@ -44,9 +47,34 @@
 		return typeFraisLabels[type] ?? type;
 	}
 
-	function openChargeModal() {
-		announceFicheBienModal('charge');
-		showChargeModal = true;
+	function resetChargeForm() {
+		type_charge = 'copropriete';
+		montant = 0;
+		date_paiement = new Date().toISOString().slice(0, 10);
+	}
+
+	function openChargeComposer() {
+		resetChargeForm();
+		showChargeComposer = true;
+	}
+
+	function closeChargeComposer() {
+		showChargeComposer = false;
+	}
+
+	async function handleCreateCharge() {
+		if (montant < 0) return;
+		chargeSaving = true;
+		try {
+			await createChargeForBien(sciId, bienId, { type_charge, montant, date_paiement });
+			addToast({ title: 'Charge ajoutée', variant: 'success' });
+			closeChargeComposer();
+			onRefresh();
+		} catch (err: any) {
+			addToast({ title: err?.message ?? 'Erreur', variant: 'error' });
+		} finally {
+			chargeSaving = false;
+		}
 	}
 
 	function openPnoModal(item: AssurancePnoEmbed | null = null) {
@@ -166,13 +194,100 @@
 			{#if isGerant}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={openChargeModal}
+					onclick={showChargeComposer ? closeChargeComposer : openChargeComposer}
 				>
-					<Plus class="h-4 w-4" />
-					Ajouter une charge
+					{#if showChargeComposer}
+						<X class="h-4 w-4" />
+						Fermer
+					{:else}
+						<Plus class="h-4 w-4" />
+						Ajouter une charge
+					{/if}
 				</button>
 			{/if}
 		</div>
+
+		{#if isGerant && showChargeComposer}
+			<form
+				class="mb-5 rounded-2xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/60 dark:bg-sky-950/20"
+				onsubmit={(event) => {
+					event.preventDefault();
+					handleCreateCharge();
+				}}
+			>
+				<div class="mb-3 flex items-start justify-between gap-3">
+					<div>
+						<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Nouvelle charge</p>
+						<p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+							La saisie reste visible dans l'onglet Charges pour garder le contexte.
+						</p>
+					</div>
+					<button
+						type="button"
+						class="rounded-full border border-slate-300 p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+						onclick={closeChargeComposer}
+						aria-label="Fermer le formulaire de charge"
+					>
+						<X class="h-4 w-4" />
+					</button>
+				</div>
+
+				<div class="grid gap-4 md:grid-cols-3">
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Type de charge</span>
+						<select
+							id="charge-type-inline"
+							bind:value={type_charge}
+							required
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						>
+							{#each CHARGE_TYPE_OPTIONS as ct}
+								<option value={ct.value}>{ct.label}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (€)</span>
+						<input
+							id="charge-montant-inline"
+							type="number"
+							bind:value={montant}
+							min="0"
+							step="0.01"
+							required
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Date</span>
+						<input
+							id="charge-date-inline"
+							type="date"
+							bind:value={date_paiement}
+							required
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+				</div>
+
+				<div class="mt-4 flex justify-end gap-2">
+					<button
+						type="button"
+						class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+						onclick={closeChargeComposer}
+					>
+						Annuler
+					</button>
+					<button
+						type="submit"
+						disabled={chargeSaving}
+						class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+					>
+						{chargeSaving ? 'Ajout…' : 'Ajouter'}
+					</button>
+				</div>
+			</form>
+		{/if}
 
 		{#if charges.length === 0}
 			<div
@@ -422,7 +537,6 @@
 			</div>
 		{/if}
 	</div>
-	<ChargeModal bind:open={showChargeModal} {sciId} {bienId} onSuccess={onRefresh} />
 	<PnoModal bind:open={showPnoModal} {sciId} {bienId} editItem={editPno} onSuccess={onRefresh} />
 	<FraisModal bind:open={showFraisModal} {sciId} {bienId} onSuccess={onRefresh} />
 </div>

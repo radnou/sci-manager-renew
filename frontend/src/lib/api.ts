@@ -1215,12 +1215,50 @@ export function deleteMouvementParts(sciId: EntityId, id: EntityId) {
 // --- Assemblées générales ---
 
 export function fetchAssembleesGenerales(sciId: EntityId) {
-	return apiFetch<any[]>(`/api/v1/scis/${sciId}/assemblees-generales`);
+	return apiFetch<AssembleeGenerale[]>(`/api/v1/scis/${sciId}/assemblees-generales`);
 }
 
-export function createAssembleeGenerale(sciId: EntityId, data: any) {
-	return apiFetch<any>(`/api/v1/scis/${sciId}/assemblees-generales`, {
+export type AssembleeGeneraleType = 'ordinaire' | 'extraordinaire' | string;
+
+export type AssembleeGenerale = {
+	id: EntityId;
+	id_sci: EntityId;
+	date_ag: string;
+	type_ag: AssembleeGeneraleType;
+	exercice_annee: number;
+	ordre_du_jour?: string | null;
+	pv_url?: string | null;
+	quorum_atteint: boolean;
+	resolutions?: string | null;
+	notes?: string | null;
+	created_at?: string | null;
+};
+
+export type AssembleeGeneraleInput = {
+	date_ag: string;
+	type_ag: AssembleeGeneraleType;
+	exercice_annee: number;
+	ordre_du_jour?: string | null;
+	pv_url?: string | null;
+	quorum_atteint: boolean;
+	resolutions?: string | null;
+	notes?: string | null;
+};
+
+export function createAssembleeGenerale(sciId: EntityId, data: AssembleeGeneraleInput) {
+	return apiFetch<AssembleeGenerale>(`/api/v1/scis/${sciId}/assemblees-generales`, {
 		method: 'POST',
+		body: JSON.stringify(data)
+	});
+}
+
+export function updateAssembleeGenerale(
+	sciId: EntityId,
+	id: EntityId,
+	data: AssembleeGeneraleInput
+) {
+	return apiFetch<AssembleeGenerale>(`/api/v1/scis/${sciId}/assemblees-generales/${id}`, {
+		method: 'PATCH',
 		body: JSON.stringify(data)
 	});
 }

@@ -1,18 +1,28 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-type Theme = 'light' | 'dark';
+export type ThemePreference = 'system' | 'light' | 'dark';
+type ResolvedTheme = 'light' | 'dark';
 
-function normalizeTheme(value: string | null): Theme | null {
-	if (value === 'light' || value === 'dark') return value;
+function normalizeTheme(value: string | null): ThemePreference | null {
+	if (value === 'system' || value === 'light' || value === 'dark') return value;
 	return null;
 }
 
-function applyTheme(nextTheme: Theme, withTransition: boolean) {
+function getSystemTheme(): ResolvedTheme {
+	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveTheme(preference: ThemePreference): ResolvedTheme {
+	return preference === 'system' ? getSystemTheme() : preference;
+}
+
+function applyTheme(nextTheme: ThemePreference, withTransition: boolean) {
 	if (!browser) return;
 
 	localStorage.setItem('theme', nextTheme);
-	document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+	document.documentElement.dataset.theme = nextTheme;
+	document.documentElement.classList.toggle('dark', resolveTheme(nextTheme) === 'dark');
 
 	if (!withTransition) return;
 	document.documentElement.style.setProperty('--theme-transition', 'all 0.3s ease');
@@ -22,29 +32,46 @@ function applyTheme(nextTheme: Theme, withTransition: boolean) {
 }
 
 function createThemeStore() {
-	const { subscribe, set, update } = writable<Theme>('dark');
+	const { subscribe, set, update } = writable<ThemePreference>('system');
+	let mediaQuery: MediaQueryList | null = null;
+	let mediaListener: ((event: MediaQueryListEvent) => void) | null = null;
+
+	function setupSystemListener() {
+		if (!browser || mediaQuery) return;
+		mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		mediaListener = () => {
+			const savedTheme = normalizeTheme(localStorage.getItem('theme'));
+			if ((savedTheme ?? 'system') === 'system') {
+				applyTheme('system', false);
+			}
+		};
+		mediaQuery.addEventListener('change', mediaListener);
+	}
 
 	return {
 		subscribe,
-		toggle: () => update(theme => {
-			const newTheme = theme === 'light' ? 'dark' : 'light';
-			applyTheme(newTheme, true);
-			return newTheme;
+		toggle: () => update((theme) => {
+			const cycle: ThemePreference[] = ['system', 'dark', 'light'];
+			const nextTheme = cycle[(cycle.indexOf(theme) + 1) % cycle.length];
+			applyTheme(nextTheme, true);
+			return nextTheme;
 		}),
-		set: (theme: Theme) => {
-			const nextTheme = theme === 'light' ? 'light' : 'dark';
+		set: (theme: ThemePreference) => {
+			const nextTheme: ThemePreference =
+				theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'system';
 			set(nextTheme);
 			applyTheme(nextTheme, true);
 		},
+		resolve: (theme: ThemePreference) => resolveTheme(theme),
 		initialize: () => {
 			if (!browser) return;
 
 			const savedTheme = normalizeTheme(localStorage.getItem('theme'));
-			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-			const initialTheme: Theme = savedTheme ?? (prefersDark ? 'dark' : 'light');
+			const initialTheme: ThemePreference = savedTheme ?? 'system';
 
 			set(initialTheme);
 			applyTheme(initialTheme, false);
+			setupSystemListener();
 		}
 	};
 }

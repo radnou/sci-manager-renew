@@ -429,6 +429,37 @@ const MOCK_SCI_DOCUMENTS = [
   }
 ];
 
+// --- Assemblees Generales ---
+
+const MOCK_ASSEMBLEES_SCI_1 = [
+  {
+    id: 'ag-1',
+    id_sci: SCI_ID_1,
+    date_ag: '2026-06-15',
+    type_ag: 'ordinaire',
+    exercice_annee: 2025,
+    ordre_du_jour: 'Approbation des comptes et affectation du resultat',
+    pv_url: 'https://drive.example.com/pv-ag-2026',
+    quorum_atteint: true,
+    resolutions: 'Resolution 1: approbation des comptes. Resolution 2: maintien de la tresorerie.',
+    notes: 'Associes presents. Validation sans reserve.',
+    created_at: '2026-03-01T10:00:00Z'
+  },
+  {
+    id: 'ag-2',
+    id_sci: SCI_ID_1,
+    date_ag: '2026-09-30',
+    type_ag: 'extraordinaire',
+    exercice_annee: 2026,
+    ordre_du_jour: 'Arbitrage sur travaux et refinancement',
+    pv_url: null,
+    quorum_atteint: false,
+    resolutions: null,
+    notes: 'Preparation en cours avec le notaire et le comptable.',
+    created_at: '2026-03-05T09:00:00Z'
+  }
+];
+
 // --- GDPR ---
 
 const MOCK_DATA_SUMMARY = {
@@ -462,6 +493,8 @@ function json(route: any, data: unknown, status = 200) {
 // ============================================================
 
 export async function setupApiMocks(page: Page) {
+  let sci1Assemblees = structuredClone(MOCK_ASSEMBLEES_SCI_1);
+  let sci2Assemblees: any[] = [];
 
   // ---- Supabase Auth endpoints ----
   // Intercept token refresh (the app tries to refresh on boot)
@@ -574,14 +607,43 @@ export async function setupApiMocks(page: Page) {
 
   // SCI 1 mouvements-parts, assemblees-generales
   await page.route(`**/api/v1/scis/${SCI_ID_1}/mouvements-parts*`, route => json(route, []));
-  await page.route(`**/api/v1/scis/${SCI_ID_1}/assemblees-generales*`, route => json(route, []));
+  await page.route(`**/api/v1/scis/${SCI_ID_1}/assemblees-generales*`, async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const agId = url.pathname.split('/assemblees-generales/')[1] ?? null;
+
+    if (request.method() === 'POST') {
+      const payload = request.postDataJSON();
+      const created = {
+        id: `ag-${Date.now()}`,
+        id_sci: SCI_ID_1,
+        ...payload,
+        created_at: new Date().toISOString()
+      };
+      sci1Assemblees = [created, ...sci1Assemblees];
+      return json(route, created, 201);
+    }
+
+    if (request.method() === 'PATCH' && agId) {
+      const payload = request.postDataJSON();
+      sci1Assemblees = sci1Assemblees.map((ag) => (ag.id === agId ? { ...ag, ...payload } : ag));
+      return json(route, sci1Assemblees.find((ag) => ag.id === agId), 200);
+    }
+
+    if (request.method() === 'DELETE' && agId) {
+      sci1Assemblees = sci1Assemblees.filter((ag) => ag.id !== agId);
+      return route.fulfill({ status: 204, body: '' });
+    }
+
+    return json(route, sci1Assemblees);
+  });
 
   // SCI 2 nested routes
   await page.route(`**/api/v1/scis/${SCI_ID_2}/biens*`, route => json(route, [BIEN_3]));
   await page.route(`**/api/v1/scis/${SCI_ID_2}/associes*`, route => json(route, ASSOCIES_SCI_2));
   await page.route(`**/api/v1/scis/${SCI_ID_2}/documents*`, route => json(route, []));
   await page.route(`**/api/v1/scis/${SCI_ID_2}/mouvements-parts*`, route => json(route, []));
-  await page.route(`**/api/v1/scis/${SCI_ID_2}/assemblees-generales*`, route => json(route, []));
+  await page.route(`**/api/v1/scis/${SCI_ID_2}/assemblees-generales*`, route => json(route, sci2Assemblees));
 
   // SCI detail
   await page.route(`**/api/v1/scis/${SCI_ID_1}`, route => {
@@ -740,6 +802,8 @@ export const FAKE_SESSION_DATA = {
  */
 export async function injectFakeSession(page: Page) {
   await page.addInitScript((data) => {
+    window.localStorage.setItem('sb-api-auth-token', JSON.stringify(data.session));
+    window.localStorage.setItem('sb-auth-token', JSON.stringify(data.session));
     window.localStorage.setItem(data.storageKey, JSON.stringify(data.session));
   }, FAKE_SESSION_DATA);
 }

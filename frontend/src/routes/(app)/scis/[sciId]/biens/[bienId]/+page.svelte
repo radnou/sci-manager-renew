@@ -64,57 +64,18 @@
 		}
 	}
 
-	// G04: IntersectionObserver to update active tab on scroll
-	$effect(() => {
-		if (loading || !bien) return;
-
-		const sectionIds = sections.map((s) => s.id);
-		const observer = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) {
-						const id = entry.target.id.replace('section-', '');
-						if (sectionIds.includes(id)) {
-							activeSection = id;
-						}
-					}
-				}
-			},
-			{ rootMargin: '-160px 0px -60% 0px', threshold: 0 }
-		);
-
-		for (const sec of sectionIds) {
-			const el = document.getElementById(`section-${sec}`);
-			if (el) observer.observe(el);
-		}
-
-		return () => observer.disconnect();
-	});
-
-	// G05: Scroll to hash anchor on mount (e.g. #loyers)
 	onMount(() => {
 		const hash = window.location.hash?.replace('#', '');
-		if (hash) {
-			// Wait for content to render
-			const tryScroll = () => {
-				const el = document.getElementById(`section-${hash}`);
-				if (el) {
-					el.scrollIntoView({ behavior: 'smooth' });
-					activeSection = hash;
-				}
-			};
-			// Defer to allow page rendering
-			requestAnimationFrame(() => setTimeout(tryScroll, 100));
+		if (hash && sections.some((section) => section.id === hash)) {
+			activeSection = hash;
 		}
 	});
 
 	function scrollToSection(id: string) {
 		activeSection = id;
-		const el = document.getElementById(`section-${id}`);
-		if (el) {
-			const offset = 160;
-			const top = el.getBoundingClientRect().top + window.scrollY - offset;
-			window.scrollTo({ top, behavior: 'smooth' });
+		if (typeof window !== 'undefined') {
+			const nextUrl = `${window.location.pathname}#${id}`;
+			window.history.replaceState(window.history.state, '', nextUrl);
 		}
 	}
 
@@ -202,35 +163,39 @@
 			{generatingQuittance}
 		/>
 
-		<!-- Section navigation (sticky) -->
-		<nav class="sticky top-[var(--navbar-height,3.5rem)] z-30 -mx-4 mt-4 border-b border-slate-200 bg-white/95 backdrop-blur-md md:-mx-8 dark:border-slate-800 dark:bg-slate-950/95">
-			<div class="flex gap-0 overflow-x-auto px-4 md:px-8">
+		<nav
+			class="mt-4 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+			aria-label="Sections de la fiche bien"
+		>
+			<div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Navigation fiche bien">
 				{#each sections as sec (sec.id)}
 					<button
 						type="button"
 						onclick={() => scrollToSection(sec.id)}
-						class="relative flex items-center gap-1.5 whitespace-nowrap px-3.5 py-3 text-sm font-medium transition-colors {activeSection === sec.id
-							? 'text-blue-600 dark:text-blue-400'
-							: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}"
+						role="tab"
+						aria-selected={activeSection === sec.id}
+						class="relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors {activeSection === sec.id
+							? 'bg-sky-600 text-white shadow-sm'
+							: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white'}"
 					>
 						<sec.icon class="h-4 w-4" />
 						<span>{sec.label}</span>
-						{#if activeSection === sec.id}
-							<span class="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400"></span>
-						{/if}
 					</button>
 				{/each}
 			</div>
 		</nav>
 
-		<div class="sci-stagger mt-6 space-y-6">
-			<div id="section-identite">
+		<div class="sci-stagger mt-6">
+			{#if activeSection === 'identite'}
+			<div id="section-identite" role="tabpanel" aria-label="Identité">
 				<FicheBienIdentite {bien} {isGerant} onRefresh={loadFicheBien} />
 			</div>
-			<div id="section-bail">
+			{:else if activeSection === 'bail'}
+			<div id="section-bail" role="tabpanel" aria-label="Bail">
 				<FicheBienBail bail={bien.bail_actif} {isGerant} sciId={sciId} bienId={String(bien.id)} onRefresh={loadFicheBien} />
 			</div>
-			<div id="section-loyers">
+			{:else if activeSection === 'loyers'}
+			<div id="section-loyers" role="tabpanel" aria-label="Loyers">
 				<FicheBienLoyers
 					loyers={bien.loyers_recents}
 					{isGerant}
@@ -243,7 +208,8 @@
 					onRefresh={loadFicheBien}
 				/>
 			</div>
-			<div id="section-charges">
+			{:else if activeSection === 'charges'}
+			<div id="section-charges" role="tabpanel" aria-label="Charges">
 				<FicheBienCharges
 					charges={bien.charges_list}
 					assurancePno={bien.assurance_pno}
@@ -254,10 +220,12 @@
 					onRefresh={loadFicheBien}
 				/>
 			</div>
-			<div id="section-rentabilite">
+			{:else if activeSection === 'rentabilite'}
+			<div id="section-rentabilite" role="tabpanel" aria-label="Rentabilité">
 				<FicheBienRentabilite rentabilite={bien.rentabilite} hasSourceData={bien.prix_acquisition != null && bien.bail_actif != null} />
 			</div>
-			<div id="section-documents">
+			{:else if activeSection === 'documents'}
+			<div id="section-documents" role="tabpanel" aria-label="Documents">
 				<FicheBienDocuments
 					documents={bien.documents}
 					{isGerant}
@@ -265,6 +233,7 @@
 					bienId={String(bien.id)}
 				/>
 			</div>
+			{/if}
 		</div>
 	{/if}
 </section>

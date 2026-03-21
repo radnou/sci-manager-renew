@@ -93,6 +93,7 @@ import {
 	// Assemblees generales
 	fetchAssembleesGenerales,
 	createAssembleeGenerale,
+	updateAssembleeGenerale,
 	deleteAssembleeGenerale,
 	fetchDataSummary,
 	exportUserData,
@@ -1326,7 +1327,13 @@ describe('api helpers', () => {
 	});
 
 	it('createAssembleeGenerale posts JSON body', async () => {
-		const data = { date: '2026-06-15', type: 'ordinaire', resolutions: [] };
+		const data = {
+			date_ag: '2026-06-15',
+			type_ag: 'ordinaire',
+			exercice_annee: 2025,
+			quorum_atteint: true,
+			resolutions: 'Approbation des comptes'
+		};
 		const created = { id: 1, ...data };
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
@@ -1335,6 +1342,25 @@ describe('api helpers', () => {
 		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/assemblees-generales`);
 		expect(options.method).toBe('POST');
+		expect(options.body).toBe(JSON.stringify(data));
+	});
+
+	it('updateAssembleeGenerale sends PATCH request', async () => {
+		const data = {
+			date_ag: '2026-06-15',
+			type_ag: 'extraordinaire',
+			exercice_annee: 2025,
+			quorum_atteint: false,
+			notes: 'Vote reporte'
+		};
+		const updated = { id: 1, ...data };
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(updateAssembleeGenerale('sci-1', 1, data)).resolves.toEqual(updated);
+		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/assemblees-generales/1`);
+		expect(options.method).toBe('PATCH');
 		expect(options.body).toBe(JSON.stringify(data));
 	});
 

@@ -116,7 +116,8 @@
 		admin: 'Admin',
 		account: 'Compte',
 		billing: 'Abonnement',
-		settings: 'Paramètres'
+		settings: 'Paramètres',
+		'assemblees-generales': 'Assemblées générales'
 	};
 
 	type Crumb = { label: string; href: string };

@@ -2,29 +2,38 @@ import { test, expect } from '@playwright/test';
 import { setupAuthedMocks } from '../fixtures/api-mocks';
 
 test.describe('Parametres et compte @P1', () => {
+  async function openAuthenticatedPage(page: import('@playwright/test').Page, path: string) {
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+  }
 
   test.beforeEach(async ({ page }) => {
     await setupAuthedMocks(page);
   });
 
   test('la page parametres charge les preferences @P1', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await openAuthenticatedPage(page, '/settings');
 
-    // Settings page should show preference sections
-    const content = await page.textContent('body');
-    const hasSettings =
-      content!.includes('Param') ||
-      content!.includes('param') ||
-      content!.includes('Notification') ||
-      content!.includes('notification') ||
-      content!.includes('rence');
-    expect(hasSettings).toBe(true);
+    await expect(page.locator('#settings-landing-route')).toBeVisible();
+    await expect(page.locator('#settings-density')).toBeVisible();
+    await expect(page.locator('#settings-theme')).toBeVisible();
+  });
+
+  test('les preferences locales couvrent route, densite et theme @P1', async ({ page }) => {
+    await openAuthenticatedPage(page, '/settings');
+
+    await page.locator('#settings-landing-route').selectOption('/scis');
+    await page.locator('#settings-density').selectOption('compact');
+    await page.locator('#settings-theme').selectOption('system');
+    await page.getByRole('button', { name: 'Enregistrer les paramètres' }).click();
+
+    await expect(page.locator('body')).toContainText('Paramètres enregistrés');
   });
 
   test('les toggles de notification fonctionnent @P1', async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await openAuthenticatedPage(page, '/settings');
 
     // Look for notification toggles (checkboxes or switches)
     const toggles = page.locator(
@@ -52,25 +61,27 @@ test.describe('Parametres et compte @P1', () => {
   });
 
   test('la page compte affiche le profil @P1', async ({ page }) => {
-    await page.goto('/account');
-    await page.waitForLoadState('networkidle');
+    await openAuthenticatedPage(page, '/account');
 
-    // Account page should show user info
-    const content = await page.textContent('body');
-    const hasProfile =
-      content!.includes('demo') ||
-      content!.includes('Compte') ||
-      content!.includes('compte') ||
-      content!.includes('Email') ||
-      content!.includes('email') ||
-      content!.includes('Profil') ||
-      content!.includes('profil');
-    expect(hasProfile).toBe(true);
+    await expect(page.getByText('Identité et contexte')).toBeVisible();
+    await expect(page.getByText('Email')).toBeVisible();
+    await expect(page.getByText('Mode d\'accès')).toBeVisible();
+  });
+
+  test('le formulaire mot de passe valide ses champs @P1', async ({ page }) => {
+    await openAuthenticatedPage(page, '/account');
+
+    const submit = page.getByRole('button', { name: 'Modifier le mot de passe' });
+    await expect(submit).toBeDisabled();
+
+    const passwordInputs = page.locator('input[type="password"]');
+    await passwordInputs.nth(0).fill('secret123');
+    await passwordInputs.nth(1).fill('secret321');
+    await expect(submit).toBeDisabled();
   });
 
   test('bouton export GDPR present @P1', async ({ page }) => {
-    await page.goto('/account');
-    await page.waitForLoadState('networkidle');
+    await openAuthenticatedPage(page, '/account');
 
     // Look for GDPR export button
     const exportButton = page.locator(
@@ -88,8 +99,7 @@ test.describe('Parametres et compte @P1', () => {
   });
 
   test('bouton suppression compte GDPR avec confirmation @P1', async ({ page }) => {
-    await page.goto('/account');
-    await page.waitForLoadState('networkidle');
+    await openAuthenticatedPage(page, '/account');
 
     // Look for delete account button
     const deleteButton = page.locator(

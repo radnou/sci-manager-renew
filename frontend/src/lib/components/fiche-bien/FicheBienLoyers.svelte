@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { Plus, FileText, Check, Loader2 } from 'lucide-svelte';
-	import LoyerModal from '$lib/components/fiche-bien/modals/LoyerModal.svelte';
+	import { Plus, FileText, Check, Loader2, X } from 'lucide-svelte';
 	import DatePopover from '$lib/components/ui/DatePopover.svelte';
-	import { updateLoyer, renderQuitus, type EntityId, type QuitusRequestPayload } from '$lib/api';
-	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import {
-		announceFicheBienModal,
-		subscribeExclusiveFicheBienModal
-	} from '$lib/components/fiche-bien/modal-coordinator';
+		createLoyerForBien,
+		updateLoyer,
+		renderQuitus,
+		type EntityId,
+		type LoyerCreatePayload,
+		type LoyerStatus,
+		type QuitusRequestPayload
+	} from '$lib/api';
+	import { addToast } from '$lib/components/ui/toast/toast-store';
 
 	interface Props {
 		loyers: Array<any>;
@@ -24,20 +27,49 @@
 
 	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh }: Props = $props();
 
-	let showLoyerModal = $state(false);
+	let showLoyerComposer = $state(false);
+	let savingLoyer = $state(false);
 	let payDateLoyerId: EntityId | null = $state(null);
 	let payDateOpen = $state(false);
 	let generatingQuittanceFor: string | null = $state(null);
+	let periode = $state(new Date().toISOString().slice(0, 7));
+	let montant = $state(0);
+	let statut = $state<LoyerStatus>('en_attente');
 
-	$effect(() => {
-		return subscribeExclusiveFicheBienModal('loyer', () => {
-			showLoyerModal = false;
-		});
-	});
+	function resetLoyerForm() {
+		periode = new Date().toISOString().slice(0, 7);
+		montant = 0;
+		statut = 'en_attente';
+	}
 
-	function openLoyerModal() {
-		announceFicheBienModal('loyer');
-		showLoyerModal = true;
+	function openLoyerComposer() {
+		resetLoyerForm();
+		showLoyerComposer = true;
+	}
+
+	function closeLoyerComposer() {
+		showLoyerComposer = false;
+	}
+
+	async function handleCreateLoyer() {
+		if (!periode || montant < 0) return;
+		savingLoyer = true;
+		try {
+			const data: LoyerCreatePayload = {
+				id_bien: bienId,
+				date_loyer: `${periode}-01`,
+				montant,
+				statut
+			};
+			await createLoyerForBien(sciId, bienId, data);
+			addToast({ title: 'Loyer enregistré', variant: 'success' });
+			closeLoyerComposer();
+			onRefresh();
+		} catch (err: any) {
+			addToast({ title: err?.message ?? 'Erreur', variant: 'error' });
+		} finally {
+			savingLoyer = false;
+		}
 	}
 
 	async function handleMarkPaid(date: string) {
@@ -141,13 +173,101 @@
 		{#if isGerant}
 			<button
 				class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-				onclick={openLoyerModal}
+				onclick={showLoyerComposer ? closeLoyerComposer : openLoyerComposer}
 			>
-				<Plus class="h-4 w-4" />
-				Enregistrer un loyer
+				{#if showLoyerComposer}
+					<X class="h-4 w-4" />
+					Fermer
+				{:else}
+					<Plus class="h-4 w-4" />
+					Enregistrer un loyer
+				{/if}
 			</button>
 		{/if}
 	</div>
+
+	{#if isGerant && showLoyerComposer}
+		<form
+			class="mb-5 rounded-2xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/60 dark:bg-sky-950/20"
+			onsubmit={(event) => {
+				event.preventDefault();
+				handleCreateLoyer();
+			}}
+		>
+			<div class="mb-3 flex items-start justify-between gap-3">
+				<div>
+					<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Nouveau loyer</p>
+					<p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+						La saisie reste dans l'onglet Loyers, sans masquer les informations du bien.
+					</p>
+				</div>
+				<button
+					type="button"
+					class="rounded-full border border-slate-300 p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+					onclick={closeLoyerComposer}
+					aria-label="Fermer le formulaire de loyer"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			</div>
+
+			<div class="grid gap-4 md:grid-cols-3">
+				<label class="block">
+					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Période</span>
+					<input
+						id="loyer-periode-inline"
+						type="month"
+						bind:value={periode}
+						required
+						class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+					/>
+				</label>
+				<label class="block">
+					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (€)</span>
+					<input
+						id="loyer-montant-inline"
+						type="number"
+						bind:value={montant}
+						min="0"
+						step="0.01"
+						required
+						class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+					/>
+				</label>
+				<div>
+					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Statut</span>
+					<div class="flex flex-wrap gap-2" role="group" aria-label="Statut du loyer">
+						{#each (['en_attente', 'paye', 'en_retard'] as const) as s}
+							<button
+								type="button"
+								class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors {statut === s ? 'bg-sky-600 text-white' : 'border border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'}"
+								onclick={() => (statut = s)}
+							>
+								{s === 'paye' ? 'Payé' : s === 'en_attente' ? 'En attente' : 'En retard'}
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<div class="mt-4 flex justify-end gap-2">
+				<button
+					type="button"
+					class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+					onclick={closeLoyerComposer}
+				>
+					Annuler
+				</button>
+				<button
+					type="submit"
+					disabled={savingLoyer}
+					class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+				>
+					{savingLoyer ? 'Enregistrement…' : 'Enregistrer'}
+				</button>
+			</div>
+		</form>
+	{/if}
 
 	{#if loyers.length === 0}
 		<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-12 dark:border-slate-700">
@@ -247,5 +367,4 @@
 		</div>
 	{/if}
 
-	<LoyerModal bind:open={showLoyerModal} {sciId} {bienId} defaultMontant={0} onSuccess={onRefresh} />
 </div>

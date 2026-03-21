@@ -34,7 +34,8 @@
 		'forgot-password': 'Mot de passe oublié',
 		confidentialite: 'Confidentialité',
 		cgu: 'CGU',
-		cgv: 'CGV'
+		cgv: 'CGV',
+		'assemblees-generales': 'Assemblées générales'
 	};
 
 	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

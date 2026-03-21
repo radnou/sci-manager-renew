@@ -68,13 +68,13 @@ describe('application preferences storage', () => {
 		window.localStorage.setItem(
 			APPLICATION_PREFERENCES_STORAGE_KEY,
 			JSON.stringify({
-				defaultLandingRoute: '/finance'
+				defaultLandingRoute: '/finances'
 			})
 		);
 
 		expect(readApplicationPreferences()).toEqual({
 			...DEFAULT_APPLICATION_PREFERENCES,
-			defaultLandingRoute: '/finance'
+			defaultLandingRoute: '/finances'
 		});
 	});
 });

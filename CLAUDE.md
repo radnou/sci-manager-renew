@@ -11,7 +11,7 @@ GererSCI est une application SaaS pour la gestion de SCI (Sociétés Civiles Imm
 - **Base de données**: Supabase (PostgreSQL) avec RLS (Row-Level Security)
 - **Paiements**: Stripe (abonnements + lifetime deals)
 - **Emails**: Resend pour les emails transactionnels et magic links
-- **Infrastructure**: Docker Compose (nginx reverse proxy + services)
+- **Infrastructure**: Docker Compose (Caddy ou nginx reverse proxy + services)
 
 ## Development Commands
 
@@ -74,6 +74,10 @@ backend/app/
 │   ├── stripe.py        # Checkout, webhooks, portail
 │   ├── quitus.py        # Génération quittances PDF
 │   ├── cerfa.py         # Génération CERFA 2044
+│   ├── assemblees_generales.py  # Registre AG + PV
+│   ├── mouvements_parts.py      # Cessions/transmissions de parts
+│   ├── import_csv.py    # Import CSV (biens + loyers)
+│   ├── health.py        # Health check endpoint
 │   └── ...              # associes, biens, charges, export, files, fiscalite, gdpr, loyers, locataires
 ├── core/
 │   ├── config.py        # Settings (Pydantic BaseSettings)
@@ -95,6 +99,9 @@ backend/app/
     ├── subscription_service.py  # Gestion abonnements Stripe
     ├── quitus_service.py        # PDF quittances (ReportLab)
     ├── storage_service.py       # Upload documents (Supabase Storage)
+    ├── admin_metrics_service.py # KPIs admin (funnel, alertes, actions)
+    ├── associe_linking.py       # Auto-link associés par email
+    ├── document_links.py        # URLs signées documents
     └── ...                      # auth, email, biens, loyers, sci
 ```
 
@@ -139,15 +146,19 @@ frontend/src/
     │   │   ├── biens/[bienId]/baux/    # Gestion des baux
     │   │   ├── associes/               # Associés de la SCI
     │   │   ├── fiscalite/              # Fiscalité annuelle
+    │   │   ├── assemblees-generales/   # Registre AG + PV
+    │   │   ├── mouvements-parts/       # Cessions de parts
     │   │   └── documents/              # GED par SCI
     │   ├── finances/                   # Vue financière consolidée
     │   ├── onboarding/                 # Wizard onboarding
-    │   ├── admin/                      # Panel admin (is_admin required)
     │   ├── settings/                   # Préférences + notifications
     │   └── account/                    # Profil + privacy
-    ├── login/            # Auth entry (magic link)
-    ├── pricing/          # Plans & checkout Stripe
-    └── +layout.svelte    # Root layout (Supabase listener, theme, cookie consent)
+    ├── admin/              # Panel admin (HORS (app), secret-key auth)
+    ├── login/              # Auth entry (magic link)
+    ├── pricing/            # Plans & checkout Stripe
+    ├── simulateur-cerfa/   # Lead magnet public (simulateur CERFA 2044)
+    ├── cgu/ cgv/ mentions-legales/ confidentialite/  # Pages légales
+    └── +layout.svelte      # Root layout (Supabase listener, theme, cookie consent)
 ```
 
 **Points importants**:
@@ -158,7 +169,7 @@ frontend/src/
 - **i18n**: Paraglide-JS (structure dans `messages/`)
 
 ### Database (Supabase)
-Le schéma SQL est dans `supabase/migrations/` (9 fichiers, `001_init` → `008_ux_redesign_v2`). Tables principales:
+Le schéma SQL est dans `supabase/migrations/` (12 fichiers, `001_init` → `011_audit_fixes`). Tables principales:
 - `sci` → Sociétés civiles immobilières
 - `associes` → Associés liés aux SCI (RLS par user_id, rôle: gérant/associé)
 - `biens` → Biens immobiliers
@@ -282,3 +293,43 @@ Ce projet suit une approche produit/marketing avec:
 - **North Star Metric**: Nombre de SCI actives avec ≥1 loyer enregistré sur 30 jours
 
 Documentation business complète dans `/docs/` (functional requirements, GTM strategy, audit Big4).
+
+## Expert Agents Team
+
+Sous-agents Claude Code recommandés pour ce projet. Utiliser `subagent_type` dans l'Agent tool.
+
+### Pôle Métier (Domaine SCI / Immobilier / Fiscal)
+
+| Agent | Rôle projet | Quand l'utiliser |
+|-------|------------|------------------|
+| `Legal Compliance Checker` | **Expert fiscal & conformité** — Vérifie la conformité CERFA 2044, déclaration 2072, obligations SCI, RGPD, CGU/CGV | Nouvelles features fiscales, génération CERFA, audit conformité, pages légales |
+| `Finance Tracker` | **Comptable / contrôleur financier** — Valide les calculs de rentabilité, cashflow, charges, revenus fonciers | Logique calcul loyers/charges, rentabilité brute/nette, dashboard KPIs financiers |
+| `Analytics Reporter` | **Analyste données** — KPIs, métriques d'usage, tableaux de bord, funnel conversion | Dashboard admin, métriques abonnement, north star metric, reporting |
+| `Product Manager` | **Chef de produit** — Priorisation fonctionnalités, roadmap, specs, positionnement | Nouvelles features, arbitrages scope, specs fonctionnelles, pricing |
+| `requirements-analyst` | **Analyste exigences** — Transformation besoins vagues en specs concrètes | Discovery, onboarding flow, nouvelles entités métier |
+
+### Pôle Technique
+
+| Agent | Rôle projet | Quand l'utiliser |
+|-------|------------|------------------|
+| `Software Architect` | **Architecte logiciel** — Design système, patterns, décisions techniques structurantes | Nouvelles entités (déclaration 2072, comptabilité), refactoring modules, scalabilité |
+| `backend-architect` | **Architecte backend** — API design, sécurité, intégrité données, fault tolerance | Endpoints complexes (scis_biens), RLS policies, paywall, Stripe webhooks |
+| `frontend-architect` | **Architecte frontend** — UI accessible, performante, systèmes CSS, SvelteKit patterns | Composants complexes (fiche-bien 7 onglets), stores, routing nested |
+| `Backend Architect` | **Backend senior** — Implémentation API, microservices, cloud infra | CRUD complet, services métier, cron jobs, PDF generation |
+| `Frontend Developer` | **Dev frontend** — Implémentation UI, React/Svelte, optimisation perf | Pages, composants, dark mode, responsive, animations |
+| `Database Optimizer` | **DBA** — Schéma, requêtes, indexes, performance PostgreSQL/Supabase | Migrations, requêtes lentes, RLS policies, indexes manquants |
+| `security-engineer` | **Ingénieur sécurité** — Vulnérabilités, OWASP, audit sécurité | Auth flow, JWT, RLS, rate limiting, injection, XSS |
+| `quality-engineer` | **Ingénieur qualité** — Stratégie tests, couverture, edge cases | Tests high-value (≥90%), E2E Playwright, validation métier |
+| `devops-architect` | **DevOps** — CI/CD, Docker, infra, monitoring | Pipeline deploy, Docker Compose, Caddy/nginx, VPS, healthchecks |
+| `Code Reviewer` | **Relecteur code** — Review PRs, bugs, maintenabilité, conventions | Avant merge, refactoring, code critique (paywall, auth, finances) |
+
+### Combinaisons recommandées par domaine
+
+```
+Fiscalité/CERFA    → Legal Compliance Checker + Finance Tracker + backend-architect
+Nouvelle feature   → Product Manager + Software Architect + quality-engineer
+Sécurité/Auth      → security-engineer + backend-architect + Code Reviewer
+Dashboard/KPIs     → Analytics Reporter + Finance Tracker + frontend-architect
+Infra/Deploy       → devops-architect + security-engineer
+Refactoring        → Software Architect + Code Reviewer + quality-engineer
+```

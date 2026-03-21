@@ -146,21 +146,21 @@ test.describe('Gestion des biens @P0', () => {
     }
   });
 
-  test('les modales de fiche bien restent exclusives @P1', async ({ page }) => {
+  test('les actions loyers et charges restent inline dans leur onglet @P1', async ({ page }) => {
     const navigated = await goToFicheBien(page);
     if (!navigated) return;
 
-    await page.getByRole('button', { name: 'Modifier' }).click();
-    await expect(page.getByRole('dialog', { name: 'Modifier le bail' })).toBeVisible();
-
+    await page.getByRole('button', { name: 'Loyers' }).click();
     await page.getByRole('button', { name: 'Enregistrer un loyer' }).click();
-    await expect(page.getByRole('dialog', { name: 'Enregistrer un loyer' })).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'Modifier le bail' })).toHaveCount(0);
+    await expect(page.locator('#loyer-periode-inline')).toBeVisible();
+    await expect(page.locator('#loyer-montant-inline')).toBeVisible();
+    await expect(page.locator('[role="dialog"]')).toHaveCount(0);
 
+    await page.getByRole('button', { name: 'Charges' }).click();
     await page.getByRole('button', { name: 'Ajouter une charge' }).click();
-    await expect(page.getByRole('dialog', { name: 'Ajouter une charge' })).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'Enregistrer un loyer' })).toHaveCount(0);
-    await expect(page.locator('[role="dialog"]')).toHaveCount(1);
+    await expect(page.locator('#charge-type-inline')).toBeVisible();
+    await expect(page.locator('#charge-montant-inline')).toBeVisible();
+    await expect(page.locator('[role="dialog"]')).toHaveCount(0);
   });
 
   test('la quittance explique qu un bail actif est requis @P1', async ({ page }) => {
@@ -236,11 +236,13 @@ test.describe('Gestion des biens @P0', () => {
         await addButton.first().click();
         await page.waitForTimeout(500);
 
-        const typeInput = page.locator(
-          'input[name*="type"], select[name*="type"], input[placeholder*="type"]'
-        );
+        const typeInput = page.locator('#charge-type-inline, input[name*="type"], select[name*="type"], input[placeholder*="type"]');
+        const montantInput = page.locator('#charge-montant-inline, input[name*="montant"], input[type="number"]');
+        const dateInput = page.locator('#charge-date-inline, input[type="date"]');
         const formVisible = await typeInput.first().isVisible().catch(() => false);
-        expect(formVisible).toBe(true);
+        const montantVisible = await montantInput.first().isVisible().catch(() => false);
+        const dateVisible = await dateInput.first().isVisible().catch(() => false);
+        expect(formVisible && montantVisible && dateVisible).toBe(true);
       }
     }
   });

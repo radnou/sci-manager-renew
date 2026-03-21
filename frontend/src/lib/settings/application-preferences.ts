@@ -3,8 +3,7 @@ export const APPLICATION_PREFERENCES_STORAGE_KEY = 'gerersci.application-prefere
 export type ApplicationLandingRoute =
 	| '/dashboard'
 	| '/scis'
-	| '/exploitation'
-	| '/finance'
+	| '/finances'
 	| '/settings';
 export type ApplicationDensity = 'comfortable' | 'compact';
 
