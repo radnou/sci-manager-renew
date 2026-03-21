@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { Plus, FileText, Check, Loader2, X } from 'lucide-svelte';
+	import { Plus, FileText, Check, Loader2, X, Filter } from 'lucide-svelte';
 	import DatePopover from '$lib/components/ui/DatePopover.svelte';
 	import {
 		createLoyerForBien,
@@ -36,6 +36,10 @@
 	let montant = $state(0);
 	let statut = $state<LoyerStatus>('en_attente');
 
+	// Loyer filters
+	let loyerFilterStatus = $state('tous');
+	let loyerFilterYear = $state('tous');
+
 	function resetLoyerForm() {
 		periode = new Date().toISOString().slice(0, 7);
 		montant = 0;
@@ -62,7 +66,7 @@
 				statut
 			};
 			await createLoyerForBien(sciId, bienId, data);
-			addToast({ title: 'Loyer enregistré', variant: 'success' });
+			addToast({ title: 'Loyer enregistr\u00e9', variant: 'success' });
 			closeLoyerComposer();
 			onRefresh();
 		} catch (err: any) {
@@ -76,7 +80,7 @@
 		if (!payDateLoyerId) return;
 		try {
 			await updateLoyer(payDateLoyerId, { statut: 'paye', date_paiement: date });
-			addToast({ title: 'Loyer marqué payé', variant: 'success' });
+			addToast({ title: 'Loyer marqu\u00e9 pay\u00e9', variant: 'success' });
 			payDateLoyerId = null;
 			onRefresh();
 		} catch (err: any) {
@@ -86,7 +90,7 @@
 
 	const statutConfig: Record<string, { label: string; class: string }> = {
 		paye: {
-			label: 'Payé',
+			label: 'Pay\u00e9',
 			class: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
 		},
 		en_attente: {
@@ -118,11 +122,38 @@
 		}
 	}
 
+	// Loyer filter helpers
+	const loyerYears = $derived(() => {
+		const years = new Set<string>();
+		for (const l of loyers) {
+			if (l.date_loyer) years.add(String(l.date_loyer).slice(0, 4));
+		}
+		return [...years].sort().reverse();
+	});
+
+	const filteredLoyers = $derived(() => {
+		return loyers.filter((l) => {
+			if (loyerFilterStatus !== 'tous') {
+				const s = l.statut ?? 'en_attente';
+				if (loyerFilterStatus === 'en_retard' && s !== 'en_retard' && s !== 'retard') return false;
+				if (loyerFilterStatus !== 'en_retard' && s !== loyerFilterStatus) return false;
+			}
+			if (loyerFilterYear !== 'tous') {
+				if (!l.date_loyer || !String(l.date_loyer).startsWith(loyerFilterYear)) return false;
+			}
+			return true;
+		});
+	});
+
+	const filteredLoyerTotal = $derived(() => {
+		return filteredLoyers().reduce((sum: number, l: any) => sum + Number(l.montant ?? 0), 0);
+	});
+
 	async function handleGenerateQuittance(loyer: any) {
 		if (!loyer.id || !nomLocataire) {
 			addToast({
-				title: 'Données manquantes',
-				description: 'Le locataire ou le loyer est introuvable. Vérifiez le bail actif.',
+				title: 'Donn\u00e9es manquantes',
+				description: 'Le locataire ou le loyer est introuvable. V\u00e9rifiez le bail actif.',
 				variant: 'error'
 			});
 			return;
@@ -150,14 +181,14 @@
 			setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
 			addToast({
-				title: 'Quittance générée',
+				title: 'Quittance g\u00e9n\u00e9r\u00e9e',
 				description: `Quittance pour ${buildPeriodeLabel(loyer.date_loyer)} ouverte dans un nouvel onglet.`,
 				variant: 'success'
 			});
 		} catch (err: any) {
-			const message = err?.message ?? 'Impossible de générer la quittance.';
+			const message = err?.message ?? 'Impossible de g\u00e9n\u00e9rer la quittance.';
 			addToast({
-				title: 'Erreur de génération',
+				title: 'Erreur de g\u00e9n\u00e9ration',
 				description: message,
 				variant: 'error'
 			});
@@ -210,17 +241,18 @@
 
 			<div class="grid gap-4 md:grid-cols-3">
 				<label class="block">
-					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Période</span>
+					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">P&eacute;riode</span>
 					<input
 						id="loyer-periode-inline"
 						type="month"
+						lang="fr"
 						bind:value={periode}
 						required
 						class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
 					/>
 				</label>
 				<label class="block">
-					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (€)</span>
+					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (&euro;)</span>
 					<input
 						id="loyer-montant-inline"
 						type="number"
@@ -240,7 +272,7 @@
 								class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors {statut === s ? 'bg-sky-600 text-white' : 'border border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'}"
 								onclick={() => (statut = s)}
 							>
-								{s === 'paye' ? 'Payé' : s === 'en_attente' ? 'En attente' : 'En retard'}
+								{s === 'paye' ? 'Pay\u00e9' : s === 'en_attente' ? 'En attente' : 'En retard'}
 							</button>
 						{/each}
 					</div>
@@ -260,20 +292,56 @@
 					disabled={savingLoyer}
 					class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
 				>
-					{savingLoyer ? 'Enregistrement…' : 'Enregistrer'}
+					{savingLoyer ? 'Enregistrement\u2026' : 'Enregistrer'}
 				</button>
 			</div>
 		</form>
 	{/if}
 
+	{#if loyers.length > 0}
+		<!-- Loyer filters -->
+		<div class="mb-4 flex flex-wrap items-center gap-3">
+			<div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+				<Filter class="h-3.5 w-3.5" />
+				Filtres
+			</div>
+			<select
+				bind:value={loyerFilterStatus}
+				class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+				aria-label="Filtrer par statut"
+			>
+				<option value="tous">Tous les statuts</option>
+				<option value="paye">Pay&eacute;</option>
+				<option value="en_attente">En attente</option>
+				<option value="en_retard">En retard</option>
+			</select>
+			<select
+				bind:value={loyerFilterYear}
+				class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+				aria-label="Filtrer par ann\u00e9e"
+			>
+				<option value="tous">Toutes les ann&eacute;es</option>
+				{#each loyerYears() as year}
+					<option value={year}>{year}</option>
+				{/each}
+			</select>
+		</div>
+	{/if}
+
 	{#if loyers.length === 0}
 		<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-12 dark:border-slate-700">
-			<p class="text-sm text-slate-500 dark:text-slate-400">Aucun loyer enregistré pour ce bien.</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">Aucun loyer enregistr&eacute; pour ce bien.</p>
 			{#if isGerant}
 				<p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
-					Cliquez sur "Enregistrer un loyer" pour commencer.
+					Cliquez sur &laquo; Enregistrer un loyer &raquo; pour commencer.
 				</p>
 			{/if}
+		</div>
+	{:else if filteredLoyers().length === 0}
+		<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700">
+			<p class="text-sm text-slate-500 dark:text-slate-400">
+				Aucun loyer ne correspond aux filtres s&eacute;lectionn&eacute;s.
+			</p>
 		</div>
 	{:else}
 		<div class="overflow-x-auto">
@@ -300,7 +368,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each loyers as loyer (loyer.id ?? loyer.date_loyer)}
+					{#each filteredLoyers() as loyer (loyer.id ?? loyer.date_loyer)}
 						{@const statut = getStatut(loyer.statut)}
 						{@const isGenerating = generatingQuittanceFor === String(loyer.id)}
 						<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
@@ -316,7 +384,7 @@
 								</span>
 							</td>
 							<td class="py-3 pr-4 text-slate-500 dark:text-slate-400">
-								{loyer.date_paiement ? formatFrDate(loyer.date_paiement) : '—'}
+								{loyer.date_paiement ? formatFrDate(loyer.date_paiement) : '\u2014'}
 							</td>
 							{#if isGerant}
 								<td class="py-3">
@@ -325,11 +393,11 @@
 											<div class="relative">
 												<button
 													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
-													title="Marquer comme payé"
+													title="Marquer comme pay\u00e9"
 													onclick={() => { payDateLoyerId = loyer.id; payDateOpen = true; }}
 												>
 													<Check class="h-3 w-3" />
-													Payé
+													Pay\u00e9
 												</button>
 												{#if payDateOpen && payDateLoyerId === loyer.id}
 													<DatePopover
@@ -344,11 +412,11 @@
 											onclick={() => handleGenerateQuittance(loyer)}
 											disabled={isGenerating}
 											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-											title="Générer la quittance"
+											title="G\u00e9n\u00e9rer la quittance"
 										>
 											{#if isGenerating}
 												<Loader2 class="h-3 w-3 animate-spin" />
-												Génération…
+												G\u00e9n\u00e9ration\u2026
 											{:else}
 												<FileText class="h-3 w-3" />
 												Quittance
@@ -360,6 +428,17 @@
 						</tr>
 					{/each}
 				</tbody>
+				<tfoot>
+					<tr class="border-t border-slate-200 dark:border-slate-700">
+						<td class="py-3 pr-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+							{filteredLoyers().length} loyer{filteredLoyers().length > 1 ? 's' : ''}
+						</td>
+						<td class="py-3 pr-4 font-semibold text-slate-900 dark:text-slate-100">
+							{formatEur(filteredLoyerTotal())}
+						</td>
+						<td colspan={isGerant ? 3 : 2}></td>
+					</tr>
+				</tfoot>
 			</table>
 		</div>
 	{/if}

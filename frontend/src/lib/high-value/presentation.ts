@@ -72,13 +72,32 @@ export function mapAssociateRoleLabel(role: string | null | undefined) {
 	return toTitleCase(normalizedRole.replace(/_/g, ' '));
 }
 
+const CHARGE_TYPE_LABELS: Record<string, string> = {
+	travaux_entretien: "Travaux d'entretien",
+	interets_emprunt: "Int\u00e9r\u00eats d'emprunt",
+	taxe_fonciere: 'Taxe fonci\u00e8re',
+	copropriete: 'Copropri\u00e9t\u00e9',
+	assurance_pno: 'Assurance PNO',
+	frais_gestion: 'Frais de gestion',
+	travaux_amelioration: "Travaux d'am\u00e9lioration",
+	prime_assurance: "Prime d'assurance",
+	frais_procedure: 'Frais de proc\u00e9dure',
+	autre_deductible: 'Autre charge d\u00e9ductible',
+	assurance: 'Assurance',
+	syndic: 'Syndic',
+	entretien: 'Entretien',
+	travaux: 'Travaux',
+	credit: 'Cr\u00e9dit',
+	autre: 'Autre'
+};
+
 export function mapChargeTypeLabel(type: string | null | undefined) {
 	const normalizedType = normalizeMachineToken(type);
 	if (!normalizedType) {
 		return 'Charge';
 	}
 
-	return toTitleCase(normalizedType.replace(/_/g, ' '));
+	return CHARGE_TYPE_LABELS[normalizedType] ?? toTitleCase(normalizedType.replace(/_/g, ' '));
 }
 
 function parseStructuredErrorMessage(rawMessage: string) {

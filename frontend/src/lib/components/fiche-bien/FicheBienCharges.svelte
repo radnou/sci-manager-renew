@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { AssurancePnoEmbed, FraisAgenceEmbed } from '$lib/api';
-	import { createChargeForBien, deleteChargeForBien, deletePnoForBien, deleteFraisForBien } from '$lib/api';
+	import { createChargeForBien, deleteChargeForBien, deletePnoForBien, deleteFraisForBien, createPnoForBien, updatePnoForBien } from '$lib/api';
+	import type { PnoCreate, PnoUpdate } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { mapChargeTypeLabel } from '$lib/high-value/presentation';
-	import { Plus, Trash2, Shield, Building2, X } from 'lucide-svelte';
-	import PnoModal from '$lib/components/fiche-bien/modals/PnoModal.svelte';
+	import { Plus, Trash2, Shield, Building2, X, Filter } from 'lucide-svelte';
 	import FraisModal from '$lib/components/fiche-bien/modals/FraisModal.svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { CHARGE_TYPE_OPTIONS } from '$lib/high-value/charges';
@@ -27,14 +27,26 @@
 
 	let showChargeComposer = $state(false);
 	let chargeSaving = $state(false);
-	let showPnoModal = $state(false);
+	let showPnoForm = $state(false);
 	let showFraisModal = $state(false);
-	let editPno: AssurancePnoEmbed | null = $state(null);
 	let type_charge = $state('copropriete');
 	let montant = $state(0);
 	let date_paiement = $state(new Date().toISOString().slice(0, 10));
 
-	$effect(() => subscribeExclusiveFicheBienModal('pno', () => { showPnoModal = false; }));
+	// PNO inline form state
+	let pnoLoading = $state(false);
+	let pnoAssureur = $state('');
+	let pnoNumeroContrat = $state('');
+	let pnoPrimeAnnuelle = $state(0);
+	let pnoDateDebut = $state('');
+	let pnoDateFin = $state('');
+	let pnoIsEdit = $derived(!!assurancePno && showPnoForm);
+
+	// Charge filters
+	let chargeFilterType = $state('tous');
+	let chargeFilterYear = $state('tous');
+
+	$effect(() => subscribeExclusiveFicheBienModal('pno', () => { showPnoForm = false; }));
 	$effect(() => subscribeExclusiveFicheBienModal('frais', () => { showFraisModal = false; }));
 
 	const typeFraisLabels: Record<string, string> = {
@@ -67,7 +79,7 @@
 		chargeSaving = true;
 		try {
 			await createChargeForBien(sciId, bienId, { type_charge, montant, date_paiement });
-			addToast({ title: 'Charge ajoutée', variant: 'success' });
+			addToast({ title: 'Charge ajout\u00e9e', variant: 'success' });
 			closeChargeComposer();
 			onRefresh();
 		} catch (err: any) {
@@ -77,16 +89,91 @@
 		}
 	}
 
-	function openPnoModal(item: AssurancePnoEmbed | null = null) {
-		editPno = item;
+	function openPnoForm(existingItem: AssurancePnoEmbed | null = null) {
+		if (existingItem) {
+			pnoAssureur = existingItem.assureur;
+			pnoNumeroContrat = existingItem.numero_contrat ?? '';
+			pnoPrimeAnnuelle = existingItem.prime_annuelle;
+			pnoDateDebut = existingItem.date_debut;
+			pnoDateFin = existingItem.date_fin ?? '';
+		} else {
+			pnoAssureur = '';
+			pnoNumeroContrat = '';
+			pnoPrimeAnnuelle = 0;
+			pnoDateDebut = '';
+			pnoDateFin = '';
+		}
 		announceFicheBienModal('pno');
-		showPnoModal = true;
+		showPnoForm = true;
+	}
+
+	function closePnoForm() {
+		showPnoForm = false;
+	}
+
+	async function handlePnoSubmit() {
+		if (!pnoAssureur || !pnoDateDebut || pnoPrimeAnnuelle < 0) return;
+		pnoLoading = true;
+		try {
+			if (pnoIsEdit && assurancePno) {
+				const data: PnoUpdate = {
+					assureur: pnoAssureur,
+					numero_contrat: pnoNumeroContrat || undefined,
+					prime_annuelle: pnoPrimeAnnuelle,
+					date_debut: pnoDateDebut,
+					date_fin: pnoDateFin || undefined
+				};
+				await updatePnoForBien(sciId, bienId, assurancePno.id, data);
+				addToast({ title: 'Assurance PNO mise \u00e0 jour', variant: 'success' });
+			} else {
+				const data: PnoCreate = {
+					assureur: pnoAssureur,
+					numero_contrat: pnoNumeroContrat || undefined,
+					prime_annuelle: pnoPrimeAnnuelle,
+					date_debut: pnoDateDebut,
+					date_fin: pnoDateFin || undefined
+				};
+				await createPnoForBien(sciId, bienId, data);
+				addToast({ title: 'Assurance PNO ajout\u00e9e', variant: 'success' });
+			}
+			closePnoForm();
+			onRefresh();
+		} catch (err: any) {
+			addToast({ title: err?.message ?? 'Erreur', variant: 'error' });
+		} finally {
+			pnoLoading = false;
+		}
 	}
 
 	function openFraisModal() {
 		announceFicheBienModal('frais');
 		showFraisModal = true;
 	}
+
+	// Filtered charges
+	const chargeYears = $derived(() => {
+		const years = new Set<string>();
+		for (const c of charges) {
+			const d = c.date_paiement ?? c.date_charge;
+			if (d) years.add(String(d).slice(0, 4));
+		}
+		return [...years].sort().reverse();
+	});
+
+	const filteredCharges = $derived(() => {
+		return charges.filter((c) => {
+			if (chargeFilterType !== 'tous' && c.type_charge !== chargeFilterType) return false;
+			if (chargeFilterYear !== 'tous') {
+				const d = c.date_paiement ?? c.date_charge;
+				if (!d || !String(d).startsWith(chargeFilterYear)) return false;
+			}
+			return true;
+		});
+	});
+
+	const filteredChargeTotal = $derived(() => {
+		return filteredCharges().reduce((sum: number, c: any) => sum + Number(c.montant ?? 0), 0);
+	});
 
 	// Deferred-delete state: store removed items for undo restoration
 	let pendingDeleteCharge: { id: number; item: any } | null = $state(null);
@@ -100,7 +187,7 @@
 		pendingDeleteCharge = { id: chargeId, item };
 		charges = charges.filter(c => c.id !== chargeId);
 		addToast({
-			title: 'Charge supprimée',
+			title: 'Charge supprim\u00e9e',
 			variant: 'undo',
 			undoCallbacks: {
 				onUndo: () => {
@@ -132,7 +219,7 @@
 		pendingDeletePno = { id: pnoId, item };
 		assurancePno = null;
 		addToast({
-			title: 'Assurance PNO supprimée',
+			title: 'Assurance PNO supprim\u00e9e',
 			variant: 'undo',
 			undoCallbacks: {
 				onUndo: () => {
@@ -162,7 +249,7 @@
 		pendingDeleteFrais = { id: fraisId, item };
 		fraisAgence = fraisAgence.filter(f => f.id !== fraisId);
 		addToast({
-			title: 'Frais supprimés',
+			title: 'Frais supprim\u00e9s',
 			variant: 'undo',
 			undoCallbacks: {
 				onUndo: () => {
@@ -247,7 +334,7 @@
 						</select>
 					</label>
 					<label class="block">
-						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (€)</span>
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (&euro;)</span>
 						<input
 							id="charge-montant-inline"
 							type="number"
@@ -263,6 +350,7 @@
 						<input
 							id="charge-date-inline"
 							type="date"
+							lang="fr"
 							bind:value={date_paiement}
 							required
 							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
@@ -283,10 +371,40 @@
 						disabled={chargeSaving}
 						class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
 					>
-						{chargeSaving ? 'Ajout…' : 'Ajouter'}
+						{chargeSaving ? 'Ajout\u2026' : 'Ajouter'}
 					</button>
 				</div>
 			</form>
+		{/if}
+
+		{#if charges.length > 0}
+			<!-- Charge filters -->
+			<div class="mb-4 flex flex-wrap items-center gap-3">
+				<div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+					<Filter class="h-3.5 w-3.5" />
+					Filtres
+				</div>
+				<select
+					bind:value={chargeFilterType}
+					class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+					aria-label="Filtrer par type de charge"
+				>
+					<option value="tous">Tous les types</option>
+					{#each CHARGE_TYPE_OPTIONS as ct}
+						<option value={ct.value}>{ct.label}</option>
+					{/each}
+				</select>
+				<select
+					bind:value={chargeFilterYear}
+					class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+					aria-label="Filtrer par ann\u00e9e"
+				>
+					<option value="tous">Toutes les ann\u00e9es</option>
+					{#each chargeYears() as year}
+						<option value={year}>{year}</option>
+					{/each}
+				</select>
+			</div>
 		{/if}
 
 		{#if charges.length === 0}
@@ -294,13 +412,21 @@
 				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-12 dark:border-slate-700"
 			>
 				<p class="text-sm text-slate-500 dark:text-slate-400">
-					Aucune charge enregistrée pour ce bien.
+					Aucune charge enregistr\u00e9e pour ce bien.
 				</p>
 				{#if isGerant}
 					<p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
-						Cliquez sur "Ajouter une charge" pour commencer.
+						Cliquez sur &laquo; Ajouter une charge &raquo; pour commencer.
 					</p>
 				{/if}
+			</div>
+		{:else if filteredCharges().length === 0}
+			<div
+				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700"
+			>
+				<p class="text-sm text-slate-500 dark:text-slate-400">
+					Aucune charge ne correspond aux filtres s\u00e9lectionn\u00e9s.
+				</p>
 			</div>
 		{:else}
 			<div class="overflow-x-auto">
@@ -310,7 +436,7 @@
 							<th
 								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 							>
-								Libellé
+								Libell\u00e9
 							</th>
 							<th
 								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
@@ -332,10 +458,10 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each charges as charge (charge.id ?? charge.date_paiement)}
+						{#each filteredCharges() as charge (charge.id ?? charge.date_paiement)}
 							<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
 								<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">
-									{mapChargeTypeLabel(charge.type_charge) ?? charge.libelle ?? '—'}
+									{mapChargeTypeLabel(charge.type_charge) ?? charge.libelle ?? '\u2014'}
 								</td>
 								<td class="py-3 pr-4 text-slate-700 dark:text-slate-300">
 									{formatEur(charge.montant)}
@@ -358,6 +484,17 @@
 							</tr>
 						{/each}
 					</tbody>
+					<tfoot>
+						<tr class="border-t border-slate-200 dark:border-slate-700">
+							<td class="py-3 pr-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+								{filteredCharges().length} charge{filteredCharges().length > 1 ? 's' : ''}
+							</td>
+							<td class="py-3 pr-4 font-semibold text-slate-900 dark:text-slate-100">
+								{formatEur(filteredChargeTotal())}
+							</td>
+							<td colspan={isGerant ? 2 : 1}></td>
+						</tr>
+					</tfoot>
 				</table>
 			</div>
 		{/if}
@@ -370,16 +507,120 @@
 				<Shield class="h-5 w-5 text-sky-600 dark:text-sky-400" />
 				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Assurance PNO</h2>
 			</div>
-			{#if isGerant && !assurancePno}
+			{#if isGerant && !assurancePno && !showPnoForm}
 				<button
 					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={() => openPnoModal()}
+					onclick={() => openPnoForm()}
 				>
 					<Plus class="h-4 w-4" />
 					Ajouter
 				</button>
 			{/if}
 		</div>
+
+		{#if showPnoForm}
+			<!-- Inline PNO form (same pattern as the charge/loyer composers) -->
+			<form
+				class="mb-5 rounded-2xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900/60 dark:bg-sky-950/20"
+				onsubmit={(event) => {
+					event.preventDefault();
+					handlePnoSubmit();
+				}}
+			>
+				<div class="mb-3 flex items-start justify-between gap-3">
+					<div>
+						<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+							{pnoIsEdit ? 'Modifier assurance PNO' : 'Ajouter assurance PNO'}
+						</p>
+						<p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+							La saisie reste dans l'onglet Charges pour garder le contexte.
+						</p>
+					</div>
+					<button
+						type="button"
+						class="rounded-full border border-slate-300 p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+						onclick={closePnoForm}
+						aria-label="Fermer le formulaire PNO"
+					>
+						<X class="h-4 w-4" />
+					</button>
+				</div>
+
+				<div class="grid gap-4 md:grid-cols-2">
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Assureur</span>
+						<input
+							id="pno-assureur"
+							type="text"
+							bind:value={pnoAssureur}
+							required
+							placeholder="Nom de l'assureur"
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">N&deg; contrat</span>
+						<input
+							id="pno-contrat"
+							type="text"
+							bind:value={pnoNumeroContrat}
+							placeholder="Optionnel"
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Prime annuelle (&euro;)</span>
+						<input
+							id="pno-prime"
+							type="number"
+							bind:value={pnoPrimeAnnuelle}
+							min="0"
+							step="0.01"
+							required
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Date de d&eacute;but</span>
+						<input
+							id="pno-date-debut"
+							type="date"
+							lang="fr"
+							bind:value={pnoDateDebut}
+							required
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block md:col-span-2">
+						<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Date d'&eacute;ch&eacute;ance</span>
+						<input
+							id="pno-date-fin"
+							type="date"
+							lang="fr"
+							bind:value={pnoDateFin}
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+				</div>
+
+				<div class="mt-4 flex justify-end gap-2">
+					<button
+						type="button"
+						class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+						onclick={closePnoForm}
+					>
+						Annuler
+					</button>
+					<button
+						type="submit"
+						disabled={pnoLoading}
+						class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+					>
+						{pnoLoading ? 'Enregistrement\u2026' : pnoIsEdit ? 'Mettre \u00e0 jour' : 'Ajouter'}
+					</button>
+				</div>
+			</form>
+		{/if}
 
 		{#if assurancePno}
 			<div class="grid gap-4 sm:grid-cols-2">
@@ -391,10 +632,10 @@
 				</div>
 				<div>
 					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
-						N° contrat
+						N&deg; contrat
 					</p>
 					<p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-						{assurancePno.numero_contrat ?? '—'}
+						{assurancePno.numero_contrat ?? '\u2014'}
 					</p>
 				</div>
 				<div>
@@ -406,11 +647,11 @@
 					</p>
 				</div>
 				<div>
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">Période</p>
+					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">P&eacute;riode</p>
 					<p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
 						{formatFrDate(assurancePno.date_debut)}
 						{#if assurancePno.date_fin}
-							— {formatFrDate(assurancePno.date_fin)}
+							&mdash; {formatFrDate(assurancePno.date_fin)}
 						{/if}
 					</p>
 				</div>
@@ -419,7 +660,7 @@
 				<div class="mt-4 flex gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
 					<button
 						class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-						onclick={() => openPnoModal(assurancePno)}
+						onclick={() => openPnoForm(assurancePno)}
 					>
 						Modifier
 					</button>
@@ -432,13 +673,13 @@
 					</button>
 				</div>
 			{/if}
-		{:else}
+		{:else if !showPnoForm}
 			<div
 				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700"
 			>
 				<Shield class="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
 				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">
-					Aucune assurance PNO renseignée.
+					Aucune assurance PNO renseign\u00e9e.
 				</p>
 			</div>
 		{/if}
@@ -467,7 +708,7 @@
 				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700"
 			>
 				<Building2 class="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
-				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucun frais d'agence enregistré.</p>
+				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucun frais d'agence enregistr&eacute;.</p>
 			</div>
 		{:else}
 			<div class="overflow-x-auto">
@@ -516,7 +757,7 @@
 									{formatFrDate(frais.date_frais)}
 								</td>
 								<td class="py-3 pr-4 text-slate-500 dark:text-slate-400">
-									{frais.description ?? '—'}
+									{frais.description ?? '\u2014'}
 								</td>
 								{#if isGerant}
 									<td class="py-3">
@@ -537,6 +778,5 @@
 			</div>
 		{/if}
 	</div>
-	<PnoModal bind:open={showPnoModal} {sciId} {bienId} editItem={editPno} onSuccess={onRefresh} />
 	<FraisModal bind:open={showFraisModal} {sciId} {bienId} onSuccess={onRefresh} />
 </div>

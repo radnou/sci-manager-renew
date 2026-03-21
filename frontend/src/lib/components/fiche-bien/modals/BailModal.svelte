@@ -62,13 +62,13 @@
 
 <CrudModal bind:open title={isEdit ? 'Modifier le bail' : 'Créer un bail'} size="wide" submitLabel={isEdit ? 'Mettre à jour' : 'Créer le bail'} {loading} onsubmit={handleSubmit}>
   <div>
-    <label for="bail-date-debut" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date début</label>
-    <input id="bail-date-debut" type="date" bind:value={date_debut} required disabled={isEdit}
+    <label for="bail-date-debut" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date de début</label>
+    <input id="bail-date-debut" type="date" lang="fr" bind:value={date_debut} required disabled={isEdit}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 disabled:opacity-50" />
   </div>
   <div>
-    <label for="bail-date-fin" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date fin</label>
-    <input id="bail-date-fin" type="date" bind:value={date_fin}
+    <label for="bail-date-fin" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date de fin</label>
+    <input id="bail-date-fin" type="date" lang="fr" bind:value={date_fin}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>

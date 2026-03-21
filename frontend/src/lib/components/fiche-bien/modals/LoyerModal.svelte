@@ -52,7 +52,7 @@
 <CrudModal bind:open title="Enregistrer un loyer" submitLabel="Enregistrer" {loading} onsubmit={handleSubmit}>
   <div>
     <label for="loyer-periode" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Période</label>
-    <input id="loyer-periode" type="month" bind:value={periode} required
+    <input id="loyer-periode" type="month" lang="fr" bind:value={periode} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>

@@ -65,7 +65,7 @@
   </div>
   <div>
     <label for="frais-date" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date</label>
-    <input id="frais-date" type="date" bind:value={date_frais} required
+    <input id="frais-date" type="date" lang="fr" bind:value={date_frais} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>

@@ -53,13 +53,13 @@
     </select>
   </div>
   <div>
-    <label for="charge-montant" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (EUR)</label>
+    <label for="charge-montant" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (&euro;)</label>
     <input id="charge-montant" type="number" bind:value={montant} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
     <label for="charge-date" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date</label>
-    <input id="charge-date" type="date" bind:value={date_paiement} required
+    <input id="charge-date" type="date" lang="fr" bind:value={date_paiement} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
 </CrudModal>

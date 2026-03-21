@@ -48,6 +48,7 @@
     <input
       id="datepopover-date"
       type="date"
+      lang="fr"
       bind:value={dateValue}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
     />
