@@ -10,6 +10,7 @@ class BienBase(BaseModel):
     ville: str = Field(min_length=1, max_length=120)
     code_postal: str = Field(pattern=r"^\d{5}$")
     type_locatif: Literal["nu", "meuble", "mixte"] = "nu"
+    type_bien: Literal["appartement", "maison", "immeuble", "local_commercial", "parking", "autre"] | None = None
     loyer_cc: float = Field(ge=0)
     charges: float = Field(default=0, ge=0)
     tmi: float = Field(default=0, ge=0, le=100)
@@ -30,6 +31,7 @@ class BienUpdate(BaseModel):
     ville: str | None = Field(default=None, min_length=1, max_length=120)
     code_postal: str | None = Field(default=None, pattern=r"^\d{5}$")
     type_locatif: Literal["nu", "meuble", "mixte"] | None = None
+    type_bien: Literal["appartement", "maison", "immeuble", "local_commercial", "parking", "autre"] | None = None
     loyer_cc: float | None = Field(default=None, ge=0)
     charges: float | None = Field(default=None, ge=0)
     tmi: float | None = Field(default=None, ge=0, le=100)
@@ -49,6 +51,7 @@ class BienResponse(BaseModel):
     ville: str
     code_postal: str
     type_locatif: str = "nu"
+    type_bien: str | None = None
     loyer_cc: float = 0
     charges: float = 0
     tmi: float = 0
@@ -58,6 +61,7 @@ class BienResponse(BaseModel):
     nb_pieces: int | None = None
     dpe_classe: str | None = None
     photo_url: str | None = None
+    statut: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     rentabilite_brute: float = 0

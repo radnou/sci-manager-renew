@@ -12,6 +12,7 @@ from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
 from app.services.associe_linking import link_user_to_pending_associes
 from app.services.auth_service import magic_link_service
+from app.services.email_service import email_service
 
 # Re-export so tests can patch at module level
 from app.api.v1.stripe import _find_user_by_email, _create_or_get_user  # noqa: F401
@@ -102,6 +103,19 @@ async def activate_session(
     link_user_to_pending_associes(user_id, email)
 
     logger.info("session_activated", session_id=session_id, user_id=user_id)
+
+    # 7. Send welcome email with magic link (non-blocking, first activation only)
+    try:
+        magic_link_url = f"{settings.frontend_url}/login"
+        await email_service.send_activation_welcome(email, magic_link_url)
+    except Exception as exc:
+        logger.warning(
+            "activation_welcome_email_failed",
+            email=email,
+            session_id=session_id,
+            error=str(exc),
+        )
+
     return ActivateResponse(token_hash=token_hash, plan_key=plan_key)
 
 

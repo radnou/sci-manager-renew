@@ -65,6 +65,39 @@ class EmailService:
             logger.error("magic_link_send_failed", email=email, error=str(e), exc_info=True)
             raise ExternalServiceError("Resend", f"Magic link send failed: {str(e)}")
 
+    async def send_activation_welcome(self, email: str, magic_link_url: str) -> dict:
+        """Send welcome email after guest checkout activation with magic link fallback.
+
+        Raises:
+            ExternalServiceError: Si l'envoi échoue
+        """
+        logger.info("sending_activation_welcome_email", email=email)
+
+        try:
+            html = _render_template(
+                "activation_welcome.html",
+                cta_url=magic_link_url,
+                cta_text="Accéder à mon espace",
+            )
+
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": "Bienvenue sur GérerSCI — Activez votre accès",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_activation_welcome",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email},
+            )
+
+            logger.info("activation_welcome_email_sent", email=email)
+            return result
+        except Exception as e:
+            logger.error("activation_welcome_email_send_failed", email=email, error=str(e), exc_info=True)
+            raise ExternalServiceError("Resend", f"Activation welcome email send failed: {str(e)}")
+
     async def send_welcome(self, email: str, plan_name: str) -> dict:
         """Send welcome email
 

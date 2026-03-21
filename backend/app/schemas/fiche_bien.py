@@ -56,6 +56,7 @@ class FicheBienResponse(BaseModel):
     ville: str
     code_postal: str
     type_locatif: str = "appartement"
+    type_bien: Optional[str] = None
     loyer_cc: float = 0
     charges: float = 0
     surface_m2: Optional[float] = None
@@ -63,6 +64,7 @@ class FicheBienResponse(BaseModel):
     dpe_classe: Optional[str] = None
     photo_url: Optional[str] = None
     prix_acquisition: Optional[float] = None
+    statut: Optional[str] = None
     bail_actif: Optional[BailEmbed] = None
     loyers_recents: list[dict] = []
     charges_list: list[dict] = []

@@ -138,12 +138,33 @@ async def list_sci_biens(
     request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
 ):
-    """Liste les biens d'une SCI."""
+    """Liste les biens d'une SCI avec statut d'occupation."""
     client = _get_client(request)
     result = client.table("biens").select("*").eq("id_sci", str(sci_id)).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
-    return result.data or []
+    biens = result.data or []
+    if not biens:
+        return biens
+
+    # Fetch active baux to determine occupation status
+    bien_ids = [b["id"] for b in biens]
+    baux_result = (
+        client.table("baux")
+        .select("id_bien")
+        .in_("id_bien", bien_ids)
+        .eq("statut", "en_cours")
+        .execute()
+    )
+    occupied_ids = set()
+    if baux_result.data:
+        occupied_ids = {row["id_bien"] for row in baux_result.data}
+
+    for bien in biens:
+        if not bien.get("statut"):
+            bien["statut"] = "loue" if bien["id"] in occupied_ids else "vacant"
+
+    return biens
 
 
 # ──────────────────────────────────────────────────────────────
@@ -327,6 +348,7 @@ async def get_fiche_bien(
         ville=bien.get("ville", ""),
         code_postal=bien.get("code_postal", ""),
         type_locatif=bien.get("type_locatif", "appartement"),
+        type_bien=bien.get("type_bien"),
         loyer_cc=loyer_mensuel,
         charges=charges_mensuelles,
         surface_m2=bien.get("surface_m2"),

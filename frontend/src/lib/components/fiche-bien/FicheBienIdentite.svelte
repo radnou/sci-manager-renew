@@ -24,6 +24,7 @@
 			ville: bien.ville ?? '',
 			code_postal: bien.code_postal ?? '',
 			type_locatif: bien.type_locatif ?? 'nu',
+			type_bien: bien.type_bien ?? '',
 			surface_m2: bien.surface_m2 ?? '',
 			nb_pieces: bien.nb_pieces ?? '',
 			dpe_classe: bien.dpe_classe ?? '',
@@ -48,6 +49,7 @@
 				ville: form.ville || undefined,
 				code_postal: form.code_postal || undefined,
 				type_locatif: (form.type_locatif as 'nu' | 'meuble' | 'mixte') || undefined,
+				type_bien: form.type_bien || undefined,
 				loyer_cc: Number(form.loyer_cc) || undefined,
 				charges: Number(form.charges) || undefined,
 				prix_acquisition: form.prix_acquisition !== '' ? Number(form.prix_acquisition) : null
@@ -69,12 +71,34 @@
 		{ value: 'mixte', label: 'Mixte' }
 	];
 
+	const TYPE_BIEN_OPTIONS: Array<{ value: string; label: string }> = [
+		{ value: 'appartement', label: 'Appartement' },
+		{ value: 'maison', label: 'Maison' },
+		{ value: 'immeuble', label: 'Immeuble' },
+		{ value: 'local_commercial', label: 'Local commercial' },
+		{ value: 'parking', label: 'Parking / Box' },
+		{ value: 'autre', label: 'Autre' }
+	];
+
+	function formatTypeBien(value: string | null | undefined): string | null {
+		if (!value) return null;
+		const found = TYPE_BIEN_OPTIONS.find((o) => o.value === value);
+		return found ? found.label : value;
+	}
+
+	function formatTypeLocatif(value: string | null | undefined): string | null {
+		if (!value) return null;
+		const found = TYPE_OPTIONS.find((o) => o.value === value);
+		return found ? found.label : value;
+	}
+
 	const readonlyFields: Array<{ label: string; value: string | number | null; suffix?: string }> =
 		$derived([
 			{ label: 'Adresse', value: bien.adresse },
 			{ label: 'Ville', value: bien.ville },
 			{ label: 'Code postal', value: bien.code_postal },
-			{ label: 'Type de bien', value: bien.type_locatif },
+			{ label: 'Type de bien', value: formatTypeBien(bien.type_bien) },
+			{ label: 'Type de location', value: formatTypeLocatif(bien.type_locatif) },
 			{ label: 'Surface', value: bien.surface_m2, suffix: 'm²' },
 			{ label: 'Nombre de pièces', value: bien.nb_pieces },
 			{ label: 'Classe DPE', value: bien.dpe_classe?.toUpperCase() ?? null },
@@ -172,8 +196,25 @@
 
 			<!-- Type de bien -->
 			<div>
-				<label for="edit-type" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-type-bien" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
 					Type de bien
+				</label>
+				<select
+					id="edit-type-bien"
+					bind:value={form.type_bien}
+					class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+				>
+					<option value="">—</option>
+					{#each TYPE_BIEN_OPTIONS as opt}
+						<option value={opt.value}>{opt.label}</option>
+					{/each}
+				</select>
+			</div>
+
+			<!-- Type de location -->
+			<div>
+				<label for="edit-type" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+					Type de location
 				</label>
 				<select
 					id="edit-type"

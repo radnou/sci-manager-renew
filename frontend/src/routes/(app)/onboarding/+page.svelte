@@ -162,6 +162,7 @@
 					ville: bienVille.trim(),
 					code_postal: bienCodePostal.trim(),
 					type_locatif: bienType,
+					type_bien: bienCategorie,
 					loyer_cc: bienLoyerCc,
 					charges: bienCharges,
 					tmi: 0,

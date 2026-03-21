@@ -3,10 +3,7 @@
 	import type { SCIDetail, Bien, SubscriptionEntitlements } from '$lib/api';
 	import { fetchSciBiensList, deleteBien, fetchSubscriptionEntitlements } from '$lib/api';
 
-	type BienListItem = Bien & {
-		statut?: string | null;
-		bail_actif?: unknown;
-	};
+	type BienListItem = Bien;
 	import { formatEur } from '$lib/high-value/formatters';
 	import { MapPin, Plus, LayoutGrid, List, Pencil, Trash2, Receipt, Loader2, TrendingUp, Wallet, ArrowUpRight, Upload } from 'lucide-svelte';
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
@@ -101,7 +98,32 @@
 	};
 
 	function getStatut(bien: BienListItem): string {
-		return bien.statut || (bien.bail_actif ? 'loue' : 'vacant');
+		return bien.statut || 'vacant';
+	}
+
+	const typeBienLabel: Record<string, string> = {
+		appartement: 'Appartement',
+		maison: 'Maison',
+		immeuble: 'Immeuble',
+		local_commercial: 'Local commercial',
+		parking: 'Parking / Box',
+		autre: 'Autre'
+	};
+
+	const typeLocatifLabel: Record<string, string> = {
+		nu: 'Location nue',
+		meuble: 'Meublé',
+		mixte: 'Mixte'
+	};
+
+	function getBienTypeLabel(bien: BienListItem): string | null {
+		if (bien.type_bien) return typeBienLabel[bien.type_bien] ?? bien.type_bien;
+		return null;
+	}
+
+	function getLocatifLabel(bien: BienListItem): string | null {
+		if (bien.type_locatif) return typeLocatifLabel[bien.type_locatif] ?? bien.type_locatif;
+		return null;
 	}
 </script>
 
@@ -237,9 +259,14 @@
 
 					<!-- Type + Rent -->
 					<div class="mt-3 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-						{#if bien.type_locatif}
+						{#if getBienTypeLabel(bien)}
 							<span class="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
-								{bien.type_locatif}
+								{getBienTypeLabel(bien)}
+							</span>
+						{/if}
+						{#if getLocatifLabel(bien)}
+							<span class="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">
+								{getLocatifLabel(bien)}
 							</span>
 						{/if}
 						{#if bien.loyer_cc}
@@ -365,9 +392,13 @@
 								{bien.ville ?? '--'} {bien.code_postal ?? ''}
 							</td>
 							<td class="whitespace-nowrap px-4 py-3">
-								{#if bien.type_locatif}
+								{#if getBienTypeLabel(bien)}
 									<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800 dark:text-slate-300">
-										{bien.type_locatif}
+										{getBienTypeLabel(bien)}
+									</span>
+								{:else if getLocatifLabel(bien)}
+									<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800 dark:text-slate-300">
+										{getLocatifLabel(bien)}
 									</span>
 								{:else}
 									<span class="text-slate-400 dark:text-slate-500">--</span>

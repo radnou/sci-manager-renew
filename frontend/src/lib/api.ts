@@ -81,6 +81,8 @@ export type Fiscalite = {
 	updated_at?: string;
 };
 
+export type BienCategory = 'appartement' | 'maison' | 'immeuble' | 'local_commercial' | 'parking' | 'autre';
+
 export type Bien = {
 	id?: EntityId;
 	id_sci?: EntityId;
@@ -88,6 +90,8 @@ export type Bien = {
 	ville?: string | null;
 	code_postal?: string | null;
 	type_locatif?: BienType | string | null;
+	type_bien?: BienCategory | string | null;
+	statut?: string | null;
 	loyer_cc?: number | null;
 	charges?: number | null;
 	tmi?: number | null;
@@ -144,6 +148,7 @@ export type BienCreatePayload = {
 	ville: string;
 	code_postal: string;
 	type_locatif: BienType;
+	type_bien?: BienCategory;
 	loyer_cc: number;
 	charges: number;
 	tmi: number;
@@ -159,6 +164,7 @@ export type BienUpdatePayload = {
 	ville?: string;
 	code_postal?: string;
 	type_locatif?: BienType;
+	type_bien?: string;
 	loyer_cc?: number;
 	charges?: number;
 	tmi?: number;
@@ -770,6 +776,7 @@ export type FicheBien = {
 	ville: string;
 	code_postal: string;
 	type_locatif: string;
+	type_bien: string | null;
 	loyer_cc: number;
 	charges: number;
 	surface_m2: number | null;

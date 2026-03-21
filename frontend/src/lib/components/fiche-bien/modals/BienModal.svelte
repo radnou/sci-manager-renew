@@ -1,6 +1,6 @@
 <script lang="ts">
   import CrudModal from '$lib/components/ui/CrudModal.svelte';
-  import { createBienForSci, type BienCreatePayload, type EntityId, type BienType } from '$lib/api';
+  import { createBienForSci, type BienCreatePayload, type EntityId, type BienType, type BienCategory } from '$lib/api';
   import { addToast } from '$lib/components/ui/toast/toast-store';
   import { goto } from '$app/navigation';
 
@@ -16,6 +16,7 @@
   let ville = $state('');
   let code_postal = $state('');
   let type_locatif = $state<BienType>('nu');
+  let type_bien = $state<BienCategory | ''>('');
   let loyer_cc = $state(0);
   let charges = $state(0);
   let tmi = $state(0);
@@ -23,7 +24,7 @@
 
   $effect(() => {
     if (open) {
-      adresse = ''; ville = ''; code_postal = ''; type_locatif = 'nu';
+      adresse = ''; ville = ''; code_postal = ''; type_locatif = 'nu'; type_bien = '';
       loyer_cc = 0; charges = 0; tmi = 0; prix_acquisition = undefined;
     }
   });
@@ -34,7 +35,8 @@
     try {
       const data: BienCreatePayload = {
         id_sci: sciId, adresse: adresse.trim(), ville, code_postal,
-        type_locatif, loyer_cc, charges, tmi, prix_acquisition
+        type_locatif, loyer_cc, charges, tmi, prix_acquisition,
+        type_bien: type_bien || undefined
       };
       const created = await createBienForSci(sciId, data);
       addToast({ title: 'Bien ajouté', variant: 'success' });
@@ -65,7 +67,20 @@
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bien-type-locatif" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type</label>
+    <label for="bien-type-bien" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type de bien</label>
+    <select id="bien-type-bien" bind:value={type_bien}
+      class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+      <option value="">--</option>
+      <option value="appartement">Appartement</option>
+      <option value="maison">Maison</option>
+      <option value="immeuble">Immeuble</option>
+      <option value="local_commercial">Local commercial</option>
+      <option value="parking">Parking / Box</option>
+      <option value="autre">Autre</option>
+    </select>
+  </div>
+  <div>
+    <label for="bien-type-locatif" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type de location</label>
     <select id="bien-type-locatif" bind:value={type_locatif}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
       <option value="nu">Nu</option>
