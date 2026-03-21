@@ -32,7 +32,7 @@
 			</p>
 			<p class="mt-2 text-sm">
 				Les presentes Conditions Generales d'Utilisation (ci-apres "CGU") regissent l'acces et
-				l'utilisation du service accessible a l'adresse <strong>app.gerersci.fr</strong>.
+				l'utilisation du service accessible à l'adresse <strong>gerersci.fr</strong>.
 			</p>
 		</section>
 

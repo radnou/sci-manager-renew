@@ -36,6 +36,7 @@
 			label: 'SCI actives',
 			value: String(kpis.sci_count),
 			hint: kpis.sci_count === 0 ? 'Créez votre première SCI' : '',
+			tooltip: 'Nombre de SCI en exploitation',
 			icon: Landmark,
 			iconColor: 'text-indigo-500 dark:text-indigo-400',
 			bgIcon: 'bg-indigo-50 dark:bg-indigo-950/40'
@@ -44,6 +45,7 @@
 			label: 'Biens',
 			value: String(kpis.biens_count),
 			hint: kpis.biens_count === 0 && kpis.sci_count > 0 ? 'Ajoutez un bien à une SCI' : '',
+			tooltip: 'Total des biens immobiliers',
 			icon: Building2,
 			iconColor: 'text-sky-500 dark:text-sky-400',
 			bgIcon: 'bg-sky-50 dark:bg-sky-950/40'
@@ -52,6 +54,7 @@
 			label: 'Recouvrement',
 			value: noLoyers ? '—' : formatPercent(kpis.taux_recouvrement),
 			hint: noLoyers ? 'Enregistrez un loyer pour activer' : '',
+			tooltip: 'Pourcentage de loyers payés sur la période',
 			icon: TrendingUp,
 			iconColor: noLoyers
 				? 'text-slate-400 dark:text-slate-500'
@@ -68,6 +71,7 @@
 			label: 'Cashflow net',
 			value: noLoyers ? '—' : formatEur(kpis.cashflow_net),
 			hint: noLoyers ? 'Enregistrez un loyer pour activer' : '',
+			tooltip: 'Revenus encaissés moins charges payées',
 			icon: Wallet,
 			iconColor: noLoyers
 				? 'text-slate-400 dark:text-slate-500'
@@ -96,6 +100,7 @@
 		{#each cards as card (card.label)}
 			<div
 				class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+				title={card.tooltip}
 			>
 				<div class="flex items-center gap-3">
 					<div class="flex h-10 w-10 items-center justify-center rounded-lg {card.bgIcon}">
@@ -103,7 +108,7 @@
 					</div>
 					<div class="min-w-0">
 						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
-						<p class="text-xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
+						<p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
 						{#if card.hint}
 							<p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{card.hint}</p>
 						{/if}

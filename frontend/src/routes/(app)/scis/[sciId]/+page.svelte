@@ -185,6 +185,32 @@
 		}
 	}
 
+	function handleExportSci() {
+		const headers = ['Nom', 'SIREN', 'Régime fiscal', 'Capital social', 'Forme juridique', 'Gérant', 'RCS', 'Statut', 'Associés'];
+		const row = [
+			sci.nom ?? '',
+			sci.siren ?? '',
+			sci.regime_fiscal ?? '',
+			sci.capital_social != null ? String(sci.capital_social) : '',
+			sci.forme_juridique ?? '',
+			sci.nom_gerant ?? '',
+			[sci.rcs_numero, sci.rcs_ville].filter(Boolean).join(' ') || '',
+			sci.statut ?? '',
+			String(sci.associes_count ?? sci.associes?.length ?? 0)
+		];
+		const csvContent = [headers.join(';'), row.join(';')].join('\n');
+		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `sci_${sci.nom}_${new Date().toISOString().slice(0, 10)}.csv`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+		addToast({ title: 'Export terminé', description: 'Le fichier CSV de la SCI a été téléchargé.', variant: 'success' });
+	}
+
 	async function handleExportBiens() {
 		exportingBiens = true;
 		try {
@@ -593,13 +619,17 @@
 			<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Exports</h2>
 			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Télécharger les données de cette SCI au format CSV.</p>
 			<div class="mt-4 grid gap-3">
-				<Button onclick={handleExportBiens} disabled={exportingBiens} variant="outline" class="justify-start">
+				<Button onclick={handleExportSci} variant="outline" class="justify-start" title="Exporte les informations générales de la SCI (nom, SIREN, régime fiscal, associés, capital)">
 					<Download class="mr-2 h-4 w-4" />
-					{exportingBiens ? 'Export en cours...' : 'Exporter les biens (CSV)'}
+					Export SCI (CSV)
 				</Button>
-				<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="justify-start">
+				<Button onclick={handleExportBiens} disabled={exportingBiens} variant="outline" class="justify-start" title="Exporte la liste des biens immobiliers (adresse, type, surface, loyer)">
 					<Download class="mr-2 h-4 w-4" />
-					{exportingLoyers ? 'Export en cours...' : 'Exporter les loyers (CSV)'}
+					{exportingBiens ? 'Export en cours...' : 'Export Biens (CSV)'}
+				</Button>
+				<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="justify-start" title="Exporte l'historique des loyers (montant, statut, date de paiement)">
+					<Download class="mr-2 h-4 w-4" />
+					{exportingLoyers ? 'Export en cours...' : 'Export Loyers (CSV)'}
 				</Button>
 			</div>
 		</div>

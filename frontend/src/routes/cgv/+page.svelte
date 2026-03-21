@@ -9,35 +9,35 @@
 		href="/"
 		class="mb-8 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 	>
-		&larr; Retour a l'accueil
+		&larr; Retour à l'accueil
 	</a>
 
 	<h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">
-		Conditions Generales de Vente
+		Conditions Générales de Vente
 	</h1>
 	<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-		Derniere mise a jour : 12 mars 2026
+		Dernière mise à jour : 12 mars 2026
 	</p>
 
 	<div class="mt-10 space-y-10 text-slate-700 dark:text-slate-300">
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">1. Objet</h2>
 			<p class="mt-3 text-sm">
-				Les presentes Conditions Generales de Vente (ci-apres "CGV") regissent la vente
-				d'abonnements au service GérerSCI, application en ligne (SaaS) de gestion de Societes
-				Civiles Immobilieres (SCI), edite par GérerSCI (Radnoumane Mossabely, entrepreneur individuel), dont le
-				siege social est situe a Paris, France (SIRET : en cours d'immatriculation) (ci-apres "le Prestataire").
+				Les présentes Conditions Générales de Vente (ci-après « CGV ») régissent la vente
+				d'abonnements au service GérerSCI, application en ligne (SaaS) de gestion de Sociétés
+				Civiles Immobilières (SCI), éditée par GérerSCI (Radnoumane Mossabely, entrepreneur individuel), dont le
+				siège social est situé à Paris, France (SIRET : en cours d'immatriculation) (ci-après « le Prestataire »).
 			</p>
 			<p class="mt-2 text-sm">
-				Le service est accessible a l'adresse <strong>app.gerersci.fr</strong> (ci-apres "le
-				Service"). Toute souscription a un abonnement implique l'acceptation sans reserve des
-				presentes CGV.
+				Le service est accessible à l'adresse <strong>gerersci.fr</strong> (ci-après « le
+				Service »). Toute souscription à un abonnement implique l'acceptation sans réserve des
+				présentes CGV.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				2. Prix et modalites de paiement
+				2. Prix et modalités de paiement
 			</h2>
 			<p class="mt-3 text-sm">
 				GérerSCI propose les formules d'abonnement suivantes :
@@ -110,15 +110,15 @@
 			</div>
 
 			<p class="mt-4 text-sm">
-				Les prix sont indiques en euros. La TVA applicable est de 20% conformement a la
-				legislation francaise en vigueur. Le Prestataire se reserve le droit de modifier ses
-				tarifs a tout moment. Toute modification de prix sera communiquee a l'utilisateur au
-				moins 30 jours avant son entree en vigueur.
+				Les prix sont indiqués en euros. La TVA applicable est de 20 % conformément à la
+				législation française en vigueur. Le Prestataire se réserve le droit de modifier ses
+				tarifs à tout moment. Toute modification de prix sera communiquée à l'utilisateur au
+				moins 30 jours avant son entrée en vigueur.
 			</p>
 			<p class="mt-2 text-sm">
-				Le paiement s'effectue par carte bancaire via la plateforme de paiement securisee
-				<strong>Stripe</strong>. Le Prestataire ne stocke aucune donnee de carte bancaire.
-				Le paiement est exigible au moment de la souscription et a chaque date de
+				Le paiement s'effectue par carte bancaire via la plateforme de paiement sécurisée
+				<strong>Stripe</strong>. Le Prestataire ne stocke aucune donnée de carte bancaire.
+				Le paiement est exigible au moment de la souscription et à chaque date de
 				renouvellement.
 			</p>
 		</section>
@@ -127,197 +127,197 @@
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
 				3. Processus de commande
 			</h2>
-			<p class="mt-3 text-sm">La souscription a un abonnement payant suit les etapes suivantes :</p>
+			<p class="mt-3 text-sm">La souscription à un abonnement payant suit les étapes suivantes :</p>
 			<ol class="mt-2 list-inside list-decimal space-y-1 text-sm">
 				<li>
-					<strong>Selection du plan :</strong> l'utilisateur choisit la formule d'abonnement
-					souhaitee sur la page <a href="/pricing" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">tarifs</a>
+					<strong>Sélection du plan :</strong> l'utilisateur choisit la formule d'abonnement
+					souhaitée sur la page <a href="/pricing" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">tarifs</a>
 				</li>
 				<li>
-					<strong>Paiement :</strong> l'utilisateur est redirige vers la page de paiement
-					securisee Stripe pour saisir ses informations bancaires
+					<strong>Paiement :</strong> l'utilisateur est redirigé vers la page de paiement
+					sécurisée Stripe pour saisir ses informations bancaires
 				</li>
 				<li>
-					<strong>Confirmation :</strong> apres validation du paiement, l'abonnement est
-					active immediatement et un email de confirmation est envoye
+					<strong>Confirmation :</strong> après validation du paiement, l'abonnement est
+					activé immédiatement et un email de confirmation est envoyé
 				</li>
 				<li>
-					<strong>Facturation :</strong> une facture est mise a disposition dans l'espace
+					<strong>Facturation :</strong> une facture est mise à disposition dans l'espace
 					client via le portail Stripe
 				</li>
 			</ol>
 			<p class="mt-3 text-sm">
-				La validation du paiement vaut acceptation des presentes CGV et des
-				<a href="/cgu" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Conditions Generales d'Utilisation</a>.
+				La validation du paiement vaut acceptation des présentes CGV et des
+				<a href="/cgu" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Conditions Générales d'Utilisation</a>.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				4. Droit de retractation
+				4. Droit de rétractation
 			</h2>
 			<p class="mt-3 text-sm">
-				Conformement a l'article L221-28, 13° du Code de la consommation, le droit de
-				retractation ne peut etre exerce pour les contrats de fourniture de contenu
-				numerique non fourni sur un support materiel dont l'execution a commence apres
-				accord prealable expres du consommateur et renoncement expres a son droit de
-				retractation.
+				Conformément à l'article L221-28, 13° du Code de la consommation, le droit de
+				rétractation ne peut être exercé pour les contrats de fourniture de contenu
+				numérique non fourni sur un support matériel dont l'exécution a commencé après
+				accord préalable exprès du consommateur et renoncement exprès à son droit de
+				rétractation.
 			</p>
 			<p class="mt-2 text-sm">
-				En souscrivant a un abonnement GérerSCI, l'utilisateur reconnait et accepte que
-				l'acces au Service est active immediatement apres la validation du paiement. En
-				consequence, l'utilisateur renonce expressement a son droit de retractation
-				conformement aux dispositions legales precitees.
+				En souscrivant à un abonnement GérerSCI, l'utilisateur reconnaît et accepte que
+				l'accès au Service est activé immédiatement après la validation du paiement. En
+				conséquence, l'utilisateur renonce expressément à son droit de rétractation
+				conformément aux dispositions légales précitées.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				5. Duree et renouvellement
+				5. Durée et renouvellement
 			</h2>
 			<p class="mt-3 text-sm">
-				Les abonnements sont souscrits pour une duree mensuelle ou annuelle, selon le choix
+				Les abonnements sont souscrits pour une durée mensuelle ou annuelle, selon le choix
 				de l'utilisateur au moment de la souscription.
 			</p>
 			<p class="mt-2 text-sm">
-				Les abonnements sont renouveles automatiquement a la fin de chaque periode de
-				facturation, sauf resiliation par l'utilisateur avant la date de renouvellement.
-				L'utilisateur sera debite du montant de l'abonnement en vigueur a la date du
+				Les abonnements sont renouvelés automatiquement à la fin de chaque période de
+				facturation, sauf résiliation par l'utilisateur avant la date de renouvellement.
+				L'utilisateur sera débité du montant de l'abonnement en vigueur à la date du
 				renouvellement.
 			</p>
 			<p class="mt-2 text-sm">
-				Conformement a l'article L215-1 du Code de la consommation, l'utilisateur est
-				informe qu'il peut mettre fin a son abonnement a tout moment, sans preavis ni
-				penalite.
+				Conformément à l'article L215-1 du Code de la consommation, l'utilisateur est
+				informé qu'il peut mettre fin à son abonnement à tout moment, sans préavis ni
+				pénalité.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				6. Resiliation
+				6. Résiliation
 			</h2>
 			<p class="mt-3 text-sm">
-				L'utilisateur peut resilier son abonnement a tout moment par l'un des moyens
+				L'utilisateur peut résilier son abonnement à tout moment par l'un des moyens
 				suivants :
 			</p>
 			<ul class="mt-2 list-inside list-disc space-y-1 text-sm">
-				<li>Depuis les parametres de son compte dans l'espace client</li>
+				<li>Depuis les paramètres de son compte dans l'espace client</li>
 				<li>Via le portail de gestion Stripe accessible depuis l'application</li>
-				<li>Par email a l'adresse <strong>contact@gerersci.fr</strong></li>
+				<li>Par email à l'adresse <strong>contact@gerersci.fr</strong></li>
 			</ul>
 			<p class="mt-3 text-sm">
-				La resiliation prend effet a la fin de la periode d'abonnement en cours.
-				L'utilisateur conserve l'acces a l'ensemble des fonctionnalites de son plan
-				jusqu'a l'echeance de la periode payee.
+				La résiliation prend effet à la fin de la période d'abonnement en cours.
+				L'utilisateur conserve l'accès à l'ensemble des fonctionnalités de son plan
+				jusqu'à l'échéance de la période payée.
 			</p>
 			<p class="mt-2 text-sm">
-				A l'issue de la periode payee, le compte est automatiquement bascule vers le plan
-				Essentiel (gratuit). Les donnees de l'utilisateur sont conservees conformement a
+				À l'issue de la période payée, le compte est automatiquement basculé vers le plan
+				Essentiel (gratuit). Les données de l'utilisateur sont conservées conformément à
 				notre
-				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialite</a>.
+				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialité</a>.
 			</p>
 			<p class="mt-2 text-sm">
-				Le Prestataire se reserve le droit de suspendre ou de resilier l'acces au Service
+				Le Prestataire se réserve le droit de suspendre ou de résilier l'accès au Service
 				en cas de violation des
 				<a href="/cgu" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">CGU</a>,
 				d'utilisation abusive ou frauduleuse, ou de non-paiement. Dans ce cas, aucun
-				remboursement ne sera effectue.
+				remboursement ne sera effectué.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				7. Garanties et responsabilite
+				7. Garanties et responsabilité
 			</h2>
 			<p class="mt-3 text-sm">
-				Le Service est fourni "en l'etat". Le Prestataire s'efforce d'assurer une
-				disponibilite du Service de 99% sur une base annuelle, hors periodes de maintenance
-				programmee. Toutefois, le Prestataire ne garantit pas une disponibilite
+				Le Service est fourni « en l'état ». Le Prestataire s'efforce d'assurer une
+				disponibilité du Service de 99 % sur une base annuelle, hors périodes de maintenance
+				programmée. Toutefois, le Prestataire ne garantit pas une disponibilité
 				ininterrompue du Service.
 			</p>
-			<p class="mt-2 text-sm">Le Prestataire ne saurait etre tenu responsable :</p>
+			<p class="mt-2 text-sm">Le Prestataire ne saurait être tenu responsable :</p>
 			<ul class="mt-2 list-inside list-disc space-y-1 text-sm">
 				<li>
-					Des interruptions temporaires du Service pour maintenance, mise a jour ou
-					amelioration
+					Des interruptions temporaires du Service pour maintenance, mise à jour ou
+					amélioration
 				</li>
 				<li>
-					Des dommages indirects resultant de l'utilisation ou de l'impossibilite
+					Des dommages indirects résultant de l'utilisation ou de l'impossibilité
 					d'utiliser le Service
 				</li>
-				<li>De l'exactitude des calculs fiscaux ou des documents generes par le Service</li>
-				<li>Des pertes de donnees resultant d'un cas de force majeure</li>
+				<li>De l'exactitude des calculs fiscaux ou des documents générés par le Service</li>
+				<li>Des pertes de données résultant d'un cas de force majeure</li>
 			</ul>
 			<p class="mt-3 text-sm">
-				Les documents generes par le Service (quittances de loyer, declarations CERFA 2044)
-				sont fournis a titre d'aide a la gestion. <strong>Le Service ne se substitue pas a
+				Les documents générés par le Service (quittances de loyer, déclarations CERFA 2044)
+				sont fournis à titre d'aide à la gestion. <strong>Le Service ne se substitue pas à
 				un conseil juridique, fiscal ou comptable.</strong> L'utilisateur reste seul
-				responsable de la verification et de la conformite des documents generes avec la
-				reglementation applicable.
+				responsable de la vérification et de la conformité des documents générés avec la
+				réglementation applicable.
 			</p>
 			<p class="mt-2 text-sm">
-				En tout etat de cause, la responsabilite du Prestataire est limitee au montant des
-				sommes effectivement versees par l'utilisateur au cours des 12 derniers mois
-				precedant le fait generateur.
+				En tout état de cause, la responsabilité du Prestataire est limitée au montant des
+				sommes effectivement versées par l'utilisateur au cours des 12 derniers mois
+				précédant le fait générateur.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				8. Donnees personnelles
+				8. Données personnelles
 			</h2>
 			<p class="mt-3 text-sm">
-				Dans le cadre de l'execution des presentes CGV, le Prestataire est amene a collecter
-				et traiter des donnees personnelles de l'utilisateur. Le traitement de ces donnees
-				est realise conformement au Reglement General sur la Protection des Donnees (RGPD)
-				et a la loi Informatique et Libertes.
+				Dans le cadre de l'exécution des présentes CGV, le Prestataire est amené à collecter
+				et traiter des données personnelles de l'utilisateur. Le traitement de ces données
+				est réalisé conformément au Règlement Général sur la Protection des Données (RGPD)
+				et à la loi Informatique et Libertés.
 			</p>
 			<p class="mt-2 text-sm">
-				Pour plus d'informations sur le traitement de vos donnees personnelles, vos droits
-				et les modalites d'exercice de ces droits, veuillez consulter notre
-				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialite</a>.
+				Pour plus d'informations sur le traitement de vos données personnelles, vos droits
+				et les modalités d'exercice de ces droits, veuillez consulter notre
+				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialité</a>.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				9. Mediation et reglement des litiges
+				9. Médiation et règlement des litiges
 			</h2>
 			<p class="mt-3 text-sm">
-				Conformement aux articles L611-1 et suivants du Code de la consommation,
-				l'utilisateur peut recourir gratuitement a un mediateur de la consommation en vue
-				de la resolution amiable de tout litige l'opposant au Prestataire.
+				Conformément aux articles L611-1 et suivants du Code de la consommation,
+				l'utilisateur peut recourir gratuitement à un médiateur de la consommation en vue
+				de la résolution amiable de tout litige l'opposant au Prestataire.
 			</p>
 			<p class="mt-2 text-sm">
-				Avant de saisir le mediateur, l'utilisateur doit avoir prealablement adresse une
-				reclamation ecrite au Prestataire a l'adresse <strong>contact@gerersci.fr</strong>
-				ou par courrier a Paris, France. A defaut de reponse satisfaisante dans
-				un delai de 60 jours, l'utilisateur peut soumettre le litige au mediateur competent.
+				Avant de saisir le médiateur, l'utilisateur doit avoir préalablement adressé une
+				réclamation écrite au Prestataire à l'adresse <strong>contact@gerersci.fr</strong>
+				ou par courrier à Paris, France. À défaut de réponse satisfaisante dans
+				un délai de 60 jours, l'utilisateur peut soumettre le litige au médiateur compétent.
 			</p>
 			<p class="mt-2 text-sm">
-				Le mediateur de la consommation competent sera communique sur simple demande a
+				Le médiateur de la consommation compétent sera communiqué sur simple demande à
 				l'adresse <strong>contact@gerersci.fr</strong>.
 			</p>
 			<p class="mt-2 text-sm">
-				L'utilisateur peut egalement recourir a la plateforme de reglement en ligne des
-				litiges de la Commission europeenne accessible a l'adresse :
+				L'utilisateur peut également recourir à la plateforme de règlement en ligne des
+				litiges de la Commission européenne accessible à l'adresse :
 				<a href="https://ec.europa.eu/consumers/odr" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">https://ec.europa.eu/consumers/odr</a>
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				10. Loi applicable et juridiction competente
+				10. Loi applicable et juridiction compétente
 			</h2>
 			<p class="mt-3 text-sm">
-				Les presentes CGV sont soumises au droit francais. En cas de litige relatif a
-				l'interpretation, l'execution ou la resiliation des presentes CGV, et a defaut de
-				resolution amiable ou de mediation, les tribunaux competents de Paris seront seuls competents.
+				Les présentes CGV sont soumises au droit français. En cas de litige relatif à
+				l'interprétation, l'exécution ou la résiliation des présentes CGV, et à défaut de
+				résolution amiable ou de médiation, les tribunaux compétents de Paris seront seuls compétents.
 			</p>
 			<p class="mt-2 text-sm">
-				Toutefois, conformement aux dispositions du Code de la consommation, le
-				consommateur peut saisir a son choix, outre les tribunaux competents en vertu des
-				regles de droit commun, la juridiction du lieu ou il demeurait au moment de la
+				Toutefois, conformément aux dispositions du Code de la consommation, le
+				consommateur peut saisir à son choix, outre les tribunaux compétents en vertu des
+				règles de droit commun, la juridiction du lieu où il demeurait au moment de la
 				conclusion du contrat ou de la survenance du fait dommageable.
 			</p>
 		</section>

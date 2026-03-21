@@ -76,6 +76,29 @@
 			return iso;
 		}
 	}
+
+	function computeDaysLate(iso: string | undefined): number | null {
+		if (!iso) return null;
+		try {
+			const d = new Date(iso + 'T00:00:00');
+			const now = new Date();
+			const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+			return diff > 0 ? diff : null;
+		} catch {
+			return null;
+		}
+	}
+
+	function buildAlertTooltip(alerte: DashboardAlerte): string {
+		if (alerte.type !== 'loyer_en_retard') return '';
+		const parts: string[] = [];
+		if (alerte.bien_adresse) parts.push(`Bien : ${alerte.bien_adresse}`);
+		if (alerte.montant != null) parts.push(`Montant dû : ${formatMontant(alerte.montant)}`);
+		const days = computeDaysLate(alerte.date);
+		if (days != null) parts.push(`Retard : ${days} jour${days > 1 ? 's' : ''}`);
+		parts.push('Action : relancer le locataire ou enregistrer le paiement');
+		return parts.join('\n');
+	}
 </script>
 
 {#if alertes.length === 0}
@@ -91,8 +114,10 @@
 	<div class="space-y-3">
 		{#each alertes as alerte, i (alertKey(alerte, i))}
 			{@const config = severityConfig[alerte.severity] ?? fallbackConfig}
+			{@const tooltip = buildAlertTooltip(alerte)}
 			<div
 				class="flex items-start gap-3 rounded-xl border px-5 py-4 {config.bg} {config.border}"
+				title={tooltip || undefined}
 			>
 				<config.icon class="mt-0.5 h-5 w-5 flex-shrink-0 {config.iconColor}" />
 				<div class="min-w-0 flex-1">
