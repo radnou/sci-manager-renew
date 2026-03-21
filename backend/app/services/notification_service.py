@@ -1,8 +1,40 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import structlog
 
 logger = structlog.get_logger(__name__)
+
+DEDUP_WINDOW_DAYS = 7
+
+
+def _find_duplicate(supabase_client, user_id: str, notification_type: str, dedup_key: str | None) -> bool:
+    """Check if an unread notification with the same dedup_key exists within the last 7 days.
+
+    Returns True if a duplicate is found (meaning we should skip creation).
+    """
+    if not dedup_key:
+        return False
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=DEDUP_WINDOW_DAYS)).isoformat()
+
+    result = (
+        supabase_client.table("notifications")
+        .select("id, metadata")
+        .eq("user_id", user_id)
+        .eq("type", notification_type)
+        .is_("read", "null")
+        .gte("created_at", cutoff)
+        .execute()
+    )
+
+    for row in result.data or []:
+        meta = row.get("metadata") or {}
+        if meta.get("dedup_key") == dedup_key:
+            return True
+
+    return False
 
 
 async def create_notification_with_email(
@@ -10,14 +42,29 @@ async def create_notification_with_email(
     user_id: str,
     notification_type: str,
     data: dict,
-) -> None:
+) -> bool:
     """
     Create an in-app notification and/or send an email depending on user preferences.
 
-    1. Check user's preferences for this notification_type
-    2. If in_app_enabled: insert into notifications table
-    3. If email_enabled: send email via Resend
+    Returns True if a notification was created, False if deduplicated/skipped.
+
+    1. Dedup check: skip if identical notification exists (unread, last 7 days)
+    2. Check user's preferences for this notification_type
+    3. If in_app_enabled: insert into notifications table
+    4. If email_enabled: send email via Resend
     """
+    # 0. Deduplication check
+    metadata = data.get("metadata") or {}
+    dedup_key = metadata.get("dedup_key")
+    if _find_duplicate(supabase_client, user_id, notification_type, dedup_key):
+        logger.info(
+            "notification_deduplicated",
+            user_id=user_id,
+            notification_type=notification_type,
+            dedup_key=dedup_key,
+        )
+        return False
+
     # 1. Fetch user preferences for this type
     result = (
         supabase_client.table("notification_preferences")
@@ -46,6 +93,7 @@ async def create_notification_with_email(
                     "title": data.get("title", "Notification"),
                     "message": data.get("message", ""),
                     "metadata": data.get("metadata", {}),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
             ).execute()
             logger.info(
@@ -97,3 +145,5 @@ async def create_notification_with_email(
                 notification_type=notification_type,
                 exc_info=True,
             )
+
+    return True

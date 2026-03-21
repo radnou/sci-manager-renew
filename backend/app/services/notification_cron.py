@@ -38,17 +38,18 @@ async def check_late_payments(supabase_client) -> int:
 
         bien = loyer.get("biens") or {}
         for owner in owners.data or []:
-            await create_notification_with_email(
+            created = await create_notification_with_email(
                 supabase_client,
                 user_id=owner["user_id"],
                 notification_type="late_payment",
                 data={
                     "title": "Loyer en retard",
                     "message": f"Le loyer du {loyer['date_loyer']} ({loyer['montant']} EUR) pour {bien.get('adresse', 'un bien')} est impaye.",
-                    "metadata": {"loyer_id": loyer["id"], "bien_adresse": bien.get("adresse")},
+                    "metadata": {"loyer_id": loyer["id"], "bien_adresse": bien.get("adresse"), "dedup_key": f"late_{loyer['id']}"},
                 },
             )
-            notified += 1
+            if created:
+                notified += 1
 
     logger.info("check_late_payments_complete", notified=notified)
     return notified
@@ -83,17 +84,18 @@ async def check_expiring_bails(supabase_client) -> int:
         )
 
         for owner in owners.data or []:
-            await create_notification_with_email(
+            created = await create_notification_with_email(
                 supabase_client,
                 user_id=owner["user_id"],
                 notification_type="bail_expiring",
                 data={
                     "title": "Bail expirant",
                     "message": f"Le bail pour {bien.get('adresse', 'un bien')} expire le {bail['date_fin']}.",
-                    "metadata": {"bail_id": bail["id"], "bien_adresse": bien.get("adresse")},
+                    "metadata": {"bail_id": bail["id"], "bien_adresse": bien.get("adresse"), "dedup_key": f"bail_{bail['id']}"},
                 },
             )
-            notified += 1
+            if created:
+                notified += 1
 
     logger.info("check_expiring_bails_complete", notified=notified)
     return notified
@@ -125,17 +127,18 @@ async def check_pending_quittances(supabase_client) -> int:
 
         bien = loyer.get("biens") or {}
         for owner in owners.data or []:
-            await create_notification_with_email(
+            created = await create_notification_with_email(
                 supabase_client,
                 user_id=owner["user_id"],
                 notification_type="quittance_pending",
                 data={
                     "title": "Quittance en attente",
                     "message": f"Le loyer du {loyer['date_loyer']} pour {bien.get('adresse', 'un bien')} est paye mais la quittance n'a pas ete generee.",
-                    "metadata": {"loyer_id": loyer["id"], "bien_adresse": bien.get("adresse")},
+                    "metadata": {"loyer_id": loyer["id"], "bien_adresse": bien.get("adresse"), "dedup_key": f"quittance_{loyer['id']}"},
                 },
             )
-            notified += 1
+            if created:
+                notified += 1
 
     logger.info("check_pending_quittances_complete", notified=notified)
     return notified
@@ -170,17 +173,18 @@ async def check_expiring_pno(supabase_client) -> int:
         )
 
         for owner in owners.data or []:
-            await create_notification_with_email(
+            created = await create_notification_with_email(
                 supabase_client,
                 user_id=owner["user_id"],
                 notification_type="pno_expiring",
                 data={
                     "title": "PNO expirant",
                     "message": f"L'assurance PNO ({pno.get('compagnie', 'N/A')}) pour {bien.get('adresse', 'un bien')} expire le {pno['date_echeance']}.",
-                    "metadata": {"pno_id": pno["id"], "bien_adresse": bien.get("adresse")},
+                    "metadata": {"pno_id": pno["id"], "bien_adresse": bien.get("adresse"), "dedup_key": f"pno_{pno['id']}"},
                 },
             )
-            notified += 1
+            if created:
+                notified += 1
 
     logger.info("check_expiring_pno_complete", notified=notified)
     return notified
@@ -251,7 +255,7 @@ async def check_fiscal_deadlines(supabase_client) -> int:
                         " (date pour exercice clos au 31/12 — vérifiez si votre exercice a une clôture différente)"
                     )
 
-                await create_notification_with_email(
+                created = await create_notification_with_email(
                     supabase_client,
                     user_id=owner["user_id"],
                     notification_type="fiscal_deadline",
@@ -263,10 +267,12 @@ async def check_fiscal_deadlines(supabase_client) -> int:
                             "deadline_key": deadline["key"],
                             "deadline_date": deadline_date.strftime("%Y-%m-%d"),
                             "days_until": days_until,
+                            "dedup_key": f"fiscal_{sci['id']}_{deadline['key']}_{year}",
                         },
                     },
                 )
-                notified += 1
+                if created:
+                    notified += 1
 
     logger.info("check_fiscal_deadlines_complete", notified=notified)
     return notified

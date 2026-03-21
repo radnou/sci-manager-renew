@@ -315,8 +315,8 @@ async def test_expiring_pno_within_30_days(fake_supabase, mock_notify):
         {
             "id": "pno-exp",
             "id_bien": "bien-1",
-            "assureur": "AXA",
-            "date_fin": expiry,
+            "compagnie": "AXA",
+            "date_echeance": expiry,
             "biens": {"id_sci": "sci-1", "adresse": "1 rue de la Paix", "ville": "Paris"},
         }
     )
@@ -333,8 +333,8 @@ async def test_expiring_pno_no_sci_id_skipped(fake_supabase, mock_notify):
         {
             "id": "pno-no-sci",
             "id_bien": "bien-1",
-            "assureur": "MAIF",
-            "date_fin": expiry,
+            "compagnie": "MAIF",
+            "date_echeance": expiry,
             "biens": {},  # no id_sci
         }
     )
@@ -351,8 +351,8 @@ async def test_expiring_pno_too_far(fake_supabase, mock_notify):
         {
             "id": "pno-far",
             "id_bien": "bien-1",
-            "assureur": "AXA",
-            "date_fin": expiry,
+            "compagnie": "AXA",
+            "date_echeance": expiry,
             "biens": {"id_sci": "sci-1", "adresse": "1 rue de la Paix", "ville": "Paris"},
         }
     )
@@ -363,13 +363,13 @@ async def test_expiring_pno_too_far(fake_supabase, mock_notify):
 
 @pytest.mark.asyncio
 async def test_expiring_pno_no_assureur(fake_supabase, mock_notify):
-    """PNO without assureur field still works (uses 'N/A' fallback)."""
+    """PNO without compagnie field still works (uses 'N/A' fallback)."""
     expiry = (datetime.now(timezone.utc) + timedelta(days=10)).strftime("%Y-%m-%d")
     fake_supabase.store.setdefault("assurances_pno", []).append(
         {
             "id": "pno-noins",
             "id_bien": "bien-9",
-            "date_fin": expiry,
+            "date_echeance": expiry,
             "biens": {"id_sci": "sci-2", "adresse": "42 avenue QA", "ville": "Lyon"},
         }
     )

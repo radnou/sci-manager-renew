@@ -4,6 +4,7 @@ export type ApplicationLandingRoute =
 	| '/dashboard'
 	| '/scis'
 	| '/finances'
+	| '/exploitation'
 	| '/settings';
 export type ApplicationDensity = 'comfortable' | 'compact';
 

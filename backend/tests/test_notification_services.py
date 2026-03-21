@@ -200,6 +200,99 @@ class TestCreateNotificationWithEmail:
 
         assert client.store["notifications"][0]["metadata"] == meta
 
+    @pytest.mark.asyncio
+    async def test_dedup_skips_duplicate_within_7_days(self):
+        """Second call with same dedup_key within 7 days is skipped."""
+        client = make_client([])
+        meta = {"loyer_id": "loyer-42", "dedup_key": "late_loyer-42"}
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock) as mock_email, \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_service import create_notification_with_email
+
+            # First call: creates notification
+            await create_notification_with_email(
+                client,
+                user_id="user-123",
+                notification_type="late_payment",
+                data={"title": "Late", "message": "msg", "metadata": meta},
+            )
+            assert len(client.store["notifications"]) == 1
+
+            # Second call: should be deduplicated
+            result = await create_notification_with_email(
+                client,
+                user_id="user-123",
+                notification_type="late_payment",
+                data={"title": "Late", "message": "msg", "metadata": meta},
+            )
+            assert result is False
+            assert len(client.store["notifications"]) == 1  # still 1
+
+        # Email sent only once (first call)
+        assert mock_email.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_dedup_allows_different_dedup_keys(self):
+        """Different dedup_keys create separate notifications."""
+        client = make_client([])
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_service import create_notification_with_email
+
+            await create_notification_with_email(
+                client,
+                user_id="user-123",
+                notification_type="late_payment",
+                data={"title": "Late 1", "message": "m1", "metadata": {"dedup_key": "late_loyer-1"}},
+            )
+            await create_notification_with_email(
+                client,
+                user_id="user-123",
+                notification_type="late_payment",
+                data={"title": "Late 2", "message": "m2", "metadata": {"dedup_key": "late_loyer-2"}},
+            )
+
+        assert len(client.store["notifications"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_no_dedup_key_means_no_dedup(self):
+        """Without dedup_key, every call creates a notification (backward compat)."""
+        client = make_client([])
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_service import create_notification_with_email
+
+            for _ in range(3):
+                await create_notification_with_email(
+                    client,
+                    user_id="user-123",
+                    notification_type="late_payment",
+                    data={"title": "Late", "message": "msg", "metadata": {}},
+                )
+
+        assert len(client.store["notifications"]) == 3
+
+    @pytest.mark.asyncio
+    async def test_dedup_returns_true_on_creation(self):
+        """Function returns True when a notification is actually created."""
+        client = make_client([])
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_service import create_notification_with_email
+
+            result = await create_notification_with_email(
+                client,
+                user_id="user-123",
+                notification_type="late_payment",
+                data={"title": "T", "message": "M", "metadata": {"dedup_key": "test_1"}},
+            )
+
+        assert result is True
+
 
 # ---------------------------------------------------------------------------
 # notification_cron tests
@@ -249,6 +342,36 @@ class TestCheckLatePayments:
         assert len(notifs) == 2
         types = {n["type"] for n in notifs}
         assert types == {"late_payment"}
+        # Verify dedup_key is set in metadata
+        assert all(n["metadata"].get("dedup_key") == "late_loyer-late-1" for n in notifs)
+
+    @pytest.mark.asyncio
+    async def test_second_cron_run_does_not_duplicate(self):
+        """Running the cron twice should not create duplicate notifications."""
+        client = make_client([])
+        client.store["loyers"] = [
+            {
+                "id": "loyer-late-1",
+                "id_bien": "bien-1",
+                "id_sci": "sci-1",
+                "date_loyer": "2020-01-01",
+                "montant": 800,
+                "statut": "en_attente",
+                "quitus_genere": False,
+                "biens": {"id_sci": "sci-1", "adresse": "10 rue Test", "ville": "Paris"},
+            }
+        ]
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_cron import check_late_payments
+
+            first_run = await check_late_payments(client)
+            second_run = await check_late_payments(client)
+
+        assert first_run == 2   # 2 owners notified
+        assert second_run == 0  # dedup prevents re-creation
+        assert len(client.store.get("notifications", [])) == 2  # still only 2
 
     @pytest.mark.asyncio
     async def test_skips_loyer_without_sci_id(self):
@@ -420,8 +543,8 @@ class TestCheckExpiringPno:
             {
                 "id": "pno-1",
                 "id_bien": "bien-1",
-                "assureur": "AXA",
-                "date_fin": soon,
+                "compagnie": "AXA",
+                "date_echeance": soon,
                 "biens": {"id_sci": "sci-1", "adresse": "10 rue Test", "ville": "Paris"},
             }
         ]
@@ -435,7 +558,7 @@ class TestCheckExpiringPno:
         assert result == 2  # 2 owners of sci-1
         notifs = client.store.get("notifications", [])
         assert all(n["type"] == "pno_expiring" for n in notifs)
-        # Message should include the assureur name
+        # Message should include the compagnie name
         assert all("AXA" in n["message"] for n in notifs)
 
     @pytest.mark.asyncio
@@ -449,8 +572,8 @@ class TestCheckExpiringPno:
             {
                 "id": "pno-orphan",
                 "id_bien": "bien-x",
-                "assureur": "Orphan",
-                "date_fin": soon,
+                "compagnie": "Orphan",
+                "date_echeance": soon,
                 "biens": {"id_sci": None, "adresse": "Nowhere", "ville": "N/A"},
             }
         ]

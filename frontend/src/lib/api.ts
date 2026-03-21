@@ -77,6 +77,12 @@ export type Fiscalite = {
 	resultat_fiscal?: number | null;
 	regime_fiscal?: string | null;
 	nom_sci?: string | null;
+	interets_emprunt?: number | null;
+	travaux?: number | null;
+	frais_gestion?: number | null;
+	assurance?: number | null;
+	taxe_fonciere?: number | null;
+	copropriete?: number | null;
 	created_at?: string;
 	updated_at?: string;
 };
@@ -221,12 +227,24 @@ export type FiscaliteCreatePayload = {
 	annee: number;
 	total_revenus: number;
 	total_charges: number;
+	interets_emprunt?: number;
+	travaux?: number;
+	frais_gestion?: number;
+	assurance?: number;
+	taxe_fonciere?: number;
+	copropriete?: number;
 };
 
 export type FiscaliteUpdatePayload = {
 	annee?: number;
 	total_revenus?: number;
 	total_charges?: number;
+	interets_emprunt?: number;
+	travaux?: number;
+	frais_gestion?: number;
+	assurance?: number;
+	taxe_fonciere?: number;
+	copropriete?: number;
 };
 
 export type LoyerCreatePayload = {

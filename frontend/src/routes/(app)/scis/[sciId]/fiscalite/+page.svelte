@@ -4,7 +4,7 @@
 	import { fetchFiscalite, generateCerfa2044Pdf, createFiscalite, deleteFiscalite } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { FileText, Calculator, Download, Plus, Trash2, Loader2 } from 'lucide-svelte';
+	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 
@@ -20,6 +20,19 @@
 	let newAnnee = $state(new Date().getFullYear() - 1);
 	let newRevenus = $state(0);
 	let newCharges = $state(0);
+	let showChargeDetail = $state(false);
+	let newInteretsEmprunt = $state(0);
+	let newTravaux = $state(0);
+	let newFraisGestion = $state(0);
+	let newAssurance = $state(0);
+	let newTaxeFonciere = $state(0);
+	let newCopropriete = $state(0);
+
+	const chargeDetailSum = $derived(
+		newInteretsEmprunt + newTravaux + newFraisGestion + newAssurance + newTaxeFonciere + newCopropriete
+	);
+	const hasChargeDetail = $derived(chargeDetailSum > 0);
+	const effectiveCharges = $derived(hasChargeDetail ? chargeDetailSum : newCharges);
 
 	const userRole = getContext<string>('userRole');
 	const isGerant = $derived(userRole === 'gerant');
@@ -91,16 +104,32 @@
 		}
 		creating = true;
 		try {
+			const finalCharges = hasChargeDetail ? chargeDetailSum : newCharges;
 			await createFiscalite({
 				id_sci: sci.id as string,
 				annee: newAnnee,
 				total_revenus: newRevenus,
-				total_charges: newCharges,
+				total_charges: finalCharges,
+				...(hasChargeDetail ? {
+					interets_emprunt: newInteretsEmprunt,
+					travaux: newTravaux,
+					frais_gestion: newFraisGestion,
+					assurance: newAssurance,
+					taxe_fonciere: newTaxeFonciere,
+					copropriete: newCopropriete,
+				} : {})
 			});
 			addToast({ title: 'Exercice créé', description: `Exercice ${newAnnee} ajouté.`, variant: 'success' });
 			showCreateForm = false;
 			newRevenus = 0;
 			newCharges = 0;
+			newInteretsEmprunt = 0;
+			newTravaux = 0;
+			newFraisGestion = 0;
+			newAssurance = 0;
+			newTaxeFonciere = 0;
+			newCopropriete = 0;
+			showChargeDetail = false;
 			await loadFiscalite();
 		} catch (err: any) {
 			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de créer l\'exercice.', variant: 'error' });
@@ -316,9 +345,62 @@
 						/>
 					</div>
 				</div>
+
+				<!-- Collapsible charge decomposition -->
+				<div class="mt-3">
+					<button
+						type="button"
+						onclick={() => { showChargeDetail = !showChargeDetail; }}
+						class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+					>
+						{#if showChargeDetail}
+							<ChevronUp class="h-4 w-4" />
+						{:else}
+							<ChevronDown class="h-4 w-4" />
+						{/if}
+						Détail des charges
+					</button>
+
+					{#if showChargeDetail}
+						<div class="mt-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+							<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+								<div>
+									<label for="new-interets" class="block text-xs font-medium text-slate-500 uppercase">Intérêts d'emprunt</label>
+									<input id="new-interets" type="number" min="0" step="0.01" bind:value={newInteretsEmprunt} class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+								</div>
+								<div>
+									<label for="new-travaux" class="block text-xs font-medium text-slate-500 uppercase">Travaux</label>
+									<input id="new-travaux" type="number" min="0" step="0.01" bind:value={newTravaux} class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+								</div>
+								<div>
+									<label for="new-frais-gestion" class="block text-xs font-medium text-slate-500 uppercase">Frais de gestion</label>
+									<input id="new-frais-gestion" type="number" min="0" step="0.01" bind:value={newFraisGestion} class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+								</div>
+								<div>
+									<label for="new-assurance" class="block text-xs font-medium text-slate-500 uppercase">Assurance</label>
+									<input id="new-assurance" type="number" min="0" step="0.01" bind:value={newAssurance} class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+								</div>
+								<div>
+									<label for="new-taxe-fonciere" class="block text-xs font-medium text-slate-500 uppercase">Taxe foncière</label>
+									<input id="new-taxe-fonciere" type="number" min="0" step="0.01" bind:value={newTaxeFonciere} class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+								</div>
+								<div>
+									<label for="new-copropriete" class="block text-xs font-medium text-slate-500 uppercase">Copropriété</label>
+									<input id="new-copropriete" type="number" min="0" step="0.01" bind:value={newCopropriete} class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+								</div>
+							</div>
+							{#if hasChargeDetail}
+								<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+									Total charges (auto-calculé) : <span class="font-semibold text-rose-700 dark:text-rose-400">{formatEur(chargeDetailSum)}</span>
+								</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
 				<div class="mt-3 flex items-center justify-between">
 					<p class="text-sm text-slate-500 dark:text-slate-400">
-						Résultat : <span class="font-semibold {resultatColor(newRevenus - newCharges)}">{formatEur(newRevenus - newCharges)}</span>
+						Résultat : <span class="font-semibold {resultatColor(newRevenus - effectiveCharges)}">{formatEur(newRevenus - effectiveCharges)}</span>
 					</p>
 					<div class="flex gap-2">
 						<button

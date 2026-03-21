@@ -26,7 +26,7 @@
 	const landingRouteOptions: Array<{ value: ApplicationLandingRoute; label: string }> = [
 		{ value: '/dashboard', label: 'Tableau de bord' },
 		{ value: '/scis', label: 'Portefeuille' },
-		
+		{ value: '/exploitation', label: 'Exploitation' },
 		{ value: '/finances', label: 'Finances' },
 		{ value: '/settings', label: "Paramètres de l'application" }
 	];
