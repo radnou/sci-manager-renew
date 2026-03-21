@@ -223,8 +223,8 @@
 						await attachLocataireToBail(
 							createdSciId,
 							createdBienId,
-							bail.id,
-							Number(locataire.id)
+							String(bail.id),
+							String(locataire.id)
 						);
 					}
 				} catch {

@@ -835,7 +835,7 @@ export async function createBail(sciId: EntityId, bienId: EntityId, data: BailCr
 export async function updateBail(
 	sciId: EntityId,
 	bienId: EntityId,
-	bailId: number,
+	bailId: EntityId,
 	data: BailUpdate
 ): Promise<BailEmbed> {
 	return apiFetch<BailEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
@@ -848,7 +848,7 @@ export async function updateBail(
 export async function deleteBail(
 	sciId: EntityId,
 	bienId: EntityId,
-	bailId: number
+	bailId: EntityId
 ): Promise<void> {
 	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}`, {
 		method: 'DELETE'
@@ -858,10 +858,10 @@ export async function deleteBail(
 export async function attachLocataireToBail(
 	sciId: EntityId,
 	bienId: EntityId,
-	bailId: number,
-	locataireId: number
-): Promise<{ bail_id: number; locataire_id: number }> {
-	return apiFetch<{ bail_id: number; locataire_id: number }>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires`, {
+	bailId: EntityId,
+	locataireId: EntityId
+): Promise<{ bail_id: string; locataire_id: number }> {
+	return apiFetch<{ bail_id: string; locataire_id: number }>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires`, {
 		method: 'POST',
 		body: JSON.stringify({ locataire_id: locataireId }),
 		headers: { 'Content-Type': 'application/json' }
@@ -871,8 +871,8 @@ export async function attachLocataireToBail(
 export async function detachLocataireFromBail(
 	sciId: EntityId,
 	bienId: EntityId,
-	bailId: number,
-	locataireId: number
+	bailId: EntityId,
+	locataireId: EntityId
 ): Promise<void> {
 	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/locataires/${locataireId}`, {
 		method: 'DELETE'

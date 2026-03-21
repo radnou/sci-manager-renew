@@ -287,7 +287,10 @@ async def get_recent_activity(client, user_id: str, limit: int = 10) -> list[dic
                 "type": "loyer",
                 "id": l.get("id"),
                 "id_sci": l.get("id_sci"),
-                "description": f"Loyer de {float(l.get('montant') or 0):,.0f} € — {l.get('statut', 'en_attente')}".replace(",", " "),
+                "description": "Loyer de {} € — {}".format(
+                    f"{float(l.get('montant') or 0):,.0f}".replace(",", " "),
+                    {"paye": "payé", "en_attente": "en attente", "en_retard": "en retard"}.get(l.get("statut", ""), l.get("statut", "en attente")),
+                ),
                 "date": l.get("date_loyer"),
                 "created_at": l.get("created_at", ""),
             })

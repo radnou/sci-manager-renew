@@ -657,7 +657,7 @@ class TestBailLocataires:
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["id_bail"] == 5
+        assert str(data["id_bail"]) == "5"
         assert data["id_locataire"] == 42
 
     def test_attach_locataire_as_associe_returns_403(self, client, auth_headers, fake_supabase):

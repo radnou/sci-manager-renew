@@ -638,7 +638,7 @@ async def create_bien_bail(
 async def update_bien_bail(
     sci_id: UUID,
     bien_id: str,
-    bail_id: int,
+    bail_id: str,
     payload: BailUpdate,
     request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
@@ -695,7 +695,7 @@ async def update_bien_bail(
 async def delete_bien_bail(
     sci_id: UUID,
     bien_id: str,
-    bail_id: int,
+    bail_id: str,
     request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
@@ -724,7 +724,7 @@ async def delete_bien_bail(
 async def attach_locataire_to_bail(
     sci_id: UUID,
     bien_id: str,
-    bail_id: int,
+    bail_id: str,
     body: dict,
     request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
@@ -762,7 +762,7 @@ async def attach_locataire_to_bail(
 async def detach_locataire_from_bail(
     sci_id: UUID,
     bien_id: str,
-    bail_id: int,
+    bail_id: str,
     locataire_id: int,
     request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
