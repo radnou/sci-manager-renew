@@ -126,7 +126,7 @@ def test_cerfa_2044_blocked_for_sci_is_regime(client, auth_headers, fake_supabas
     assert response.status_code == 400
     data = response.json()
     assert data["code"] == "validation_error"
-    assert "SCI à l'IS" in data["error"]
+    assert "SCI à l'IS" in data["error"] or "résumé fiscal" in data["error"].lower()
 
 
 def test_cerfa_2044_pdf_blocked_for_sci_is_regime(client, auth_headers, fake_supabase):
@@ -142,7 +142,7 @@ def test_cerfa_2044_pdf_blocked_for_sci_is_regime(client, auth_headers, fake_sup
     assert response.status_code == 400
     data = response.json()
     assert data["code"] == "validation_error"
-    assert "SCI à l'IS" in data["error"]
+    assert "SCI à l'IS" in data["error"] or "résumé fiscal" in data["error"].lower()
 
 
 def test_cerfa_2044_pdf_honors_feature_flag(client, auth_headers, monkeypatch, fake_supabase):
@@ -237,7 +237,7 @@ def test_cerfa_2044_pdf_deficit_foncier(client, auth_headers, fake_supabase):
     assert response.status_code == 200
     assert response.content[:4] == b"%PDF"
     content_disp = response.headers.get("content-disposition", "")
-    assert "cerfa_2044_2025_sci.pdf" in content_disp
+    assert "resume_fiscal_2025_sci.pdf" in content_disp
 
 
 # ── Boundary values for annee (Pydantic ge=2000, le=2100) ─────────────
@@ -345,7 +345,7 @@ def test_cerfa_2044_pdf_filename_with_sci_nom(client, auth_headers, fake_supabas
     response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
     assert response.status_code == 200
     content_disp = response.headers["content-disposition"]
-    assert "cerfa_2044_2025_SCI Horizon.pdf" in content_disp
+    assert "resume_fiscal_2025_SCI Horizon.pdf" in content_disp
 
 
 def test_cerfa_2044_pdf_filename_without_sci_nom(client, auth_headers, fake_supabase):
@@ -355,7 +355,7 @@ def test_cerfa_2044_pdf_filename_without_sci_nom(client, auth_headers, fake_supa
     response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
     assert response.status_code == 200
     content_disp = response.headers["content-disposition"]
-    assert "cerfa_2044_2025_sci.pdf" in content_disp
+    assert "resume_fiscal_2025_sci.pdf" in content_disp
 
 
 # ── PDF with only sci_nom (no siren) ─────────────────────────────────

@@ -122,7 +122,7 @@
 				'Biens illimités',
 				'Calcul de rentabilité avancé',
 				'Dashboard complet multi-SCI',
-				'Résumé fiscal PDF (CERFA 2044)',
+				'Résumé fiscal PDF',
 				'Tout Gestion inclus',
 				'Support prioritaire dédié'
 			],

@@ -27,18 +27,25 @@ class Cerfa2044Request(BaseModel):
     sci_nom: str = ""
     siren: str = ""
     regime_fiscal: str | None = None
+    # Charge decomposition (optional, included in PDF if provided)
+    interets_emprunt: float | None = None
+    travaux: float | None = None
+    frais_gestion: float | None = None
+    assurance: float | None = None
+    taxe_fonciere: float | None = None
+    copropriete: float | None = None
 
 
 def _ensure_cerfa_2044_allowed(payload: Cerfa2044Request) -> None:
     if not settings.feature_cerfa_generation:
         raise FeatureDisabledError(
-            "La génération Cerfa est désactivée.",
+            "La génération du résumé fiscal est désactivée.",
             flag_name="feature_cerfa_generation",
         )
 
     if (payload.regime_fiscal or "").upper() == "IS":
         raise ValidationError(
-            "Le CERFA 2044 ne s'applique pas aux SCI à l'IS. Utilisez la liasse fiscale 2065."
+            "Le résumé fiscal foncier ne s'applique pas aux SCI à l'IS. Utilisez la liasse fiscale 2065."
         )
 
 
@@ -47,7 +54,7 @@ async def generate_cerfa_2044(
     payload: Cerfa2044Request,
     user_id: str = Depends(get_current_user),
 ) -> dict[str, float | int | str]:
-    """Simplified CERFA 2044 fiscal calculation (JSON)."""
+    """Bilan foncier simplifié — calcul revenus - charges (JSON). Route kept as /cerfa/2044 for backward compat."""
     SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
     _ensure_cerfa_2044_allowed(payload)
     resultat_fiscal = round(payload.total_revenus - payload.total_charges, 2)
@@ -66,7 +73,7 @@ async def generate_cerfa_2044_pdf(
     payload: Cerfa2044Request,
     user_id: str = Depends(get_current_user),
 ):
-    """Generate a simplified CERFA 2044 summary as PDF."""
+    """Résumé fiscal foncier au format PDF. Route kept as /cerfa/2044/pdf for backward compat."""
     SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
     _ensure_cerfa_2044_allowed(payload)
 
@@ -108,9 +115,9 @@ async def generate_cerfa_2044_pdf(
     elements = []
 
     # Header
-    elements.append(Paragraph("Déclaration des revenus fonciers", title_style))
+    elements.append(Paragraph("Bilan foncier", title_style))
     elements.append(Paragraph(
-        f"CERFA 2044 — Exercice {payload.annee} — Calcul simplifié",
+        f"Résumé fiscal — Exercice {payload.annee} — Calcul simplifié",
         subtitle_style,
     ))
 
@@ -144,6 +151,39 @@ async def generate_cerfa_2044_pdf(
     ]))
     elements.append(table)
 
+    # Charge decomposition (if any detail fields provided)
+    charge_details = [
+        ("Intérêts d'emprunt", payload.interets_emprunt),
+        ("Travaux", payload.travaux),
+        ("Frais de gestion", payload.frais_gestion),
+        ("Assurance", payload.assurance),
+        ("Taxe foncière", payload.taxe_fonciere),
+        ("Copropriété", payload.copropriete),
+    ]
+    filled_details = [(label, val) for label, val in charge_details if val is not None and val > 0]
+
+    if filled_details:
+        elements.append(Spacer(1, 6 * mm))
+        elements.append(Paragraph("<b>Détail des charges déductibles</b>", normal_style))
+        elements.append(Spacer(1, 3 * mm))
+
+        detail_data = [["Poste", "Montant (€)"]]
+        for label, val in filled_details:
+            detail_data.append([label, f"{val:,.2f}"])
+
+        detail_table = Table(detail_data, colWidths=[120 * mm, 50 * mm])
+        detail_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+        ]))
+        elements.append(detail_table)
+
     elements.append(Spacer(1, 10 * mm))
 
     # Disclaimer
@@ -169,7 +209,7 @@ async def generate_cerfa_2044_pdf(
     doc.build(elements)
     buffer.seek(0)
 
-    filename = f"cerfa_2044_{payload.annee}_{payload.sci_nom or 'sci'}.pdf"
+    filename = f"resume_fiscal_{payload.annee}_{payload.sci_nom or 'sci'}.pdf"
     return StreamingResponse(
         buffer,
         media_type="application/pdf",

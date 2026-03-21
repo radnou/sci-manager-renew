@@ -264,6 +264,65 @@ class EmailService:
             )
             return False
 
+    async def send_notification_email(
+        self,
+        email: str,
+        title: str,
+        message: str,
+        notification_type: str,
+    ) -> dict:
+        """Send a notification email (cron alerts: late payments, expiring bails, etc.).
+
+        Raises:
+            ExternalServiceError: Si l'envoi échoue
+        """
+        logger.info(
+            "sending_notification_email",
+            email=email,
+            notification_type=notification_type,
+        )
+
+        try:
+            html = _render_template(
+                "notification.html",
+                title=title,
+                message=message,
+                notification_type=notification_type,
+                cta_url=f"{self.frontend_url}/dashboard",
+                cta_text="Voir mon tableau de bord",
+            )
+
+            payload = {
+                "from": self.from_email,
+                "to": email,
+                "subject": f"GererSCI — {title}",
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation="resend.send_notification_email",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": email, "notification_type": notification_type},
+            )
+
+            logger.info(
+                "notification_email_sent",
+                email=email,
+                notification_type=notification_type,
+            )
+            return result
+        except Exception as e:
+            logger.error(
+                "notification_email_send_failed",
+                email=email,
+                notification_type=notification_type,
+                error=str(e),
+                exc_info=True,
+            )
+            raise ExternalServiceError(
+                "Resend",
+                f"Notification email send failed: {str(e)}",
+            )
+
     async def send_reset_password(self, email: str, reset_link: str) -> dict:
         """Send password reset email
 

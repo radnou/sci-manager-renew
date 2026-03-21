@@ -214,23 +214,23 @@ class TestLoggingMiddlewareExceptionPath:
 class TestNotificationCronLoop:
     @pytest.mark.asyncio
     async def test_cron_loop_cancelled(self):
-        """The cron loop handles CancelledError gracefully (lines 101-103)."""
-        with patch("app.main.asyncio.sleep", side_effect=asyncio.CancelledError()):
+        """The cron loop handles CancelledError gracefully during sleep."""
+        # Now checks run FIRST, then sleep. Cancel during sleep.
+        mock_client = MagicMock()
+        with patch("app.main.asyncio.sleep", side_effect=asyncio.CancelledError()), \
+             patch("app.main.get_supabase_service_client", return_value=mock_client), \
+             patch("app.main.check_late_payments", new_callable=AsyncMock), \
+             patch("app.main.check_expiring_bails", new_callable=AsyncMock), \
+             patch("app.main.check_expiring_pno", new_callable=AsyncMock), \
+             patch("app.main.check_pending_quittances", new_callable=AsyncMock), \
+             patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock):
             await _notification_cron_loop()
 
     @pytest.mark.asyncio
     async def test_cron_loop_runs_all_checks(self):
-        """After sleep, the loop runs all 5 check functions (lines 94-99)."""
-        iteration = 0
-
-        async def controlled_sleep(seconds):
-            nonlocal iteration
-            iteration += 1
-            if iteration > 1:
-                raise asyncio.CancelledError()
-
+        """Checks run immediately (run-then-sleep pattern)."""
         mock_client = MagicMock()
-        with patch("app.main.asyncio.sleep", side_effect=controlled_sleep), \
+        with patch("app.main.asyncio.sleep", side_effect=asyncio.CancelledError()), \
              patch("app.main.get_supabase_service_client", return_value=mock_client), \
              patch("app.main.check_late_payments", new_callable=AsyncMock) as m1, \
              patch("app.main.check_expiring_bails", new_callable=AsyncMock) as m2, \
@@ -246,19 +246,25 @@ class TestNotificationCronLoop:
 
     @pytest.mark.asyncio
     async def test_cron_loop_survives_runtime_error(self):
-        """Generic exceptions are caught and the loop continues (line 105)."""
-        iteration = 0
+        """Generic exceptions are caught and the loop retries after 1h sleep."""
+        sleep_calls = []
 
-        async def controlled_sleep(seconds):
-            nonlocal iteration
-            iteration += 1
-            if iteration > 1:
+        async def track_sleep(seconds):
+            sleep_calls.append(seconds)
+            # Cancel on second sleep to stop the loop
+            if len(sleep_calls) >= 2:
                 raise asyncio.CancelledError()
 
-        with patch("app.main.asyncio.sleep", side_effect=controlled_sleep), \
+        with patch("app.main.asyncio.sleep", side_effect=track_sleep), \
              patch("app.main.get_supabase_service_client", side_effect=RuntimeError("db down")):
-            await _notification_cron_loop()
-            assert iteration == 2
+            # CancelledError from error-path sleep propagates as BaseException
+            try:
+                await _notification_cron_loop()
+            except asyncio.CancelledError:
+                pass
+            # First sleep was the 1h retry (3600), second also 3600
+            assert len(sleep_calls) >= 2
+            assert sleep_calls[0] == 3600  # error retry delay
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { getCurrentSession } from '$lib/auth/session';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 export type EntityId = number | string;
 export type PlanKey = 'free' | 'starter' | 'pro' | 'lifetime';

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from tests.conftest import FakeSupabaseClient
 
@@ -19,12 +19,21 @@ def make_client(prefs: list[dict] | None = None) -> FakeSupabaseClient:
     return client
 
 
-# send_notification_email is imported lazily inside notification_service and
-# does not yet exist as a module-level symbol in email_service.  We patch it
-# with create=True so unittest.mock will insert it into the module dict for
-# the duration of each test.
-EMAIL_PATCH = "app.services.email_service.send_notification_email"
-EMAIL_PATCH_KWARGS: dict = {"create": True}
+def _fake_service_client():
+    """Return a mock service client with auth.admin.get_user_by_id."""
+    client = MagicMock()
+    client.auth.admin.get_user_by_id.return_value = type(
+        "UserResponse", (), {
+            "user": type("User", (), {"email": "test@sci.local"})()
+        }
+    )()
+    return client
+
+
+# Patch the EmailService.send_notification_email method on the singleton
+# instance used by notification_service.
+EMAIL_PATCH = "app.services.email_service.email_service.send_notification_email"
+SERVICE_CLIENT_PATCH = "app.core.supabase_client.get_supabase_service_client"
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +47,8 @@ class TestCreateNotificationWithEmail:
         """When no preference row exists, both in_app and email are enabled."""
         client = make_client([])
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True) as mock_email:
+        with patch(EMAIL_PATCH, new_callable=AsyncMock) as mock_email, \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_service import create_notification_with_email
 
             await create_notification_with_email(
@@ -68,7 +78,8 @@ class TestCreateNotificationWithEmail:
         ]
         client = make_client(prefs)
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True) as mock_email:
+        with patch(EMAIL_PATCH, new_callable=AsyncMock) as mock_email, \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_service import create_notification_with_email
 
             await create_notification_with_email(
@@ -90,7 +101,7 @@ class TestCreateNotificationWithEmail:
         ]
         client = make_client(prefs)
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True) as mock_email:
+        with patch(EMAIL_PATCH, new_callable=AsyncMock) as mock_email:
             from app.services.notification_service import create_notification_with_email
 
             await create_notification_with_email(
@@ -112,7 +123,7 @@ class TestCreateNotificationWithEmail:
         ]
         client = make_client(prefs)
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True) as mock_email:
+        with patch(EMAIL_PATCH, new_callable=AsyncMock) as mock_email:
             from app.services.notification_service import create_notification_with_email
 
             await create_notification_with_email(
@@ -130,7 +141,8 @@ class TestCreateNotificationWithEmail:
         """Notification title defaults to 'Notification' when not in data."""
         client = make_client([])
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_service import create_notification_with_email
 
             await create_notification_with_email(
@@ -154,7 +166,8 @@ class TestCreateNotificationWithEmail:
         async def boom(*_args, **_kwargs):
             raise RuntimeError("SMTP failure")
 
-        with patch(EMAIL_PATCH, side_effect=boom, create=True):
+        with patch(EMAIL_PATCH, side_effect=boom), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_service import create_notification_with_email
 
             # Should NOT raise
@@ -174,7 +187,8 @@ class TestCreateNotificationWithEmail:
         client = make_client([])
         meta = {"loyer_id": "loyer-42", "bien_adresse": "12 rue de la Paix"}
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_service import create_notification_with_email
 
             await create_notification_with_email(
@@ -195,10 +209,10 @@ class TestCheckLatePayments:
 
     @pytest.mark.asyncio
     async def test_returns_zero_when_no_late_loyers(self):
-        """No late loyers → 0 notifications sent."""
+        """No late loyers -> 0 notifications sent."""
         client = make_client([])
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_late_payments
 
             result = await check_late_payments(client)
@@ -207,7 +221,7 @@ class TestCheckLatePayments:
 
     @pytest.mark.asyncio
     async def test_notifies_owner_for_late_loyer(self):
-        """One late loyer with matching owners → 1 notification per owner."""
+        """One late loyer with matching owners -> 1 notification per owner."""
         client = make_client([])
         # Seed a late loyer (date_loyer well in the past)
         client.store["loyers"] = [
@@ -223,7 +237,8 @@ class TestCheckLatePayments:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_cron import check_late_payments
 
             result = await check_late_payments(client)
@@ -252,7 +267,7 @@ class TestCheckLatePayments:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_late_payments
 
             result = await check_late_payments(client)
@@ -264,11 +279,11 @@ class TestCheckExpiringBails:
 
     @pytest.mark.asyncio
     async def test_returns_zero_when_no_expiring_baux(self):
-        """No baux in the window → 0 notifications."""
+        """No baux in the window -> 0 notifications."""
         client = make_client([])
         client.store.setdefault("baux", [])
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_expiring_bails
 
             result = await check_expiring_bails(client)
@@ -291,7 +306,8 @@ class TestCheckExpiringBails:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_cron import check_expiring_bails
 
             result = await check_expiring_bails(client)
@@ -316,7 +332,7 @@ class TestCheckExpiringBails:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_expiring_bails
 
             result = await check_expiring_bails(client)
@@ -328,7 +344,7 @@ class TestCheckPendingQuittances:
 
     @pytest.mark.asyncio
     async def test_returns_zero_when_all_quittances_generated(self):
-        """No loyers with quitus_genere=False → 0 notifications."""
+        """No loyers with quitus_genere=False -> 0 notifications."""
         client = make_client([])
         client.store["loyers"] = [
             {
@@ -343,7 +359,7 @@ class TestCheckPendingQuittances:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_pending_quittances
 
             result = await check_pending_quittances(client)
@@ -367,7 +383,8 @@ class TestCheckPendingQuittances:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_cron import check_pending_quittances
 
             result = await check_pending_quittances(client)
@@ -381,11 +398,11 @@ class TestCheckExpiringPno:
 
     @pytest.mark.asyncio
     async def test_returns_zero_when_no_expiring_pno(self):
-        """No PNO policies expiring within 30 days → 0 notifications."""
+        """No PNO policies expiring within 30 days -> 0 notifications."""
         client = make_client([])
         client.store.setdefault("assurances_pno", [])
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_expiring_pno
 
             result = await check_expiring_pno(client)
@@ -409,7 +426,8 @@ class TestCheckExpiringPno:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
             from app.services.notification_cron import check_expiring_pno
 
             result = await check_expiring_pno(client)
@@ -437,7 +455,7 @@ class TestCheckExpiringPno:
             }
         ]
 
-        with patch(EMAIL_PATCH, new_callable=AsyncMock, create=True):
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
             from app.services.notification_cron import check_expiring_pno
 
             result = await check_expiring_pno(client)

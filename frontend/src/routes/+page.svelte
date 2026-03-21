@@ -70,14 +70,14 @@
 		},
 		{
 			eyebrow: 'Fiscalite',
-			title: 'Generez votre CERFA 2044 en un clic',
+			title: 'Generez votre resume fiscal en un clic',
 			description:
-				"Exercices fiscaux IR et IS, resultat fiscal calcule, declaration PDF prete a deposer.",
+				"Exercices fiscaux IR et IS, resultat fiscal calcule, bilan foncier PDF pret a telecharger.",
 			image: '/images/showcase/loyers-with-button.png',
-			alt: 'Page fiscalite — exercices, CERFA 2044, resultat fiscal',
+			alt: 'Page fiscalite — exercices, resume fiscal, resultat fiscal',
 			bullets: [
 				'Regimes IR et IS',
-				'PDF CERFA 2044 automatique',
+				'Resume fiscal PDF automatique',
 				'Resultat fiscal calcule'
 			]
 		}
@@ -251,7 +251,7 @@
 				'Biens illimités',
 				'Calcul de rentabilité avancé',
 				'Dashboard complet multi-SCI',
-				'Résumé fiscal PDF (CERFA 2044)',
+				'Résumé fiscal PDF',
 				'Tout Gestion inclus',
 				'Support prioritaire dédié'
 			],
@@ -308,7 +308,7 @@
 		{
 			question: "L'outil gère-t-il la conformité fiscale (2044, 2072) ?",
 			answer:
-				'Un calcul simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. Le CERFA 2072 (SCI à l\'IS) est prévu dans une version future.'
+				'Un résumé fiscal simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. La déclaration 2072 (SCI à l\'IS) est prévue dans une version future.'
 		},
 		{
 			question: 'Que se passe-t-il si je veux arrêter ?',
@@ -360,7 +360,7 @@
 	<title>GérerSCI — Gestion simplifiée de vos SCI</title>
 	<meta
 		name="description"
-		content="Centralisez biens, loyers et documents. Dashboard multi-SCI, quittances PDF, fiscalité CERFA 2044."
+		content="Centralisez biens, loyers et documents. Dashboard multi-SCI, quittances PDF, résumé fiscal."
 	/>
 	<link rel="canonical" href="https://gerersci.fr" />
 	{@html `<script type="application/ld+json">${JSON.stringify({
@@ -404,7 +404,7 @@
 			{
 				"@type": "Question",
 				"name": "L'outil gère-t-il la conformité fiscale (2044, 2072) ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "Un calcul simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. Le CERFA 2072 (SCI à l'IS) est prévu dans une version future." }
+				"acceptedAnswer": { "@type": "Answer", "text": "Un résumé fiscal simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. La déclaration 2072 (SCI à l'IS) est prévue dans une version future." }
 			},
 			{
 				"@type": "Question",

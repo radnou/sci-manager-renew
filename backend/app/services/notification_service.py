@@ -64,18 +64,32 @@ async def create_notification_with_email(
     # 3. Send email notification
     if email_enabled:
         try:
-            from app.services.email_service import send_notification_email
+            from app.core.supabase_client import get_supabase_service_client
+            from app.services.email_service import email_service
 
-            await send_notification_email(
-                user_id=user_id,
-                notification_type=notification_type,
-                data=data,
-            )
-            logger.info(
-                "email_notification_sent",
-                user_id=user_id,
-                notification_type=notification_type,
-            )
+            # Resolve user email from Supabase Auth
+            service_client = get_supabase_service_client()
+            user_resp = service_client.auth.admin.get_user_by_id(user_id)
+            user_email = getattr(user_resp, "user", user_resp)
+            email_addr = getattr(user_email, "email", None)
+
+            if not email_addr:
+                logger.warning(
+                    "email_notification_skipped_no_email",
+                    user_id=user_id,
+                )
+            else:
+                await email_service.send_notification_email(
+                    email=email_addr,
+                    title=data.get("title", "Notification"),
+                    message=data.get("message", ""),
+                    notification_type=notification_type,
+                )
+                logger.info(
+                    "email_notification_sent",
+                    user_id=user_id,
+                    notification_type=notification_type,
+                )
         except Exception:
             logger.error(
                 "email_notification_failed",

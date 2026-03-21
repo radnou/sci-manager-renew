@@ -91,7 +91,6 @@ async def _notification_cron_loop():
     """Run notification checks every 24 hours in the background."""
     while True:
         try:
-            await asyncio.sleep(86_400)  # 24h
             client = get_supabase_service_client()
             await check_late_payments(client)
             await check_expiring_bails(client)
@@ -99,11 +98,13 @@ async def _notification_cron_loop():
             await check_pending_quittances(client)
             await check_fiscal_deadlines(client)
             logger.info("notification_cron_cycle_complete")
+            await asyncio.sleep(86_400)  # 24h
         except asyncio.CancelledError:
             logger.info("notification_cron_cancelled")
             break
         except Exception:
             logger.exception("notification_cron_error")
+            await asyncio.sleep(3600)  # retry in 1h on error
 
 
 def _json_safe(value):

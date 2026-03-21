@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<p style="color:#0f172a;font-size:20px;font-weight:700;line-height:1.4;margin:0 0 8px 0;">{{ title }}</p>
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 24px 0;">{{ message }}</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="padding:16px;background-color:#f8fafc;border-radius:8px;border-left:4px solid #0284c7;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td>
+            <p style="color:#64748b;font-size:13px;margin:0 0 2px 0;">Type de notification</p>
+            <p style="color:#0f172a;font-size:14px;font-weight:600;margin:0;">
+              {% if notification_type == "late_payment" %}Loyer en retard
+              {% elif notification_type == "bail_expiring" %}Bail expirant
+              {% elif notification_type == "quittance_pending" %}Quittance en attente
+              {% elif notification_type == "pno_expiring" %}Assurance PNO expirant
+              {% elif notification_type == "fiscal_deadline" %}&Eacute;ch&eacute;ance fiscale
+              {% else %}Alerte
+              {% endif %}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:24px 0 0 0;">Connectez-vous &agrave; votre tableau de bord pour plus de d&eacute;tails&nbsp;:</p>
+{% endblock %}

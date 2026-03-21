@@ -66,7 +66,7 @@
 			const url = URL.createObjectURL(blob);
 			window.open(url, '_blank');
 		} catch (err: any) {
-			cerfaError = err?.message ?? 'Erreur lors de la génération du CERFA.';
+			cerfaError = err?.message ?? 'Erreur lors de la génération du résumé fiscal.';
 		} finally {
 			generatingCerfa = false;
 		}
@@ -136,7 +136,7 @@
 		<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950/30">
 			<p class="text-lg font-semibold text-amber-800 dark:text-amber-200">Fonctionnalité Pro</p>
 			<p class="mt-2 text-sm text-amber-700 dark:text-amber-300">
-				La fiscalité et la génération CERFA 2044 sont disponibles avec le plan Pro.
+				La fiscalité et la génération du résumé fiscal sont disponibles avec le plan Pro.
 			</p>
 			<a
 				href="/pricing"
@@ -186,7 +186,7 @@
 		</div>
 	</div>
 
-	<!-- CERFA 2044 Generation -->
+	<!-- Résumé fiscal PDF Generation -->
 	{#if sci.regime_fiscal === 'is' || sci.regime_fiscal === 'IS'}
 		<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
 			<div class="flex items-center gap-2">
@@ -206,7 +206,7 @@
 		<div class="flex items-center gap-2">
 			<FileText class="h-5 w-5 text-sky-600 dark:text-sky-400" />
 			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-				Déclaration CERFA 2044
+				Résumé fiscal PDF
 			</h2>
 		</div>
 		<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
@@ -239,14 +239,14 @@
 							onclick={() => handleGenerateCerfa(ex)}
 						>
 							<Download class="h-3.5 w-3.5" />
-							{generatingCerfa ? 'Génération…' : 'CERFA 2044'}
+							{generatingCerfa ? 'Génération…' : 'Résumé fiscal PDF'}
 						</button>
 					</div>
 				{/each}
 			</div>
 		{:else if !loading}
 			<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
-				Ajoutez un exercice fiscal pour pouvoir générer le CERFA 2044.
+				Ajoutez un exercice fiscal pour pouvoir générer le résumé fiscal PDF.
 			</p>
 		{/if}
 
