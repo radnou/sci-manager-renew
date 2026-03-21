@@ -29,12 +29,22 @@ _INITIAL_STORE: dict[str, list[dict]] = {
         {"id": "bien-9", "id_sci": "sci-2", "adresse": "42 avenue QA", "ville": "Lyon", "code_postal": "69001", "type_bien": "appartement", "surface_m2": 35, "nb_pieces": 1, "loyer_cc": 980, "statut": "loue", "tmi": 30},
         {"id": "bien-free", "id_sci": "sci-1", "adresse": "5 rue Gratuite", "ville": "Lyon", "code_postal": "69002", "type_bien": "studio", "surface_m2": 20, "nb_pieces": 1, "loyer_cc": 800, "statut": "loue", "tmi": 30},
     ],
-    "locataires": [],
     "loyers": [
         {"id": "loyer-1", "id_bien": "bien-1", "date_loyer": "2026-03-01", "montant": 1200.0, "statut": "paye"},
         {"id": "loyer-2", "id_bien": "bien-9", "date_loyer": "2026-04-01", "montant": 980.0, "statut": "paye"},
         {"id": "loyer-free", "id_bien": "bien-free", "date_loyer": "2026-01-01", "montant": 800.0, "statut": "paye"},
     ],
+    "baux": [
+        {"id": "bail-1", "id_bien": "bien-1", "date_debut": "2025-01-01", "date_fin": "2027-12-31", "loyer_hc": 1000.0, "charges_locatives": 200.0, "statut": "en_cours"},
+        {"id": "bail-9", "id_bien": "bien-9", "date_debut": "2025-06-01", "date_fin": None, "loyer_hc": 800.0, "charges_locatives": 180.0, "statut": "en_cours"},
+    ],
+    "bail_locataires": [
+        {"id": "bl-1", "id_bail": "bail-1", "id_locataire": "loc-1"},
+    ],
+    "locataires": [
+        {"id": "loc-1", "id_bien": "bien-1", "nom": "Dupont", "prenom": "Jean", "email": "jean@test.fr", "date_debut": "2025-01-01", "date_fin": None},
+    ],
+    "quittance_compteur": [],
     "charges": [],
     "fiscalite": [],
     "admins": [

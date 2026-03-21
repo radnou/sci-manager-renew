@@ -13,6 +13,8 @@ class LoyerBase(BaseModel):
     montant: float = Field(gt=0)
     statut: LoyerStatus = "en_attente"
     quitus_genere: bool = False
+    date_paiement: date | None = None
+    mode_paiement: str | None = None
 
 
 class LoyerCreate(LoyerBase):
@@ -24,6 +26,8 @@ class LoyerUpdate(BaseModel):
     montant: float | None = Field(default=None, gt=0)
     statut: LoyerStatus | None = None
     quitus_genere: bool | None = None
+    date_paiement: date | None = None
+    mode_paiement: str | None = None
 
 
 class LoyerResponse(LoyerBase):

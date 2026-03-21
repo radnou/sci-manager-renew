@@ -12,6 +12,9 @@ class SCIBase(BaseModel):
     capital_social: float | None = Field(default=None, ge=0)
     objet_social: str | None = Field(default=None, max_length=2000)
     rcs_ville: str | None = Field(default=None, max_length=100)
+    rcs_numero: str | None = Field(default=None, max_length=20)
+    forme_juridique: str = Field(default="SCI", max_length=30)
+    nom_gerant: str | None = Field(default=None, max_length=100)
     nb_parts_total: int | None = None
     valeur_nominale_part: float | None = None
 
@@ -29,6 +32,9 @@ class SCIUpdate(BaseModel):
     capital_social: float | None = Field(default=None, ge=0)
     objet_social: str | None = Field(default=None, max_length=2000)
     rcs_ville: str | None = Field(default=None, max_length=100)
+    rcs_numero: str | None = Field(default=None, max_length=20)
+    forme_juridique: str | None = Field(default=None, max_length=30)
+    nom_gerant: str | None = Field(default=None, max_length=100)
     nb_parts_total: int | None = None
     valeur_nominale_part: float | None = None
 

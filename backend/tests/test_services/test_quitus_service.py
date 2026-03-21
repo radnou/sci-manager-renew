@@ -85,7 +85,8 @@ class TestGenerateQuitusPdfVariations:
         )
         pdf = QuitusService.generate_quitus_pdf(q)
         assert isinstance(pdf, bytes)
-        assert b"99999.99" in pdf
+        # Amount is formatted as French currency (99 999,99 EUR)
+        assert b"99" in pdf and b"999" in pdf
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -11,7 +12,7 @@ from app.core.supabase_client import get_supabase_user_client
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.quitus import QuitusRequest, QuitusResponse
-from app.services.quitus_service import QuitusService
+from app.services.quitus_service import QuitusService, get_next_quittance_number
 from app.services.storage_service import storage_service
 from app.services.subscription_service import SubscriptionService
 
@@ -83,6 +84,91 @@ def _verify_quitus_download_access(request: Request, user_id: str, sci_id: str) 
         raise HTTPException(status_code=403, detail="Accès non autorisé à cette quittance")
 
 
+def _fetch_enrichment_data(request: Request, sci_id: str, id_bien: str, id_loyer: str) -> dict:
+    """Fetch SCI, bail, and locataire data from DB for PDF enrichment.
+
+    Returns dict with keys: sci_data, bail_data, locataires, loyer_data, quittance_numero.
+    Gracefully degrades — missing data results in None values, never raises.
+    """
+    client = get_supabase_user_client(request)
+    result: dict = {
+        "sci_data": None,
+        "bail_data": None,
+        "locataires": None,
+        "loyer_data": None,
+        "quittance_numero": None,
+    }
+
+    # 1. SCI data
+    try:
+        sci_result = client.table("sci").select("*").eq("id", sci_id).execute()
+        if sci_result.data:
+            result["sci_data"] = sci_result.data[0]
+    except Exception:
+        pass
+
+    # 2. Loyer data (for date_paiement, mode_paiement)
+    try:
+        loyer_result = client.table("loyers").select("*").eq("id", id_loyer).execute()
+        if loyer_result.data:
+            result["loyer_data"] = loyer_result.data[0]
+    except Exception:
+        pass
+
+    # 3. Active bail for this bien
+    try:
+        baux_result = client.table("baux").select("*").eq("id_bien", id_bien).execute()
+        baux_rows = baux_result.data or []
+        # Pick active bail (statut=en_cours) or the most recent one
+        active_bail = None
+        for bail in baux_rows:
+            if str(bail.get("statut", "")).lower() == "en_cours":
+                active_bail = bail
+                break
+        if not active_bail and baux_rows:
+            active_bail = baux_rows[-1]
+
+        if active_bail:
+            result["bail_data"] = active_bail
+
+            # 4. Locataires via bail_locataires junction table
+            bail_id = str(active_bail.get("id", ""))
+            if bail_id:
+                try:
+                    bl_result = client.table("bail_locataires").select("id_locataire").eq("id_bail", bail_id).execute()
+                    loc_ids = [str(row.get("id_locataire")) for row in (bl_result.data or []) if row.get("id_locataire")]
+                    if loc_ids:
+                        locs = []
+                        for lid in loc_ids:
+                            loc_result = client.table("locataires").select("*").eq("id", lid).execute()
+                            if loc_result.data:
+                                locs.append(loc_result.data[0])
+                        if locs:
+                            result["locataires"] = locs
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # 5. Sequential quittance number
+    try:
+        loyer_data = result.get("loyer_data") or {}
+        loyer_date_str = loyer_data.get("date_loyer")
+        if loyer_date_str:
+            if isinstance(loyer_date_str, str):
+                loyer_date = date.fromisoformat(loyer_date_str)
+            else:
+                loyer_date = loyer_date_str
+        else:
+            loyer_date = date.today()
+
+        result["quittance_numero"] = get_next_quittance_number(client, sci_id, loyer_date)
+    except Exception:
+        pass
+
+    return result
+
+
 @router.post("/generate", response_model=QuitusResponse)
 @limiter.limit("15/minute")
 async def generate_quitus(
@@ -91,7 +177,16 @@ async def generate_quitus(
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
     sci_id = _verify_bien_ownership(request, user_id, payload.id_bien)
     _verify_loyer_belongs_to_bien(request, payload.id_loyer, payload.id_bien)
-    pdf_bytes = QuitusService.generate_quitus_pdf(payload)
+
+    enrichment = _fetch_enrichment_data(request, sci_id, payload.id_bien, payload.id_loyer)
+
+    pdf_bytes = QuitusService.generate_quitus_pdf(
+        payload,
+        sci_data=enrichment["sci_data"],
+        bail_data=enrichment["bail_data"],
+        locataires=enrichment["locataires"],
+        quittance_numero=enrichment["quittance_numero"],
+    )
     filename = _build_quitus_filename(sci_id)
     storage_path = f"quitus/{sci_id}/{filename}"
 
@@ -113,7 +208,7 @@ async def generate_quitus(
 @limiter.limit("20/minute")
 async def render_quitus(request: Request, payload: QuitusRequest, user_id: str = Depends(get_current_user)):
     SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
-    _verify_bien_ownership(request, user_id, payload.id_bien)
+    sci_id = _verify_bien_ownership(request, user_id, payload.id_bien)
     _verify_loyer_belongs_to_bien(request, payload.id_loyer, payload.id_bien)
     if not settings.feature_pdf_render_direct:
         raise FeatureDisabledError(
@@ -121,7 +216,15 @@ async def render_quitus(request: Request, payload: QuitusRequest, user_id: str =
             flag_name="feature_pdf_render_direct",
         )
 
-    pdf_bytes = QuitusService.generate_quitus_pdf(payload)
+    enrichment = _fetch_enrichment_data(request, sci_id, payload.id_bien, payload.id_loyer)
+
+    pdf_bytes = QuitusService.generate_quitus_pdf(
+        payload,
+        sci_data=enrichment["sci_data"],
+        bail_data=enrichment["bail_data"],
+        locataires=enrichment["locataires"],
+        quittance_numero=enrichment["quittance_numero"],
+    )
     filename = _build_inline_filename(payload.periode)
 
     return Response(

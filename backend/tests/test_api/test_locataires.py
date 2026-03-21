@@ -616,11 +616,13 @@ def test_delete_locataire_requires_auth(client):
 
 # ── List locataires ──────────────────────────────────────────────────────
 
-def test_list_locataires_empty(client, auth_headers):
-    """Empty locataires table returns empty list."""
+def test_list_locataires_returns_seeded_data(client, auth_headers):
+    """Locataires endpoint returns seed data."""
     response = client.get("/api/v1/locataires/", headers=auth_headers)
     assert response.status_code == 200
-    assert response.json() == []
+    data = response.json()
+    assert len(data) >= 1
+    assert data[0]["nom"] == "Dupont"
 
 
 def test_list_locataires_no_trailing_slash(client, auth_headers, fake_supabase):
