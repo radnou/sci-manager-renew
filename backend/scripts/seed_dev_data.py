@@ -130,10 +130,7 @@ def main():
         "nom": "SCI Belleville Patrimoine",
         "siren": "912345678",
         "regime_fiscal": "IR",
-        "statut": "exploitation",
         "capital_social": 150000,
-        "nb_parts_total": 1000,
-        "valeur_nominale_part": 150,
         "objet_social": "Acquisition, gestion et administration de biens immobiliers situés à Paris et en Île-de-France",
         "date_creation": "2019-01-15",
         "rcs_ville": "Paris",
@@ -166,10 +163,7 @@ def main():
         "nom": "SCI Horizon Lyon",
         "siren": "987654321",
         "regime_fiscal": "IS",
-        "statut": "exploitation",
         "capital_social": 200000,
-        "nb_parts_total": 500,
-        "valeur_nominale_part": 400,
         "objet_social": "Gestion patrimoniale immobilière dans la métropole de Lyon",
         "date_creation": "2022-06-01",
         "rcs_ville": "Lyon",
@@ -338,7 +332,7 @@ def main():
     charge_count = 0
     charge_definitions = [
         ("copropriete", 250), ("taxe_fonciere", 180),
-        ("entretien", 120), ("assurance", 90),
+        ("travaux_entretien", 120), ("assurance_pno", 90),
         ("interets_emprunt", 350),
     ]
     for bien in all_biens:

@@ -316,10 +316,12 @@ class ResumeFiscalService:
                 t = (c.get("type_charge") or "").lower()
                 charges_by_type[t] = charges_by_type.get(t, 0.0) + self._safe_float(c.get("montant"))
 
-            # Ligne 221: travaux / entretien
+            # Ligne 221: travaux / entretien (all variants)
             detail.ligne_221_travaux = round(
                 charges_by_type.get("entretien", 0.0)
-                + charges_by_type.get("travaux", 0.0),
+                + charges_by_type.get("travaux", 0.0)
+                + charges_by_type.get("travaux_entretien", 0.0)
+                + charges_by_type.get("travaux_amelioration", 0.0),
                 2,
             )
 
@@ -353,16 +355,29 @@ class ResumeFiscalService:
                 2,
             )
 
-            # Ligne 220: also capture 'assurance' charges (not just PNO table)
+            # Ligne 220: also capture assurance charges from charges table
             detail.ligne_220_assurance = round(
                 detail.ligne_220_assurance
-                + charges_by_type.get("assurance", 0.0),
+                + charges_by_type.get("assurance", 0.0)
+                + charges_by_type.get("assurance_pno", 0.0)
+                + charges_by_type.get("prime_assurance", 0.0),
+                2,
+            )
+
+            # Add frais_gestion and frais_procedure to L221
+            detail.ligne_221_travaux = round(
+                detail.ligne_221_travaux
+                + charges_by_type.get("frais_gestion", 0.0)
+                + charges_by_type.get("frais_procedure", 0.0),
                 2,
             )
 
             # Detect unmapped charge types and generate alertes
-            mapped_types = {"entretien", "travaux", "taxe_fonciere", "copropriete", "syndic",
-                           "interets_emprunt", "interets", "credit", "assurance"}
+            mapped_types = {"entretien", "travaux", "travaux_entretien", "travaux_amelioration",
+                           "taxe_fonciere", "copropriete", "syndic",
+                           "interets_emprunt", "interets", "credit",
+                           "assurance", "assurance_pno", "prime_assurance",
+                           "frais_gestion", "frais_procedure", "autre_deductible"}
             for ct, montant in charges_by_type.items():
                 if ct and ct not in mapped_types and montant > 0:
                     alertes.append(
