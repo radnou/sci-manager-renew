@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { setupAuthedMocks } from '../fixtures/api-mocks';
 
+const isLiveTarget = (process.env.E2E_BASE_URL || '').startsWith('https://');
+
 test.describe('Parametres et compte @P1', () => {
+  test.skip(isLiveTarget, 'Requires mock auth — skipped against live target');
   async function openAuthenticatedPage(page: import('@playwright/test').Page, path: string) {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
