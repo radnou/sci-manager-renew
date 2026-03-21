@@ -182,9 +182,11 @@ class ResumeFiscalService:
                 charges_by_type.get("taxe_fonciere", 0.0), 2
             )
 
-            # Ligne 227: copropriété
+            # Ligne 227: copropriété (UI uses 'syndic' or 'copropriete')
             detail.ligne_227_copropriete = round(
-                charges_by_type.get("copropriete", 0.0), 2
+                charges_by_type.get("copropriete", 0.0)
+                + charges_by_type.get("syndic", 0.0),
+                2,
             )
 
             # Ligne 220: assurance PNO (from assurances_pno table)
@@ -197,12 +199,29 @@ class ResumeFiscalService:
                 sum(self._safe_float(r.get("montant_annuel")) for r in pno_rows), 2
             )
 
-            # Ligne 230: intérêts d'emprunt (from charges type 'interets_emprunt')
+            # Ligne 230: intérêts d'emprunt (UI uses 'credit', 'interets_emprunt', or 'interets')
             detail.ligne_230_interets_emprunt = round(
                 charges_by_type.get("interets_emprunt", 0.0)
-                + charges_by_type.get("interets", 0.0),
+                + charges_by_type.get("interets", 0.0)
+                + charges_by_type.get("credit", 0.0),
                 2,
             )
+
+            # Ligne 220: also capture 'assurance' charges (not just PNO table)
+            detail.ligne_220_assurance = round(
+                detail.ligne_220_assurance
+                + charges_by_type.get("assurance", 0.0),
+                2,
+            )
+
+            # Detect unmapped charge types and generate alertes
+            mapped_types = {"entretien", "travaux", "taxe_fonciere", "copropriete", "syndic",
+                           "interets_emprunt", "interets", "credit", "assurance"}
+            for ct, montant in charges_by_type.items():
+                if ct and ct not in mapped_types and montant > 0:
+                    alertes.append(
+                        f"{detail.adresse} : charge de type '{ct}' ({montant:.0f} €) non mappée aux lignes CERFA."
+                    )
 
             # Ligne 229: total charges déductibles (hors intérêts)
             detail.ligne_229_total_charges = round(
@@ -221,6 +240,14 @@ class ResumeFiscalService:
                 - detail.ligne_230_interets_emprunt,
                 2,
             )
+
+            # Alerte: bien avec revenus mais sans aucune charge
+            charges_total = detail.ligne_229_total_charges + detail.ligne_230_interets_emprunt - detail.ligne_215_frais_gestion
+            if detail.ligne_211_loyers_bruts > 0 and charges_total <= 0:
+                alertes.append(
+                    f"{detail.adresse} : aucune charge déductible saisie (hors forfait 20 €). "
+                    f"Le résultat fiscal est probablement surestimé."
+                )
 
             biens_detail.append(detail)
             total_revenus += detail.ligne_211_loyers_bruts
