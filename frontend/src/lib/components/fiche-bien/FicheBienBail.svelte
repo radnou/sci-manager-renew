@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { BailEmbed, LoyerEmbed } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle } from 'lucide-svelte';
+	import { updateLocataire } from '$lib/api';
+	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
 	import {
 		announceFicheBienModal,
@@ -91,6 +93,43 @@
 		const last3 = sorted.slice(0, 3);
 		return { total, payes, totalPaye, totalDu, solde, last3 };
 	});
+
+	// ── Édition locataire ─────────────────────────
+	let editingLocataireId = $state<string | number | null>(null);
+	let editLocNom = $state('');
+	let editLocEmail = $state('');
+	let editLocTelephone = $state('');
+	let savingLocataire = $state(false);
+
+	function startEditLocataire(loc: any) {
+		editingLocataireId = loc.id;
+		editLocNom = loc.nom || '';
+		editLocEmail = loc.email || '';
+		editLocTelephone = loc.telephone || '';
+	}
+
+	function cancelEditLocataire() {
+		editingLocataireId = null;
+	}
+
+	async function saveLocataire() {
+		if (!editingLocataireId) return;
+		savingLocataire = true;
+		try {
+			await updateLocataire(editingLocataireId, {
+				nom: editLocNom,
+				email: editLocEmail || undefined,
+				telephone: editLocTelephone || undefined,
+			});
+			addToast({ title: 'Locataire mis à jour', variant: 'success' });
+			editingLocataireId = null;
+			onRefresh();
+		} catch {
+			addToast({ title: 'Erreur lors de la mise à jour', variant: 'error' });
+		} finally {
+			savingLocataire = false;
+		}
+	}
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
@@ -163,62 +202,88 @@
 					<div class="mt-3 space-y-3">
 						{#each bail.locataires as loc (loc.id)}
 							<div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
-								<div class="flex items-start justify-between gap-3">
-									<div class="min-w-0 flex-1">
-										<div class="flex items-center gap-2.5">
-											<p class="text-base font-semibold text-slate-900 dark:text-slate-100">
-												{loc.prenom ? `${loc.prenom} ${loc.nom}` : loc.nom}
-											</p>
-											<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-												<CheckCircle class="h-3 w-3" />
-												Locataire actif
-											</span>
+								{#if editingLocataireId === loc.id}
+									<!-- Formulaire édition inline -->
+									<div class="space-y-3">
+										<div class="flex items-center justify-between">
+											<p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Modifier le locataire</p>
+											<button onclick={cancelEditLocataire} class="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+												<X class="h-4 w-4" />
+											</button>
 										</div>
-										<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-											{#if loc.email}
-												<a
-													href="mailto:{loc.email}"
-													class="inline-flex items-center gap-1.5 text-sm text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+										<div class="grid gap-3 sm:grid-cols-3">
+											<label class="block">
+												<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Nom</span>
+												<input type="text" bind:value={editLocNom} class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800" />
+											</label>
+											<label class="block">
+												<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Email</span>
+												<input type="email" bind:value={editLocEmail} class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800" />
+											</label>
+											<label class="block">
+												<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Téléphone</span>
+												<input type="tel" bind:value={editLocTelephone} class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800" />
+											</label>
+										</div>
+										<div class="flex justify-end gap-2">
+											<button onclick={cancelEditLocataire} class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Annuler</button>
+											<button onclick={saveLocataire} disabled={savingLocataire || !editLocNom.trim()} class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50">
+												<Save class="h-3.5 w-3.5" />
+												{savingLocataire ? 'Enregistrement...' : 'Enregistrer'}
+											</button>
+										</div>
+									</div>
+								{:else}
+									<!-- Carte locataire lecture -->
+									<div class="flex items-start justify-between gap-3">
+										<div class="min-w-0 flex-1">
+											<div class="flex items-center gap-2.5">
+												<p class="text-base font-semibold text-slate-900 dark:text-slate-100">
+													{loc.prenom ? `${loc.prenom} ${loc.nom}` : loc.nom}
+												</p>
+												<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+													<CheckCircle class="h-3 w-3" />
+													Locataire actif
+												</span>
+											</div>
+											<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+												{#if loc.email}
+													<a href="mailto:{loc.email}" class="inline-flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 dark:text-sky-400">
+														<Mail class="h-3.5 w-3.5" />
+														{loc.email}
+													</a>
+												{/if}
+												{#if loc.telephone}
+													<a href="tel:{loc.telephone}" class="inline-flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 dark:text-sky-400">
+														<Phone class="h-3.5 w-3.5" />
+														{loc.telephone}
+													</a>
+												{/if}
+											</div>
+										</div>
+										<div class="flex shrink-0 items-center gap-1.5">
+											{#if isGerant}
+												<button
+													onclick={() => startEditLocataire(loc)}
+													class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-700 dark:hover:text-sky-400"
+													title="Modifier le locataire"
 												>
-													<Mail class="h-3.5 w-3.5" />
-													{loc.email}
+													<Pencil class="h-4 w-4" />
+												</button>
+											{/if}
+											{#if loc.email}
+												<a href="mailto:{loc.email}" class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-700 dark:hover:text-sky-400" title="Email">
+													<Mail class="h-4 w-4" />
 												</a>
 											{/if}
 											{#if loc.telephone}
-												<a
-													href="tel:{loc.telephone}"
-													class="inline-flex items-center gap-1.5 text-sm text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
-												>
-													<Phone class="h-3.5 w-3.5" />
-													{loc.telephone}
+												<a href="tel:{loc.telephone}" class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-700 dark:hover:text-sky-400" title="Appeler">
+													<Phone class="h-4 w-4" />
 												</a>
 											{/if}
 										</div>
 									</div>
-									<!-- Contact rapide -->
-									<div class="flex shrink-0 items-center gap-1.5">
-										{#if loc.email}
-											<a
-												href="mailto:{loc.email}"
-												class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-700 dark:hover:text-sky-400"
-												title="Envoyer un email"
-												aria-label="Envoyer un email à {loc.prenom ? `${loc.prenom} ${loc.nom}` : loc.nom}"
-											>
-												<Mail class="h-4 w-4" />
-											</a>
-										{/if}
-										{#if loc.telephone}
-											<a
-												href="tel:{loc.telephone}"
-												class="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-700 dark:hover:text-sky-400"
-												title="Appeler"
-												aria-label="Appeler {loc.prenom ? `${loc.prenom} ${loc.nom}` : loc.nom}"
-											>
-												<Phone class="h-4 w-4" />
-											</a>
-										{/if}
-									</div>
-								</div>
+								{/if}
 							</div>
 						{/each}
 					</div>

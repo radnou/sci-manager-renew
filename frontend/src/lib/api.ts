@@ -195,6 +195,7 @@ export type LocataireCreatePayload = {
 export type LocataireUpdatePayload = {
 	nom?: string;
 	email?: string | null;
+	telephone?: string | null;
 	date_debut?: string;
 	date_fin?: string | null;
 };
