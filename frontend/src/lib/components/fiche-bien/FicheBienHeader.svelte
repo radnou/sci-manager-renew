@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { FicheBien, ObligationsData, ObligationStatus } from '$lib/api';
 	import { fetchObligations } from '$lib/api';
-	import { FileText, Pencil, Loader2, ChevronDown, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-svelte';
+	import { FileText, Pencil, Loader2, ChevronDown, ShieldCheck, ShieldAlert, ShieldQuestion, Download } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	interface Props {
@@ -13,6 +13,37 @@
 	}
 
 	let { bien, sciNom, isGerant, onGenerateQuittance, generatingQuittance = false }: Props = $props();
+
+	function exportBienCsv() {
+		const b = bien;
+		const bail = b.bail_actif;
+		const loc = bail?.locataires?.[0];
+		const rows = [
+			['Champ', 'Valeur'],
+			['Adresse', b.adresse], ['Ville', b.ville], ['Code postal', b.code_postal],
+			['Type de bien', b.type_bien || ''], ['Type de location', b.type_locatif || ''],
+			['Surface (m²)', String(b.surface_m2 || '')], ['Pièces', String(b.nb_pieces || '')],
+			['DPE', b.dpe_classe || ''], ['Prix acquisition', String(b.prix_acquisition || '')],
+			['Loyer CC', String(b.loyer_cc || '')], ['Charges', String(b.charges || '')],
+			['---', '--- Bail ---'],
+			['Bail début', bail?.date_debut || ''], ['Bail fin', bail?.date_fin || 'Indéterminée'],
+			['Loyer HC', String(bail?.loyer_hc || '')], ['Charges locatives', String(bail?.charges_locatives || '')],
+			['Dépôt garantie', String(bail?.depot_garantie || '')], ['Statut', bail?.statut || 'Aucun'],
+			['---', '--- Locataire ---'],
+			['Locataire', loc?.nom || 'Aucun'], ['Email', loc?.email || ''], ['Téléphone', loc?.telephone || ''],
+			['---', '--- Rentabilité ---'],
+			['Rentabilité brute', b.rentabilite?.brute?.toFixed(1) + '%' || ''],
+			['Rentabilité nette', b.rentabilite?.nette?.toFixed(1) + '%' || ''],
+			['Cashflow mensuel', String(b.rentabilite?.cashflow_mensuel || 0)],
+			['Cashflow annuel', String(b.rentabilite?.cashflow_annuel || 0)],
+		];
+		const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+		const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = `fiche-bien-${b.adresse.replace(/[^a-zA-Z0-9]/g, '-')}.csv`;
+		a.click();
+	}
 
 	let sciId = $derived(page.params.sciId!);
 
@@ -41,14 +72,33 @@
 	let obligationsLoading = $state(true);
 	let showObligationsPopover = $state(false);
 
+	type ObligationItem = { status: string; label: string; detail: string };
+
 	$effect(() => {
 		loadObligations();
 	});
 
+	function toItem(raw: any, label: string): ObligationItem {
+		if (!raw) return { status: 'unknown', label, detail: 'Non disponible' };
+		return {
+			status: raw.valid ? 'ok' : 'danger',
+			label,
+			detail: raw.detail || '',
+		};
+	}
+
 	async function loadObligations() {
 		obligationsLoading = true;
 		try {
-			obligations = await fetchObligations(sciId, String(bien.id));
+			const raw = await fetchObligations(sciId, String(bien.id));
+			// Transform API response {valid, detail} → {status, label, detail}
+			obligations = {
+				pno: toItem(raw.pno, 'PNO'),
+				dpe: toItem(raw.dpe, 'DPE'),
+				bail: toItem(raw.bail, 'Bail'),
+				locataire: toItem(raw.locataire, 'Locataire'),
+				depot_garantie: toItem(raw.depot_garantie, 'Dépôt'),
+			} as any;
 		} catch {
 			obligations = null;
 		} finally {
@@ -56,25 +106,18 @@
 		}
 	}
 
-	const statusIcon: Record<ObligationStatus, string> = {
-		ok: 'text-emerald-500',
-		warning: 'text-amber-500',
-		danger: 'text-rose-500',
-		unknown: 'text-slate-400'
-	};
-
-	const statusBadge: Record<ObligationStatus, string> = {
+	const statusBadge: Record<string, string> = {
 		ok: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
 		warning: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
 		danger: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
 		unknown: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
 	};
 
-	function statusEmoji(status: ObligationStatus): string {
-		if (status === 'ok') return '\u2705';
-		if (status === 'warning') return '\u26A0\uFE0F';
-		if (status === 'danger') return '\u274C';
-		return '\u2753';
+	function statusEmoji(status: string): string {
+		if (status === 'ok') return '✅';
+		if (status === 'warning') return '⚠️';
+		if (status === 'danger') return '❌';
+		return '❓';
 	}
 
 	function togglePopover() {
@@ -83,7 +126,7 @@
 
 	const obligationsList = $derived(
 		obligations
-			? [obligations.pno, obligations.dpe, obligations.bail, obligations.locataire, obligations.depot_garantie]
+			? [obligations.pno, obligations.dpe, obligations.bail, obligations.locataire, obligations.depot_garantie].filter(Boolean)
 			: []
 	);
 </script>
@@ -100,6 +143,13 @@
 		</div>
 		{#if isGerant}
 			<div class="flex gap-2">
+				<button
+					onclick={exportBienCsv}
+					class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+				>
+					<Download class="h-4 w-4" />
+					Exporter
+				</button>
 				<a
 					href="#section-identite"
 					class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
