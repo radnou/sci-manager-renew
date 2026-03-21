@@ -80,17 +80,17 @@
   onsubmit={handleSubmit}
 >
   <div>
-    <label for="associe-nom" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Nom</label>
+    <label for="associe-nom" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Nom</label>
     <input id="associe-nom" type="text" bind:value={nom} required placeholder="Nom complet"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="associe-email" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Email</label>
+    <label for="associe-email" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Email</label>
     <input id="associe-email" type="email" bind:value={email} placeholder="optionnel@email.com"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <span id="associe-role-label" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Rôle</span>
+    <span id="associe-role-label" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Rôle</span>
     <div class="flex gap-2" role="group" aria-labelledby="associe-role-label">
       {#each (['associe', 'gerant'] as const) as r}
         <button type="button"
@@ -102,7 +102,7 @@
     </div>
   </div>
   <div>
-    <label for="associe-part" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Part (%)</label>
+    <label for="associe-part" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Part (%)</label>
     <input id="associe-part" type="number" bind:value={part} min="0" max="100" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>

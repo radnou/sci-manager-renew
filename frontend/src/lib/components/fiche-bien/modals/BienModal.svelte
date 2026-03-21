@@ -52,22 +52,22 @@
 
 <CrudModal bind:open title="Ajouter un bien" size="wide" submitLabel="Ajouter le bien" {loading} onsubmit={handleSubmit}>
   <div class="col-span-2">
-    <label for="bien-adresse" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Adresse</label>
+    <label for="bien-adresse" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Adresse</label>
     <input id="bien-adresse" type="text" bind:value={adresse} required placeholder="15 rue de la Paix"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bien-ville" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Ville</label>
+    <label for="bien-ville" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Ville</label>
     <input id="bien-ville" type="text" bind:value={ville} placeholder="Paris"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bien-code-postal" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Code postal</label>
+    <label for="bien-code-postal" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Code postal</label>
     <input id="bien-code-postal" type="text" bind:value={code_postal} placeholder="75001" maxlength="5"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bien-type-bien" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type de bien</label>
+    <label for="bien-type-bien" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Type de bien</label>
     <select id="bien-type-bien" bind:value={type_bien}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
       <option value="">--</option>
@@ -80,7 +80,7 @@
     </select>
   </div>
   <div>
-    <label for="bien-type-locatif" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type de location</label>
+    <label for="bien-type-locatif" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Type de location</label>
     <select id="bien-type-locatif" bind:value={type_locatif}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
       <option value="nu">Nu</option>
@@ -89,12 +89,12 @@
     </select>
   </div>
   <div>
-    <label for="bien-loyer-cc" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Loyer CC (&#8364;)</label>
+    <label for="bien-loyer-cc" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Loyer CC (&#8364;)</label>
     <input id="bien-loyer-cc" type="number" bind:value={loyer_cc} min="0" step="0.01"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bien-prix-acquisition" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Prix acquisition (&#8364;)</label>
+    <label for="bien-prix-acquisition" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Prix acquisition (&#8364;)</label>
     <input id="bien-prix-acquisition" type="number" bind:value={prix_acquisition} min="0" step="1"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>

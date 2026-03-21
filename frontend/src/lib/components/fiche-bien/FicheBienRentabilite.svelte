@@ -87,7 +87,7 @@
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 		<!-- Rentabilité brute -->
 		<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
+			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 				Rentabilité brute
 			</p>
 			<p class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -97,7 +97,7 @@
 
 		<!-- Rentabilité nette -->
 		<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
-			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
+			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 				Rentabilité nette
 			</p>
 			<p class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -107,7 +107,7 @@
 
 		<!-- Cashflow mensuel -->
 		<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_mensuel)}">
-			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
+			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 				Cashflow mensuel
 			</p>
 			<div class="mt-1 flex items-center gap-1.5">
@@ -124,7 +124,7 @@
 
 		<!-- Cashflow annuel -->
 		<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_annuel)}">
-			<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">
+			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 				Cashflow annuel
 			</p>
 			<div class="mt-1 flex items-center gap-1.5">
@@ -154,7 +154,7 @@
 			<div class="overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead>
-						<tr class="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:text-slate-400">
+						<tr class="border-b border-slate-200 text-left text-xs font-medium text-slate-500 dark:border-slate-700 dark:text-slate-400">
 							<th class="py-2.5 pr-4">Année</th>
 							<th class="py-2.5 pr-4 text-right">Revenus</th>
 							<th class="py-2.5 pr-4 text-right">Charges</th>

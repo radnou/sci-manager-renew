@@ -44,7 +44,7 @@
 
 <CrudModal bind:open title="Ajouter une charge" submitLabel="Ajouter" {loading} onsubmit={handleSubmit}>
   <div>
-    <label for="charge-type" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Type de charge</label>
+    <label for="charge-type" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Type de charge</label>
     <select id="charge-type" bind:value={type_charge} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
       {#each CHARGE_TYPE_OPTIONS as ct}
@@ -53,12 +53,12 @@
     </select>
   </div>
   <div>
-    <label for="charge-montant" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (&euro;)</label>
+    <label for="charge-montant" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Montant (&euro;)</label>
     <input id="charge-montant" type="number" bind:value={montant} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="charge-date" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date</label>
+    <label for="charge-date" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Date</label>
     <input id="charge-date" type="date" lang="fr" bind:value={date_paiement} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>

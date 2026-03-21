@@ -51,17 +51,17 @@
 
 <CrudModal bind:open title="Enregistrer un loyer" submitLabel="Enregistrer" {loading} onsubmit={handleSubmit}>
   <div>
-    <label for="loyer-periode" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Période</label>
+    <label for="loyer-periode" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Période</label>
     <input id="loyer-periode" type="month" lang="fr" bind:value={periode} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="loyer-montant" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Montant (€)</label>
+    <label for="loyer-montant" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Montant (€)</label>
     <input id="loyer-montant" type="number" bind:value={montant} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <span id="loyer-statut-label" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Statut</span>
+    <span id="loyer-statut-label" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Statut</span>
     <div class="flex gap-2" role="group" aria-labelledby="loyer-statut-label">
       {#each (['en_attente', 'paye', 'en_retard'] as const) as s}
         <button type="button"

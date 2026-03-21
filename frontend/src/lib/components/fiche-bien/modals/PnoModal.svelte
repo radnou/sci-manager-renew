@@ -57,27 +57,27 @@
 
 <CrudModal bind:open title={isEdit ? 'Modifier assurance PNO' : 'Ajouter assurance PNO'} submitLabel={isEdit ? 'Mettre \u00e0 jour' : 'Ajouter'} {loading} onsubmit={handleSubmit}>
   <div>
-    <label for="pno-assureur" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Assureur</label>
+    <label for="pno-assureur" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Assureur</label>
     <input id="pno-assureur" type="text" bind:value={assureur} required placeholder="Nom de l'assureur"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="pno-contrat" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">N&deg; contrat</label>
+    <label for="pno-contrat" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">N&deg; contrat</label>
     <input id="pno-contrat" type="text" bind:value={numero_contrat} placeholder="Optionnel"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="pno-prime" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Prime annuelle (&euro;)</label>
+    <label for="pno-prime" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Prime annuelle (&euro;)</label>
     <input id="pno-prime" type="number" bind:value={prime_annuelle} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="pno-date-debut" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date de d&eacute;but</label>
+    <label for="pno-date-debut" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Date de d&eacute;but</label>
     <input id="pno-date-debut" type="date" lang="fr" bind:value={date_debut} required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="pno-date-fin" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date d'&eacute;ch&eacute;ance</label>
+    <label for="pno-date-fin" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Date d'&eacute;ch&eacute;ance</label>
     <input id="pno-date-fin" type="date" lang="fr" bind:value={date_fin}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>

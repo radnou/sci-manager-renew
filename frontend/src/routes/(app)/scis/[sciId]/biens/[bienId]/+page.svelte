@@ -10,10 +10,12 @@
 	import FicheBienBail from '$lib/components/fiche-bien/FicheBienBail.svelte';
 	import FicheBienLoyers from '$lib/components/fiche-bien/FicheBienLoyers.svelte';
 	import FicheBienCharges from '$lib/components/fiche-bien/FicheBienCharges.svelte';
+	import FicheBienPno from '$lib/components/fiche-bien/FicheBienPno.svelte';
+	import FicheBienAgence from '$lib/components/fiche-bien/FicheBienAgence.svelte';
 	import FicheBienRentabilite from '$lib/components/fiche-bien/FicheBienRentabilite.svelte';
 	import FicheBienDocuments from '$lib/components/fiche-bien/FicheBienDocuments.svelte';
 	import FicheBienEvenements from '$lib/components/fiche-bien/FicheBienEvenements.svelte';
-	import { Home, FileSignature, Receipt, Wallet, TrendingUp, FolderOpen, CalendarClock } from 'lucide-svelte';
+	import { Home, FileSignature, Receipt, Wallet, Shield, Building2, TrendingUp, FolderOpen, CalendarClock } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -39,6 +41,8 @@
 		{ id: 'bail', label: 'Bail', icon: FileSignature },
 		{ id: 'loyers', label: 'Loyers', icon: Receipt },
 		{ id: 'charges', label: 'Charges', icon: Wallet },
+		{ id: 'pno', label: 'Assurance PNO', icon: Shield },
+		{ id: 'agence', label: 'Agence', icon: Building2 },
 		{ id: 'rentabilite', label: 'Rentabilité', icon: TrendingUp },
 		{ id: 'documents', label: 'Documents', icon: FolderOpen },
 		{ id: 'evenements', label: 'Événements', icon: CalendarClock }
@@ -214,7 +218,25 @@
 			<div id="section-charges" role="tabpanel" aria-label="Charges">
 				<FicheBienCharges
 					charges={bien.charges_list}
+					{isGerant}
+					sciId={sciId}
+					bienId={String(bien.id)}
+					onRefresh={loadFicheBien}
+				/>
+			</div>
+			{:else if activeSection === 'pno'}
+			<div id="section-pno" role="tabpanel" aria-label="Assurance PNO">
+				<FicheBienPno
 					assurancePno={bien.assurance_pno}
+					{isGerant}
+					sciId={sciId}
+					bienId={String(bien.id)}
+					onRefresh={loadFicheBien}
+				/>
+			</div>
+			{:else if activeSection === 'agence'}
+			<div id="section-agence" role="tabpanel" aria-label="Agence">
+				<FicheBienAgence
 					fraisAgence={bien.frais_agence}
 					{isGerant}
 					sciId={sciId}

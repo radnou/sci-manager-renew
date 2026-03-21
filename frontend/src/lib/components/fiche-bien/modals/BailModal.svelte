@@ -62,32 +62,32 @@
 
 <CrudModal bind:open title={isEdit ? 'Modifier le bail' : 'Créer un bail'} size="wide" submitLabel={isEdit ? 'Mettre à jour' : 'Créer le bail'} {loading} onsubmit={handleSubmit}>
   <div>
-    <label for="bail-date-debut" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date de début</label>
+    <label for="bail-date-debut" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Date de début</label>
     <input id="bail-date-debut" type="date" lang="fr" bind:value={date_debut} required disabled={isEdit}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 disabled:opacity-50" />
   </div>
   <div>
-    <label for="bail-date-fin" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Date de fin</label>
+    <label for="bail-date-fin" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Date de fin</label>
     <input id="bail-date-fin" type="date" lang="fr" bind:value={date_fin}
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bail-loyer-hc" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Loyer HC (€)</label>
+    <label for="bail-loyer-hc" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Loyer HC (€)</label>
     <input id="bail-loyer-hc" type="number" bind:value={loyer_hc} min="0" step="0.01" required
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bail-charges" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Charges locatives (€)</label>
+    <label for="bail-charges" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Charges locatives (€)</label>
     <input id="bail-charges" type="number" bind:value={charges_locatives} min="0" step="0.01"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bail-depot" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Dépôt garantie (€)</label>
+    <label for="bail-depot" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Dépôt garantie (€)</label>
     <input id="bail-depot" type="number" bind:value={depot_garantie} min="0" step="0.01"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>
   <div>
-    <label for="bail-revision" class="mb-1 block text-xs font-medium text-slate-500 uppercase dark:text-slate-400">Indice de révision</label>
+    <label for="bail-revision" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Indice de révision</label>
     <input id="bail-revision" type="text" bind:value={revision_indice} placeholder="IRL, ICC..."
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
   </div>

@@ -156,7 +156,7 @@
 		>
 			<!-- Adresse -->
 			<div class="sm:col-span-2 lg:col-span-3">
-				<label for="edit-adresse" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-adresse" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Adresse
 				</label>
 				<input
@@ -169,7 +169,7 @@
 
 			<!-- Ville -->
 			<div>
-				<label for="edit-ville" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-ville" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Ville
 				</label>
 				<input
@@ -182,7 +182,7 @@
 
 			<!-- Code postal -->
 			<div>
-				<label for="edit-cp" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-cp" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Code postal
 				</label>
 				<input
@@ -196,7 +196,7 @@
 
 			<!-- Type de bien -->
 			<div>
-				<label for="edit-type-bien" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-type-bien" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Type de bien
 				</label>
 				<select
@@ -213,7 +213,7 @@
 
 			<!-- Type de location -->
 			<div>
-				<label for="edit-type" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-type" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Type de location
 				</label>
 				<select
@@ -229,7 +229,7 @@
 
 			<!-- Surface -->
 			<div>
-				<label for="edit-surface" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-surface" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Surface (m²)
 				</label>
 				<input
@@ -244,7 +244,7 @@
 
 			<!-- Nombre de pièces -->
 			<div>
-				<label for="edit-pieces" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-pieces" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Nombre de pièces
 				</label>
 				<input
@@ -259,7 +259,7 @@
 
 			<!-- DPE -->
 			<div>
-				<label for="edit-dpe" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-dpe" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Classe DPE
 				</label>
 				<select
@@ -275,7 +275,7 @@
 
 			<!-- Prix d'acquisition -->
 			<div>
-				<label for="edit-prix" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-prix" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Prix d'acquisition (€)
 				</label>
 				<input
@@ -290,7 +290,7 @@
 
 			<!-- Loyer CC -->
 			<div>
-				<label for="edit-loyer" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-loyer" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Loyer CC (€/mois)
 				</label>
 				<input
@@ -305,7 +305,7 @@
 
 			<!-- Charges -->
 			<div>
-				<label for="edit-charges" class="block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<label for="edit-charges" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
 					Charges (€/mois)
 				</label>
 				<input
@@ -322,7 +322,7 @@
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each readonlyFields as field}
 				<div>
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 						{field.label}
 					</p>
 					<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -342,25 +342,25 @@
 			<h3 class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Rentabilité</h3>
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Brute</p>
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Brute</p>
 					<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
 						{bien.rentabilite.brute.toFixed(1)}%
 					</p>
 				</div>
 				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Nette</p>
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Nette</p>
 					<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
 						{bien.rentabilite.nette.toFixed(1)}%
 					</p>
 				</div>
 				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Cashflow mensuel</p>
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Cashflow mensuel</p>
 					<p class="mt-1 text-lg font-bold {bien.rentabilite.cashflow_mensuel >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
 						{formatEur(bien.rentabilite.cashflow_mensuel)}
 					</p>
 				</div>
 				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Cashflow annuel</p>
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Cashflow annuel</p>
 					<p class="mt-1 text-lg font-bold {bien.rentabilite.cashflow_annuel >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
 						{formatEur(bien.rentabilite.cashflow_annuel)}
 					</p>

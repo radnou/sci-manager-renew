@@ -241,7 +241,7 @@
 
 			<div class="grid gap-4 md:grid-cols-3">
 				<label class="block">
-					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">P&eacute;riode</span>
+					<span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">P&eacute;riode</span>
 					<input
 						id="loyer-periode-inline"
 						type="month"
@@ -252,7 +252,7 @@
 					/>
 				</label>
 				<label class="block">
-					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant (&euro;)</span>
+					<span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Montant (&euro;)</span>
 					<input
 						id="loyer-montant-inline"
 						type="number"
@@ -264,7 +264,7 @@
 					/>
 				</label>
 				<div>
-					<span class="mb-1 block text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Statut</span>
+					<span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Statut</span>
 					<div class="flex flex-wrap gap-2" role="group" aria-label="Statut du loyer">
 						{#each (['en_attente', 'paye', 'en_retard'] as const) as s}
 							<button
@@ -348,20 +348,20 @@
 			<table class="w-full text-left text-sm">
 				<thead>
 					<tr class="border-b border-slate-200 dark:border-slate-700">
-						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-medium text-slate-500 dark:text-slate-400">
 							Mois
 						</th>
-						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-medium text-slate-500 dark:text-slate-400">
 							Montant
 						</th>
-						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-medium text-slate-500 dark:text-slate-400">
 							Statut
 						</th>
-						<th class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+						<th class="pb-3 pr-4 text-xs font-medium text-slate-500 dark:text-slate-400">
 							Date paiement
 						</th>
 						{#if isGerant}
-							<th class="pb-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+							<th class="pb-3 text-xs font-medium text-slate-500 dark:text-slate-400">
 								Actions
 							</th>
 						{/if}

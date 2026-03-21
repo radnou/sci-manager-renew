@@ -151,7 +151,7 @@
 
 			<!-- Locataires Cards -->
 			<div>
-				<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+				<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 					{bail.locataires.length > 1 ? 'Locataires (colocation)' : 'Locataire'}
 				</p>
 				{#if bail.locataires.length === 0}
@@ -229,7 +229,7 @@
 			{#if loyerSummary()}
 				{@const summary = loyerSummary()!}
 				<div>
-					<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 						Historique des loyers
 					</p>
 					<div class="mt-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
@@ -283,7 +283,7 @@
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
 					<p
-						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+						class="text-xs font-medium text-slate-500 dark:text-slate-400"
 					>
 						Date de début
 					</p>
@@ -294,7 +294,7 @@
 				</div>
 				<div>
 					<p
-						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+						class="text-xs font-medium text-slate-500 dark:text-slate-400"
 					>
 						Date de fin
 					</p>
@@ -309,7 +309,7 @@
 			<div class="grid gap-4 sm:grid-cols-3">
 				<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
 					<p
-						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+						class="text-xs font-medium text-slate-500 dark:text-slate-400"
 					>
 						Loyer HC
 					</p>
@@ -319,7 +319,7 @@
 				</div>
 				<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
 					<p
-						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+						class="text-xs font-medium text-slate-500 dark:text-slate-400"
 					>
 						Charges locatives
 					</p>
@@ -329,7 +329,7 @@
 				</div>
 				<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
 					<p
-						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+						class="text-xs font-medium text-slate-500 dark:text-slate-400"
 					>
 						Dépôt de garantie
 					</p>
@@ -343,7 +343,7 @@
 			{#if bail.revision_indice}
 				<div>
 					<p
-						class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+						class="text-xs font-medium text-slate-500 dark:text-slate-400"
 					>
 						Indice de révision
 					</p>
