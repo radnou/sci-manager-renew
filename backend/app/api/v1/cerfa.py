@@ -13,10 +13,10 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.config import settings
-from app.core.exceptions import FeatureDisabledError, ValidationError
+from app.core.exceptions import FeatureDisabledError, ResourceNotFoundError, ValidationError
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_user_client
-from app.services.resume_fiscal_pdf_service import ResumeFiscalPdfService
+from app.services.resume_fiscal_pdf_service import ResumeFiscalPdfService, Report2042PdfService
 from app.services.resume_fiscal_service import ResumeFiscalService
 from app.services.subscription_service import SubscriptionService
 
@@ -50,6 +50,44 @@ def _ensure_cerfa_2044_allowed(payload: Cerfa2044Request) -> None:
         raise ValidationError(
             "Le résumé fiscal foncier ne s'applique pas aux SCI à l'IS. Utilisez la liasse fiscale 2065."
         )
+
+
+def _ensure_sci_access(client, sci_id: str, user_id: str) -> None:
+    """Verify user has access to the SCI via associes membership."""
+    assoc_rows = (
+        client.table("associes")
+        .select("id")
+        .eq("id_sci", sci_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not (assoc_rows.data or []):
+        from app.core.exceptions import AuthorizationError
+        raise AuthorizationError("SCI", sci_id)
+
+
+def _ensure_feature_enabled(user_id: str) -> None:
+    """Verify CERFA feature is enabled for the user."""
+    SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
+    if not settings.feature_cerfa_generation:
+        raise FeatureDisabledError(
+            "La génération du résumé fiscal est désactivée.",
+            flag_name="feature_cerfa_generation",
+        )
+
+
+def _calculate_and_validate(sci_id: str, annee: int, client):
+    """Calculate fiscal summary and validate regime."""
+    service = ResumeFiscalService()
+    result = service.calculate(sci_id, annee, client)
+
+    if result.regime_fiscal and result.regime_fiscal.upper() == "IS":
+        raise ValidationError(
+            "Le résumé fiscal foncier ne s'applique pas aux SCI à l'IS. "
+            "Utilisez la liasse fiscale 2065."
+        )
+
+    return result
 
 
 @router.post("/2044")
@@ -228,35 +266,11 @@ async def get_resume_fiscal_json(
     user_id: str = Depends(get_current_user),
 ):
     """Résumé fiscal JSON — micro-foncier, déficit foncier, régime recommandé."""
-    SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
-
-    if not settings.feature_cerfa_generation:
-        raise FeatureDisabledError(
-            "La génération du résumé fiscal est désactivée.",
-            flag_name="feature_cerfa_generation",
-        )
-
+    _ensure_feature_enabled(user_id)
     client = get_supabase_user_client(request)
+    _ensure_sci_access(client, sci_id, user_id)
 
-    assoc_rows = (
-        client.table("associes")
-        .select("id")
-        .eq("id_sci", sci_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
-    if not (assoc_rows.data or []):
-        from app.core.exceptions import AuthorizationError
-        raise AuthorizationError("SCI", sci_id)
-
-    service = ResumeFiscalService()
-    result = service.calculate(sci_id, annee, client)
-
-    if result.regime_fiscal and result.regime_fiscal.upper() == "IS":
-        raise ValidationError(
-            "Le résumé fiscal foncier ne s'applique pas aux SCI à l'IS. "
-            "Utilisez la liasse fiscale 2065."
-        )
+    result = _calculate_and_validate(sci_id, annee, client)
 
     from dataclasses import asdict
     return asdict(result)
@@ -271,48 +285,70 @@ async def generate_resume_fiscal_pdf(
 ):
     """Résumé fiscal détaillé par bien avec correspondance lignes CERFA 2044.
 
-    Generates a multi-page PDF:
-    - Page 1: Synthèse (SCI info, totals, quote-parts associés)
-    - Page 2+: Détail par bien (lignes CERFA 211-240)
-    - Alertes + mentions légales
+    Generates a 5-page PDF:
+    - Page 1: Identification (SCI info, fiscal year)
+    - Page 2: Cadre 1 — Revenus (per bien + total)
+    - Page 3: Cadre 2 — Charges déductibles (per bien + total)
+    - Page 4: Cadre 3 — Résultat + Déficit + Micro-foncier
+    - Page 5: Cadre 4 — Répartition par associé + Cases 2042
     """
-    SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
-
-    if not settings.feature_cerfa_generation:
-        raise FeatureDisabledError(
-            "La génération du résumé fiscal est désactivée.",
-            flag_name="feature_cerfa_generation",
-        )
-
+    _ensure_feature_enabled(user_id)
     client = get_supabase_user_client(request)
+    _ensure_sci_access(client, sci_id, user_id)
 
-    # Verify SCI access
-    assoc_rows = (
-        client.table("associes")
-        .select("id")
-        .eq("id_sci", sci_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
-    if not (assoc_rows.data or []):
-        from app.core.exceptions import AuthorizationError
-        raise AuthorizationError("SCI", sci_id)
-
-    # Calculate fiscal summary
-    service = ResumeFiscalService()
-    result = service.calculate(sci_id, annee, client)
-
-    if result.regime_fiscal and result.regime_fiscal.upper() == "IS":
-        raise ValidationError(
-            "Le résumé fiscal foncier ne s'applique pas aux SCI à l'IS. "
-            "Utilisez la liasse fiscale 2065."
-        )
+    result = _calculate_and_validate(sci_id, annee, client)
 
     # Generate PDF
     pdf_service = ResumeFiscalPdfService()
     pdf_bytes = pdf_service.generate(result)
 
     filename = f"resume_fiscal_{annee}_{result.sci_nom or 'sci'}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/scis/{sci_id}/report-2042/{annee}/{associe_id}/pdf")
+async def generate_report_2042_pdf(
+    sci_id: str,
+    annee: int,
+    associe_id: str,
+    request: Request,
+    user_id: str = Depends(get_current_user),
+):
+    """Report individuel 2042 pour un associé spécifique.
+
+    Generates a 1-page PDF showing:
+    - Associé name, email, parts %
+    - SCI name, SIREN
+    - Quote-part résultat
+    - Cases 2042 (4BA, 4BB, 4BC, 4BD)
+    - Instructions de report
+    """
+    _ensure_feature_enabled(user_id)
+    client = get_supabase_user_client(request)
+    _ensure_sci_access(client, sci_id, user_id)
+
+    result = _calculate_and_validate(sci_id, annee, client)
+
+    # Find the specific associé in the result
+    target_associe = None
+    for a in result.associes:
+        if a.associe_id == associe_id:
+            target_associe = a
+            break
+
+    if not target_associe:
+        raise ResourceNotFoundError("Associé", associe_id)
+
+    # Generate PDF
+    pdf_service = Report2042PdfService()
+    pdf_bytes = pdf_service.generate(result, target_associe)
+
+    safe_nom = target_associe.nom.replace(" ", "_")
+    filename = f"report_2042_{annee}_{safe_nom}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",

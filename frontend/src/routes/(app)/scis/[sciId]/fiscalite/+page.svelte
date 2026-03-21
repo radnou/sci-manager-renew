@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail, Fiscalite, ResumeFiscalData } from '$lib/api';
-	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, fetchResumeFiscal, createFiscalite, deleteFiscalite } from '$lib/api';
+	import type { SCIDetail, Fiscalite, ResumeFiscalData, AssocieQuotePart } from '$lib/api';
+	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, downloadReport2042Pdf, fetchResumeFiscal, createFiscalite, deleteFiscalite } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale } from 'lucide-svelte';
+	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale, User } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 
@@ -18,6 +18,7 @@
 	let resumeError = $state('');
 	let resumeFiscalData: Map<number, ResumeFiscalData> = $state(new Map());
 	let loadingResumeFiscal: number | null = $state(null);
+	let downloadingReport2042: string | null = $state(null);
 	let showCreateForm = $state(false);
 	let creating = $state(false);
 	let deletingId: string | null = $state(null);
@@ -78,6 +79,25 @@
 			// Silently fail — the summary card just won't show
 		} finally {
 			loadingResumeFiscal = null;
+		}
+	}
+
+	async function handleDownloadReport2042(annee: number, associe: AssocieQuotePart) {
+		downloadingReport2042 = associe.associe_id;
+		try {
+			const blob = await downloadReport2042Pdf(sci.id, annee, associe.associe_id);
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `report_2042_${annee}_${associe.nom.replace(/ /g, '_')}.pdf`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de générer le report 2042.', variant: 'error' });
+		} finally {
+			downloadingReport2042 = null;
 		}
 	}
 
@@ -425,6 +445,48 @@
 					</div>
 				{/if}
 			</div>
+
+			<!-- Associé quote-parts with report 2042 buttons -->
+			{#if rf.associes && rf.associes.length > 0}
+				<div class="mt-4">
+					<div class="flex items-center gap-1.5 mb-3">
+						<User class="h-4 w-4 text-sky-600 dark:text-sky-400" />
+						<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+							Quote-parts des associés — Cases 2042
+						</p>
+					</div>
+					<div class="space-y-2">
+						{#each rf.associes as associe (associe.associe_id)}
+							<div class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+								<div class="flex-1 min-w-0">
+									<span class="font-medium text-slate-900 dark:text-slate-100">{associe.nom}</span>
+									<span class="ml-2 text-sm text-slate-500">{associe.part_pct.toFixed(1)} %</span>
+									<span class="ml-2 text-sm font-semibold {resultatColor(associe.quote_part_resultat)}">
+										{formatEur(associe.quote_part_resultat)}
+									</span>
+									{#if associe.case_4ba > 0}
+										<span class="ml-2 text-xs text-emerald-600 dark:text-emerald-400">4BA: {formatEur(associe.case_4ba)}</span>
+									{/if}
+									{#if associe.case_4bb > 0}
+										<span class="ml-2 text-xs text-rose-600 dark:text-rose-400">4BB: {formatEur(associe.case_4bb)}</span>
+									{/if}
+									{#if associe.case_4bc > 0}
+										<span class="ml-2 text-xs text-rose-600 dark:text-rose-400">4BC: {formatEur(associe.case_4bc)}</span>
+									{/if}
+								</div>
+								<button
+									class="ml-3 inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-400 dark:hover:bg-slate-800"
+									disabled={downloadingReport2042 === associe.associe_id}
+									onclick={() => handleDownloadReport2042(annee, associe)}
+								>
+									<Download class="h-3 w-3" />
+									{downloadingReport2042 === associe.associe_id ? 'PDF...' : 'Report 2042'}
+								</button>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
 		</div>
 	{/each}
 

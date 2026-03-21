@@ -549,6 +549,26 @@ export function generateCerfa2044Pdf(payload: Cerfa2044Request): Promise<Blob> {
 	});
 }
 
+export type DeficitAnterieur = {
+	annee: number;
+	montant_initial: number;
+	total_impute: number;
+	solde_restant: number;
+	annee_prescription: number;
+};
+
+export type AssocieQuotePart = {
+	associe_id: string;
+	nom: string;
+	email: string;
+	part_pct: number;
+	quote_part_resultat: number;
+	case_4ba: number;
+	case_4bb: number;
+	case_4bc: number;
+	case_4bd: number;
+};
+
 export type ResumeFiscalData = {
 	sci_nom: string;
 	annee: number;
@@ -556,6 +576,7 @@ export type ResumeFiscalData = {
 	total_charges: number;
 	total_interets: number;
 	resultat_global: number;
+	associes: AssocieQuotePart[];
 	micro_foncier_eligible: boolean;
 	micro_foncier_abattement: number;
 	micro_foncier_resultat: number;
@@ -566,6 +587,8 @@ export type ResumeFiscalData = {
 	deficit_interets_emprunt: number;
 	deficit_imputable_revenu_global: number;
 	deficit_reportable_foncier: number;
+	deficits_anterieurs: DeficitAnterieur[];
+	total_deficits_anterieurs_imputes: number;
 };
 
 export function fetchResumeFiscal(sciId: EntityId, annee: number): Promise<ResumeFiscalData> {
@@ -574,6 +597,10 @@ export function fetchResumeFiscal(sciId: EntityId, annee: number): Promise<Resum
 
 export function downloadResumeFiscalPdf(sciId: EntityId, annee: number): Promise<Blob> {
 	return apiFetchBlob(`/api/v1/cerfa/scis/${sciId}/resume-fiscal/${annee}/pdf`);
+}
+
+export function downloadReport2042Pdf(sciId: EntityId, annee: number, associeId: EntityId): Promise<Blob> {
+	return apiFetchBlob(`/api/v1/cerfa/scis/${sciId}/report-2042/${annee}/${associeId}/pdf`);
 }
 
 export function createCheckoutSession(payload: CheckoutSessionRequestPayload) {

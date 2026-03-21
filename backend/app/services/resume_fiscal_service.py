@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import structlog
 from dataclasses import dataclass, field
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -27,9 +30,26 @@ class BienFiscalDetail:
 class AssocieQuotePart:
     """Quote-part du résultat fiscal attribuée à un associé."""
 
-    nom: str
-    part_pct: float
-    quote_part_resultat: float
+    associe_id: str = ""
+    nom: str = ""
+    email: str = ""
+    part_pct: float = 0.0
+    quote_part_resultat: float = 0.0
+    case_4ba: float = 0.0  # Bénéfice foncier
+    case_4bb: float = 0.0  # Déficit imputable revenu global
+    case_4bc: float = 0.0  # Déficit reportable revenus fonciers
+    case_4bd: float = 0.0  # Déficits antérieurs
+
+
+@dataclass
+class DeficitAnterieur:
+    """Déficit antérieur reportable pour le suivi sur 10 ans."""
+
+    annee: int
+    montant_initial: float
+    total_impute: float
+    solde_restant: float
+    annee_prescription: int
 
 
 @dataclass
@@ -48,6 +68,13 @@ class ResumeFiscalResult:
     associes: list[AssocieQuotePart] = field(default_factory=list)
     alertes: list[str] = field(default_factory=list)
 
+    # SCI identification fields (for CERFA-style PDF)
+    sci_adresse_siege: str = ""
+    sci_capital_social: float = 0.0
+    sci_nom_gerant: str = ""
+    nb_biens: int = 0
+    nb_associes: int = 0
+
     # Phase 2: Micro-foncier comparison (art. 32 CGI)
     micro_foncier_eligible: bool = False
     micro_foncier_abattement: float = 0.0
@@ -61,6 +88,10 @@ class ResumeFiscalResult:
     deficit_interets_emprunt: float = 0.0
     deficit_imputable_revenu_global: float = 0.0
     deficit_reportable_foncier: float = 0.0
+
+    # Phase 3: Déficits antérieurs tracker
+    deficits_anterieurs: list[DeficitAnterieur] = field(default_factory=list)
+    total_deficits_anterieurs_imputes: float = 0.0
 
 
 class ResumeFiscalService:
@@ -83,6 +114,104 @@ class ResumeFiscalService:
             return []
         return result.data or []
 
+    def _load_prior_deficits(self, sci_id: str, annee: int, client) -> list[dict]:
+        """Load prior year deficits that are still reportable (not prescribed, with remaining balance)."""
+        try:
+            rows = self._execute_select(
+                client.table("deficit_reportable")
+                .select("*")
+                .eq("id_sci", sci_id)
+                .gt("solde_restant", 0)
+                .gt("annee_prescription", annee)
+                .order("annee_constatation")
+            )
+            return rows
+        except Exception:
+            logger.warning("deficit_reportable_load_failed", sci_id=sci_id, annee=annee)
+            return []
+
+    def _save_deficit(self, sci_id: str, annee: int, result: ResumeFiscalResult, client) -> None:
+        """Save current year deficit to deficit_reportable table (upsert)."""
+        if not result.is_deficit:
+            return
+        try:
+            total_reportable = result.deficit_interets_emprunt + result.deficit_reportable_foncier
+            if total_reportable <= 0:
+                return
+
+            row = {
+                "id_sci": sci_id,
+                "annee_constatation": annee,
+                "deficit_interets": result.deficit_interets_emprunt,
+                "deficit_charges": result.deficit_reportable_foncier,
+                "impute_revenu_global": result.deficit_imputable_revenu_global,
+                "total_impute_foncier": 0,
+                "solde_restant": total_reportable,
+                "annee_prescription": annee + 10,
+            }
+            client.table("deficit_reportable").upsert(
+                row, on_conflict="id_sci,annee_constatation"
+            ).execute()
+        except Exception:
+            logger.warning("deficit_reportable_save_failed", sci_id=sci_id, annee=annee)
+
+    def _impute_prior_deficits(
+        self, prior_rows: list[dict], resultat_brut_positif: float, client
+    ) -> tuple[list[DeficitAnterieur], float]:
+        """Impute prior deficits against positive rental income (FIFO).
+
+        Returns the list of DeficitAnterieur and total amount imputed.
+        """
+        deficits: list[DeficitAnterieur] = []
+        remaining_income = resultat_brut_positif
+        total_imputed = 0.0
+
+        for row in prior_rows:
+            solde = self._safe_float(row.get("solde_restant"))
+            annee_c = int(row.get("annee_constatation", 0))
+            annee_p = int(row.get("annee_prescription", 0))
+            initial = self._safe_float(row.get("deficit_interets")) + self._safe_float(row.get("deficit_charges"))
+            prev_imputed = self._safe_float(row.get("total_impute_foncier"))
+
+            if solde <= 0:
+                deficits.append(DeficitAnterieur(
+                    annee=annee_c,
+                    montant_initial=initial,
+                    total_impute=prev_imputed,
+                    solde_restant=0,
+                    annee_prescription=annee_p,
+                ))
+                continue
+
+            impute_now = min(solde, remaining_income)
+            new_solde = round(solde - impute_now, 2)
+            new_total_imputed = round(prev_imputed + impute_now, 2)
+
+            if impute_now > 0:
+                remaining_income = round(remaining_income - impute_now, 2)
+                total_imputed = round(total_imputed + impute_now, 2)
+
+                # Update the DB row
+                try:
+                    row_id = row.get("id")
+                    if row_id:
+                        client.table("deficit_reportable").update({
+                            "total_impute_foncier": new_total_imputed,
+                            "solde_restant": new_solde,
+                        }).eq("id", row_id).execute()
+                except Exception:
+                    logger.warning("deficit_imputation_update_failed", row_id=row.get("id"))
+
+            deficits.append(DeficitAnterieur(
+                annee=annee_c,
+                montant_initial=initial,
+                total_impute=new_total_imputed,
+                solde_restant=new_solde,
+                annee_prescription=annee_p,
+            ))
+
+        return deficits, total_imputed
+
     def calculate(self, sci_id: str, annee: int, client) -> ResumeFiscalResult:
         """Calculate the résumé fiscal for a given SCI and year.
 
@@ -96,10 +225,10 @@ class ResumeFiscalService:
         """
         alertes: list[str] = []
 
-        # 1. Fetch SCI data
+        # 1. Fetch SCI data (with extended fields for CERFA)
         sci_rows = self._execute_select(
             client.table("sci")
-            .select("nom, siren, regime_fiscal")
+            .select("nom, siren, regime_fiscal, adresse_siege, capital_social, nom_gerant")
             .eq("id", sci_id)
         )
         if not sci_rows:
@@ -115,11 +244,14 @@ class ResumeFiscalService:
         sci_nom = sci.get("nom") or "SCI"
         sci_siren = sci.get("siren") or ""
         regime_fiscal = sci.get("regime_fiscal") or "IR"
+        sci_adresse_siege = sci.get("adresse_siege") or ""
+        sci_capital_social = self._safe_float(sci.get("capital_social"))
+        sci_nom_gerant = sci.get("nom_gerant") or ""
 
-        # 2. Fetch associés with parts
+        # 2. Fetch associés with parts (include id and email for report-2042)
         associe_rows = self._execute_select(
             client.table("associes")
-            .select("nom, part")
+            .select("id, nom, email, part")
             .eq("id_sci", sci_id)
         )
 
@@ -271,19 +403,87 @@ class ResumeFiscalService:
         # 5. Aggregate
         resultat_global = round(total_revenus - total_charges - total_interets, 2)
 
+        # ── Phase 3: Load and impute prior deficits (FIFO) ─────────────
+        deficits_anterieurs: list[DeficitAnterieur] = []
+        total_deficits_anterieurs_imputes = 0.0
+
+        if resultat_global > 0:
+            prior_rows = self._load_prior_deficits(sci_id, annee, client)
+            if prior_rows:
+                deficits_anterieurs, total_deficits_anterieurs_imputes = self._impute_prior_deficits(
+                    prior_rows, resultat_global, client
+                )
+                # Adjust the result after imputation
+                resultat_global = round(resultat_global - total_deficits_anterieurs_imputes, 2)
+        else:
+            # Even if deficit, load prior deficits for display
+            prior_rows = self._load_prior_deficits(sci_id, annee, client)
+            for row in prior_rows:
+                initial = self._safe_float(row.get("deficit_interets")) + self._safe_float(row.get("deficit_charges"))
+                deficits_anterieurs.append(DeficitAnterieur(
+                    annee=int(row.get("annee_constatation", 0)),
+                    montant_initial=initial,
+                    total_impute=self._safe_float(row.get("total_impute_foncier")),
+                    solde_restant=self._safe_float(row.get("solde_restant")),
+                    annee_prescription=int(row.get("annee_prescription", 0)),
+                ))
+
         # 6. Quote-part per associé
         associes_qp: list[AssocieQuotePart] = []
         total_parts = sum(self._safe_float(a.get("part")) for a in associe_rows)
+
+        # ── Phase 2: Déficit foncier (art. 156-I-3° CGI) ─────────────
+        is_deficit = resultat_global < 0
+        deficit_total = 0.0
+        deficit_interets_emprunt_val = 0.0
+        deficit_imputable_revenu_global = 0.0
+        deficit_reportable_foncier = 0.0
+
+        if is_deficit:
+            deficit_total = round(abs(resultat_global), 2)
+
+            # Intérêts d'emprunt: only deductible against rental income
+            deficit_interets = round(min(total_interets, deficit_total), 2)
+
+            # Other charges: deductible against global income up to 10 700 EUR
+            deficit_hors_interets = round(deficit_total - deficit_interets, 2)
+            deficit_imputable_revenu_global = round(min(deficit_hors_interets, 10_700), 2)
+            deficit_reportable_foncier = round(
+                deficit_hors_interets - deficit_imputable_revenu_global, 2
+            )
+            deficit_interets_emprunt_val = deficit_interets
 
         if total_parts > 0:
             for a in associe_rows:
                 part = self._safe_float(a.get("part"))
                 pct = round((part / total_parts) * 100, 2)
                 qp = round(resultat_global * (part / total_parts), 2)
+
+                # Cases 2042
+                case_4ba = round(max(qp, 0), 2)
+                case_4bb = 0.0
+                case_4bc = 0.0
+                case_4bd = round(total_deficits_anterieurs_imputes * (part / total_parts), 2)
+
+                if qp < 0:
+                    qp_deficit = abs(qp)
+                    # Proportional split of deficit components
+                    ratio = part / total_parts
+                    case_4bb = round(deficit_imputable_revenu_global * ratio, 2)
+                    case_4bc = round(
+                        (deficit_interets_emprunt_val + deficit_reportable_foncier) * ratio, 2
+                    )
+
                 associes_qp.append(AssocieQuotePart(
+                    associe_id=str(a.get("id") or ""),
                     nom=a.get("nom") or "Associé",
+                    email=a.get("email") or "",
                     part_pct=pct,
                     quote_part_resultat=qp,
+                    case_4ba=case_4ba,
+                    case_4bb=case_4bb,
+                    case_4bc=case_4bc,
+                    case_4bd=case_4bd,
                 ))
         else:
             alertes.append("Aucun associé avec parts renseignées — quote-parts non calculables.")
@@ -311,28 +511,7 @@ class ResumeFiscalService:
             regime_recommande = "reel"
             economie_regime_recommande = 0.0
 
-        # ── Phase 2: Déficit foncier (art. 156-I-3° CGI) ─────────────
-        is_deficit = resultat_global < 0
-        deficit_total = 0.0
-        deficit_interets_emprunt = 0.0
-        deficit_imputable_revenu_global = 0.0
-        deficit_reportable_foncier = 0.0
-
-        if is_deficit:
-            deficit_total = round(abs(resultat_global), 2)
-
-            # Intérêts d'emprunt: only deductible against rental income
-            deficit_interets = round(min(total_interets, deficit_total), 2)
-
-            # Other charges: deductible against global income up to 10 700 EUR
-            deficit_hors_interets = round(deficit_total - deficit_interets, 2)
-            deficit_imputable_revenu_global = round(min(deficit_hors_interets, 10_700), 2)
-            deficit_reportable_foncier = round(
-                deficit_hors_interets - deficit_imputable_revenu_global, 2
-            )
-            deficit_interets_emprunt = deficit_interets
-
-        return ResumeFiscalResult(
+        result = ResumeFiscalResult(
             sci_nom=sci_nom,
             sci_siren=sci_siren,
             regime_fiscal=regime_fiscal,
@@ -344,6 +523,12 @@ class ResumeFiscalService:
             resultat_global=resultat_global,
             associes=associes_qp,
             alertes=alertes,
+            # SCI identification
+            sci_adresse_siege=sci_adresse_siege,
+            sci_capital_social=sci_capital_social,
+            sci_nom_gerant=sci_nom_gerant,
+            nb_biens=len(biens_detail),
+            nb_associes=len(associe_rows),
             # Micro-foncier
             micro_foncier_eligible=micro_foncier_eligible,
             micro_foncier_abattement=micro_foncier_abattement,
@@ -353,7 +538,16 @@ class ResumeFiscalService:
             # Déficit foncier
             is_deficit=is_deficit,
             deficit_total=deficit_total,
-            deficit_interets_emprunt=deficit_interets_emprunt,
+            deficit_interets_emprunt=deficit_interets_emprunt_val,
             deficit_imputable_revenu_global=deficit_imputable_revenu_global,
             deficit_reportable_foncier=deficit_reportable_foncier,
+            # Déficits antérieurs
+            deficits_anterieurs=deficits_anterieurs,
+            total_deficits_anterieurs_imputes=total_deficits_anterieurs_imputes,
         )
+
+        # Save current year deficit to tracker
+        if is_deficit:
+            self._save_deficit(sci_id, annee, result, client)
+
+        return result

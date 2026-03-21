@@ -20,7 +20,8 @@ const PUBLIC_ROUTE_PREFIXES = [
 	'/confidentialite',
 	'/mentions-legales',
 	'/privacy',
-	'/simulateur-cerfa'
+	'/simulateur-cerfa',
+	'/simulateur-plus-value'
 ];
 
 function matchesRoutePrefix(pathname: string, routePrefix: string) {

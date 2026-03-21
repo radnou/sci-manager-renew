@@ -21,8 +21,8 @@ limiter.enabled = False
 
 _INITIAL_STORE: dict[str, list[dict]] = {
     "sci": [
-        {"id": "sci-1", "nom": "SCI Mosa Belleville", "siren": "123456789", "regime_fiscal": "IR"},
-        {"id": "sci-2", "nom": "SCI Horizon Lyon", "siren": "987654321", "regime_fiscal": "IS"},
+        {"id": "sci-1", "nom": "SCI Mosa Belleville", "siren": "123456789", "regime_fiscal": "IR", "adresse_siege": "12 rue de Belleville, 75020 Paris", "capital_social": 10000, "nom_gerant": "Test User"},
+        {"id": "sci-2", "nom": "SCI Horizon Lyon", "siren": "987654321", "regime_fiscal": "IS", "adresse_siege": None, "capital_social": None, "nom_gerant": None},
     ],
     "biens": [
         {"id": "bien-1", "id_sci": "sci-1", "adresse": "1 rue de la Paix", "ville": "Paris", "code_postal": "75001", "type_bien": "appartement", "surface_m2": 50, "nb_pieces": 2, "loyer_cc": 1200, "statut": "loue", "tmi": 30},
@@ -58,6 +58,7 @@ _INITIAL_STORE: dict[str, list[dict]] = {
         {"id": "associe-1b", "id_sci": "sci-1", "user_id": "user-456", "nom": "Camille Bernard", "email": "camille.bernard@sci.local", "part": 40, "role": "associe"},
         {"id": "associe-2", "id_sci": "sci-2", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 100, "role": "associe"},
     ],
+    "deficit_reportable": [],
 }
 
 
@@ -85,6 +86,7 @@ class FakeQuery:
         self._table_name = table_name
         self._filters: list[tuple[str, str]] = []
         self._in_filters: list[tuple[str, set[str]]] = []
+        self._gt_filters: list[tuple[str, str]] = []
         self._gte_filters: list[tuple[str, str]] = []
         self._lte_filters: list[tuple[str, str]] = []
         self._lt_filters: list[tuple[str, str]] = []
@@ -135,6 +137,10 @@ class FakeQuery:
         self._in_filters.append((key, {str(value) for value in values}))
         return self
 
+    def gt(self, key: str, value: object) -> "FakeQuery":
+        self._gt_filters.append((key, str(value)))
+        return self
+
     def gte(self, key: str, value: object) -> "FakeQuery":
         self._gte_filters.append((key, str(value)))
         return self
@@ -170,6 +176,10 @@ class FakeQuery:
                 return False
         for key, values in self._in_filters:
             if str(row.get(key)) not in values:
+                return False
+        for key, value in self._gt_filters:
+            candidate = row.get(key)
+            if candidate is None or str(candidate) <= value:
                 return False
         for key, value in self._gte_filters:
             candidate = row.get(key)

@@ -148,12 +148,34 @@
 						>
 							Tarifs
 						</a>
-						<a
-							href="/simulateur-cerfa"
-							class="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-						>
-							Simulateur
-						</a>
+						<div class="group relative">
+							<button
+								class="flex items-center gap-1 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+							>
+								Simulateurs
+								<svg class="h-3 w-3 transition-transform group-hover:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+								</svg>
+							</button>
+							<div class="invisible absolute left-0 top-full z-50 pt-2 opacity-0 transition-all group-hover:visible group-hover:opacity-100">
+								<div class="w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+									<a
+										href="/simulateur-cerfa"
+										class="block rounded-lg px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+									>
+										<span class="font-medium">CERFA 2044</span>
+										<span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Revenus fonciers</span>
+									</a>
+									<a
+										href="/simulateur-plus-value"
+										class="block rounded-lg px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+									>
+										<span class="font-medium">Plus-value immobilière</span>
+										<span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Impôt sur la cession</span>
+									</a>
+								</div>
+							</div>
+						</div>
 					</div>
 					<div class="flex items-center gap-3">
 						<a href="/login">
@@ -188,7 +210,13 @@
 							href="/simulateur-cerfa"
 							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
-							Simulateur
+							Simulateur CERFA 2044
+						</a>
+						<a
+							href="/simulateur-plus-value"
+							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							Simulateur Plus-Value
 						</a>
 						<a
 							href="/login"
@@ -255,6 +283,13 @@
 									href="/simulateur-cerfa"
 									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 									>Simulateur CERFA 2044</a
+								>
+							</li>
+							<li>
+								<a
+									href="/simulateur-plus-value"
+									class="text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+									>Simulateur Plus-Value</a
 								>
 							</li>
 							<li>
