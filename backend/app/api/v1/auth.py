@@ -14,7 +14,7 @@ from app.services.associe_linking import link_user_to_pending_associes
 from app.services.auth_service import magic_link_service
 
 # Re-export so tests can patch at module level
-from app.api.v1.stripe import _find_user_by_email  # noqa: F401
+from app.api.v1.stripe import _find_user_by_email, _create_or_get_user  # noqa: F401
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = structlog.get_logger(__name__)
@@ -70,8 +70,13 @@ async def activate_session(
             break
         await asyncio.sleep(2)
 
+    # 4. Fallback: create user if webhook hasn't processed yet
     if not user_id:
-        raise ExternalServiceError("Supabase", "Account not yet created — please retry")
+        logger.warning("activate_user_not_found_creating", email=email, session_id=session_id)
+        user_id = _create_or_get_user(email)
+
+    if not user_id:
+        raise ExternalServiceError("Activation", "Veuillez réessayer dans quelques instants.")
 
     # 4. Anti-replay: upsert with ignore_duplicates
     client = get_supabase_service_client()

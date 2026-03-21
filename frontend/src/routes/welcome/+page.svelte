@@ -64,7 +64,11 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				errorMessage = data.error || "Erreur lors de l'activation du compte.";
+				// Never expose raw backend errors to users
+				errorMessage =
+					res.status === 429
+						? 'Trop de tentatives. Veuillez patienter quelques minutes.'
+						: "Votre paiement a bien été reçu. L'activation de votre compte est en cours — veuillez réessayer dans quelques instants.";
 				step = 'error';
 				return;
 			}
@@ -214,20 +218,20 @@
 		{:else}
 			<Card class="sci-section-card">
 				<CardHeader>
-					<p class="sci-eyebrow">Problème d'activation</p>
-					<CardTitle class="text-2xl">Une erreur est survenue</CardTitle>
+					<p class="sci-eyebrow">Activation en attente</p>
+					<CardTitle class="text-2xl">Encore un instant</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<p
-						role="alert"
-						class="mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
+						class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
 					>
 						{errorMessage}
 					</p>
 
 					<div class="space-y-3">
-						<Button href="/pricing" class="w-full">Voir les offres</Button>
+						<Button onclick={() => window.location.reload()} class="w-full">Réessayer</Button>
 						<Button href="/login" variant="outline" class="w-full">Se connecter</Button>
+						<Button href="/pricing" variant="ghost" class="w-full text-slate-500">Voir les offres</Button>
 					</div>
 				</CardContent>
 			</Card>

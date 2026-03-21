@@ -43,8 +43,34 @@ def test_activate_no_email_in_session(client):
     assert "No email" in response.json()["error"]
 
 
-def test_activate_user_not_found(client):
-    """Paid session with email but user not yet created in Supabase."""
+def test_activate_user_not_found_fallback_creates(client):
+    """Paid session with email but user not yet created — fallback creates user."""
+    fake_session = MagicMock()
+    fake_session.payment_status = "paid"
+    fake_session.customer_details.email = "buyer@example.com"
+    fake_session.metadata = {"plan_key": "pro"}
+
+    fake_upsert_result = MagicMock()
+    fake_upsert_result.data = [{"session_id": "cs_test_123"}]
+    fake_link_result = MagicMock()
+    fake_link_result.properties.hashed_token = "test_hash"
+
+    with (
+        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("app.api.v1.auth._find_user_by_email", return_value=None),
+        patch("app.api.v1.auth._create_or_get_user", return_value="user-fallback-123"),
+        patch("app.api.v1.auth.get_supabase_service_client") as mock_client,
+        patch("app.api.v1.auth.link_user_to_pending_associes"),
+    ):
+        mock_client.return_value.table.return_value.upsert.return_value.execute.return_value = fake_upsert_result
+        mock_client.return_value.auth.admin.generate_link.return_value = fake_link_result
+        response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
+    assert response.status_code == 200
+    assert response.json()["plan_key"] == "pro"
+
+
+def test_activate_user_not_found_fallback_fails(client):
+    """Paid session — both webhook and fallback creation fail."""
     fake_session = MagicMock()
     fake_session.payment_status = "paid"
     fake_session.customer_details.email = "buyer@example.com"
@@ -53,10 +79,12 @@ def test_activate_user_not_found(client):
     with (
         patch("stripe.checkout.Session.retrieve", return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value=None),
+        patch("app.api.v1.auth._create_or_get_user", return_value=None),
     ):
         response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
     assert response.status_code == 503
-    assert "not yet created" in response.json()["error"]
+    # Must NOT expose technical details
+    assert "réessayer" in response.json()["error"].lower()
 
 
 def test_activate_replay_blocked(client):
