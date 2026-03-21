@@ -225,7 +225,12 @@ class QuitusService:
         y = height - 28
         pdf.setFillColor(_LIGHT)
         pdf.setFont(_FONT_NAME_BOLD, 13)
-        pdf.drawString(40, y, f"{forme_juridique} {issuer}")
+        # Avoid "SCI SCI Belleville" if name already starts with the forme juridique
+        if issuer.upper().startswith(forme_juridique.upper()):
+            header_label = issuer
+        else:
+            header_label = f"{forme_juridique} {issuer}"
+        pdf.drawString(40, y, header_label)
 
         y -= 16
         pdf.setFont(_FONT_NAME, 8)

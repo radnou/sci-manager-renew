@@ -1378,9 +1378,8 @@ export async function importCsv(
 ): Promise<ImportResult> {
 	const formData = new FormData();
 	formData.append('file', file);
-	formData.append('sci_id', String(sciId));
 	formData.append('type', type);
-	return apiFetch<ImportResult>('/api/v1/import/csv', {
+	return apiFetch<ImportResult>(`/api/v1/scis/${sciId}/import/csv`, {
 		method: 'POST',
 		body: formData
 	});

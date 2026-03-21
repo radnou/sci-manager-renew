@@ -16,7 +16,9 @@
 		X,
 		ChevronsUpDown,
 		Check,
-		ArrowLeftRight
+		ArrowLeftRight,
+		Briefcase,
+		Gavel
 	} from 'lucide-svelte';
 	import { fetchScis, type SCIOverview } from '$lib/api';
 	import { supabase } from '$lib/supabase';
@@ -65,7 +67,7 @@
 		{ suffix: '/associes', label: 'Associés', icon: Users },
 		{ suffix: '/fiscalite', label: 'Fiscalité', icon: Calculator },
 		{ suffix: '/mouvements-parts', label: 'Mouvements de parts', icon: ArrowLeftRight },
-		{ suffix: '/assemblees-generales', label: 'Assemblées générales', icon: Users },
+		{ suffix: '/assemblees-generales', label: 'Assemblées générales', icon: Gavel },
 		{ suffix: '/documents', label: 'Documents', icon: FileText },
 		{ suffix: '/settings', label: 'Paramètres', icon: Settings }
 	];
@@ -273,6 +275,19 @@
 			<p class="mb-2 px-3 text-xs font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
 				Gestion
 			</p>
+			<a
+				href="/exploitation"
+				onclick={closeMobileOnNavigate}
+				aria-current={isActive('/exploitation') ? 'page' : undefined}
+				class="mb-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive(
+					'/exploitation'
+				)
+					? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+			>
+				<Briefcase class="h-4 w-4 flex-shrink-0" />
+				<span>Exploitation</span>
+			</a>
 			<a
 				href="/finances"
 				onclick={closeMobileOnNavigate}

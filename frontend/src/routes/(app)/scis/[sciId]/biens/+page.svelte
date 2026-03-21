@@ -92,7 +92,7 @@
 	};
 
 	const statutLabel: Record<string, string> = {
-		loue: 'Loué',
+		loue: 'Occupé',
 		vacant: 'Vacant',
 		travaux: 'Travaux'
 	};
@@ -196,6 +196,8 @@
 			</p>
 			<a
 				href="/pricing"
+				target="_blank"
+				rel="noopener noreferrer"
 				class="ml-4 inline-flex shrink-0 items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700"
 			>
 				Changer de plan

@@ -177,7 +177,7 @@ def test_export_loyers_csv_header_columns(client, auth_headers, fake_supabase):
     resp = client.get("/api/v1/export/loyers/csv", headers=auth_headers)
     assert resp.status_code == 200
     rows = _parse_csv(resp.text)
-    assert rows[0] == ["date_loyer", "montant", "statut", "id_bien", "id_sci"]
+    assert rows[0] == ["date_loyer", "montant", "statut", "bien", "sci"]
 
 
 def test_export_loyers_csv_data_rows(client, auth_headers, fake_supabase):
@@ -321,7 +321,7 @@ def test_export_loyers_csv_period_empty_result(client, auth_headers, fake_supaba
     rows = _parse_csv(resp.text)
     # Only header row, no data
     assert len(rows) == 1
-    assert rows[0] == ["date_loyer", "montant", "statut", "id_bien", "id_sci"]
+    assert rows[0] == ["date_loyer", "montant", "statut", "bien", "sci"]
 
 
 def test_export_loyers_csv_missing_fields_default_empty(client, auth_headers, fake_supabase):
@@ -332,7 +332,7 @@ def test_export_loyers_csv_missing_fields_default_empty(client, auth_headers, fa
     resp = client.get("/api/v1/export/loyers/csv", headers=auth_headers)
     rows = _parse_csv(resp.text)
     assert len(rows) == 2
-    # All fields except id_sci should be empty
+    # All fields except sci should be empty (fallback to id_sci when no JOIN data)
     assert rows[1] == ["", "", "", "", "sci-1"]
 
 
@@ -346,7 +346,7 @@ def test_export_biens_csv_header_columns(client, auth_headers, fake_supabase):
     rows = _parse_csv(resp.text)
     assert rows[0] == [
         "adresse", "ville", "code_postal", "type_locatif",
-        "loyer_cc", "charges", "surface_m2", "nb_pieces", "dpe_classe", "id_sci",
+        "loyer_cc", "charges", "surface_m2", "nb_pieces", "dpe_classe", "sci",
     ]
 
 

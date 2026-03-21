@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cahier de Recette — GérerSCI</title>
+<style>
+  :root {
+    --bg: #f8fafc; --surface: #fff; --border: #e2e8f0; --text: #1e293b;
+    --muted: #64748b; --primary: #2563eb; --primary-light: #dbeafe;
+    --ok: #16a34a; --ok-bg: #dcfce7; --ko: #dc2626; --ko-bg: #fee2e2;
+    --partiel: #d97706; --partiel-bg: #fef3c7; --skip: #6b7280; --skip-bg: #f3f4f6;
+    --p0: #dc2626; --p1: #d97706; --p2: #2563eb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; position: sticky; top: 0; z-index: 50; }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header h1 span { color: var(--primary); }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .btn-ko { background: var(--ko); color: #fff; border-color: var(--ko); }
+
+  /* Stats bar */
+  .stats { max-width: 1200px; margin: 16px auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 0 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; }
+  .stat-value { font-size: 28px; font-weight: 800; }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stat-ok .stat-value { color: var(--ok); }
+  .stat-ko .stat-value { color: var(--ko); }
+  .stat-partiel .stat-value { color: var(--partiel); }
+  .stat-skip .stat-value { color: var(--skip); }
+  .stat-total .stat-value { color: var(--primary); }
+
+  /* Progress bar */
+  .progress-wrap { max-width: 1200px; margin: 0 auto 16px; padding: 0 24px; }
+  .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; display: flex; }
+  .progress-ok { background: var(--ok); transition: width 0.3s; }
+  .progress-ko { background: var(--ko); transition: width 0.3s; }
+  .progress-partiel { background: var(--partiel); transition: width 0.3s; }
+  .progress-skip { background: var(--skip); transition: width 0.3s; }
+
+  /* Filters */
+  .filters { max-width: 1200px; margin: 0 auto 16px; padding: 0 24px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
+  .filter-btn:hover { border-color: var(--primary); }
+  .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Test list */
+  .tests { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+  .domain-group { margin-bottom: 24px; }
+  .domain-title { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding: 4px 0; border-bottom: 2px solid var(--border); }
+
+  .test-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; transition: all 0.15s; }
+  .test-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .test-card.status-OK { border-left: 4px solid var(--ok); }
+  .test-card.status-KO { border-left: 4px solid var(--ko); }
+  .test-card.status-PARTIEL { border-left: 4px solid var(--partiel); }
+  .test-card.status-SKIP { border-left: 4px solid var(--skip); }
+
+  .test-header { padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+  .test-id { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; font-weight: 700; color: var(--muted); min-width: 80px; }
+  .test-prio { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; }
+  .test-prio.P0 { background: #fef2f2; color: var(--p0); }
+  .test-prio.P1 { background: #fffbeb; color: var(--p1); }
+  .test-prio.P2 { background: var(--primary-light); color: var(--p2); }
+  .test-titre { flex: 1; font-size: 14px; font-weight: 500; }
+  .test-status { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 6px; min-width: 70px; text-align: center; }
+  .test-status.OK { background: var(--ok-bg); color: var(--ok); }
+  .test-status.KO { background: var(--ko-bg); color: var(--ko); }
+  .test-status.PARTIEL { background: var(--partiel-bg); color: var(--partiel); }
+  .test-status.SKIP { background: var(--skip-bg); color: var(--skip); }
+  .test-status.pending { background: var(--bg); color: var(--muted); }
+  .test-expand { color: var(--muted); transition: transform 0.2s; }
+  .test-expand.open { transform: rotate(90deg); }
+
+  .test-body { padding: 0 16px 16px; display: none; }
+  .test-body.open { display: block; }
+  .test-body h4 { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin: 12px 0 6px; }
+  .test-body ol { padding-left: 20px; margin-bottom: 8px; }
+  .test-body li { font-size: 13px; margin-bottom: 4px; color: #334155; }
+  .test-body .expected { font-size: 13px; color: var(--primary); font-style: italic; padding: 8px 12px; background: var(--primary-light); border-radius: 6px; margin: 8px 0; }
+
+  .test-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .test-actions .btn { font-size: 12px; padding: 6px 14px; }
+  .comment-input { width: 100%; margin-top: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 40px; }
+  .comment-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+  /* Export modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 12px; padding: 24px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; }
+  .modal h2 { margin-bottom: 12px; }
+  .modal pre { background: var(--bg); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+  .modal .btn { margin-top: 12px; }
+
+  /* Floating progress */
+  .floating { position: fixed; bottom: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 13px; z-index: 40; }
+  .floating strong { color: var(--primary); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>📋 Cahier de Recette — <span>GérerSCI</span></h1>
+    <div class="header-actions">
+      <button class="btn" onclick="loadJSON()">📂 Charger JSON</button>
+      <button class="btn" onclick="saveLocal()">💾 Sauvegarder</button>
+      <button class="btn btn-primary" onclick="exportResults()">📤 Exporter résultats</button>
+      <button class="btn" onclick="resetAll()">🗑 Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<div class="stats" id="stats"></div>
+<div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+<div class="filters" id="filters"></div>
+<div class="tests" id="tests"></div>
+
+<div class="floating" id="floating"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle"></h2>
+    <pre id="modalContent"></pre>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="copyExport()">📋 Copier</button>
+      <button class="btn" onclick="downloadExport()">⬇ Télécharger</button>
+      <button class="btn" onclick="closeModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFile(event)">
+
+<script>
+let data = null;
+let activeFilter = 'all';
+
+// Load from localStorage or fetch default
+async function init() {
+  const saved = localStorage.getItem('gerersci_recette');
+  if (saved) {
+    data = JSON.parse(saved);
+  } else {
+    try {
+      const resp = await fetch('cahier-de-recette-interactif.json');
+      data = await resp.json();
+    } catch {
+      // Inline fallback
+      data = { meta: { titre: "Cahier de Recette" }, tests: [] };
+      alert("Fichier cahier-de-recette-interactif.json non trouvé.\nUtilisez '📂 Charger JSON' pour importer le fichier.");
+    }
+  }
+  render();
+}
+
+function render() {
+  renderStats();
+  renderProgress();
+  renderFilters();
+  renderTests();
+  renderFloating();
+}
+
+function renderStats() {
+  const t = data.tests;
+  const ok = t.filter(x => x.resultat === 'OK').length;
+  const ko = t.filter(x => x.resultat === 'KO').length;
+  const partiel = t.filter(x => x.resultat === 'PARTIEL').length;
+  const skip = t.filter(x => x.resultat === 'SKIP').length;
+  const pending = t.filter(x => !x.resultat).length;
+  const total = t.length;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card stat-total"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card stat-ok"><div class="stat-value">${ok}</div><div class="stat-label">✅ OK</div></div>
+    <div class="stat-card stat-ko"><div class="stat-value">${ko}</div><div class="stat-label">❌ KO</div></div>
+    <div class="stat-card stat-partiel"><div class="stat-value">${partiel}</div><div class="stat-label">⚠️ Partiel</div></div>
+    <div class="stat-card stat-skip"><div class="stat-value">${skip}</div><div class="stat-label">⏭ Skip</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--muted)">${pending}</div><div class="stat-label">En attente</div></div>
+  `;
+}
+
+function renderProgress() {
+  const t = data.tests;
+  const total = t.length || 1;
+  const ok = t.filter(x => x.resultat === 'OK').length / total * 100;
+  const ko = t.filter(x => x.resultat === 'KO').length / total * 100;
+  const partiel = t.filter(x => x.resultat === 'PARTIEL').length / total * 100;
+  const skip = t.filter(x => x.resultat === 'SKIP').length / total * 100;
+  document.getElementById('progressBar').innerHTML = `
+    <div class="progress-ok" style="width:${ok}%"></div>
+    <div class="progress-ko" style="width:${ko}%"></div>
+    <div class="progress-partiel" style="width:${partiel}%"></div>
+    <div class="progress-skip" style="width:${skip}%"></div>
+  `;
+}
+
+function renderFilters() {
+  const domains = [...new Set(data.tests.map(t => t.domaine))];
+  const prios = ['P0', 'P1', 'P2'];
+  const statuses = ['pending', 'OK', 'KO', 'PARTIEL'];
+
+  let html = `<button class="filter-btn ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">Tous</button>`;
+  prios.forEach(p => {
+    html += `<button class="filter-btn ${activeFilter === p ? 'active' : ''}" onclick="setFilter('${p}')">${p}</button>`;
+  });
+  statuses.forEach(s => {
+    const label = s === 'pending' ? '⏳ En attente' : s;
+    html += `<button class="filter-btn ${activeFilter === s ? 'active' : ''}" onclick="setFilter('${s}')">${label}</button>`;
+  });
+  domains.forEach(d => {
+    html += `<button class="filter-btn ${activeFilter === d ? 'active' : ''}" onclick="setFilter('${d}')">${d}</button>`;
+  });
+  document.getElementById('filters').innerHTML = html;
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  render();
+}
+
+function filterTests(t) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'pending') return !t.resultat;
+  if (['P0','P1','P2'].includes(activeFilter)) return t.priorite === activeFilter;
+  if (['OK','KO','PARTIEL','SKIP'].includes(activeFilter)) return t.resultat === activeFilter;
+  return t.domaine === activeFilter;
+}
+
+function renderTests() {
+  const groups = {};
+  data.tests.filter(filterTests).forEach(t => {
+    if (!groups[t.domaine]) groups[t.domaine] = [];
+    groups[t.domaine].push(t);
+  });
+
+  let html = '';
+  Object.entries(groups).forEach(([domain, tests]) => {
+    html += `<div class="domain-group"><div class="domain-title">${domain} (${tests.length})</div>`;
+    tests.forEach(t => {
+      const statusClass = t.resultat || 'pending';
+      const statusLabel = t.resultat || '—';
+      html += `
+        <div class="test-card status-${statusClass}" id="card-${t.id}">
+          <div class="test-header" onclick="toggleTest('${t.id}')">
+            <span class="test-id">${t.id}</span>
+            <span class="test-prio ${t.priorite}">${t.priorite}</span>
+            <span class="test-titre">${t.titre}</span>
+            <span class="test-status ${statusClass}">${statusLabel}</span>
+            <span class="test-expand" id="expand-${t.id}">▶</span>
+          </div>
+          <div class="test-body" id="body-${t.id}">
+            <h4>Étapes</h4>
+            <ol>${t.etapes.map(e => `<li>${e}</li>`).join('')}</ol>
+            <div class="expected">✓ ${t.resultat_attendu}</div>
+            <h4>Verdict</h4>
+            <div class="test-actions">
+              <button class="btn btn-ok" onclick="setResult('${t.id}','OK')">✅ OK</button>
+              <button class="btn btn-ko" onclick="setResult('${t.id}','KO')">❌ KO</button>
+              <button class="btn" style="background:#fbbf24;color:#000;border-color:#f59e0b" onclick="setResult('${t.id}','PARTIEL')">⚠️ Partiel</button>
+              <button class="btn" onclick="setResult('${t.id}','SKIP')">⏭ Skip</button>
+              <button class="btn" onclick="setResult('${t.id}','')">↩ Reset</button>
+            </div>
+            <textarea class="comment-input" placeholder="Commentaire (bug, suggestion, capture...)"
+              oninput="setComment('${t.id}', this.value)">${t.commentaire || ''}</textarea>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('tests').innerHTML = html;
+}
+
+function toggleTest(id) {
+  const body = document.getElementById('body-' + id);
+  const expand = document.getElementById('expand-' + id);
+  body.classList.toggle('open');
+  expand.classList.toggle('open');
+}
+
+function setResult(id, value) {
+  const test = data.tests.find(t => t.id === id);
+  if (test) {
+    test.resultat = value;
+    saveLocal();
+    render();
+  }
+}
+
+function setComment(id, value) {
+  const test = data.tests.find(t => t.id === id);
+  if (test) {
+    test.commentaire = value;
+    saveLocal();
+    renderFloating();
+  }
+}
+
+function renderFloating() {
+  const t = data.tests;
+  const done = t.filter(x => x.resultat).length;
+  const total = t.length;
+  const pct = Math.round(done / total * 100);
+  document.getElementById('floating').innerHTML = `<strong>${done}/${total}</strong> testés (${pct}%)`;
+}
+
+function saveLocal() {
+  localStorage.setItem('gerersci_recette', JSON.stringify(data));
+}
+
+function loadJSON() {
+  document.getElementById('fileInput').click();
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      data = JSON.parse(ev.target.result);
+      saveLocal();
+      render();
+    } catch { alert('Fichier JSON invalide'); }
+  };
+  reader.readAsText(file);
+}
+
+function exportResults() {
+  // Format rapide pour Claude
+  const lines = data.tests
+    .filter(t => t.resultat)
+    .map(t => {
+      let line = `${t.id}: ${t.resultat}`;
+      if (t.commentaire) line += ` — ${t.commentaire}`;
+      return line;
+    });
+
+  const summary = {
+    date: new Date().toISOString().split('T')[0],
+    total: data.tests.length,
+    ok: data.tests.filter(t => t.resultat === 'OK').length,
+    ko: data.tests.filter(t => t.resultat === 'KO').length,
+    partiel: data.tests.filter(t => t.resultat === 'PARTIEL').length,
+    skip: data.tests.filter(t => t.resultat === 'SKIP').length,
+    pending: data.tests.filter(t => !t.resultat).length,
+  };
+
+  const txt = `# Résultats Recette GérerSCI — ${summary.date}
+# OK: ${summary.ok} | KO: ${summary.ko} | Partiel: ${summary.partiel} | Skip: ${summary.skip} | En attente: ${summary.pending}
+
+${lines.join('\n')}`;
+
+  document.getElementById('modalTitle').textContent = 'Résultats de recette';
+  document.getElementById('modalContent').textContent = txt;
+  document.getElementById('modal').classList.add('open');
+}
+
+function exportJSON() {
+  const json = JSON.stringify(data, null, 2);
+  document.getElementById('modalTitle').textContent = 'Export JSON complet';
+  document.getElementById('modalContent').textContent = json;
+  document.getElementById('modal').classList.add('open');
+}
+
+function copyExport() {
+  const txt = document.getElementById('modalContent').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copié !';
+    setTimeout(() => btn.textContent = '📋 Copier', 2000);
+  });
+}
+
+function downloadExport() {
+  const txt = document.getElementById('modalContent').textContent;
+  const isJSON = txt.trim().startsWith('{');
+  const ext = isJSON ? 'json' : 'txt';
+  const mime = isJSON ? 'application/json' : 'text/plain';
+  const blob = new Blob([txt], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `recette-gerersci-${new Date().toISOString().split('T')[0]}.${ext}`;
+  a.click();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function resetAll() {
+  if (!confirm('Réinitialiser tous les résultats ? Cette action est irréversible.')) return;
+  data.tests.forEach(t => { t.resultat = ''; t.commentaire = ''; });
+  saveLocal();
+  render();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+init();
+</script>
+</body>
+</html>

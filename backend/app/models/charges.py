@@ -20,14 +20,14 @@ CHARGE_TYPES = Literal[
 
 
 class ChargeBase(BaseModel):
-    id_bien: str
     type_charge: CHARGE_TYPES
     montant: float = Field(gt=0)
     date_paiement: date
 
 
 class ChargeCreate(ChargeBase):
-    pass
+    """Create payload — id_bien is optional because the nested endpoint provides it from the URL."""
+    id_bien: str | None = None
 
 
 class ChargeUpdate(BaseModel):
@@ -36,8 +36,12 @@ class ChargeUpdate(BaseModel):
     date_paiement: date | None = None
 
 
-class ChargeResponse(ChargeBase):
+class ChargeResponse(BaseModel):
     id: str
+    id_bien: str
+    type_charge: CHARGE_TYPES
+    montant: float
+    date_paiement: date
     id_sci: str | None = None
     bien_adresse: str | None = None
     bien_ville: str | None = None

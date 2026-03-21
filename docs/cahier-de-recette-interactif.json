@@ -1,0 +1,656 @@
+{
+  "meta": {
+    "titre": "Cahier de Recette Interactif — GérerSCI",
+    "version": "1.0",
+    "date": "2026-03-21",
+    "testeur": "",
+    "environnement": "local (localhost:5173)",
+    "credentials": {
+      "email": "demo@gerersci.fr",
+      "password": "password123"
+    },
+    "instructions": "Pour chaque test: suivez les étapes, notez le résultat (OK/KO/PARTIEL), ajoutez un commentaire si besoin. Renvoyez ce fichier une fois complété."
+  },
+  "tests": [
+    {
+      "id": "PUB-001",
+      "domaine": "Public",
+      "priorite": "P0",
+      "titre": "Landing page charge sans erreur",
+      "etapes": [
+        "Ouvrir http://localhost:5173/ (déconnecté)",
+        "Vérifier que le hero 'Votre SCI mérite mieux qu'un tableur Excel' s'affiche",
+        "Scroller: sections Biens, Finances, Gouvernance, Fiscalité visibles",
+        "Scroller: section Tarifs avec 3 plans visibles",
+        "Scroller: FAQ, CTA final, footer complet"
+      ],
+      "resultat_attendu": "Page complète sans erreur, toutes sections visibles",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "PUB-002",
+      "domaine": "Public",
+      "priorite": "P0",
+      "titre": "Pricing affiche les 3 plans avec prix corrects",
+      "etapes": [
+        "Aller sur http://localhost:5173/pricing",
+        "Vérifier: Essentiel = Gratuit, 1 SCI, 2 biens max",
+        "Vérifier: Gestion = 19€ HT/mois (22,80€ TTC)",
+        "Cliquer 'Annuel': Gestion = 190€ HT/an, Fiscal = 390€ HT/an",
+        "Vérifier badge 'Populaire' sur Fiscal",
+        "Vérifier '-2 mois' sur le toggle annuel"
+      ],
+      "resultat_attendu": "3 plans, prix corrects mensuel et annuel",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "PUB-003",
+      "domaine": "Public",
+      "priorite": "P1",
+      "titre": "Simulateur CERFA fonctionne",
+      "etapes": [
+        "Aller sur http://localhost:5173/simulateur-cerfa",
+        "Saisir: Loyers annuels = 15000, Charges = 3000, Intérêts = 2000, Travaux = 1000",
+        "Vérifier résultat: Revenus 15000€, Charges -6000€, Résultat 9000€",
+        "Switcher sur Micro-foncier: vérifier abattement 30% = 4500€",
+        "Vérifier CTA 'Créer mon compte gratuit'"
+      ],
+      "resultat_attendu": "Calculs corrects, toggle micro/réel, CTA visible",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "PUB-004",
+      "domaine": "Public",
+      "priorite": "P1",
+      "titre": "Simulateur plus-value fonctionne",
+      "etapes": [
+        "Aller sur http://localhost:5173/simulateur-plus-value",
+        "Saisir: Acquisition 01/01/2015, Prix 200000€, Frais 7.5%, Travaux 0€",
+        "Saisir: Cession aujourd'hui, Prix 300000€",
+        "Vérifier: Plus-value brute = ~85000€",
+        "Vérifier abattements IR et PS affichés",
+        "Vérifier timeline visuelle (barres de progression)"
+      ],
+      "resultat_attendu": "Calcul PV, abattements, impôts, net vendeur",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "PUB-005",
+      "domaine": "Public",
+      "priorite": "P1",
+      "titre": "Pages légales accessibles",
+      "etapes": [
+        "Cliquer CGU dans le footer → page charge",
+        "Cliquer CGV → page charge",
+        "Cliquer Mentions légales → page charge",
+        "Cliquer Confidentialité → page charge"
+      ],
+      "resultat_attendu": "4 pages légales chargent sans erreur",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "PUB-006",
+      "domaine": "Public",
+      "priorite": "P0",
+      "titre": "Navigation publique — dropdown Simulateurs",
+      "etapes": [
+        "Sur la nav publique, vérifier le lien/dropdown 'Simulateurs'",
+        "Vérifier qu'il contient: Simulateur CERFA 2044 + Plus-value immobilière",
+        "Cliquer chaque lien → page correspondante"
+      ],
+      "resultat_attendu": "Dropdown avec 2 simulateurs fonctionnels",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "AUTH-001",
+      "domaine": "Authentification",
+      "priorite": "P0",
+      "titre": "Connexion par mot de passe",
+      "etapes": [
+        "Aller sur http://localhost:5173/login",
+        "Saisir: demo@gerersci.fr / password123",
+        "Cliquer 'Se connecter'",
+        "Vérifier redirection vers /dashboard"
+      ],
+      "resultat_attendu": "Connexion réussie, dashboard affiché",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "AUTH-002",
+      "domaine": "Authentification",
+      "priorite": "P1",
+      "titre": "Connexion par lien magique",
+      "etapes": [
+        "Sur /login, cliquer 'Connexion par lien magique'",
+        "Saisir demo@gerersci.fr",
+        "Vérifier message de confirmation",
+        "Ouvrir Mailpit (localhost:54324) → vérifier email reçu"
+      ],
+      "resultat_attendu": "Email magic link envoyé et visible dans Mailpit",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "AUTH-003",
+      "domaine": "Authentification",
+      "priorite": "P0",
+      "titre": "Route protégée redirige vers login",
+      "etapes": [
+        "Se déconnecter (menu utilisateur → Déconnexion)",
+        "Tenter d'accéder à http://localhost:5173/dashboard",
+        "Vérifier redirection vers /login"
+      ],
+      "resultat_attendu": "Redirection automatique vers login",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "DASH-001",
+      "domaine": "Dashboard",
+      "priorite": "P0",
+      "titre": "Dashboard affiche les KPIs",
+      "etapes": [
+        "Se connecter → /dashboard",
+        "Vérifier KPIs: SCI actives = 2, Biens = 4",
+        "Vérifier Recouvrement (pourcentage affiché)",
+        "Vérifier Cashflow net (montant affiché)",
+        "Vérifier 'Aucune alerte' ou alertes pertinentes"
+      ],
+      "resultat_attendu": "4 KPIs avec valeurs cohérentes, pas de NaN",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "DASH-002",
+      "domaine": "Dashboard",
+      "priorite": "P1",
+      "titre": "Cartes SCI avec données",
+      "etapes": [
+        "Sur /dashboard, vérifier 2 cartes SCI",
+        "SCI Belleville: nom, statut active, nb biens, revenus, recouvrement %",
+        "SCI Horizon Lyon: idem",
+        "Cliquer sur une carte → navigation vers la SCI"
+      ],
+      "resultat_attendu": "2 cartes avec données cohérentes, navigation fonctionne",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "DASH-003",
+      "domaine": "Dashboard",
+      "priorite": "P1",
+      "titre": "Activité récente",
+      "etapes": [
+        "Sur /dashboard, scroller vers 'Activité récente'",
+        "Vérifier les événements affichés (biens ajoutés, loyers)",
+        "Vérifier que les accents sont corrects ('payé' pas 'paye')"
+      ],
+      "resultat_attendu": "Événements listés avec accents corrects",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "NAV-001",
+      "domaine": "Navigation",
+      "priorite": "P0",
+      "titre": "Sidebar navigation complète",
+      "etapes": [
+        "Vérifier sidebar: Dashboard, Mes SCI (dropdown), Exploitation, Finances",
+        "Cliquer sur une SCI dans le dropdown → sous-nav apparaît",
+        "Sous-nav: Vue d'ensemble, Biens, Associés, Fiscalité, Documents",
+        "Vérifier que AG et Mouvements de parts sont dans la sous-nav",
+        "Cliquer chaque lien → page correspondante"
+      ],
+      "resultat_attendu": "Tous les liens fonctionnent, sous-nav complète",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "NAV-002",
+      "domaine": "Navigation",
+      "priorite": "P1",
+      "titre": "Breadcrumbs avec accents",
+      "etapes": [
+        "Naviguer vers Biens → Fiche bien → vérifier breadcrumb",
+        "Naviguer vers Assemblées générales → vérifier 'Assemblées générales' (avec accents)",
+        "Vérifier qu'aucun UUID brut n'apparaît dans les breadcrumbs"
+      ],
+      "resultat_attendu": "Breadcrumbs lisibles, accents corrects, pas d'UUID",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "NAV-003",
+      "domaine": "Navigation",
+      "priorite": "P1",
+      "titre": "Thème clair/sombre",
+      "etapes": [
+        "Cliquer le bouton thème dans la navbar",
+        "Vérifier le passage en mode sombre",
+        "Recliquer → mode système → mode clair",
+        "Naviguer vers une autre page → le thème persiste"
+      ],
+      "resultat_attendu": "Toggle fonctionne, persistance après navigation",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "SCI-001",
+      "domaine": "SCI",
+      "priorite": "P0",
+      "titre": "Vue d'ensemble SCI avec données",
+      "etapes": [
+        "Naviguer vers SCI Belleville Patrimoine",
+        "Vérifier: nom, SIREN, statut, rôle Gérant",
+        "Vérifier KPIs: Loyer cible, Loyers encaissés, Cashflow",
+        "Vérifier Calendrier fiscal 2026 (5 échéances avec jours restants)",
+        "Vérifier Gouvernance: rôle, part 60%, régime IR",
+        "Vérifier Exports CSV (2 boutons)"
+      ],
+      "resultat_attendu": "Toutes les données affichées correctement",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "SCI-002",
+      "domaine": "SCI",
+      "priorite": "P1",
+      "titre": "Informations légales SCI",
+      "etapes": [
+        "Sur la vue d'ensemble SCI Belleville",
+        "Vérifier section Gouvernance: Capital 150 000€, RCS Paris, Gérant Marie Dupont",
+        "Cliquer 'Modifier' → page settings SCI",
+        "Vérifier section 'Informations légales': capital, RCS, gérant pré-remplis"
+      ],
+      "resultat_attendu": "Champs légaux affichés et éditables",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "SCI-003",
+      "domaine": "SCI",
+      "priorite": "P1",
+      "titre": "Export CSV biens et loyers",
+      "etapes": [
+        "Sur la vue d'ensemble SCI, cliquer 'Exporter les biens (CSV)'",
+        "Vérifier qu'un fichier CSV se télécharge",
+        "Cliquer 'Exporter les loyers (CSV)'",
+        "Vérifier qu'un fichier CSV se télécharge"
+      ],
+      "resultat_attendu": "2 fichiers CSV téléchargés sans erreur",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "BIEN-001",
+      "domaine": "Biens",
+      "priorite": "P0",
+      "titre": "Grille des biens avec statuts",
+      "etapes": [
+        "Naviguer vers Biens de la SCI Belleville",
+        "Vérifier 3 biens affichés en grille",
+        "Vérifier pour chaque: adresse, ville, loyer, rendement, cashflow",
+        "Vérifier badges statut: 'Occupé' (si bail actif) ou 'Vacant'",
+        "Toggle grille/liste → vérifier les 2 modes",
+        "Vérifier boutons: Importer CSV, Ajouter un bien"
+      ],
+      "resultat_attendu": "3 biens avec données, toggle fonctionne, statuts corrects",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "BIEN-002",
+      "domaine": "Biens",
+      "priorite": "P0",
+      "titre": "Fiche bien — 6 onglets complets",
+      "etapes": [
+        "Ouvrir le bien '12 rue de Belleville'",
+        "Onglet Identité: adresse, ville, CP, type bien (Appartement), type location (nu), surface, DPE, loyer, charges",
+        "Onglet Bail: bail en cours, locataire rattaché, loyer HC, charges, dépôt garantie",
+        "Onglet Loyers: tableau avec mois, montant, statut (payé/en_retard/en_attente)",
+        "Onglet Charges: charges listées par type",
+        "Onglet Rentabilité: brute, nette, cashflow mensuel/annuel",
+        "Onglet Documents: état vide ou documents listés"
+      ],
+      "resultat_attendu": "6 onglets fonctionnels avec données réalistes",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "BIEN-003",
+      "domaine": "Biens",
+      "priorite": "P0",
+      "titre": "Enregistrer un loyer",
+      "etapes": [
+        "Sur la fiche bien, onglet Loyers",
+        "Cliquer 'Enregistrer un loyer'",
+        "Remplir: période = mois courant, montant = 1450, statut = Payé",
+        "Cliquer Enregistrer",
+        "Vérifier que le loyer apparaît dans le tableau",
+        "Vérifier toast de confirmation"
+      ],
+      "resultat_attendu": "Loyer enregistré, affiché dans le tableau",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "BIEN-004",
+      "domaine": "Biens",
+      "priorite": "P1",
+      "titre": "Ajouter une charge",
+      "etapes": [
+        "Onglet Charges, cliquer 'Ajouter une charge'",
+        "Remplir: type = taxe_fonciere, montant = 500, date = aujourd'hui",
+        "Enregistrer",
+        "Vérifier apparition dans la liste"
+      ],
+      "resultat_attendu": "Charge ajoutée et visible",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "BIEN-005",
+      "domaine": "Biens",
+      "priorite": "P0",
+      "titre": "Générer une quittance",
+      "etapes": [
+        "Sur la fiche bien avec un loyer payé",
+        "Cliquer 'Générer quittance' (ou bouton Quittance sur le loyer)",
+        "Vérifier: PDF généré ou message quittance",
+        "Si PDF: vérifier qu'il contient SCI name, locataire, montant, période"
+      ],
+      "resultat_attendu": "Quittance PDF générée avec données correctes",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "BIEN-006",
+      "domaine": "Biens",
+      "priorite": "P1",
+      "titre": "Modales exclusives",
+      "etapes": [
+        "Sur la fiche bien, ouvrir 'Enregistrer un loyer'",
+        "Sans fermer, cliquer 'Ajouter une charge'",
+        "Vérifier qu'une seule modale est ouverte à la fois"
+      ],
+      "resultat_attendu": "1 seule modale visible, l'autre se ferme",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "ASSOC-001",
+      "domaine": "Associés",
+      "priorite": "P1",
+      "titre": "Liste des associés",
+      "etapes": [
+        "Naviguer vers Associés de SCI Belleville",
+        "Vérifier: 2 associés listés (Marie Dupont 60%, Pierre Martin 40%)",
+        "Vérifier total des parts = 100%",
+        "Vérifier rôles: Gérant / Associé"
+      ],
+      "resultat_attendu": "2 associés, parts = 100%, rôles corrects",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "AG-001",
+      "domaine": "Assemblées Générales",
+      "priorite": "P1",
+      "titre": "Registre AG avec données",
+      "etapes": [
+        "Naviguer vers Assemblées générales de SCI Belleville",
+        "Vérifier: 2 AG listées (AGO 2025 + AGE 2025)",
+        "Vérifier accents: 'Assemblées générales' (pas 'Assemblees generales')",
+        "Vérifier détails: date, type, exercice, ordre du jour",
+        "Vérifier notes et résolutions visibles",
+        "Vérifier lien PV (si pv_url renseigné)"
+      ],
+      "resultat_attendu": "2 AG avec données complètes, accents corrects",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "AG-002",
+      "domaine": "Assemblées Générales",
+      "priorite": "P1",
+      "titre": "Créer une nouvelle AG",
+      "etapes": [
+        "Cliquer 'Nouvelle AG' ou 'Planifier une AG'",
+        "Remplir: date, type ordinaire, exercice 2025, ordre du jour",
+        "Enregistrer",
+        "Vérifier apparition dans le registre"
+      ],
+      "resultat_attendu": "AG créée et visible dans le registre",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "FISC-001",
+      "domaine": "Fiscalité",
+      "priorite": "P0",
+      "titre": "Page fiscalité — paywall pour plan free",
+      "etapes": [
+        "Si connecté avec plan Essentiel: naviguer vers Fiscalité",
+        "Vérifier: message 'Fonctionnalité Pro' affiché",
+        "Vérifier: lien 'Voir les offres' → /pricing",
+        "Vérifier: PAS d'erreur 402 dans la console"
+      ],
+      "resultat_attendu": "Paywall propre, pas d'erreur console",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "FISC-002",
+      "domaine": "Fiscalité",
+      "priorite": "P1",
+      "titre": "Créer un exercice fiscal avec charges décomposées",
+      "etapes": [
+        "Sur la page Fiscalité (plan Pro), créer un exercice 2025",
+        "Ouvrir 'Détail des charges' (section collapsible)",
+        "Remplir: intérêts 3000€, travaux 2000€, taxe foncière 1500€, copropriété 800€, assurance 400€",
+        "Vérifier: total charges auto-calculé = 7700€",
+        "Remplir: revenus = 20000€",
+        "Enregistrer"
+      ],
+      "resultat_attendu": "Exercice créé avec charges décomposées",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "FISC-003",
+      "domaine": "Fiscalité",
+      "priorite": "P1",
+      "titre": "Analyser un exercice fiscal",
+      "etapes": [
+        "Sur un exercice existant, cliquer 'Analyser'",
+        "Vérifier: carte d'analyse avec régime recommandé",
+        "Vérifier: si éligible micro-foncier, comparaison affichée",
+        "Vérifier: si déficit, décomposition affichée (intérêts vs charges, 10700€)"
+      ],
+      "resultat_attendu": "Analyse fiscale avec recommandation régime",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "FISC-004",
+      "domaine": "Fiscalité",
+      "priorite": "P1",
+      "titre": "Télécharger le résumé fiscal PDF",
+      "etapes": [
+        "Sur un exercice, cliquer 'Résumé fiscal PDF' ou 'Résumé détaillé'",
+        "Vérifier: PDF téléchargé",
+        "Ouvrir le PDF: vérifier 5 pages (Identification, Revenus, Charges, Résultat, Associés)",
+        "Vérifier lignes CERFA (L211, L221-L230, L240-L261)",
+        "Vérifier quote-parts par associé avec cases 2042"
+      ],
+      "resultat_attendu": "PDF 5 pages avec mapping CERFA complet",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "FISC-005",
+      "domaine": "Fiscalité",
+      "priorite": "P1",
+      "titre": "Report 2042 par associé",
+      "etapes": [
+        "Après analyse, dans la section quote-parts",
+        "Cliquer 'Report 2042' pour un associé",
+        "Vérifier: PDF 1 page téléchargé",
+        "Vérifier: cases 4BA/4BB/4BC visibles avec montants",
+        "Vérifier: instructions de report claires"
+      ],
+      "resultat_attendu": "PDF individuel avec cases 2042 à reporter",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "DOC-001",
+      "domaine": "Documents",
+      "priorite": "P0",
+      "titre": "Page documents avec regroupement par bien",
+      "etapes": [
+        "Naviguer vers Documents de la SCI",
+        "Vérifier regroupement par bien (si documents existent)",
+        "Vérifier état vide avec CTA 'Ajouter' (si pas de documents)"
+      ],
+      "resultat_attendu": "Page charge, regroupement ou état vide propre",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "FIN-001",
+      "domaine": "Finances",
+      "priorite": "P0",
+      "titre": "Page finances avec KPIs et filtres",
+      "etapes": [
+        "Naviguer vers /finances",
+        "Vérifier KPIs: Revenus, Charges, Cashflow net, Patrimoine, Recouvrement, Rentabilité",
+        "Cliquer filtre '6 mois' → données mises à jour",
+        "Cliquer filtre '12 mois' → données mises à jour",
+        "Vérifier graphique 'Évolution mensuelle' (si présent)",
+        "Vérifier tableau 'Répartition par SCI' (2 SCI listées)",
+        "Vérifier bouton 'Exporter les loyers (CSV)'"
+      ],
+      "resultat_attendu": "KPIs, filtres, graphique, tableau, export — tous fonctionnels",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "EXPL-001",
+      "domaine": "Exploitation",
+      "priorite": "P1",
+      "titre": "Page exploitation — vue opérationnelle",
+      "etapes": [
+        "Naviguer vers /exploitation",
+        "Vérifier KPIs: Total biens, Taux occupation, Loyer total/mois",
+        "Vérifier tableau: tous les biens de toutes les SCI",
+        "Vérifier colonnes: SCI, Adresse, Type, Loyer, Statut, DPE",
+        "Filtrer par SCI → tableau se filtre",
+        "Cliquer sur un bien → navigation vers fiche bien"
+      ],
+      "resultat_attendu": "Vue consolidée tous biens, filtres et navigation",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "SET-001",
+      "domaine": "Settings",
+      "priorite": "P1",
+      "titre": "Page paramètres avec accents",
+      "etapes": [
+        "Naviguer vers /settings",
+        "Vérifier titre: 'Préférences de l'application' (avec accents)",
+        "Vérifier sections: Point d'entrée, Densité, Thème",
+        "Vérifier toggles: Prévisualisation PDF, Digest email, Alertes",
+        "Vérifier table Notifications: 7 types avec toggles email/in-app",
+        "Vérifier panneau latéral: Capacité active (plan + limites)"
+      ],
+      "resultat_attendu": "Tous les accents corrects, toggles fonctionnels",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "SET-002",
+      "domaine": "Settings",
+      "priorite": "P1",
+      "titre": "Dropdown page d'ouverture — routes valides",
+      "etapes": [
+        "Dans les préférences, ouvrir le dropdown 'Page d'ouverture par défaut'",
+        "Vérifier les options: Tableau de bord, Portefeuille, Exploitation, Finances, Paramètres",
+        "Vérifier qu'il n'y a PAS '/exploitation' sans label ou '/finance' (singulier)",
+        "Changer la valeur, enregistrer, recharger → vérifier persistance"
+      ],
+      "resultat_attendu": "Routes valides uniquement, persistance OK",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "NOTIF-001",
+      "domaine": "Notifications",
+      "priorite": "P1",
+      "titre": "Centre de notifications",
+      "etapes": [
+        "Cliquer l'icône cloche dans la navbar",
+        "Vérifier: notifications listées (loyer impayé, bail expirant, etc.)",
+        "Cliquer une notification → marquer comme lue",
+        "Vérifier que le compteur diminue"
+      ],
+      "resultat_attendu": "Notifications visibles, marquage lu fonctionne",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "OFFLINE-001",
+      "domaine": "Résilience",
+      "priorite": "P1",
+      "titre": "Bannière offline honnête",
+      "etapes": [
+        "Couper le réseau (DevTools → Network → Offline)",
+        "Vérifier: bannière apparaît",
+        "Vérifier texte: 'certaines fonctionnalités sont indisponibles' (PAS 'synchronisées au retour')",
+        "Rétablir le réseau → bannière disparaît"
+      ],
+      "resultat_attendu": "Bannière honnête sans fausse promesse de sync",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "DARK-001",
+      "domaine": "UI/UX",
+      "priorite": "P2",
+      "titre": "Dark mode cohérent",
+      "etapes": [
+        "Activer le mode sombre",
+        "Naviguer: Dashboard, Biens, Fiche bien, Finances, Settings",
+        "Vérifier: pas de texte illisible (blanc sur blanc, noir sur noir)",
+        "Vérifier: badges, cartes, tableaux tous lisibles",
+        "Vérifier: pricing page en dark mode"
+      ],
+      "resultat_attendu": "Toutes les pages lisibles en dark mode",
+      "resultat": "",
+      "commentaire": ""
+    },
+    {
+      "id": "PERF-001",
+      "domaine": "Performance",
+      "priorite": "P2",
+      "titre": "Temps de chargement acceptable",
+      "etapes": [
+        "Ouvrir DevTools → Network",
+        "Charger /dashboard → noter le temps total",
+        "Charger la fiche bien → noter le temps",
+        "Charger /finances → noter le temps"
+      ],
+      "resultat_attendu": "Chaque page < 3 secondes",
+      "resultat": "",
+      "commentaire": ""
+    }
+  ]
+}

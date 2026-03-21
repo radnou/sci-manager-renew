@@ -171,18 +171,15 @@
 	<div class="mb-4 flex items-center justify-between">
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Loyers</h2>
 		{#if isGerant}
-			<button
-				class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-				onclick={showLoyerComposer ? closeLoyerComposer : openLoyerComposer}
-			>
-				{#if showLoyerComposer}
-					<X class="h-4 w-4" />
-					Fermer
-				{:else}
+			{#if !showLoyerComposer}
+				<button
+					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+					onclick={openLoyerComposer}
+				>
 					<Plus class="h-4 w-4" />
 					Enregistrer un loyer
-				{/if}
-			</button>
+				</button>
+			{/if}
 		{/if}
 	</div>
 
@@ -307,8 +304,8 @@
 						{@const statut = getStatut(loyer.statut)}
 						{@const isGenerating = generatingQuittanceFor === String(loyer.id)}
 						<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
-							<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">
-								{formatFrDate(loyer.date_loyer)}
+							<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100 capitalize">
+								{buildPeriodeLabel(loyer.date_loyer)}
 							</td>
 							<td class="py-3 pr-4 text-slate-700 dark:text-slate-300">
 								{formatEur(loyer.montant)}

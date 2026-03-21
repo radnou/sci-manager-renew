@@ -23,6 +23,7 @@
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 	let showCheckEmail = $state(false);
+	const isDevMode = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
 
 	function getRedirectTarget(): string {
 		const next = page.url.searchParams.get('next');
@@ -125,6 +126,18 @@
 							pour vous connecter.
 						</p>
 					</div>
+
+					{#if isDevMode}
+						<div
+							class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+						>
+							<p class="text-sm font-semibold">Mode développement</p>
+							<p class="mt-1 text-sm">
+								En mode développement, le lien magique n'est pas envoyé par email.
+								Consultez les logs du backend (<code class="rounded bg-amber-100 px-1 dark:bg-amber-900">docker compose logs backend</code>) pour retrouver le lien.
+							</p>
+						</div>
+					{/if}
 
 					<Button href="/" variant="outline" class="w-full">Retour à l'accueil</Button>
 				{:else}

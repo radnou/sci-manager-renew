@@ -16,6 +16,9 @@ from app.core.paywall import AssocieMembership, require_gerant_role
 from app.core.supabase_client import get_supabase_service_client
 
 router = APIRouter(prefix="/scis/{sci_id}/import", tags=["import"])
+
+# Standalone router for template downloads (no sci_id required)
+templates_router = APIRouter(prefix="/import", tags=["import"])
 logger = structlog.get_logger(__name__)
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -113,11 +116,13 @@ def _validate_loyers_row(row: dict[str, str], index: int) -> dict | str:
 
 # ──────────────────────────────────────────────────────────────
 # GET /templates/{type} — download CSV template
+# Available on BOTH /import/templates/{type} (standalone)
+# and /scis/{sci_id}/import/templates/{type} (nested)
 # ──────────────────────────────────────────────────────────────
 
-@router.get("/templates/{template_type}")
-async def get_csv_template(template_type: str):
-    """Download a CSV template for biens or loyers import."""
+
+async def _serve_csv_template(template_type: str):
+    """Shared handler for CSV template downloads."""
     if template_type == "biens":
         content = BIENS_TEMPLATE.lstrip("\n")
         filename = "template-biens.csv"
@@ -132,6 +137,18 @@ async def get_csv_template(template_type: str):
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@templates_router.get("/templates/{template_type}")
+async def get_csv_template_standalone(template_type: str):
+    """Download a CSV template for biens or loyers import (no auth required)."""
+    return await _serve_csv_template(template_type)
+
+
+@router.get("/templates/{template_type}")
+async def get_csv_template(template_type: str):
+    """Download a CSV template for biens or loyers import (nested under SCI)."""
+    return await _serve_csv_template(template_type)
 
 
 # ──────────────────────────────────────────────────────────────

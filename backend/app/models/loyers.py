@@ -7,8 +7,6 @@ LoyerStatus = Literal["en_attente", "paye", "en_retard"]
 
 
 class LoyerBase(BaseModel):
-    id_bien: str
-    id_locataire: str | None = None
     date_loyer: date
     montant: float = Field(gt=0)
     statut: LoyerStatus = "en_attente"
@@ -18,7 +16,9 @@ class LoyerBase(BaseModel):
 
 
 class LoyerCreate(LoyerBase):
-    pass
+    """Create payload — id_bien is optional because the nested endpoint provides it from the URL."""
+    id_bien: str | None = None
+    id_locataire: str | None = None
 
 
 class LoyerUpdate(BaseModel):
@@ -32,6 +32,8 @@ class LoyerUpdate(BaseModel):
 
 class LoyerResponse(LoyerBase):
     id: str
+    id_bien: str
+    id_locataire: str | None = None
     id_sci: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

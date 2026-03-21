@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail, Fiscalite, ResumeFiscalData, AssocieQuotePart } from '$lib/api';
+	import type { SCIDetail, Fiscalite, ResumeFiscalData, AssocieQuotePart, SubscriptionEntitlements } from '$lib/api';
 	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, downloadReport2042Pdf, fetchResumeFiscal, createFiscalite, deleteFiscalite } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale, User } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
+	const subscription = getContext<{ plan_key: string; features: Record<string, boolean> } | null>('subscription');
 
 	let exercices: Fiscalite[] = $state([]);
 	let loading = $state(true);
@@ -50,6 +51,14 @@
 		loading = true;
 		error = null;
 		upgradeRequired = false;
+
+		// Skip API call for free plan or unknown subscription — the backend returns 402, which pollutes the console
+		if (!subscription || subscription.plan_key === 'free') {
+			upgradeRequired = true;
+			loading = false;
+			return;
+		}
+
 		try {
 			exercices = await fetchFiscalite(sci.id);
 		} catch (err: any) {
@@ -228,6 +237,8 @@
 			</p>
 			<a
 				href="/pricing"
+				target="_blank"
+				rel="noopener noreferrer"
 				class="mt-4 inline-block rounded-lg bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700"
 			>
 				Voir les offres
