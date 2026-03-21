@@ -375,7 +375,9 @@ fi
 BACKEND_PID=$!
 
 # Frontend — port fixe strict
+# Override Supabase CLI env vars that conflict with our backend port
 cd "$ROOT/frontend"
+export VITE_API_URL="http://localhost:$BACKEND_PORT"
 if [ "$VERBOSE" = true ]; then
     pnpm run dev -- --port $FRONTEND_PORT --strictPort 2>&1 | tee "$FRONTEND_LOG" &
 else
