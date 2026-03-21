@@ -97,7 +97,7 @@
 			name: 'Gestion',
 			description: 'Pour les gérants actifs avec plusieurs biens',
 			monthlyPrice: 19,
-			yearlyPrice: 180,
+			yearlyPrice: 190,
 			popular: false,
 			features: [
 				'3 SCI',
@@ -115,7 +115,7 @@
 			name: 'Fiscal',
 			description: 'Pour les gestionnaires patrimoniaux exigeants',
 			monthlyPrice: 39,
-			yearlyPrice: 348,
+			yearlyPrice: 390,
 			popular: true,
 			features: [
 				'SCI illimitées',
