@@ -7,11 +7,13 @@ Usage:
 Crée:
 - 1 utilisateur test (demo@gerersci.fr / password123)
 - 2 SCI avec associés
-- 4 biens immobiliers (appartements, studio, maison)
+- 4 biens immobiliers (appartements, studio, maison) avec type_bien
 - 4 baux actifs avec locataires
 - 12 mois de loyers (mix payé/impayé/en attente)
 - Charges, assurances PNO, frais agence
 - Fiscalité 2024 et 2025
+- Assemblées générales (AGO + AGE)
+- Mouvements de parts
 - Notifications réalistes
 - Abonnement Pro actif
 """
@@ -83,8 +85,10 @@ def clean_all_data():
     # Ordre inverse des dépendances FK
     tables = [
         "notification_preferences", "notifications",
+        "activated_sessions",
+        "mouvements_parts", "assemblees_generales",
         "bail_locataires", "loyers",
-        "frais_agence", "assurances_pno", "documents_bien",
+        "frais_agence", "assurances_pno", "documents",
         "charges", "baux", "locataires",
         "fiscalite", "biens", "associes", "sci",
         "subscriptions", "admins",
@@ -216,7 +220,7 @@ def main():
         {
             "id": uid(), "id_sci": sci1_id,
             "adresse": "12 rue de Belleville", "ville": "Paris",
-            "code_postal": "75020", "type_locatif": "T3",
+            "code_postal": "75020", "type_locatif": "nu", "type_bien": "appartement",
             "loyer_cc": 1450, "charges": 150, "tmi": 30,
             "surface_m2": 65, "nb_pieces": 3, "dpe_classe": "D",
             "prix_acquisition": 320000,
@@ -225,7 +229,7 @@ def main():
         {
             "id": uid(), "id_sci": sci1_id,
             "adresse": "45 avenue Jean Jaurès", "ville": "Paris",
-            "code_postal": "75019", "type_locatif": "T2",
+            "code_postal": "75019", "type_locatif": "meuble", "type_bien": "appartement",
             "loyer_cc": 1100, "charges": 100, "tmi": 30,
             "surface_m2": 42, "nb_pieces": 2, "dpe_classe": "C",
             "prix_acquisition": 245000,
@@ -234,7 +238,7 @@ def main():
         {
             "id": uid(), "id_sci": sci1_id,
             "adresse": "8 rue du Commerce", "ville": "Paris",
-            "code_postal": "75015", "type_locatif": "Studio",
+            "code_postal": "75015", "type_locatif": "nu", "type_bien": "appartement",
             "loyer_cc": 780, "charges": 80, "tmi": 30,
             "surface_m2": 22, "nb_pieces": 1, "dpe_classe": "E",
             "prix_acquisition": 175000,
@@ -246,7 +250,7 @@ def main():
     bien4 = {
         "id": uid(), "id_sci": sci2_id,
         "adresse": "15 rue de la République", "ville": "Lyon",
-        "code_postal": "69002", "type_locatif": "T4",
+        "code_postal": "69002", "type_locatif": "nu", "type_bien": "maison",
         "loyer_cc": 1800, "charges": 200, "tmi": 30,
         "surface_m2": 95, "nb_pieces": 4, "dpe_classe": "B",
         "prix_acquisition": 410000,
@@ -408,7 +412,7 @@ def main():
             "id_bien": bien["id"],
             "compagnie": "MAIF" if bien["id_sci"] == sci1_id else "AXA",
             "numero_contrat": f"PNO-{bien['code_postal']}-{uid()[:6]}",
-            "montant_annuel": 280 if bien["type_locatif"] != "Studio" else 150,
+            "montant_annuel": 280 if bien.get("nb_pieces", 2) > 1 else 150,
             "date_echeance": "2026-01-01",
         })
     print("  ✅ 4 assurances PNO")
@@ -498,6 +502,54 @@ def main():
         })
     print("  ✅ Préférences notifications")
 
+    # ── Assemblées générales ──────────────────────────────────
+    print("\n📋 Assemblées générales ...")
+    insert("assemblees_generales", [
+        {
+            "id": uid(), "id_sci": sci1_id,
+            "date_ag": "2025-06-15", "type_ag": "ordinaire",
+            "exercice_concerne": 2024,
+            "ordre_du_jour": "Approbation des comptes 2024 et affectation du résultat",
+            "notes": "Comptes approuvés à l'unanimité. Résultat net de 29 720€ affecté en report à nouveau.",
+            "resolutions": "Résolution 1 : approbation des comptes 2024.\nRésolution 2 : affectation du résultat en report à nouveau.\nRésolution 3 : renouvellement du mandat de gérant.",
+            "quorum_atteint": True,
+            "pv_url": "https://example.com/pv-ago-2025.pdf",
+        },
+        {
+            "id": uid(), "id_sci": sci1_id,
+            "date_ag": "2025-11-20", "type_ag": "extraordinaire",
+            "exercice_concerne": 2025,
+            "ordre_du_jour": "Modification des statuts — augmentation de capital",
+            "notes": "Capital porté de 150 000€ à 200 000€ par création de 333 parts nouvelles.",
+            "resolutions": "Résolution unique : augmentation du capital social de 50 000€.",
+            "quorum_atteint": True,
+        },
+    ])
+    print("  ✅ 2 AG (1 AGO + 1 AGE)")
+
+    # ── Mouvements de parts ───────────────────────────────────
+    if user2_id:
+        print("\n📊 Mouvements de parts ...")
+        insert("mouvements_parts", [
+            {
+                "id": uid(), "id_sci": sci1_id,
+                "type_mouvement": "cession",
+                "cedant": "Marie Dupont", "cessionnaire": "Pierre Martin",
+                "nombre_parts": 40, "prix_unitaire": 150,
+                "date_mouvement": "2023-03-15",
+                "acte_reference": "Acte notarié Me Lefèvre — Paris 20e",
+            },
+            {
+                "id": uid(), "id_sci": sci1_id,
+                "type_mouvement": "souscription",
+                "cessionnaire": "Marie Dupont",
+                "nombre_parts": 100, "prix_unitaire": 150,
+                "date_mouvement": "2022-01-15",
+                "acte_reference": "Statuts constitutifs SCI Belleville Patrimoine",
+            },
+        ])
+        print("  ✅ 2 mouvements de parts")
+
     # ── Admin flag ──────────────────────────────────────────────
     print("\n👑 Admin flag ...")
     insert("admins", {"user_id": user_id})
@@ -521,6 +573,8 @@ def main():
   • 4 assurances PNO
   • 1 frais agence
   • Fiscalité 2024-2025
+  • 2 assemblées générales (AGO + AGE)
+  • 2 mouvements de parts
   • Abonnement Pro actif
   • 3 notifications + préférences
 
