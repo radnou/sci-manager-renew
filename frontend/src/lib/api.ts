@@ -549,6 +549,29 @@ export function generateCerfa2044Pdf(payload: Cerfa2044Request): Promise<Blob> {
 	});
 }
 
+export type ResumeFiscalData = {
+	sci_nom: string;
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+	total_interets: number;
+	resultat_global: number;
+	micro_foncier_eligible: boolean;
+	micro_foncier_abattement: number;
+	micro_foncier_resultat: number;
+	regime_recommande: string;
+	economie_regime_recommande: number;
+	is_deficit: boolean;
+	deficit_total: number;
+	deficit_interets_emprunt: number;
+	deficit_imputable_revenu_global: number;
+	deficit_reportable_foncier: number;
+};
+
+export function fetchResumeFiscal(sciId: EntityId, annee: number): Promise<ResumeFiscalData> {
+	return apiFetch<ResumeFiscalData>(`/api/v1/cerfa/scis/${sciId}/resume-fiscal/${annee}`);
+}
+
 export function downloadResumeFiscalPdf(sciId: EntityId, annee: number): Promise<Blob> {
 	return apiFetchBlob(`/api/v1/cerfa/scis/${sciId}/resume-fiscal/${annee}/pdf`);
 }

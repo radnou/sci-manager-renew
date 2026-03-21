@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail, Fiscalite } from '$lib/api';
-	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, createFiscalite, deleteFiscalite } from '$lib/api';
+	import type { SCIDetail, Fiscalite, ResumeFiscalData } from '$lib/api';
+	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, fetchResumeFiscal, createFiscalite, deleteFiscalite } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp } from 'lucide-svelte';
+	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 
@@ -16,6 +16,8 @@
 	let cerfaError = $state('');
 	let generatingResume: number | null = $state(null);
 	let resumeError = $state('');
+	let resumeFiscalData: Map<number, ResumeFiscalData> = $state(new Map());
+	let loadingResumeFiscal: number | null = $state(null);
 	let showCreateForm = $state(false);
 	let creating = $state(false);
 	let deletingId: string | null = $state(null);
@@ -66,6 +68,19 @@
 		}
 	}
 
+	async function handleLoadResumeFiscal(annee: number) {
+		if (resumeFiscalData.has(annee)) return;
+		loadingResumeFiscal = annee;
+		try {
+			const data = await fetchResumeFiscal(sci.id, annee);
+			resumeFiscalData = new Map(resumeFiscalData).set(annee, data);
+		} catch {
+			// Silently fail — the summary card just won't show
+		} finally {
+			loadingResumeFiscal = null;
+		}
+	}
+
 	async function handleGenerateCerfa(exercice: Fiscalite) {
 		generatingCerfa = true;
 		cerfaError = '';
@@ -100,6 +115,8 @@
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
+			// Also fetch the JSON summary for the card display
+			handleLoadResumeFiscal(annee);
 		} catch (err: any) {
 			resumeError = err?.message ?? 'Erreur lors de la génération du résumé fiscal détaillé.';
 		} finally {
@@ -286,6 +303,20 @@
 						</div>
 						<div class="flex items-center gap-2">
 							<button
+								class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+								disabled={loadingResumeFiscal === ex.annee}
+								onclick={() => handleLoadResumeFiscal(ex.annee)}
+							>
+								<Scale class="h-3.5 w-3.5" />
+								{#if loadingResumeFiscal === ex.annee}
+									Chargement…
+								{:else if resumeFiscalData.has(ex.annee)}
+									Analyse affichée
+								{:else}
+									Analyser
+								{/if}
+							</button>
+							<button
 								class="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-400 dark:hover:bg-slate-800"
 								disabled={generatingResume === ex.annee}
 								onclick={() => handleDownloadResumeFiscal(ex.annee)}
@@ -319,6 +350,83 @@
 		{/if}
 	</div>
 	{/if}
+
+	<!-- Résumé fiscal summary cards -->
+	{#each [...resumeFiscalData.entries()] as [annee, rf] (annee)}
+		<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+			<div class="flex items-center gap-2 mb-4">
+				<Scale class="h-5 w-5 text-sky-600 dark:text-sky-400" />
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+					Analyse fiscale {annee}
+				</h2>
+			</div>
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<!-- Régime recommandé -->
+				<div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+					<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400 mb-2">
+						Régime recommandé
+					</p>
+					<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold {rf.regime_recommande === 'reel' ? 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'}">
+						{rf.regime_recommande === 'reel' ? 'Régime réel' : 'Micro-foncier'}
+					</span>
+					{#if rf.micro_foncier_eligible && rf.economie_regime_recommande > 0}
+						<p class="mt-2 text-sm text-emerald-700 dark:text-emerald-400">
+							Économie de {formatEur(rf.economie_regime_recommande)} en optant pour le {rf.regime_recommande === 'reel' ? 'régime réel' : 'micro-foncier'}
+						</p>
+					{/if}
+					{#if !rf.micro_foncier_eligible}
+						<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+							Revenus bruts > 15 000 EUR — micro-foncier non éligible
+						</p>
+					{/if}
+				</div>
+
+				<!-- Déficit foncier -->
+				{#if rf.is_deficit}
+					<div class="rounded-xl border border-rose-100 bg-rose-50/50 p-4 dark:border-rose-900/50 dark:bg-rose-950/20">
+						<div class="flex items-center gap-1.5 mb-2">
+							<TrendingDown class="h-4 w-4 text-rose-600 dark:text-rose-400" />
+							<p class="text-xs font-medium text-rose-600 uppercase dark:text-rose-400">
+								Déficit foncier
+							</p>
+						</div>
+						<p class="text-lg font-bold text-rose-700 dark:text-rose-300">
+							{formatEur(rf.deficit_total)}
+						</p>
+						{#if rf.deficit_imputable_revenu_global > 0}
+							<p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+								Dont {formatEur(rf.deficit_imputable_revenu_global)} imputable sur le revenu global
+								<span class="text-xs text-slate-500">(max 10 700 EUR)</span>
+							</p>
+						{/if}
+						{#if rf.deficit_interets_emprunt > 0}
+							<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+								Intérêts d'emprunt : {formatEur(rf.deficit_interets_emprunt)} (reportable revenus fonciers uniquement)
+							</p>
+						{/if}
+						{#if rf.deficit_reportable_foncier > 0}
+							<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+								Excédent reportable : {formatEur(rf.deficit_reportable_foncier)} sur 10 ans
+							</p>
+						{/if}
+					</div>
+				{:else}
+					<div class="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+						<p class="text-xs font-medium text-emerald-600 uppercase dark:text-emerald-400 mb-2">
+							Résultat fiscal net
+						</p>
+						<p class="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+							{formatEur(rf.resultat_global)}
+						</p>
+						<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+							Bénéfice foncier imposable
+						</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/each}
 
 	<!-- Exercices fiscaux -->
 	<div

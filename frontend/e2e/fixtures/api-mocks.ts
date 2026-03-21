@@ -229,6 +229,10 @@ const SCI_1_DETAIL = {
   fiscalite: [
     { id: 8001, id_sci: SCI_ID_1, annee: 2025, total_revenus: 25800, total_charges: 8400, resultat_fiscal: 17400, regime_fiscal: 'IR' },
     { id: 8002, id_sci: SCI_ID_1, annee: 2024, total_revenus: 22800, total_charges: 7200, resultat_fiscal: 15600, regime_fiscal: 'IR' }
+  ],
+  associes: [
+    { id: 9001, nom: 'Moreau', email: 'demo@gerersci.fr', role: 'gerant', part: 600, nb_parts: 600, id_sci: SCI_ID_1, user_id: MOCK_USER.id },
+    { id: 9002, nom: 'Moreau-Dubois', email: 'sophie.moreau@email.fr', role: 'associe', part: 400, nb_parts: 400, id_sci: SCI_ID_1, user_id: null }
   ]
 };
 
@@ -249,6 +253,10 @@ const SCI_2_DETAIL = {
   ],
   fiscalite: [
     { id: 8010, id_sci: SCI_ID_2, annee: 2025, total_revenus: 9600, total_charges: 3200, resultat_fiscal: 6400, regime_fiscal: 'IS' }
+  ],
+  associes: [
+    { id: 9010, nom: 'Moreau', email: 'demo@gerersci.fr', role: 'gerant', part: 300, nb_parts: 300, id_sci: SCI_ID_2, user_id: MOCK_USER.id },
+    { id: 9011, nom: 'Bernard', email: 'jean.bernard@email.fr', role: 'associe', part: 200, nb_parts: 200, id_sci: SCI_ID_2, user_id: null }
   ]
 };
 
@@ -607,7 +615,8 @@ export async function setupApiMocks(page: Page) {
 
   // SCI 1 mouvements-parts, assemblees-generales
   await page.route(`**/api/v1/scis/${SCI_ID_1}/mouvements-parts*`, route => json(route, []));
-  await page.route(`**/api/v1/scis/${SCI_ID_1}/assemblees-generales*`, async route => {
+  // Match both /assemblees-generales and /assemblees-generales/{id} (PATCH/DELETE)
+  await page.route(new RegExp(`/api/v1/scis/${SCI_ID_1}/assemblees-generales`), async route => {
     const request = route.request();
     const url = new URL(request.url());
     const agId = url.pathname.split('/assemblees-generales/')[1] ?? null;
@@ -643,7 +652,7 @@ export async function setupApiMocks(page: Page) {
   await page.route(`**/api/v1/scis/${SCI_ID_2}/associes*`, route => json(route, ASSOCIES_SCI_2));
   await page.route(`**/api/v1/scis/${SCI_ID_2}/documents*`, route => json(route, []));
   await page.route(`**/api/v1/scis/${SCI_ID_2}/mouvements-parts*`, route => json(route, []));
-  await page.route(`**/api/v1/scis/${SCI_ID_2}/assemblees-generales*`, route => json(route, sci2Assemblees));
+  await page.route(new RegExp(`/api/v1/scis/${SCI_ID_2}/assemblees-generales`), route => json(route, sci2Assemblees));
 
   // SCI detail
   await page.route(`**/api/v1/scis/${SCI_ID_1}`, route => {
@@ -773,7 +782,42 @@ export async function setupApiMocks(page: Page) {
   );
 
   // ---- Catch-all for any unmatched API call ----
+  // Uses route.fallback() so more-specific routes registered above take priority.
+  // Playwright matches routes in LIFO order; fallback() defers to the next matching handler.
   await page.route('**/api/v1/**', route => {
+    // Check if a more-specific route should handle this request.
+    // We only fulfill requests whose path is NOT already handled above.
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+
+    // List of path prefixes that have dedicated mocks above
+    const handledPrefixes = [
+      '/api/v1/stripe/',
+      '/api/v1/onboarding',
+      '/api/v1/dashboard',
+      '/api/v1/finances',
+      '/api/v1/notifications',
+      '/api/v1/user/notification-preferences',
+      '/api/v1/scis/',
+      '/api/v1/scis',
+      '/api/v1/fiscalite',
+      '/api/v1/associes',
+      '/api/v1/charges',
+      '/api/v1/loyers',
+      '/api/v1/biens',
+      '/api/v1/locataires',
+      '/api/v1/quitus/',
+      '/api/v1/cerfa/',
+      '/api/v1/export/',
+      '/api/v1/gdpr/',
+      '/api/v1/files/',
+    ];
+
+    const isHandled = handledPrefixes.some(prefix => path.startsWith(prefix));
+    if (isHandled) {
+      return route.fallback();
+    }
+
     const method = route.request().method();
     if (method === 'DELETE') return route.fulfill({ status: 204, body: '' });
     if (method === 'POST' || method === 'PATCH' || method === 'PUT') return json(route, { success: true });
@@ -805,6 +849,8 @@ export async function injectFakeSession(page: Page) {
     window.localStorage.setItem('sb-api-auth-token', JSON.stringify(data.session));
     window.localStorage.setItem('sb-auth-token', JSON.stringify(data.session));
     window.localStorage.setItem(data.storageKey, JSON.stringify(data.session));
+    // Pre-accept cookies so the consent banner does not block interactions
+    window.localStorage.setItem('gerersci_cookie_consent', 'essential');
   }, FAKE_SESSION_DATA);
 }
 

@@ -220,6 +220,48 @@ async def generate_cerfa_2044_pdf(
     )
 
 
+@router.get("/scis/{sci_id}/resume-fiscal/{annee}")
+async def get_resume_fiscal_json(
+    sci_id: str,
+    annee: int,
+    request: Request,
+    user_id: str = Depends(get_current_user),
+):
+    """Résumé fiscal JSON — micro-foncier, déficit foncier, régime recommandé."""
+    SubscriptionService.ensure_feature_enabled(user_id, "cerfa_enabled")
+
+    if not settings.feature_cerfa_generation:
+        raise FeatureDisabledError(
+            "La génération du résumé fiscal est désactivée.",
+            flag_name="feature_cerfa_generation",
+        )
+
+    client = get_supabase_user_client(request)
+
+    assoc_rows = (
+        client.table("associes")
+        .select("id")
+        .eq("id_sci", sci_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not (assoc_rows.data or []):
+        from app.core.exceptions import AuthorizationError
+        raise AuthorizationError("SCI", sci_id)
+
+    service = ResumeFiscalService()
+    result = service.calculate(sci_id, annee, client)
+
+    if result.regime_fiscal and result.regime_fiscal.upper() == "IS":
+        raise ValidationError(
+            "Le résumé fiscal foncier ne s'applique pas aux SCI à l'IS. "
+            "Utilisez la liasse fiscale 2065."
+        )
+
+    from dataclasses import asdict
+    return asdict(result)
+
+
 @router.get("/scis/{sci_id}/resume-fiscal/{annee}/pdf")
 async def generate_resume_fiscal_pdf(
     sci_id: str,

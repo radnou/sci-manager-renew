@@ -327,6 +327,124 @@ class ResumeFiscalPdfService:
 
                 elements.append(KeepTogether(bien_elements))
 
+        # ── Section: Comparaison Micro-foncier / Réel ─────────────────
+
+        if result.micro_foncier_eligible:
+            elements.append(Spacer(1, 6 * mm))
+            elements.append(Paragraph("Comparaison Micro-foncier / Réel", section_style))
+
+            regime_label = (
+                "Régime réel recommandé"
+                if result.regime_recommande == "reel"
+                else "Micro-foncier recommandé"
+            )
+            elements.append(Paragraph(
+                f"<b>{regime_label}</b> — économie de {_fmt_eur(result.economie_regime_recommande)}",
+                normal_style,
+            ))
+            elements.append(Spacer(1, 2 * mm))
+
+            micro_data = [
+                ["", "Micro-foncier", "Régime réel"],
+                [
+                    "Revenus bruts",
+                    _fmt_eur(result.total_revenus),
+                    _fmt_eur(result.total_revenus),
+                ],
+                [
+                    "Abattement / Charges",
+                    f"- {_fmt_eur(result.micro_foncier_abattement)} (30 %)",
+                    f"- {_fmt_eur(result.total_charges + result.total_interets)}",
+                ],
+                [
+                    "Résultat net imposable",
+                    _fmt_eur(result.micro_foncier_resultat),
+                    _fmt_eur(result.resultat_global),
+                ],
+            ]
+
+            col_w_label_m = 60 * mm
+            col_w_val_m = 52.5 * mm
+
+            micro_table = Table(micro_data, colWidths=[col_w_label_m, col_w_val_m, col_w_val_m])
+
+            # Highlight the recommended column
+            rec_col = 2 if result.regime_recommande == "reel" else 1
+            micro_style_cmds = [
+                ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+                ("TEXTCOLOR", (0, 0), (-1, 0), _DARK),
+                ("FONTNAME", (0, 0), (-1, 0), _FONT_BOLD),
+                ("FONTNAME", (0, 1), (0, -1), _FONT_NAME),
+                ("FONTNAME", (1, 1), (-1, -1), _FONT_NAME),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("GRID", (0, 0), (-1, -1), 0.5, _BORDER),
+                # Result row bold
+                ("FONTNAME", (0, -1), (-1, -1), _FONT_BOLD),
+                ("BACKGROUND", (0, -1), (-1, -1), _LIGHT_BG),
+                # Highlight recommended column header
+                ("BACKGROUND", (rec_col, 0), (rec_col, 0), colors.HexColor("#dbeafe")),
+                ("TEXTCOLOR", (rec_col, -1), (rec_col, -1), _GREEN),
+            ]
+            micro_table.setStyle(TableStyle(micro_style_cmds))
+            elements.append(micro_table)
+
+            elements.append(Spacer(1, 2 * mm))
+            elements.append(Paragraph(
+                "<i>L'option pour le régime réel est irrévocable pour 3 ans (art. 32-4 CGI).</i>",
+                disclaimer_style,
+            ))
+
+        # ── Section: Déficit foncier ─────────────────────────────────
+
+        if result.is_deficit:
+            elements.append(Spacer(1, 6 * mm))
+            elements.append(Paragraph("Déficit foncier", section_style))
+
+            deficit_data = [
+                ["Poste", "Montant"],
+                ["Déficit total", _fmt_eur(result.deficit_total)],
+                [
+                    "Dont intérêts d'emprunt (reportable revenus fonciers, 10 ans)",
+                    _fmt_eur(result.deficit_interets_emprunt),
+                ],
+                [
+                    "Dont charges hors intérêts — imputable revenu global (max 10 700 EUR)",
+                    _fmt_eur(result.deficit_imputable_revenu_global),
+                ],
+                [
+                    "Excédent reportable sur revenus fonciers (10 ans)",
+                    _fmt_eur(result.deficit_reportable_foncier),
+                ],
+            ]
+
+            deficit_table = Table(deficit_data, colWidths=[col_w_label, col_w_amount])
+            deficit_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+                ("TEXTCOLOR", (0, 0), (-1, 0), _DARK),
+                ("FONTNAME", (0, 0), (-1, 0), _FONT_BOLD),
+                ("FONTNAME", (0, 1), (-1, -1), _FONT_NAME),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("GRID", (0, 0), (-1, -1), 0.5, _BORDER),
+                # First data row bold (total)
+                ("FONTNAME", (0, 1), (-1, 1), _FONT_BOLD),
+                ("BACKGROUND", (0, 1), (-1, 1), _LIGHT_BG),
+                ("TEXTCOLOR", (1, 1), (1, 1), _RED),
+            ]))
+            elements.append(deficit_table)
+
+            elements.append(Spacer(1, 2 * mm))
+            elements.append(Paragraph(
+                "<i>Les intérêts d'emprunt ne s'imputent que sur les revenus fonciers "
+                "(art. 156-I-3° CGI). L'excédent de déficit est reportable pendant 10 ans.</i>",
+                disclaimer_style,
+            ))
+
         # ── Last section: Alertes + Disclaimers ───────────────────────
 
         if result.alertes:

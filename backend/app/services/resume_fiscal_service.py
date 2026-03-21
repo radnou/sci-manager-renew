@@ -48,6 +48,20 @@ class ResumeFiscalResult:
     associes: list[AssocieQuotePart] = field(default_factory=list)
     alertes: list[str] = field(default_factory=list)
 
+    # Phase 2: Micro-foncier comparison (art. 32 CGI)
+    micro_foncier_eligible: bool = False
+    micro_foncier_abattement: float = 0.0
+    micro_foncier_resultat: float = 0.0
+    regime_recommande: str = "reel"
+    economie_regime_recommande: float = 0.0
+
+    # Phase 2: Déficit foncier (art. 156-I-3° CGI)
+    is_deficit: bool = False
+    deficit_total: float = 0.0
+    deficit_interets_emprunt: float = 0.0
+    deficit_imputable_revenu_global: float = 0.0
+    deficit_reportable_foncier: float = 0.0
+
 
 class ResumeFiscalService:
     """Calcule le résumé fiscal d'une SCI pour une année donnée (IR régime réel)."""
@@ -277,6 +291,47 @@ class ResumeFiscalService:
         if not associe_rows:
             alertes.append("Aucun associé enregistré pour cette SCI.")
 
+        # ── Phase 2: Micro-foncier comparison (art. 32 CGI) ────────────
+        # Eligible if total revenus bruts <= 15 000 EUR
+        micro_foncier_eligible = total_revenus <= 15_000
+        if micro_foncier_eligible:
+            micro_foncier_abattement = round(total_revenus * 0.30, 2)
+            micro_foncier_resultat = round(total_revenus - micro_foncier_abattement, 2)
+        else:
+            micro_foncier_abattement = 0.0
+            micro_foncier_resultat = 0.0
+
+        # Comparison: which regime yields lower taxable income?
+        if micro_foncier_eligible:
+            economie_reel = round(micro_foncier_resultat - resultat_global, 2)
+            # economie_reel > 0 means réel produces lower taxable income
+            regime_recommande = "reel" if economie_reel > 0 else "micro"
+            economie_regime_recommande = abs(economie_reel)
+        else:
+            regime_recommande = "reel"
+            economie_regime_recommande = 0.0
+
+        # ── Phase 2: Déficit foncier (art. 156-I-3° CGI) ─────────────
+        is_deficit = resultat_global < 0
+        deficit_total = 0.0
+        deficit_interets_emprunt = 0.0
+        deficit_imputable_revenu_global = 0.0
+        deficit_reportable_foncier = 0.0
+
+        if is_deficit:
+            deficit_total = round(abs(resultat_global), 2)
+
+            # Intérêts d'emprunt: only deductible against rental income
+            deficit_interets = round(min(total_interets, deficit_total), 2)
+
+            # Other charges: deductible against global income up to 10 700 EUR
+            deficit_hors_interets = round(deficit_total - deficit_interets, 2)
+            deficit_imputable_revenu_global = round(min(deficit_hors_interets, 10_700), 2)
+            deficit_reportable_foncier = round(
+                deficit_hors_interets - deficit_imputable_revenu_global, 2
+            )
+            deficit_interets_emprunt = deficit_interets
+
         return ResumeFiscalResult(
             sci_nom=sci_nom,
             sci_siren=sci_siren,
@@ -289,4 +344,16 @@ class ResumeFiscalService:
             resultat_global=resultat_global,
             associes=associes_qp,
             alertes=alertes,
+            # Micro-foncier
+            micro_foncier_eligible=micro_foncier_eligible,
+            micro_foncier_abattement=micro_foncier_abattement,
+            micro_foncier_resultat=micro_foncier_resultat,
+            regime_recommande=regime_recommande,
+            economie_regime_recommande=economie_regime_recommande,
+            # Déficit foncier
+            is_deficit=is_deficit,
+            deficit_total=deficit_total,
+            deficit_interets_emprunt=deficit_interets_emprunt,
+            deficit_imputable_revenu_global=deficit_imputable_revenu_global,
+            deficit_reportable_foncier=deficit_reportable_foncier,
         )
