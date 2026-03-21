@@ -4,7 +4,7 @@
 	import type { PnoCreate, PnoUpdate } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { mapChargeTypeLabel } from '$lib/high-value/presentation';
-	import { Plus, Trash2, Shield, Building2, X, Filter } from 'lucide-svelte';
+	import { Plus, Trash2, Shield, Building2, X, Filter, Pencil, Phone, Mail } from 'lucide-svelte';
 	import FraisModal from '$lib/components/fiche-bien/modals/FraisModal.svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { CHARGE_TYPE_OPTIONS } from '$lib/high-value/charges';
@@ -48,6 +48,32 @@
 
 	$effect(() => subscribeExclusiveFicheBienModal('pno', () => { showPnoForm = false; }));
 	$effect(() => subscribeExclusiveFicheBienModal('frais', () => { showFraisModal = false; }));
+
+	// Agency card state
+	let showAgencyEditForm = $state(false);
+
+	$effect(() => subscribeExclusiveFicheBienModal('agence', () => { showAgencyEditForm = false; }));
+
+	function openAgencyEdit() {
+		announceFicheBienModal('agence');
+		showAgencyEditForm = true;
+	}
+
+	function closeAgencyEdit() {
+		showAgencyEditForm = false;
+	}
+
+	// Derive agency summary from frais list
+	const agencySummary = $derived(() => {
+		if (fraisAgence.length === 0) return null;
+		const totalFrais = fraisAgence.reduce((sum, f) => sum + Number(f.montant ?? 0), 0);
+		const byType = new Map<string, number>();
+		for (const f of fraisAgence) {
+			byType.set(f.type_frais, (byType.get(f.type_frais) ?? 0) + Number(f.montant ?? 0));
+		}
+		const primaryType = [...byType.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'gestion_locative';
+		return { totalFrais, count: fraisAgence.length, primaryType };
+	});
 
 	const typeFraisLabels: Record<string, string> = {
 		gestion_locative: 'Gestion locative',
@@ -685,12 +711,12 @@
 		{/if}
 	</div>
 
-	<!-- D3: Frais agence -->
+	<!-- D3: Agence de gestion -->
 	<div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-2">
 				<Building2 class="h-5 w-5 text-sky-600 dark:text-sky-400" />
-				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Frais d'agence</h2>
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Agence de gestion</h2>
 			</div>
 			{#if isGerant}
 				<button
@@ -698,84 +724,125 @@
 					onclick={openFraisModal}
 				>
 					<Plus class="h-4 w-4" />
-					Ajouter
+					Ajouter des frais
 				</button>
 			{/if}
 		</div>
 
-		{#if fraisAgence.length === 0}
+		{#if fraisAgence.length === 0 && !showAgencyEditForm}
+			<!-- Empty state: CTA to add agency -->
 			<div
-				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-8 dark:border-slate-700"
+				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-10 dark:border-slate-700"
 			>
 				<Building2 class="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
-				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucun frais d'agence enregistr&eacute;.</p>
+				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucune agence de gestion renseignée.</p>
+				{#if isGerant}
+					<button
+						onclick={openFraisModal}
+						class="mt-3 inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-400 dark:hover:bg-sky-900/40"
+					>
+						<Plus class="h-4 w-4" />
+						Ajouter une agence de gestion
+					</button>
+				{/if}
 			</div>
 		{:else}
-			<div class="overflow-x-auto">
-				<table class="w-full text-left text-sm">
-					<thead>
-						<tr class="border-b border-slate-200 dark:border-slate-700">
-							<th
-								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
+			<!-- Agency professional card -->
+			{@const summary = agencySummary()}
+			{#if summary}
+				<div class="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
+					<div class="flex items-start justify-between gap-4">
+						<div class="flex items-start gap-4">
+							<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-900/40">
+								<Building2 class="h-6 w-6 text-sky-600 dark:text-sky-400" />
+							</div>
+							<div>
+								<p class="text-base font-semibold text-slate-900 dark:text-slate-100">
+									Mandat de {getFraisLabel(summary.primaryType).toLowerCase()}
+								</p>
+								<p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+									{summary.count} frais enregistré{summary.count > 1 ? 's' : ''}
+								</p>
+							</div>
+						</div>
+						{#if isGerant}
+							<button
+								onclick={showAgencyEditForm ? closeAgencyEdit : openAgencyEdit}
+								class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
 							>
-								Type
-							</th>
-							<th
-								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
-							>
-								Montant
-							</th>
-							<th
-								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
-							>
-								Date
-							</th>
-							<th
-								class="pb-3 pr-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
-							>
-								Description
-							</th>
-							{#if isGerant}
-								<th
-									class="pb-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
-								>
-									Actions
-								</th>
-							{/if}
-						</tr>
-					</thead>
-					<tbody>
-						{#each fraisAgence as frais (frais.id)}
-							<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
-								<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">
-									{getFraisLabel(frais.type_frais)}
-								</td>
-								<td class="py-3 pr-4 text-slate-700 dark:text-slate-300">
-									{formatEur(frais.montant)}
-								</td>
-								<td class="py-3 pr-4 text-slate-500 dark:text-slate-400">
-									{formatFrDate(frais.date_frais)}
-								</td>
-								<td class="py-3 pr-4 text-slate-500 dark:text-slate-400">
-									{frais.description ?? '\u2014'}
-								</td>
+								{#if showAgencyEditForm}
+									<X class="h-3.5 w-3.5" />
+									Fermer
+								{:else}
+									<Pencil class="h-3.5 w-3.5" />
+									Détails
+								{/if}
+							</button>
+						{/if}
+					</div>
+
+					<!-- Summary stats -->
+					<div class="mt-4 grid gap-3 sm:grid-cols-2">
+						<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+							<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">Total frais</p>
+							<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(summary.totalFrais)}</p>
+						</div>
+						<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+							<p class="text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400">Type principal</p>
+							<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{getFraisLabel(summary.primaryType)}</p>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Expanded frais detail list (toggled by "Détails") -->
+			{#if showAgencyEditForm}
+				<div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+					<table class="w-full text-left text-sm">
+						<thead>
+							<tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
+								<th class="px-4 pb-3 pt-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Type</th>
+								<th class="px-4 pb-3 pt-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Montant</th>
+								<th class="px-4 pb-3 pt-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Date</th>
+								<th class="px-4 pb-3 pt-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Description</th>
 								{#if isGerant}
-									<td class="py-3">
-										<button
-											class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
-											title="Supprimer"
-											onclick={() => handleDeleteFrais(frais.id)}
-										>
-											<Trash2 class="h-3 w-3" />
-											Supprimer
-										</button>
-									</td>
+									<th class="px-4 pb-3 pt-3 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase">Actions</th>
 								{/if}
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+						</thead>
+						<tbody>
+							{#each fraisAgence as frais (frais.id)}
+								<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
+									<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+										{getFraisLabel(frais.type_frais)}
+									</td>
+									<td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+										{formatEur(frais.montant)}
+									</td>
+									<td class="px-4 py-3 text-slate-500 dark:text-slate-400">
+										{formatFrDate(frais.date_frais)}
+									</td>
+									<td class="px-4 py-3 text-slate-500 dark:text-slate-400">
+										{frais.description ?? '\u2014'}
+									</td>
+									{#if isGerant}
+										<td class="px-4 py-3">
+											<button
+												class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400"
+												title="Supprimer"
+												onclick={() => handleDeleteFrais(frais.id)}
+											>
+												<Trash2 class="h-3 w-3" />
+												Supprimer
+											</button>
+										</td>
+									{/if}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
 		{/if}
 	</div>
 	<FraisModal bind:open={showFraisModal} {sciId} {bienId} onSuccess={onRefresh} />

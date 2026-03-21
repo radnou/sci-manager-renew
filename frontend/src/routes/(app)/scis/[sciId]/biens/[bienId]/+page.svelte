@@ -194,7 +194,7 @@
 			</div>
 			{:else if activeSection === 'bail'}
 			<div id="section-bail" role="tabpanel" aria-label="Bail">
-				<FicheBienBail bail={bien.bail_actif} {isGerant} sciId={sciId} bienId={String(bien.id)} onRefresh={loadFicheBien} />
+				<FicheBienBail bail={bien.bail_actif} loyers={bien.loyers_recents} {isGerant} sciId={sciId} bienId={String(bien.id)} onRefresh={loadFicheBien} />
 			</div>
 			{:else if activeSection === 'loyers'}
 			<div id="section-loyers" role="tabpanel" aria-label="Loyers">
