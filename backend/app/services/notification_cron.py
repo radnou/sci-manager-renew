@@ -342,6 +342,97 @@ async def check_bail_renewal(supabase_client) -> int:
     return notified
 
 
+# ── TASK: Charges recurrentes auto-generees ───────────────────────────
+
+
+_RECURRING_CHARGE_TYPES = {"copropriete", "taxe_fonciere"}
+
+# Quarter start months (Jan=1, Apr=4, Jul=7, Oct=10)
+_QUARTER_MONTHS = {1, 4, 7, 10}
+
+
+async def check_recurring_charges(supabase_client) -> int:
+    """On the 1st of each quarter, auto-create charge records for all biens.
+
+    Looks at existing charges of type copropriete / taxe_fonciere,
+    and reproduces them for the current quarter using the last known amount.
+    Skips if a charge already exists for this bien + type + quarter.
+    """
+    today = date.today()
+
+    # Only run on the 1st of a quarter month
+    if today.day != 1 or today.month not in _QUARTER_MONTHS:
+        return 0
+
+    quarter_start = today.replace(day=1).isoformat()
+    # Quarter end: last day of the quarter
+    quarter_end_month = today.month + 2
+    if quarter_end_month == 3:
+        quarter_end = date(today.year, 3, 31).isoformat()
+    elif quarter_end_month == 6:
+        quarter_end = date(today.year, 6, 30).isoformat()
+    elif quarter_end_month == 9:
+        quarter_end = date(today.year, 9, 30).isoformat()
+    else:
+        quarter_end = date(today.year, 12, 31).isoformat()
+
+    created_count = 0
+
+    # Fetch all biens
+    biens_result = supabase_client.table("biens").select("id, id_sci").execute()
+    biens = biens_result.data or []
+
+    for bien in biens:
+        bien_id = bien.get("id")
+        id_sci = bien.get("id_sci")
+        if not bien_id or not id_sci:
+            continue
+
+        for charge_type in _RECURRING_CHARGE_TYPES:
+            # Check if a charge already exists for this bien + type in the current quarter
+            existing = (
+                supabase_client.table("charges")
+                .select("id")
+                .eq("id_bien", bien_id)
+                .eq("type_charge", charge_type)
+                .gte("date_paiement", quarter_start)
+                .lte("date_paiement", quarter_end)
+                .execute()
+            )
+            if existing.data:
+                continue
+
+            # Find the most recent charge of this type for this bien (template)
+            last_charge = (
+                supabase_client.table("charges")
+                .select("montant")
+                .eq("id_bien", bien_id)
+                .eq("type_charge", charge_type)
+                .order("date_paiement", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if not last_charge.data:
+                continue
+
+            montant = last_charge.data[0].get("montant")
+            if not montant or float(montant) <= 0:
+                continue
+
+            # Create the new charge record
+            supabase_client.table("charges").insert({
+                "id_bien": bien_id,
+                "id_sci": id_sci,
+                "type_charge": charge_type,
+                "montant": float(montant),
+                "date_paiement": quarter_start,
+            }).execute()
+            created_count += 1
+
+    logger.info("check_recurring_charges_complete", created=created_count)
+    return created_count
+
+
 async def check_expiring_bails(supabase_client) -> int:
     """Find baux expiring within 90 days and notify the owner."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d")

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { FicheBien, ObligationsData, ObligationStatus } from '$lib/api';
-	import { fetchObligations } from '$lib/api';
-	import { FileText, Pencil, Loader2, ChevronDown, ShieldCheck, ShieldAlert, ShieldQuestion, Download } from 'lucide-svelte';
+	import { fetchObligations, cederBien } from '$lib/api';
+	import { FileText, Pencil, Loader2, ChevronDown, ShieldCheck, ShieldAlert, ShieldQuestion, Download, HandCoins } from 'lucide-svelte';
 	import { page } from '$app/state';
+	import { addToast } from '$lib/components/ui/toast';
 
 	interface Props {
 		bien: FicheBien;
@@ -129,6 +130,44 @@
 			? [obligations.pno, obligations.dpe, obligations.bail, obligations.locataire, obligations.depot_garantie].filter(Boolean)
 			: []
 	);
+
+	// ── Cession du bien ──────────────────────────────────
+	let showCessionForm = $state(false);
+	let cessionSaving = $state(false);
+	let cessionPrix = $state(0);
+	let cessionDate = $state('');
+	let cessionAcquereur = $state('');
+
+	const plusValueBrute = $derived(
+		cessionPrix > 0 && bien.prix_acquisition
+			? cessionPrix - bien.prix_acquisition
+			: null
+	);
+
+	function openCessionForm() {
+		showCessionForm = true;
+		cessionPrix = 0;
+		cessionDate = new Date().toISOString().split('T')[0];
+		cessionAcquereur = '';
+	}
+
+	async function submitCession() {
+		if (cessionPrix <= 0 || !cessionDate || !cessionAcquereur.trim()) return;
+		cessionSaving = true;
+		try {
+			await cederBien(sciId, String(bien.id), {
+				prix_cession: cessionPrix,
+				date_cession: cessionDate,
+				acquereur: cessionAcquereur
+			});
+			addToast({ title: 'Cession enregistrée', description: `Le bien a été cédé pour ${cessionPrix.toLocaleString('fr-FR')} EUR.`, variant: 'success' });
+			showCessionForm = false;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible d\'enregistrer la cession.', variant: 'error' });
+		} finally {
+			cessionSaving = false;
+		}
+	}
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -169,6 +208,13 @@
 						<FileText class="h-4 w-4" />
 						Générer quittance
 					{/if}
+				</button>
+				<button
+					onclick={openCessionForm}
+					class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50 dark:border-amber-800 dark:bg-slate-900 dark:text-amber-400 dark:hover:bg-amber-950/30"
+				>
+					<HandCoins class="h-4 w-4" />
+					Céder le bien
 				</button>
 			</div>
 		{/if}
@@ -233,4 +279,69 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Cession form -->
+	{#if showCessionForm}
+		<div class="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-5 dark:border-amber-800/50 dark:bg-amber-950/20">
+			<h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+				<HandCoins class="h-4 w-4 text-amber-600" />
+				Céder le bien
+			</h3>
+			<div class="grid gap-4 sm:grid-cols-3">
+				<div>
+					<label for="cession-prix" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Prix de cession</label>
+					<input
+						id="cession-prix"
+						type="number"
+						min="0"
+						bind:value={cessionPrix}
+						placeholder="0"
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					/>
+				</div>
+				<div>
+					<label for="cession-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Date de cession</label>
+					<input
+						id="cession-date"
+						type="date"
+						bind:value={cessionDate}
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					/>
+				</div>
+				<div>
+					<label for="cession-acquereur" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Acquéreur</label>
+					<input
+						id="cession-acquereur"
+						type="text"
+						bind:value={cessionAcquereur}
+						placeholder="Nom de l'acquéreur"
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					/>
+				</div>
+			</div>
+			{#if plusValueBrute != null}
+				<div class="mt-3 rounded-lg px-4 py-2.5 {plusValueBrute >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-rose-100 dark:bg-rose-900/30'}">
+					<p class="text-sm font-medium {plusValueBrute >= 0 ? 'text-emerald-800 dark:text-emerald-300' : 'text-rose-800 dark:text-rose-300'}">
+						Plus-value brute estimée : {plusValueBrute.toLocaleString('fr-FR')} EUR
+					</p>
+					<p class="text-xs {plusValueBrute >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+						Prix d'acquisition : {bien.prix_acquisition?.toLocaleString('fr-FR')} EUR | Prix de cession : {cessionPrix.toLocaleString('fr-FR')} EUR
+					</p>
+				</div>
+			{/if}
+			<div class="mt-4 flex items-center justify-end gap-2">
+				<button onclick={() => { showCessionForm = false; }} class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+					Annuler
+				</button>
+				<button
+					onclick={submitCession}
+					disabled={cessionSaving || cessionPrix <= 0 || !cessionAcquereur.trim()}
+					class="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+				>
+					{#if cessionSaving}<Loader2 class="h-4 w-4 animate-spin" />{/if}
+					Enregistrer la cession
+				</button>
+			</div>
+		</div>
+	{/if}
 </header>

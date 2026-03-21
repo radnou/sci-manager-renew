@@ -23,7 +23,8 @@ class BienBase(BaseModel):
 
 
 class BienCreate(BienBase):
-    pass
+    frais_notaire: float | None = Field(default=None, ge=0)
+    frais_agence_acquisition: float | None = Field(default=None, ge=0)
 
 
 class BienUpdate(BaseModel):
@@ -41,6 +42,8 @@ class BienUpdate(BaseModel):
     nb_pieces: int | None = Field(default=None, ge=0)
     dpe_classe: str | None = Field(default=None, max_length=1, pattern=r"^[A-G]$")
     photo_url: str | None = Field(default=None, max_length=500)
+    frais_notaire: float | None = Field(default=None, ge=0)
+    frais_agence_acquisition: float | None = Field(default=None, ge=0)
     dpe_date: date | None = None
     diagnostic_amiante_date: date | None = None
     diagnostic_electricite_date: date | None = None
@@ -66,6 +69,12 @@ class BienResponse(BaseModel):
     nb_pieces: int | None = None
     dpe_classe: str | None = None
     photo_url: str | None = None
+    frais_notaire: float | None = None
+    frais_agence_acquisition: float | None = None
+    prix_cession: float | None = None
+    date_cession: date | None = None
+    acquereur: str | None = None
+    frais_cession: float | None = None
     statut: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

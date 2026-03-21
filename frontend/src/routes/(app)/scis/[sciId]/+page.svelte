@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { Building2, Users, FileText, MapPin, FolderOpen, Download, Wallet, TrendingUp, Receipt, AlertTriangle, CalendarDays, Clock, CheckCircle2, Pencil, Trash2, Loader2 } from 'lucide-svelte';
-	import type { SCIDetail, ComptabiliteAnnuelle } from '$lib/api';
-	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci, fetchComptabiliteAnnuelle } from '$lib/api';
+	import { Building2, Users, FileText, MapPin, FolderOpen, Download, Wallet, TrendingUp, Receipt, AlertTriangle, CalendarDays, Clock, CheckCircle2, Pencil, Trash2, Loader2, ChevronDown, UserCog, Landmark, XCircle, Check } from 'lucide-svelte';
+	import type { SCIDetail, ComptabiliteAnnuelle, Associe } from '$lib/api';
+	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci, fetchComptabiliteAnnuelle, changerGerant, modifierCapital, dissoudreSci, fetchSciAssociesList, marquerEcheanceFiscaleFaite, demarquerEcheanceFiscale, fetchCalendrierFiscalStatut } from '$lib/api';
 	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { Button } from '$lib/components/ui/button';
@@ -22,6 +22,130 @@
 	// Delete SCI state
 	let showDeleteConfirm = $state(false);
 	let deletingSci = $state(false);
+
+	// ── Gestion SCI (lifecycle) ─────────────────────────────────────
+	let showGestionMenu = $state(false);
+
+	// Changer de gérant
+	let showGerantForm = $state(false);
+	let gerantSaving = $state(false);
+	let gerantAssocieId = $state('');
+	let gerantDateEffet = $state('');
+	let associesList = $state<Associe[]>([]);
+
+	async function loadAssocies() {
+		try {
+			const list = await fetchSciAssociesList(sciId);
+			associesList = list.filter(a => a.role !== 'gerant');
+		} catch { /* ignore */ }
+	}
+
+	function openGerantForm() {
+		showGestionMenu = false;
+		showGerantForm = true;
+		gerantDateEffet = new Date().toISOString().split('T')[0];
+		gerantAssocieId = '';
+		loadAssocies();
+	}
+
+	async function submitChangerGerant() {
+		if (!gerantAssocieId || !gerantDateEffet) return;
+		gerantSaving = true;
+		try {
+			await changerGerant(sciId, { associe_id: gerantAssocieId, date_effet: gerantDateEffet });
+			addToast({ title: 'Gérant modifié', description: 'Le changement de gérant a été enregistré.', variant: 'success' });
+			showGerantForm = false;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de changer le gérant.', variant: 'error' });
+		} finally {
+			gerantSaving = false;
+		}
+	}
+
+	// Modifier le capital
+	let showCapitalForm = $state(false);
+	let capitalSaving = $state(false);
+	let capitalNouveau = $state(0);
+	let capitalNbParts = $state(0);
+
+	function openCapitalForm() {
+		showGestionMenu = false;
+		showCapitalForm = true;
+		capitalNouveau = sci.capital_social ?? 0;
+		capitalNbParts = sci.nb_parts_total ?? 0;
+	}
+
+	async function submitModifierCapital() {
+		if (capitalNouveau <= 0 || capitalNbParts <= 0) return;
+		capitalSaving = true;
+		try {
+			await modifierCapital(sciId, { nouveau_capital: capitalNouveau, nb_parts: capitalNbParts });
+			addToast({ title: 'Capital modifié', description: 'Le capital social a été mis à jour.', variant: 'success' });
+			showCapitalForm = false;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de modifier le capital.', variant: 'error' });
+		} finally {
+			capitalSaving = false;
+		}
+	}
+
+	// Dissoudre la SCI
+	let showDissolutionConfirm = $state(false);
+	let dissolutionSaving = $state(false);
+	let dissolutionMotif = $state('');
+
+	function openDissolutionForm() {
+		showGestionMenu = false;
+		showDissolutionConfirm = true;
+		dissolutionMotif = '';
+	}
+
+	async function submitDissolution() {
+		if (!dissolutionMotif.trim()) return;
+		dissolutionSaving = true;
+		try {
+			await dissoudreSci(sciId, { motif: dissolutionMotif, date_dissolution: new Date().toISOString().split('T')[0] });
+			addToast({ title: 'SCI dissoute', description: `${sci.nom} a été dissoute.`, variant: 'success' });
+			showDissolutionConfirm = false;
+			goto('/scis');
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de dissoudre la SCI.', variant: 'error' });
+		} finally {
+			dissolutionSaving = false;
+		}
+	}
+
+	// ── Calendrier fiscal interactif ───────────────────────────────
+	let fiscalDoneMap = $state<Record<string, boolean>>({});
+
+	$effect(() => {
+		loadFiscalStatut(currentYear);
+	});
+
+	async function loadFiscalStatut(annee: number) {
+		try {
+			fiscalDoneMap = await fetchCalendrierFiscalStatut(sciId, annee);
+		} catch {
+			fiscalDoneMap = {};
+		}
+	}
+
+	async function toggleFiscalDone(key: string) {
+		const wasDone = fiscalDoneMap[key] ?? false;
+		// Optimistic update
+		fiscalDoneMap = { ...fiscalDoneMap, [key]: !wasDone };
+		try {
+			if (wasDone) {
+				await demarquerEcheanceFiscale(sciId, currentYear, key);
+			} else {
+				await marquerEcheanceFiscaleFaite(sciId, currentYear, key);
+			}
+		} catch {
+			// Rollback
+			fiscalDoneMap = { ...fiscalDoneMap, [key]: wasDone };
+			addToast({ title: 'Erreur', description: 'Impossible de mettre à jour le statut.', variant: 'error' });
+		}
+	}
 
 	// ── Comptabilité annuelle ──────────────────────────────────────
 	let comptaYear = $state(new Date().getFullYear());
@@ -348,6 +472,36 @@
 						<Trash2 class="h-3.5 w-3.5" />
 						Supprimer
 					</button>
+					<!-- Gestion dropdown -->
+					<div class="relative">
+						<button
+							onclick={() => { showGestionMenu = !showGestionMenu; }}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							Gestion
+							<ChevronDown class="h-3.5 w-3.5" />
+						</button>
+						{#if showGestionMenu}
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div class="fixed inset-0 z-40" onclick={() => { showGestionMenu = false; }}></div>
+							<div class="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+								<button onclick={openGerantForm} class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+									<UserCog class="h-4 w-4 flex-shrink-0 text-indigo-500" />
+									Changer de gérant
+								</button>
+								<button onclick={openCapitalForm} class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+									<Landmark class="h-4 w-4 flex-shrink-0 text-sky-500" />
+									Modifier le capital
+								</button>
+								<div class="my-1 border-t border-slate-100 dark:border-slate-800"></div>
+								<button onclick={openDissolutionForm} class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30">
+									<XCircle class="h-4 w-4 flex-shrink-0" />
+									Dissoudre la SCI
+								</button>
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -458,24 +612,36 @@
 		<div class="mt-4 space-y-2">
 			{#each fiscalEvents as event}
 				{@const status = deadlineStatus(event.daysUntil)}
-				<div class="flex items-center gap-3 rounded-xl {status.bg} px-4 py-3">
-					<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/80 dark:bg-slate-800/80">
-						{#if event.daysUntil < 0}
+				{@const isDone = fiscalDoneMap[event.key] ?? false}
+				<div class="flex items-center gap-3 rounded-xl {isDone ? 'bg-emerald-50 dark:bg-emerald-950/30' : status.bg} px-4 py-3">
+					<button
+						type="button"
+						onclick={() => toggleFiscalDone(event.key)}
+						class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/80 transition-colors hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-700/80"
+						title={isDone ? 'Marquer comme non fait' : 'Marquer comme fait'}
+						aria-label={isDone ? `${event.label} : fait` : `${event.label} : en attente`}
+					>
+						{#if isDone}
+							<Check class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+						{:else if event.daysUntil < 0}
 							<CheckCircle2 class="h-4 w-4 {status.iconColor}" />
 						{:else}
 							<Clock class="h-4 w-4 {status.iconColor}" />
 						{/if}
-					</div>
+					</button>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center justify-between gap-2">
-							<p class="text-sm font-medium {event.daysUntil < 0 ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-900 dark:text-slate-100'}">
+							<p class="text-sm font-medium {isDone ? 'text-emerald-700 line-through dark:text-emerald-400' : event.daysUntil < 0 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-slate-100'}">
 								{event.label}
+								{#if isDone}
+									<span class="ml-1.5 text-xs font-normal text-emerald-600 dark:text-emerald-400">fait</span>
+								{/if}
 							</p>
-							<span class="flex-shrink-0 text-xs font-semibold {status.color}">
-								{status.label}
+							<span class="flex-shrink-0 text-xs font-semibold {isDone ? 'text-emerald-600 dark:text-emerald-400' : status.color}">
+								{isDone ? 'Fait' : status.label}
 							</span>
 						</div>
-						<p class="text-xs {event.daysUntil < 0 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'}">
+						<p class="text-xs {isDone ? 'text-emerald-600/70 dark:text-emerald-400/70' : event.daysUntil < 0 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'}">
 							{event.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} — {event.description}
 						</p>
 					</div>
@@ -634,6 +800,151 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Changer de gérant -->
+	{#if showGerantForm}
+		<div class="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-6 dark:border-indigo-800/50 dark:bg-indigo-950/20">
+			<h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+				<UserCog class="h-4 w-4 text-indigo-500" />
+				Changer de gérant
+			</h3>
+			<div class="grid gap-4 sm:grid-cols-2">
+				<div>
+					<label for="gerant-associe" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nouvel associé gérant</label>
+					<select
+						id="gerant-associe"
+						bind:value={gerantAssocieId}
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					>
+						<option value="">Sélectionner un associé</option>
+						{#each associesList as associe}
+							<option value={String(associe.id)}>{associe.nom} ({associe.email ?? 'pas d\'email'})</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label for="gerant-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Date d'effet</label>
+					<input
+						id="gerant-date"
+						type="date"
+						bind:value={gerantDateEffet}
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					/>
+				</div>
+			</div>
+			<div class="mt-4 flex items-center justify-end gap-2">
+				<button onclick={() => { showGerantForm = false; }} class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+					Annuler
+				</button>
+				<button
+					onclick={submitChangerGerant}
+					disabled={gerantSaving || !gerantAssocieId}
+					class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+				>
+					{#if gerantSaving}<Loader2 class="h-4 w-4 animate-spin" />{/if}
+					Confirmer le changement
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Modifier le capital -->
+	{#if showCapitalForm}
+		<div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50/50 p-6 dark:border-sky-800/50 dark:bg-sky-950/20">
+			<h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+				<Landmark class="h-4 w-4 text-sky-500" />
+				Modifier le capital social
+			</h3>
+			<div class="grid gap-4 sm:grid-cols-2">
+				<div>
+					<label for="capital-montant" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nouveau capital social</label>
+					<input
+						id="capital-montant"
+						type="number"
+						min="1"
+						bind:value={capitalNouveau}
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					/>
+				</div>
+				<div>
+					<label for="capital-parts" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre de parts</label>
+					<input
+						id="capital-parts"
+						type="number"
+						min="1"
+						bind:value={capitalNbParts}
+						class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					/>
+				</div>
+			</div>
+			{#if capitalNbParts > 0 && capitalNouveau > 0}
+				<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+					Valeur nominale par part : <span class="font-semibold text-slate-700 dark:text-slate-200">{formatEur(capitalNouveau / capitalNbParts)}</span>
+				</p>
+			{/if}
+			<div class="mt-4 flex items-center justify-end gap-2">
+				<button onclick={() => { showCapitalForm = false; }} class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+					Annuler
+				</button>
+				<button
+					onclick={submitModifierCapital}
+					disabled={capitalSaving || capitalNouveau <= 0 || capitalNbParts <= 0}
+					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+				>
+					{#if capitalSaving}<Loader2 class="h-4 w-4 animate-spin" />{/if}
+					Mettre à jour
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Dissolution SCI Confirmation -->
+	{#if showDissolutionConfirm}
+		<div
+			role="alertdialog"
+			aria-modal="true"
+			aria-labelledby="dissolution-title"
+			class="fixed inset-0 z-50 flex items-center justify-center p-4"
+		>
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick={() => { if (!dissolutionSaving) showDissolutionConfirm = false; }}></div>
+			<div class="relative w-full max-w-[460px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+				<div class="flex items-start gap-3">
+					<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/40">
+						<XCircle class="h-5 w-5 text-rose-600 dark:text-rose-400" />
+					</div>
+					<div class="flex-1">
+						<h2 id="dissolution-title" class="text-base font-semibold text-slate-900 dark:text-slate-100">Dissoudre {sci.nom} ?</h2>
+						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+							Cette action enregistrera la dissolution de la SCI. Tous les biens devront être cédés ou transférés au préalable.
+						</p>
+						<div class="mt-4">
+							<label for="dissolution-motif" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Motif de dissolution</label>
+							<textarea
+								id="dissolution-motif"
+								bind:value={dissolutionMotif}
+								rows="3"
+								placeholder="Ex : Fin d'activité, vente de tous les biens..."
+								class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+							></textarea>
+						</div>
+					</div>
+				</div>
+				<div class="mt-5 flex items-center justify-end gap-2">
+					<button onclick={() => { showDissolutionConfirm = false; }} disabled={dissolutionSaving}
+						class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+						Annuler
+					</button>
+					<button onclick={submitDissolution} disabled={dissolutionSaving || !dissolutionMotif.trim()}
+						class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50">
+						{#if dissolutionSaving}<Loader2 class="h-4 w-4 animate-spin" />{/if}
+						Dissoudre la SCI
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Delete SCI Confirmation Modal -->
 	{#if showDeleteConfirm}

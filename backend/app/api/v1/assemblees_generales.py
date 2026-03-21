@@ -350,6 +350,45 @@ async def get_modele_ag(
 # ──────────────────────────────────────────────────────────────
 
 
+# ──────────────────────────────────────────────────────────────
+# Feuille de presence models
+# ──────────────────────────────────────────────────────────────
+
+
+class AssociePresence(BaseModel):
+    associe_id: str
+    nom: str
+    nb_parts: float = 0
+    pct: float = 0
+    present: Optional[bool] = None
+
+
+class FeuillePresenceResponse(BaseModel):
+    sci_nom: str
+    date_ag: str
+    type_ag: str
+    associes: list[AssociePresence] = []
+    total_parts: float = 0
+    quorum_requis: str = "Majorite des parts (>50%)"
+    quorum_atteint: Optional[bool] = None
+
+
+class PresenceItem(BaseModel):
+    associe_id: str
+    present: bool
+
+
+class PresenceUpdatePayload(BaseModel):
+    presences: list[PresenceItem]
+
+
+class PresenceUpdateResponse(BaseModel):
+    quorum_atteint: bool
+    parts_presentes: float
+    total_parts: float
+    pourcentage_present: float
+
+
 class ConvocationAGResponse(BaseModel):
     texte_convocation: str
     date_limite_envoi: str
@@ -432,4 +471,135 @@ async def generate_convocation_ag(
         date_limite_envoi=date_limite.isoformat(),
         date_ag=str(date_ag),
         associes_destinataires=associes,
+    )
+
+
+# ──────────────────────────────────────────────────────────────
+# FEUILLE DE PRESENCE AG
+# ──────────────────────────────────────────────────────────────
+
+
+@router.get("/{ag_id}/feuille-presence", response_model=FeuillePresenceResponse)
+async def get_feuille_presence(
+    request: Request,
+    sci_id: UUID,
+    ag_id: UUID,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Return the attendance sheet for a general assembly."""
+    logger.info("get_feuille_presence", sci_id=str(sci_id), ag_id=str(ag_id))
+
+    client = _get_client(request)
+
+    # Fetch AG
+    ag_result = (
+        client.table("assemblees_generales")
+        .select("*")
+        .eq("id", str(ag_id))
+        .eq("id_sci", str(sci_id))
+        .execute()
+    )
+    if not (ag_result.data or []):
+        raise ResourceNotFoundError("AssembleeGenerale", str(ag_id))
+    ag = ag_result.data[0]
+
+    # Fetch SCI
+    sci_result = client.table("sci").select("nom").eq("id", str(sci_id)).execute()
+    sci_nom = (sci_result.data or [{}])[0].get("nom", "") if sci_result.data else ""
+
+    # Fetch associes for this SCI
+    assoc_result = (
+        client.table("associes")
+        .select("id, nom, part")
+        .eq("id_sci", str(sci_id))
+        .execute()
+    )
+    associes = assoc_result.data or []
+
+    total_parts = sum(float(a.get("part") or 0) for a in associes)
+
+    associes_presence = []
+    for a in associes:
+        nb_parts = float(a.get("part") or 0)
+        pct = round(nb_parts / total_parts * 100, 2) if total_parts > 0 else 0
+        associes_presence.append(
+            AssociePresence(
+                associe_id=str(a["id"]),
+                nom=a.get("nom", ""),
+                nb_parts=nb_parts,
+                pct=pct,
+                present=None,
+            )
+        )
+
+    return FeuillePresenceResponse(
+        sci_nom=sci_nom,
+        date_ag=str(ag.get("date_ag", "")),
+        type_ag=ag.get("type_ag", "ordinaire"),
+        associes=associes_presence,
+        total_parts=total_parts,
+        quorum_requis="Majorite des parts (>50%)",
+        quorum_atteint=None,
+    )
+
+
+@router.post("/{ag_id}/feuille-presence", response_model=PresenceUpdateResponse)
+async def update_feuille_presence(
+    request: Request,
+    sci_id: UUID,
+    ag_id: UUID,
+    payload: PresenceUpdatePayload,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Record attendance and compute quorum for a general assembly."""
+    logger.info("update_feuille_presence", sci_id=str(sci_id), ag_id=str(ag_id))
+
+    client = _get_client(request)
+
+    # Verify AG exists and belongs to this SCI
+    ag_result = (
+        client.table("assemblees_generales")
+        .select("id")
+        .eq("id", str(ag_id))
+        .eq("id_sci", str(sci_id))
+        .execute()
+    )
+    if not (ag_result.data or []):
+        raise ResourceNotFoundError("AssembleeGenerale", str(ag_id))
+
+    # Fetch all associes for this SCI
+    assoc_result = (
+        client.table("associes")
+        .select("id, part")
+        .eq("id_sci", str(sci_id))
+        .execute()
+    )
+    associes = assoc_result.data or []
+    parts_by_id = {str(a["id"]): float(a.get("part") or 0) for a in associes}
+    total_parts = sum(parts_by_id.values())
+
+    # Calculate parts presentes
+    present_ids = {p.associe_id for p in payload.presences if p.present}
+    parts_presentes = sum(parts_by_id.get(aid, 0) for aid in present_ids)
+
+    pourcentage = round(parts_presentes / total_parts * 100, 2) if total_parts > 0 else 0
+    quorum_atteint = pourcentage > 50
+
+    # Update the AG record with quorum result
+    client.table("assemblees_generales").update({
+        "quorum_atteint": quorum_atteint,
+    }).eq("id", str(ag_id)).execute()
+
+    logger.info(
+        "feuille_presence_updated",
+        ag_id=str(ag_id),
+        quorum_atteint=quorum_atteint,
+        pourcentage=pourcentage,
+    )
+
+    return PresenceUpdateResponse(
+        quorum_atteint=quorum_atteint,
+        parts_presentes=parts_presentes,
+        total_parts=total_parts,
+        pourcentage_present=pourcentage,
     )

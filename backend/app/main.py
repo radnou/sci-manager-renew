@@ -38,6 +38,7 @@ from app.api.v1 import (
     associes,
     auth,
     biens,
+    calendrier_fiscal,
     cerfa,
     charges,
     comptabilite,
@@ -57,6 +58,7 @@ from app.api.v1 import (
     notifications,
     onboarding,
     quitus,
+    sci_lifecycle,
     scis,
     scis_biens,
     stripe,
@@ -75,6 +77,7 @@ from app.services.notification_cron import (
     check_late_payments,
     check_monthly_loyer_generation,
     check_pending_quittances,
+    check_recurring_charges,
 )
 
 # Configurer logging au démarrage
@@ -109,6 +112,8 @@ async def _notification_cron_loop():
             await check_irl_revisions(client)
             # Task 4: Tacit bail renewals and conge deadlines
             await check_bail_renewal(client)
+            # Task 5: Auto-generate recurring charges (quarterly)
+            await check_recurring_charges(client)
             logger.info("notification_cron_cycle_complete")
             await asyncio.sleep(86_400)  # 24h
         except asyncio.CancelledError:
@@ -549,7 +554,9 @@ app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(finances.router, prefix="/api/v1")
 app.include_router(scis_biens.router, prefix="/api/v1")
 app.include_router(mouvements_parts.router, prefix="/api/v1")
+app.include_router(sci_lifecycle.router, prefix="/api/v1")
 app.include_router(assemblees_generales.router, prefix="/api/v1")
+app.include_router(calendrier_fiscal.router, prefix="/api/v1")
 app.include_router(comptabilite.router, prefix="/api/v1")
 app.include_router(echeances.router, prefix="/api/v1")
 app.include_router(import_csv.router, prefix="/api/v1")

@@ -1781,3 +1781,105 @@ export function prefillFiscalite(sciId: EntityId, annee: number) {
 		{ method: 'POST' }
 	);
 }
+
+// --- SCI Lifecycle ---
+
+export interface DissoudreSciPayload {
+	motif: string;
+	date_dissolution?: string;
+}
+
+export function dissoudreSci(sciId: EntityId, data: DissoudreSciPayload) {
+	return apiFetch<{ success: boolean }>(`/api/v1/scis/${sciId}/dissoudre`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export interface ChangerGerantPayload {
+	associe_id: EntityId;
+	date_effet: string;
+}
+
+export function changerGerant(sciId: EntityId, data: ChangerGerantPayload) {
+	return apiFetch<{ success: boolean }>(`/api/v1/scis/${sciId}/changer-gerant`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export interface ModifierCapitalPayload {
+	nouveau_capital: number;
+	nb_parts: number;
+}
+
+export function modifierCapital(sciId: EntityId, data: ModifierCapitalPayload) {
+	return apiFetch<{ success: boolean }>(`/api/v1/scis/${sciId}/modifier-capital`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+// --- Cession bien ---
+
+export interface CederBienPayload {
+	prix_cession: number;
+	date_cession: string;
+	acquereur: string;
+}
+
+export interface CessionBienResult {
+	success: boolean;
+	plus_value_brute: number;
+}
+
+export function cederBien(sciId: EntityId, bienId: EntityId, data: CederBienPayload) {
+	return apiFetch<CessionBienResult>(`/api/v1/scis/${sciId}/biens/${bienId}/cession`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+// --- Avenant bail ---
+
+export interface AvenantBailPayload {
+	type_avenant: 'revision_loyer' | 'modif_charges' | 'ajout_locataire' | 'autre';
+	nouvelle_valeur: string;
+	date_effet: string;
+	motif: string;
+}
+
+export function creerAvenant(
+	sciId: EntityId,
+	bienId: EntityId,
+	bailId: EntityId,
+	data: AvenantBailPayload
+) {
+	return apiFetch<{ success: boolean }>(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/avenant`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+// --- Calendrier fiscal interactif ---
+
+export function marquerEcheanceFiscaleFaite(sciId: EntityId, annee: number, key: string) {
+	return apiFetch<{ success: boolean }>(`/api/v1/scis/${sciId}/calendrier-fiscal/${annee}/${key}/marquer-fait`, {
+		method: 'POST'
+	});
+}
+
+export function demarquerEcheanceFiscale(sciId: EntityId, annee: number, key: string) {
+	return apiFetch<{ success: boolean }>(`/api/v1/scis/${sciId}/calendrier-fiscal/${annee}/${key}/demarquer`, {
+		method: 'POST'
+	});
+}
+
+export function fetchCalendrierFiscalStatut(sciId: EntityId, annee: number) {
+	return apiFetch<Record<string, boolean>>(`/api/v1/scis/${sciId}/calendrier-fiscal/${annee}/statut`);
+}

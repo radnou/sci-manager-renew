@@ -65,6 +65,72 @@ def _get_write_client():
     return get_supabase_service_client()
 
 
+def _recalculate_associe_parts(
+    write_client,
+    sci_id: str,
+    cedant_nom: str,
+    cessionnaire_nom: str,
+    nb_parts_transferred: int,
+):
+    """Recalculate nb_parts and part (percentage) for cedant and cessionnaire after a transfer.
+
+    Matches associes by nom within the SCI. If no match is found, logs a warning and skips.
+    Verifies that total parts still equals sci.nb_parts_total after the update.
+    """
+    # Fetch all associes for this SCI
+    associes_result = write_client.table("associes").select("*").eq("id_sci", sci_id).execute()
+    associes = associes_result.data or []
+
+    if not associes:
+        logger.warning("no_associes_found_for_recalc", sci_id=sci_id)
+        return
+
+    # Fetch SCI to get nb_parts_total
+    sci_result = write_client.table("sci").select("nb_parts_total").eq("id", sci_id).execute()
+    sci_data = sci_result.data or []
+    nb_parts_total = sci_data[0].get("nb_parts_total") if sci_data else None
+
+    # Find cedant and cessionnaire by nom
+    cedant = next((a for a in associes if a.get("nom") == cedant_nom), None)
+    cessionnaire = next((a for a in associes if a.get("nom") == cessionnaire_nom), None)
+
+    if not cedant and not cessionnaire:
+        logger.info("no_matching_associes_for_recalc", cedant=cedant_nom, cessionnaire=cessionnaire_nom)
+        return
+
+    # Update cedant: subtract parts
+    if cedant:
+        current_nb = cedant.get("nb_parts") or 0
+        new_nb = max(0, current_nb - nb_parts_transferred)
+        update_cedant = {"nb_parts": new_nb}
+        if nb_parts_total and nb_parts_total > 0:
+            update_cedant["part"] = round((new_nb / nb_parts_total) * 100, 2)
+        write_client.table("associes").update(update_cedant).eq("id", str(cedant["id"])).execute()
+        logger.info("cedant_parts_updated", associe_id=cedant["id"], old_nb=current_nb, new_nb=new_nb)
+
+    # Update cessionnaire: add parts
+    if cessionnaire:
+        current_nb = cessionnaire.get("nb_parts") or 0
+        new_nb = current_nb + nb_parts_transferred
+        update_cess = {"nb_parts": new_nb}
+        if nb_parts_total and nb_parts_total > 0:
+            update_cess["part"] = round((new_nb / nb_parts_total) * 100, 2)
+        write_client.table("associes").update(update_cess).eq("id", str(cessionnaire["id"])).execute()
+        logger.info("cessionnaire_parts_updated", associe_id=cessionnaire["id"], old_nb=current_nb, new_nb=new_nb)
+
+    # Verify total parts consistency
+    if nb_parts_total is not None:
+        updated_result = write_client.table("associes").select("nb_parts").eq("id_sci", sci_id).execute()
+        total = sum((a.get("nb_parts") or 0) for a in (updated_result.data or []))
+        if total != nb_parts_total:
+            logger.warning(
+                "parts_total_mismatch",
+                sci_id=sci_id,
+                expected=nb_parts_total,
+                actual=total,
+            )
+
+
 # ──────────────────────────────────────────────────────────────
 # Endpoints
 # ──────────────────────────────────────────────────────────────
@@ -126,7 +192,15 @@ async def create_mouvement_parts(
         if not rows:
             raise DatabaseError("Unable to create mouvement de parts")
 
-        return rows[0]
+        created = rows[0]
+
+        # Task 6: Recalculate parts for cedant and cessionnaire after insertion
+        _recalculate_associe_parts(
+            write_client, str(sci_id),
+            payload.cedant_nom, payload.cessionnaire_nom, payload.nb_parts,
+        )
+
+        return created
     except GererSCIException:
         raise
     except Exception as exc:

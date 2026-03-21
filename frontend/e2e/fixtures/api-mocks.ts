@@ -302,7 +302,7 @@ const MOCK_DASHBOARD = {
       type: 'bail_expirant',
       message: 'Bail expire dans 17 jours : 12 rue de Belleville',
       severity: 'medium',
-      entity_id: String(BIEN_ID_1),
+      entity_id: `bail-${BIEN_ID_1}`,
       entity_type: 'bail',
       id_sci: SCI_ID_1,
       sci_nom: 'SCI Residence Belleville',
@@ -542,7 +542,8 @@ export async function setupApiMocks(page: Page) {
   await page.route('**/api/v1/notifications/count*', route => json(route, { count: 1 }));
   await page.route('**/api/v1/notifications/read-all', route => json(route, { updated: 1 }));
   await page.route('**/api/v1/notifications/*/read', route => json(route, { ...MOCK_NOTIFICATIONS[0], read_at: new Date().toISOString() }));
-  await page.route('**/api/v1/notifications*', route => {
+  // Match both /notifications and /notifications/ (trailing slash)
+  await page.route(/\/api\/v1\/notifications\/?(\?.*)?$/, route => {
     if (route.request().method() === 'GET') {
       return json(route, MOCK_NOTIFICATIONS);
     }
@@ -678,6 +679,23 @@ export async function setupApiMocks(page: Page) {
     }
     return route.fallback();
   });
+
+  // ---- Échéances ----
+  await page.route('**/api/v1/echeances*', route => json(route, {
+    echeances: [],
+    resume: { depassee: 0, critique: 0, urgente: 1, normale: 2, lointaine: 3 }
+  }));
+
+  // ---- Comptabilité annuelle ----
+  await page.route(new RegExp(`/api/v1/scis/[^/]+/comptabilite/`), route => json(route, {
+    annee: new Date().getFullYear(),
+    biens: [
+      { bien_id: BIEN_ID_1, adresse: '12 rue de Belleville', ville: 'Paris', revenus: 11400, charges: 3800, evenements_deductibles: 0, resultat: 7600 },
+      { bien_id: BIEN_ID_2, adresse: '8 rue des Lilas', ville: 'Paris', revenus: 14400, charges: 4600, evenements_deductibles: 500, resultat: 9300 }
+    ],
+    totaux: { revenus: 25800, charges: 8400, evenements_deductibles: 500, resultat: 16900 },
+    variation_n1: { revenus: 12.5, charges: -5.2, resultat: 18.3 }
+  }));
 
   // ---- Fiscalite ----
   await page.route('**/api/v1/fiscalite*', route => {

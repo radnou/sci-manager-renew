@@ -38,25 +38,29 @@ test.describe('Navigation globale @P0', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // Collect all sidebar navigation links
-    const sidebarLinks = page.locator('nav a[href], aside a[href], [class*="sidebar"] a[href]');
+    // Collect primary navigation links (exclude breadcrumbs and skip-to-content)
+    const sidebarLinks = page.locator('nav a[href]:not([aria-label*="Ariane"] a):not([href^="#"])');
     const linkCount = await sidebarLinks.count();
 
     // Verify at least some navigation links exist
     expect(linkCount).toBeGreaterThan(0);
 
-    // Test the first few links navigate correctly
-    const linksToTest = Math.min(linkCount, 4);
+    // Collect unique hrefs to test (skip duplicates and dashboard self-link)
+    const tested = new Set<string>();
+    const linksToTest = Math.min(linkCount, 5);
     for (let i = 0; i < linksToTest; i++) {
       const link = sidebarLinks.nth(i);
       const href = await link.getAttribute('href');
-      if (href && href.startsWith('/') && !href.includes('logout') && !href.includes('login')) {
+      if (href && href.startsWith('/') && !href.includes('logout') && !href.includes('login') && !tested.has(href)) {
+        tested.add(href);
         await link.click();
+        await page.waitForTimeout(1000);
         await page.waitForLoadState('networkidle');
 
-        // Verify navigation occurred (allow redirects, e.g. /login -> /pricing when authed)
+        // Verify navigation occurred (allow redirects)
         const currentUrl = page.url();
-        const navigated = currentUrl.includes(href.split('?')[0]) || !currentUrl.includes('/dashboard');
+        const hrefPath = href.split('?')[0];
+        const navigated = currentUrl.includes(hrefPath) || !currentUrl.includes('/dashboard') || hrefPath === '/dashboard';
         expect(navigated).toBe(true);
 
         // Go back to dashboard for next link test

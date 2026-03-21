@@ -5,7 +5,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 EVENEMENT_TYPES = Literal[
     "reparation", "travaux", "sinistre", "visite",
-    "controle", "diagnostic", "autre",
+    "controle", "diagnostic", "avenant", "autre",
+    "acquisition", "cession",
 ]
 
 

@@ -62,6 +62,12 @@ _INITIAL_STORE: dict[str, list[dict]] = {
     "assurances_pno": [
         {"id": "pno-1", "id_bien": "bien-1", "compagnie": "MAIF", "date_echeance": "2026-06-01", "montant_annuel": 280},
     ],
+    "evenements_bien": [],
+    "calendrier_fiscal": [],
+    "assemblees_generales": [
+        {"id": "ag-1", "id_sci": "sci-1", "date_ag": "2026-06-15", "type_ag": "ordinaire", "exercice_annee": 2025, "quorum_atteint": False},
+    ],
+    "notifications": [],
 }
 
 
@@ -372,7 +378,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
     """Boot TestClient + monkeypatch once per xdist worker."""
     from app.api.v1 import associes, biens, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
     from app.api.v1 import dashboard, scis_biens, notification_preferences
-    from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances
+    from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle, calendrier_fiscal
     from app import main
     from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin
     from app.services import subscription_service
@@ -390,7 +396,8 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
 
         for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
                     notifications, dashboard, scis_biens, notification_preferences, quitus,
-                    assemblees_generales, mouvements_parts, import_csv, echeances]:
+                    assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle,
+                    calendrier_fiscal]:
             mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
             mp.setattr(mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
 

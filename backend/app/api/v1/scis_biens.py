@@ -203,7 +203,38 @@ async def create_sci_bien(
         raise DatabaseError("Unable to create bien")
 
     created = data[0]
-    logger.info("bien_created_nested", bien_id=created.get("id"), sci_id=str(sci_id))
+    bien_id = str(created.get("id", ""))
+    logger.info("bien_created_nested", bien_id=bien_id, sci_id=str(sci_id))
+
+    # Auto-create "Acquisition" événement if acquisition data is provided
+    if payload.prix_acquisition is not None and payload.acquisition_date is not None:
+        total_cost = float(payload.prix_acquisition)
+        frais_notaire = float(payload.frais_notaire or 0)
+        frais_agence = float(payload.frais_agence_acquisition or 0)
+        total_with_frais = total_cost + frais_notaire + frais_agence
+
+        desc_parts = [f"Acquisition pour {total_cost} €."]
+        if frais_notaire > 0:
+            desc_parts.append(f"Frais de notaire : {frais_notaire} €.")
+        if frais_agence > 0:
+            desc_parts.append(f"Frais d'agence : {frais_agence} €.")
+        desc_parts.append(f"Coût total : {total_with_frais} €.")
+
+        evenement_data = {
+            "id_bien": bien_id,
+            "type": "acquisition",
+            "titre": f"Acquisition — {payload.adresse}",
+            "description": " ".join(desc_parts),
+            "date_evenement": payload.acquisition_date.isoformat(),
+            "montant": total_with_frais,
+            "deductible_fiscalement": False,
+        }
+        try:
+            write_client.table("evenements_bien").insert(evenement_data).execute()
+            logger.info("acquisition_event_created", bien_id=bien_id)
+        except Exception:
+            logger.warning("acquisition_event_creation_failed", bien_id=bien_id, exc_info=True)
+
     return created
 
 
@@ -1733,3 +1764,230 @@ async def get_bien_obligations(
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
     return get_obligations(client, bien_id)
+
+
+# ──────────────────────────────────────────────────────────────
+# AVENANT BAIL — POST /scis/{sci_id}/biens/{bien_id}/baux/{bail_id}/avenant
+# ──────────────────────────────────────────────────────────────
+
+AVENANT_TYPES = {"revision_loyer", "modification_charges", "ajout_locataire", "changement_destination"}
+
+
+class AvenantCreate(BaseModel):
+    type_avenant: str
+    nouveau_loyer_hc: Optional[float] = None
+    nouvelles_charges: Optional[float] = None
+    date_effet: date
+    motif: str
+
+
+class AvenantResponse(BaseModel):
+    avenant: dict
+    bail_updated: dict
+
+
+@router.post("/{bien_id}/baux/{bail_id}/avenant", response_model=AvenantResponse, status_code=status.HTTP_201_CREATED)
+async def create_avenant(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: str,
+    payload: AvenantCreate,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Create an avenant (amendment) to an existing bail."""
+    if payload.type_avenant not in AVENANT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"type_avenant invalide. Valeurs acceptees : {', '.join(sorted(AVENANT_TYPES))}",
+        )
+
+    logger.info(
+        "creating_avenant",
+        bail_id=bail_id,
+        bien_id=bien_id,
+        sci_id=str(sci_id),
+        type_avenant=payload.type_avenant,
+    )
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Verify the bail exists
+    bail_result = client.table("baux").select("*").eq("id", bail_id).eq("id_bien", bien_id).execute()
+    if getattr(bail_result, "error", None) or not bail_result.data:
+        raise ResourceNotFoundError("Bail", bail_id)
+
+    bail = bail_result.data[0]
+
+    # Build update payload for the bail based on avenant type
+    bail_update: dict = {}
+    if payload.type_avenant == "revision_loyer" and payload.nouveau_loyer_hc is not None:
+        bail_update["loyer_hc"] = payload.nouveau_loyer_hc
+    elif payload.type_avenant == "modification_charges" and payload.nouvelles_charges is not None:
+        bail_update["charges_locatives"] = payload.nouvelles_charges
+
+    # Update the bail if there are changes
+    if bail_update:
+        update_result = (
+            client.table("baux")
+            .update(bail_update)
+            .eq("id", bail_id)
+            .execute()
+        )
+        if getattr(update_result, "error", None):
+            raise DatabaseError(str(update_result.error))
+        bail.update(bail_update)
+
+    # Store avenant as an evenement_bien
+    avenant_metadata = payload.model_dump(mode="json")
+    avenant_metadata["ancien_loyer_hc"] = bail_result.data[0].get("loyer_hc")
+    avenant_metadata["anciennes_charges"] = bail_result.data[0].get("charges_locatives")
+
+    evenement_row = {
+        "id_bien": bien_id,
+        "type": "avenant",
+        "titre": f"Avenant : {payload.type_avenant.replace('_', ' ')}",
+        "description": payload.motif,
+        "date_evenement": payload.date_effet.isoformat(),
+        "montant": payload.nouveau_loyer_hc,
+        "deductible_fiscalement": False,
+    }
+
+    write_client = _get_write_client()
+    evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
+    if getattr(evt_result, "error", None):
+        raise DatabaseError(str(evt_result.error))
+
+    created_event = (evt_result.data or [{}])[0]
+
+    # Create notification for SCI owners
+    from app.services.notification_service import create_notification_with_email
+
+    owners = (
+        client.table("associes")
+        .select("user_id")
+        .eq("id_sci", str(sci_id))
+        .not_.is_("user_id", "null")
+        .execute()
+    )
+    for owner in (owners.data or []):
+        await create_notification_with_email(
+            write_client,
+            user_id=owner["user_id"],
+            notification_type="avenant_bail",
+            data={
+                "title": f"Avenant bail — {payload.type_avenant.replace('_', ' ')}",
+                "message": f"{payload.motif} (effet au {payload.date_effet.isoformat()})",
+                "metadata": {
+                    "bail_id": bail_id,
+                    "bien_id": bien_id,
+                    "type_avenant": payload.type_avenant,
+                    "dedup_key": f"avenant_{bail_id}_{payload.date_effet.isoformat()}",
+                },
+            },
+        )
+
+    logger.info("avenant_created", bail_id=bail_id, event_id=created_event.get("id"))
+    return AvenantResponse(avenant=created_event, bail_updated=bail)
+
+
+# ──────────────────────────────────────────────────────────────
+# SINISTRE PNO — POST /scis/{sci_id}/biens/{bien_id}/sinistre
+# ──────────────────────────────────────────────────────────────
+
+
+class SinistreCreate(BaseModel):
+    date_sinistre: date
+    description: str
+    montant_estime: Optional[float] = None
+    numero_dossier: Optional[str] = None
+
+
+class SinistreResponse(BaseModel):
+    evenement: dict
+    assurance_pno: Optional[dict] = None
+
+
+@router.post("/{bien_id}/sinistre", response_model=SinistreResponse, status_code=status.HTTP_201_CREATED)
+async def declare_sinistre(
+    sci_id: UUID,
+    bien_id: str,
+    payload: SinistreCreate,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Declare a sinistre (insurance claim) linked to PNO insurance."""
+    logger.info("declaring_sinistre", bien_id=bien_id, sci_id=str(sci_id))
+
+    client = _get_client(request)
+    bien = _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Fetch PNO insurance for the bien
+    pno_result = (
+        client.table("assurances_pno")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    pno_info = (pno_result.data or [None])[0] if pno_result.data else None
+
+    # Build the titre with numero_dossier if provided
+    titre = "Sinistre"
+    if payload.numero_dossier:
+        titre = f"Sinistre {payload.numero_dossier}"
+
+    # Create evenement for the sinistre
+    evenement_row = {
+        "id_bien": bien_id,
+        "type": "sinistre",
+        "titre": titre,
+        "description": payload.description,
+        "date_evenement": payload.date_sinistre.isoformat(),
+        "montant": payload.montant_estime,
+        "deductible_fiscalement": False,
+    }
+
+    write_client = _get_write_client()
+    evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
+    if getattr(evt_result, "error", None):
+        raise DatabaseError(str(evt_result.error))
+
+    created_event = (evt_result.data or [{}])[0]
+
+    # Create notification with PNO assureur details
+    from app.services.notification_service import create_notification_with_email
+
+    adresse = bien.get("adresse", "un bien")
+    assureur = pno_info.get("compagnie", "N/A") if pno_info else "Aucune PNO"
+
+    owners = (
+        client.table("associes")
+        .select("user_id")
+        .eq("id_sci", str(sci_id))
+        .not_.is_("user_id", "null")
+        .execute()
+    )
+    for owner in (owners.data or []):
+        await create_notification_with_email(
+            write_client,
+            user_id=owner["user_id"],
+            notification_type="sinistre",
+            data={
+                "title": f"Sinistre declare — {adresse}",
+                "message": (
+                    f"{payload.description}. "
+                    f"Montant estime : {payload.montant_estime or 'N/A'} EUR. "
+                    f"Assureur PNO : {assureur}."
+                ),
+                "metadata": {
+                    "bien_id": bien_id,
+                    "event_id": created_event.get("id"),
+                    "numero_dossier": payload.numero_dossier,
+                    "dedup_key": f"sinistre_{bien_id}_{payload.date_sinistre.isoformat()}",
+                },
+            },
+        )
+
+    logger.info("sinistre_declared", event_id=created_event.get("id"), bien_id=bien_id)
+    return SinistreResponse(evenement=created_event, assurance_pno=pno_info)

@@ -56,6 +56,9 @@ test.describe('Gestion des SCI @P0', () => {
     const sciLink = page.locator('a[href*="/scis/"]').first();
     if (await sciLink.isVisible().catch(() => false)) {
       await sciLink.click();
+
+      // Wait for URL to change to the SCI detail page
+      await page.waitForURL(/\/scis\/[a-zA-Z0-9-]+/, { timeout: 10_000 });
       await page.waitForLoadState('networkidle');
 
       // The SCI detail page should show the SCI name and overview
