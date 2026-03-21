@@ -1,7 +1,7 @@
 import { test as base, type Page } from '@playwright/test';
 
 // Check if auth credentials are available
-export const hasAuth = () => !!process.env.E2E_AUTH_TOKEN;
+export const hasAuth = () => !!process.env.E2E_AUTH_TOKEN || !!process.env.E2E_MAGIC_LINK_URL;
 
 // Fixture that injects auth session into the page
 export const test = base.extend<{ authedPage: Page }>({
@@ -11,30 +11,38 @@ export const test = base.extend<{ authedPage: Page }>({
       return;
     }
 
-    // Navigate to app first to set localStorage on correct origin
-    await page.goto('/');
+    const magicLinkUrl = process.env.E2E_MAGIC_LINK_URL;
+    if (magicLinkUrl) {
+      await page.goto(magicLinkUrl, { waitUntil: 'networkidle' });
+      await page.waitForURL(/gerersci\.fr|app\.gerersci\.fr/, { timeout: 30_000 });
+      await page.waitForLoadState('networkidle');
+    } else {
+      // Navigate to app first to set localStorage on correct origin
+      await page.goto('/');
 
-    // Inject fake Supabase session into localStorage
-    const fakeSession = {
-      access_token: process.env.E2E_AUTH_TOKEN,
-      refresh_token: 'e2e-refresh-token',
-      user: {
-        id: process.env.E2E_USER_ID || 'e2e-user-id',
-        email: process.env.E2E_USER_EMAIL || 'e2e@gerersci.fr',
-        role: 'authenticated',
-      },
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-    };
+      // Inject fake Supabase session into localStorage
+      const fakeSession = {
+        access_token: process.env.E2E_AUTH_TOKEN,
+        refresh_token: 'e2e-refresh-token',
+        user: {
+          id: process.env.E2E_USER_ID || 'e2e-user-id',
+          email: process.env.E2E_USER_EMAIL || 'e2e@gerersci.fr',
+          role: 'authenticated',
+        },
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+      };
 
-    await page.evaluate((session) => {
-      localStorage.setItem('sb-auth-token', JSON.stringify(session));
-      // Also set the app's own session key if it exists
-      localStorage.setItem('gerersci.e2e-fake-session', JSON.stringify(session));
-    }, fakeSession);
+      await page.evaluate((session) => {
+        localStorage.setItem('sb-api-auth-token', JSON.stringify(session));
+        // Backward compatibility for older client keys still read in some contexts
+        localStorage.setItem('sb-auth-token', JSON.stringify(session));
+        localStorage.setItem('gerersci.e2e-fake-session', JSON.stringify(session));
+      }, fakeSession);
 
-    // Reload to pick up session
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+      // Reload to pick up session
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+    }
 
     await use(page);
   },

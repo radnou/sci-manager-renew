@@ -93,7 +93,8 @@ jobs:
             echo "Backend readiness: $READY"
 
             if echo "$READY" | grep -q '"status":"not_ready"'; then
-              echo "WARNING: Backend not fully ready (some services degraded)"
+              echo "FATAL: Backend readiness is not_ready"
+              exit 1
             fi
 
             # Frontend check (via nginx HTTPS)
@@ -113,3 +114,92 @@ jobs:
         run: |
           echo "::error::Deployment failed! Check VPS logs: ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
           echo "::error::Debug: docker compose logs --tail=100"
+
+  smoke_public:
+    name: Smoke Prod Public
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Run prod smoke public
+        env:
+          E2E_BASE_URL: https://app.gerersci.fr
+          E2E_API_BASE_URL: https://api.gerersci.fr
+        run: pnpm --dir frontend run test:e2e:prod:public
+
+      - name: Upload Playwright report on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-prod-public-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  smoke_auth:
+    name: Smoke Prod Auth
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: ${{ (secrets.E2E_MAGIC_LINK_URL != '' || secrets.E2E_AUTH_TOKEN != '') && secrets.E2E_SCI_ID != '' && secrets.E2E_BIEN_ID != '' }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Run prod smoke auth
+        env:
+          E2E_BASE_URL: https://gerersci.fr
+          E2E_API_BASE_URL: https://api.gerersci.fr
+          E2E_MAGIC_LINK_URL: ${{ secrets.E2E_MAGIC_LINK_URL }}
+          E2E_AUTH_TOKEN: ${{ secrets.E2E_AUTH_TOKEN }}
+          E2E_USER_ID: ${{ secrets.E2E_USER_ID }}
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_SCI_ID: ${{ secrets.E2E_SCI_ID }}
+          E2E_BIEN_ID: ${{ secrets.E2E_BIEN_ID }}
+        run: pnpm --dir frontend run test:e2e:prod:auth
+
+      - name: Upload Playwright report on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-prod-auth-report
+          path: frontend/playwright-report/
+          retention-days: 7

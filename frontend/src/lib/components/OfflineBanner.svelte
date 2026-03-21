@@ -22,7 +22,7 @@
 	>
 		{#if state === 'offline'}
 			<WifiOff class="h-4 w-4 shrink-0" />
-			<span>Connexion perdue — vos modifications seront synchronisées au retour</span>
+			<span>Connexion perdue — certaines actions peuvent échouer jusqu'au retour du réseau</span>
 		{:else}
 			<RefreshCw class="h-4 w-4 shrink-0 animate-spin" />
 			<span>Reconnexion en cours…</span>
