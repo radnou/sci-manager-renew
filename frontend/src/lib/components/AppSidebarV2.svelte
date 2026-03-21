@@ -18,9 +18,10 @@
 		Check,
 		ArrowLeftRight,
 		Briefcase,
-		Gavel
+		Gavel,
+		CalendarClock
 	} from 'lucide-svelte';
-	import { fetchScis, type SCIOverview } from '$lib/api';
+	import { fetchScis, fetchEcheances, type SCIOverview } from '$lib/api';
 	import { supabase } from '$lib/supabase';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
@@ -37,6 +38,7 @@
 	let sciSwitcherOpen: boolean = $state(false);
 	let activeSciId: string | null = $state(null);
 	let scisLoaded: boolean = $state(false);
+	let echeancesBadge: number = $state(0);
 
 	// Fetch SCIs once on mount, and refresh when navigating to /scis, /dashboard, or any SCI page
 	$effect(() => {
@@ -51,6 +53,17 @@
 					scis = [];
 				});
 		}
+	});
+
+	// Fetch echeances badge count (depassee + critique)
+	$effect(() => {
+		fetchEcheances()
+			.then((data) => {
+				echeancesBadge = (data.resume.depassee ?? 0) + (data.resume.critique ?? 0);
+			})
+			.catch(() => {
+				echeancesBadge = 0;
+			});
 	});
 
 	// Auto-detect active SCI from URL
@@ -287,6 +300,26 @@
 			>
 				<Briefcase class="h-4 w-4 flex-shrink-0" />
 				<span>Exploitation</span>
+			</a>
+			<a
+				href="/echeances"
+				onclick={closeMobileOnNavigate}
+				aria-current={isActive('/echeances') ? 'page' : undefined}
+				class="mb-1 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive(
+					'/echeances'
+				)
+					? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+			>
+				<span class="flex items-center gap-3">
+					<CalendarClock class="h-4 w-4 flex-shrink-0" />
+					<span>Echeances</span>
+				</span>
+				{#if echeancesBadge > 0}
+					<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+						{echeancesBadge}
+					</span>
+				{/if}
 			</a>
 			<a
 				href="/finances"

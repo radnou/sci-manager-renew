@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { BailEmbed, LoyerEmbed } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { updateLocataire } from '$lib/api';
+	import { updateLocataire, cloturerBail, type ClotureBailPayload } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save } from 'lucide-svelte';
+	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
 	import {
 		announceFicheBienModal,
@@ -130,6 +130,56 @@
 			savingLocataire = false;
 		}
 	}
+
+	// ── Clôture bail ─────────────────────────
+	let showClotureForm = $state(false);
+	let clotureSaving = $state(false);
+	let clotureFinEffective = $state('');
+	let clotureEtatLieux = $state('');
+	let clotureDepotRestitue = $state(0);
+	let clotureRetenues = $state('');
+	let clotureMotif = $state<ClotureBailPayload['motif']>('conge_locataire');
+
+	const motifOptions: Array<{ value: ClotureBailPayload['motif']; label: string }> = [
+		{ value: 'conge_locataire', label: 'Conge locataire' },
+		{ value: 'conge_bailleur', label: 'Conge bailleur' },
+		{ value: 'resiliation_amiable', label: 'Resiliation amiable' },
+		{ value: 'resiliation_judiciaire', label: 'Resiliation judiciaire' }
+	];
+
+	function openClotureForm() {
+		clotureFinEffective = new Date().toISOString().split('T')[0];
+		clotureEtatLieux = new Date().toISOString().split('T')[0];
+		clotureDepotRestitue = bail?.depot_garantie ?? 0;
+		clotureRetenues = '';
+		clotureMotif = 'conge_locataire';
+		showClotureForm = true;
+	}
+
+	function cancelCloture() {
+		showClotureForm = false;
+	}
+
+	async function submitCloture() {
+		if (!bail) return;
+		clotureSaving = true;
+		try {
+			await cloturerBail(sciId, String(bienId), String(bail.id), {
+				date_fin_effective: clotureFinEffective,
+				date_etat_lieux_sortie: clotureEtatLieux,
+				montant_depot_restitue: clotureDepotRestitue,
+				detail_retenues: clotureRetenues || undefined,
+				motif: clotureMotif
+			});
+			addToast({ title: 'Bail cloture avec succes', variant: 'success' });
+			showClotureForm = false;
+			onRefresh();
+		} catch {
+			addToast({ title: 'Erreur lors de la cloture du bail', variant: 'error' });
+		} finally {
+			clotureSaving = false;
+		}
+	}
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
@@ -178,15 +228,97 @@
 					{statut.label}
 				</span>
 				{#if isGerant}
-					<button
-						onclick={() => openBailModal(bail)}
-						class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
-					>
-						<Pencil class="h-3.5 w-3.5" />
-						Modifier
-					</button>
+					<div class="flex items-center gap-2">
+						{#if bail.statut === 'en_cours'}
+							<button
+								onclick={openClotureForm}
+								class="inline-flex items-center gap-1.5 text-sm font-medium text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+							>
+								<Lock class="h-3.5 w-3.5" />
+								Cloturer le bail
+							</button>
+						{/if}
+						<button
+							onclick={() => openBailModal(bail)}
+							class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+						>
+							<Pencil class="h-3.5 w-3.5" />
+							Modifier
+						</button>
+					</div>
 				{/if}
 			</div>
+
+			<!-- Cloture form -->
+			{#if showClotureForm}
+				<div class="rounded-xl border border-rose-200 bg-rose-50/50 p-5 dark:border-rose-800/50 dark:bg-rose-900/10">
+					<h3 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Cloturer le bail</h3>
+					<div class="grid gap-4 sm:grid-cols-2">
+						<label class="block">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Date de fin effective</span>
+							<input
+								type="date"
+								bind:value={clotureFinEffective}
+								class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+							/>
+						</label>
+						<label class="block">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Date etat des lieux de sortie</span>
+							<input
+								type="date"
+								bind:value={clotureEtatLieux}
+								class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+							/>
+						</label>
+						<label class="block">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Montant depot restitue</span>
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								bind:value={clotureDepotRestitue}
+								class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+							/>
+						</label>
+						<label class="block">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Motif</span>
+							<select
+								bind:value={clotureMotif}
+								class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+							>
+								{#each motifOptions as opt (opt.value)}
+									<option value={opt.value}>{opt.label}</option>
+								{/each}
+							</select>
+						</label>
+					</div>
+					<label class="mt-4 block">
+						<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Detail retenues (optionnel)</span>
+						<textarea
+							bind:value={clotureRetenues}
+							rows="2"
+							placeholder="Ex: Reparation mur salon, nettoyage..."
+							class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+						></textarea>
+					</label>
+					<div class="mt-4 flex justify-end gap-2">
+						<button
+							onclick={cancelCloture}
+							class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+						>
+							Annuler
+						</button>
+						<button
+							onclick={submitCloture}
+							disabled={clotureSaving || !clotureFinEffective || !clotureEtatLieux}
+							class="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+						>
+							<Lock class="h-3.5 w-3.5" />
+							{clotureSaving ? 'Cloture en cours...' : 'Cloturer le bail'}
+						</button>
+					</div>
+				</div>
+			{/if}
 
 			<!-- Locataires Cards -->
 			<div>

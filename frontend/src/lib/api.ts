@@ -1612,3 +1612,58 @@ export async function fetchObligations(
 ): Promise<ObligationsData> {
 	return apiFetch<ObligationsData>(`/api/v1/scis/${sciId}/biens/${bienId}/obligations`);
 }
+
+// --- Échéances ---
+
+export type Echeance = {
+	type: string;
+	entite: string;
+	titre: string;
+	description: string;
+	date_echeance: string;
+	urgence: 'depassee' | 'critique' | 'urgente' | 'normale' | 'lointaine';
+	reference_legale: string;
+	consequence: string;
+	action_url: string;
+};
+
+export type EcheancesResume = {
+	depassee: number;
+	critique: number;
+	urgente: number;
+	normale: number;
+	lointaine: number;
+};
+
+export type EcheancesResponse = {
+	echeances: Echeance[];
+	resume: EcheancesResume;
+};
+
+export function fetchEcheances(sciId?: string): Promise<EcheancesResponse> {
+	const qs = sciId ? `?sci_id=${sciId}` : '';
+	return apiFetch<EcheancesResponse>(`/api/v1/echeances${qs}`);
+}
+
+// --- Clôture bail ---
+
+export type ClotureBailPayload = {
+	date_fin_effective: string;
+	date_etat_lieux_sortie: string;
+	montant_depot_restitue: number;
+	detail_retenues?: string;
+	motif: 'conge_locataire' | 'conge_bailleur' | 'resiliation_amiable' | 'resiliation_judiciaire';
+};
+
+export function cloturerBail(
+	sciId: string,
+	bienId: string,
+	bailId: string,
+	data: ClotureBailPayload
+) {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/cloturer`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}

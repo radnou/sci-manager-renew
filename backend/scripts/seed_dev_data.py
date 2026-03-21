@@ -144,7 +144,7 @@ def main():
          "loyer_cc": 780, "charges": 80, "tmi": 30,
          "surface_m2": 22, "nb_pieces": 1, "dpe_classe": "E",
          "prix_acquisition": 175000, "acquisition_date": "2021-09-10",
-         "dpe_date": "2021-09-01",
+         "dpe_date": "2016-03-01",  # DPE 10y validity → expires 2026-02 → dépassée/critique
          "diagnostic_amiante_date": "2021-08-20",
          "diagnostic_electricite_date": "2021-08-20",
          "diagnostic_gaz_date": None,
@@ -202,7 +202,7 @@ def main():
     # ── Baux (TOUS les champs) ────────────────────────────────────
     baux = [
         {"id": uid(), "id_bien": biens[0]["id"],
-         "date_debut": "2023-01-01", "date_fin": "2025-12-31",
+         "date_debut": "2023-01-01", "date_fin": "2025-12-31",  # EXPIRED → dépassée
          "loyer_hc": 1300, "charges_locatives": 150, "depot_garantie": 1300,
          "statut": "en_cours",
          "indice_irl_reference": "T1 2023", "date_revision": "2024-01-01",
@@ -322,7 +322,7 @@ def main():
             "compagnie": "MAIF" if bien["id_sci"] == sci1_id else "AXA",
             "numero_contrat": f"PNO-{bien['code_postal']}-{uid()[:6]}",
             "montant_annuel": 280 if (bien.get("nb_pieces") or 2) > 1 else 150,
-            "date_echeance": "2026-06-01"})
+            "date_echeance": "2026-06-01"})  # PNO within ~3 months → urgente
     print(f"  ✅ {len(biens)} PNO")
 
     # ── Frais agence ──────────────────────────────────────────────

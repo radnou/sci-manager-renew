@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import date
+from typing import Optional
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
+from pydantic import BaseModel
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
@@ -737,6 +740,89 @@ async def delete_bien_bail(
 
     logger.info("bail_deleted", bail_id=bail_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# CLOTURER bail (terminate with état des lieux + dépôt)
+# ──────────────────────────────────────────────────────────────
+
+class BailCloturePayload(BaseModel):
+    date_fin_effective: date
+    etat_lieux_sortie: Optional[date] = None
+    depot_restitue_montant: Optional[float] = None
+    retenues_detail: Optional[str] = None
+    motif: Optional[str] = None
+
+
+@router.post("/{bien_id}/baux/{bail_id}/cloturer", response_model=BailResponse)
+async def cloturer_bail(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: str,
+    payload: BailCloturePayload,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Clôture un bail : passage statut → terminé, mise à jour date_fin et état des lieux sortie."""
+    logger.info("cloturing_bail", bail_id=bail_id, bien_id=bien_id, motif=payload.motif)
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Verify bail exists and is en_cours
+    bail_result = (
+        client.table("baux")
+        .select("*")
+        .eq("id", bail_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if not bail_result.data:
+        raise ResourceNotFoundError("Bail", str(bail_id))
+
+    existing = bail_result.data[0]
+    if existing.get("statut") == "termine":
+        raise ValidationError("Ce bail est déjà clôturé.")
+
+    update_data: dict = {
+        "statut": "termine",
+        "date_fin": payload.date_fin_effective.isoformat(),
+    }
+    if payload.etat_lieux_sortie:
+        update_data["etat_lieux_sortie"] = payload.etat_lieux_sortie.isoformat()
+
+    result = (
+        client.table("baux")
+        .update(update_data)
+        .eq("id", bail_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("Bail", str(bail_id))
+
+    bail = data[0]
+
+    # Fetch locataires for response
+    loc_result = (
+        client.table("bail_locataires")
+        .select("locataires(id, nom, email, telephone)")
+        .eq("id_bail", bail_id)
+        .execute()
+    )
+    locataires = []
+    if not getattr(loc_result, "error", None) and loc_result.data:
+        for row in loc_result.data:
+            if row.get("locataires"):
+                locataires.append(row["locataires"])
+
+    bail["locataires"] = locataires
+    logger.info("bail_cloture", bail_id=bail_id, date_fin=payload.date_fin_effective.isoformat())
+    return bail
 
 
 # ──────────────────────────────────────────────────────────────
