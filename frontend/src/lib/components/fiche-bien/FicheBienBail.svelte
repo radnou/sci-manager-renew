@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { BailEmbed, LoyerEmbed } from '$lib/api';
+	import type { BailEmbed, LoyerEmbed, CongeType, RegularisationResult } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { updateLocataire, cloturerBail, type ClotureBailPayload } from '$lib/api';
+	import { updateLocataire, cloturerBail, donnerConge, fetchRegularisation, type ClotureBailPayload } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock } from 'lucide-svelte';
+	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock, AlertTriangle, RefreshCw, Calculator } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
 	import {
 		announceFicheBienModal,
@@ -140,6 +140,96 @@
 	let clotureRetenues = $state('');
 	let clotureMotif = $state<ClotureBailPayload['motif']>('conge_locataire');
 
+	// ── Congé bail ─────────────────────────
+	let showCongeForm = $state(false);
+	let congeSaving = $state(false);
+	let congeType = $state<CongeType>('locataire');
+	let congeDateNotification = $state('');
+	let congeMotif = $state('');
+
+	const congeTypeOptions: Array<{ value: CongeType; label: string; preavis: number }> = [
+		{ value: 'locataire', label: 'Congé du locataire', preavis: 3 },
+		{ value: 'bailleur', label: 'Congé du bailleur', preavis: 6 }
+	];
+
+	const congeDateEffet = $derived(() => {
+		if (!congeDateNotification) return null;
+		const preavisMois = congeType === 'bailleur' ? 6 : 3;
+		const d = new Date(congeDateNotification);
+		d.setMonth(d.getMonth() + preavisMois);
+		return d.toISOString().split('T')[0];
+	});
+
+	function openCongeForm() {
+		congeDateNotification = new Date().toISOString().split('T')[0];
+		congeType = 'locataire';
+		congeMotif = '';
+		showCongeForm = true;
+	}
+
+	function cancelConge() {
+		showCongeForm = false;
+	}
+
+	async function submitConge() {
+		if (!bail) return;
+		const dateEffet = congeDateEffet();
+		if (!congeDateNotification || !dateEffet) return;
+		congeSaving = true;
+		try {
+			await donnerConge(sciId, String(bienId), String(bail.id), {
+				type_conge: congeType,
+				date_notification: congeDateNotification,
+				motif: congeMotif || undefined,
+				date_effet: dateEffet
+			});
+			addToast({ title: 'Congé enregistré', variant: 'success' });
+			showCongeForm = false;
+			onRefresh();
+		} catch {
+			addToast({ title: 'Erreur lors de l\'enregistrement du congé', variant: 'error' });
+		} finally {
+			congeSaving = false;
+		}
+	}
+
+	// ── Reconduction tacite ─────────────────────────
+	const isReconduitTacitement = $derived(() => {
+		if (!bail || bail.statut !== 'en_cours' || !bail.date_fin) return false;
+		return new Date(bail.date_fin) < new Date();
+	});
+
+	const prochaineEcheanceReconduction = $derived(() => {
+		if (!bail?.date_fin) return null;
+		const d = new Date(bail.date_fin);
+		d.setFullYear(d.getFullYear() + 3);
+		return d.toISOString().split('T')[0];
+	});
+
+	// ── Régularisation charges ─────────────────────────
+	let showRegularisation = $state(false);
+	let regularisationAnnee = $state(new Date().getFullYear() - 1);
+	let regularisationLoading = $state(false);
+	let regularisationResult = $state<RegularisationResult | null>(null);
+
+	async function handleRegularisation() {
+		if (!bail) return;
+		regularisationLoading = true;
+		regularisationResult = null;
+		try {
+			regularisationResult = await fetchRegularisation(
+				sciId,
+				String(bienId),
+				String(bail.id),
+				regularisationAnnee
+			);
+		} catch {
+			addToast({ title: 'Erreur lors du calcul de la régularisation', variant: 'error' });
+		} finally {
+			regularisationLoading = false;
+		}
+	}
+
 	const motifOptions: Array<{ value: ClotureBailPayload['motif']; label: string }> = [
 		{ value: 'conge_locataire', label: 'Conge locataire' },
 		{ value: 'conge_bailleur', label: 'Conge bailleur' },
@@ -222,14 +312,29 @@
 		<div class="space-y-5">
 			<!-- Statut badge + modify button -->
 			<div class="flex items-center justify-between">
-				<span
-					class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {statut.class}"
-				>
-					{statut.label}
-				</span>
+				<div class="flex items-center gap-2">
+					<span
+						class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {statut.class}"
+					>
+						{statut.label}
+					</span>
+					{#if isReconduitTacitement()}
+						<span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+							<RefreshCw class="h-3 w-3" />
+							Reconduit tacitement
+						</span>
+					{/if}
+				</div>
 				{#if isGerant}
 					<div class="flex items-center gap-2">
 						{#if bail.statut === 'en_cours'}
+							<button
+								onclick={openCongeForm}
+								class="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600 transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+							>
+								<AlertTriangle class="h-3.5 w-3.5" />
+								Donner congé
+							</button>
 							<button
 								onclick={openClotureForm}
 								class="inline-flex items-center gap-1.5 text-sm font-medium text-rose-600 transition-colors hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
@@ -248,6 +353,25 @@
 					</div>
 				{/if}
 			</div>
+
+			<!-- Reconduction tacite info -->
+			{#if isReconduitTacitement()}
+				<div class="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-800/50 dark:bg-amber-900/10">
+					<div class="flex items-start gap-3">
+						<RefreshCw class="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
+						<div>
+							<p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+								Ce bail a été reconduit tacitement.
+							</p>
+							{#if prochaineEcheanceReconduction()}
+								<p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
+									Prochaine échéance estimée : {formatFrDate(prochaineEcheanceReconduction()!)}
+								</p>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
 
 			<!-- Cloture form -->
 			{#if showClotureForm}
@@ -317,6 +441,161 @@
 							{clotureSaving ? 'Cloture en cours...' : 'Cloturer le bail'}
 						</button>
 					</div>
+				</div>
+			{/if}
+
+			<!-- Congé form -->
+			{#if showCongeForm}
+				<div class="rounded-xl border border-amber-200 bg-amber-50/50 p-5 dark:border-amber-800/50 dark:bg-amber-900/10">
+					<h3 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Donner congé</h3>
+					<div class="grid gap-4 sm:grid-cols-2">
+						<label class="block">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Type de congé</span>
+							<select
+								bind:value={congeType}
+								class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+							>
+								{#each congeTypeOptions as opt (opt.value)}
+									<option value={opt.value}>{opt.label} ({opt.preavis} mois de préavis)</option>
+								{/each}
+							</select>
+						</label>
+						<label class="block">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Date de notification</span>
+							<input
+								type="date"
+								bind:value={congeDateNotification}
+								class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+							/>
+						</label>
+					</div>
+					<label class="mt-4 block">
+						<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Motif (optionnel)</span>
+						<textarea
+							bind:value={congeMotif}
+							rows="2"
+							placeholder="Ex: Vente du bien, reprise pour habiter..."
+							class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+						></textarea>
+					</label>
+					{#if congeDateEffet()}
+						<div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-3 dark:border-sky-800 dark:bg-sky-950/30">
+							<p class="text-sm font-medium text-sky-800 dark:text-sky-200">
+								Le bail prendra fin le {formatFrDate(congeDateEffet()!)}
+							</p>
+							<p class="mt-1 text-xs text-sky-600 dark:text-sky-400">
+								Préavis de {congeType === 'bailleur' ? '6' : '3'} mois à compter de la notification.
+							</p>
+						</div>
+					{/if}
+					<div class="mt-4 flex justify-end gap-2">
+						<button
+							onclick={cancelConge}
+							class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+						>
+							Annuler
+						</button>
+						<button
+							onclick={submitConge}
+							disabled={congeSaving || !congeDateNotification}
+							class="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+						>
+							<AlertTriangle class="h-3.5 w-3.5" />
+							{congeSaving ? 'Envoi en cours...' : 'Donner congé'}
+						</button>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Régularisation des charges -->
+			{#if bail.statut === 'en_cours'}
+				<div>
+					<div class="flex items-center justify-between">
+						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
+							Régularisation des charges
+						</p>
+						{#if isGerant}
+							<button
+								onclick={() => { showRegularisation = !showRegularisation; }}
+								class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+							>
+								<Calculator class="h-3.5 w-3.5" />
+								{showRegularisation ? 'Masquer' : 'Régulariser'}
+							</button>
+						{/if}
+					</div>
+
+					{#if showRegularisation}
+						<div class="mt-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+							<div class="flex items-end gap-3">
+								<label class="block flex-1">
+									<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Année</span>
+									<select
+										bind:value={regularisationAnnee}
+										class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+									>
+										{#each Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 - i) as annee (annee)}
+											<option value={annee}>{annee}</option>
+										{/each}
+									</select>
+								</label>
+								<button
+									onclick={handleRegularisation}
+									disabled={regularisationLoading}
+									class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+								>
+									<Calculator class="h-3.5 w-3.5" />
+									{regularisationLoading ? 'Calcul...' : 'Calculer la régularisation'}
+								</button>
+							</div>
+
+							{#if regularisationResult}
+								<div class="mt-4 space-y-3">
+									<div class="grid gap-3 sm:grid-cols-3">
+										<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+											<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Provisions annuelles</p>
+											<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(regularisationResult.provisions_annuelles)}</p>
+										</div>
+										<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+											<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Charges réelles</p>
+											<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(regularisationResult.charges_reelles)}</p>
+										</div>
+										<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+											<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Solde</p>
+											<p class="mt-1 text-lg font-bold {regularisationResult.solde > 0 ? 'text-emerald-600 dark:text-emerald-400' : regularisationResult.solde < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'}">
+												{formatEur(Math.abs(regularisationResult.solde))}
+											</p>
+										</div>
+									</div>
+									{#if regularisationResult.solde > 0}
+										<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
+											<p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+												Le locataire a trop payé de {formatEur(regularisationResult.solde)}
+											</p>
+											<p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+												Un remboursement est dû au locataire.
+											</p>
+										</div>
+									{:else if regularisationResult.solde < 0}
+										<div class="rounded-lg border border-rose-200 bg-rose-50 p-3 dark:border-rose-800 dark:bg-rose-950/30">
+											<p class="text-sm font-medium text-rose-800 dark:text-rose-200">
+												Le locataire doit un complément de {formatEur(Math.abs(regularisationResult.solde))}
+											</p>
+											<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">
+												Un appel de régularisation peut être émis.
+											</p>
+										</div>
+									{:else}
+										<div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+											<p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+												Aucun écart — les provisions correspondent aux charges réelles.
+											</p>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			{/if}
 

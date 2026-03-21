@@ -66,11 +66,14 @@ from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
+from app.services.irl_service import check_irl_revisions
 from app.services.notification_cron import (
+    check_bail_renewal,
     check_expiring_bails,
     check_expiring_pno,
     check_fiscal_deadlines,
     check_late_payments,
+    check_monthly_loyer_generation,
     check_pending_quittances,
 )
 
@@ -94,11 +97,18 @@ async def _notification_cron_loop():
     while True:
         try:
             client = get_supabase_service_client()
+            # Task 1: Auto-generate loyer records on the 1st of each month
+            await check_monthly_loyer_generation(client)
+            # Task 2: Graduated late payment reminders (J+5, J+15, J+30)
             await check_late_payments(client)
             await check_expiring_bails(client)
             await check_expiring_pno(client)
             await check_pending_quittances(client)
             await check_fiscal_deadlines(client)
+            # Task 3: IRL revision notifications
+            await check_irl_revisions(client)
+            # Task 4: Tacit bail renewals and conge deadlines
+            await check_bail_renewal(client)
             logger.info("notification_cron_cycle_complete")
             await asyncio.sleep(86_400)  # 24h
         except asyncio.CancelledError:

@@ -314,9 +314,9 @@ class TestCheckLatePayments:
 
     @pytest.mark.asyncio
     async def test_notifies_owner_for_late_loyer(self):
-        """One late loyer with matching owners -> 1 notification per owner."""
+        """One late loyer with matching owners -> graduated notifications (J+5, J+15, J+30)."""
         client = make_client([])
-        # Seed a late loyer (date_loyer well in the past)
+        # Seed a late loyer (date_loyer well in the past -> triggers all 3 levels)
         client.store["loyers"] = [
             {
                 "id": "loyer-late-1",
@@ -336,14 +336,17 @@ class TestCheckLatePayments:
 
             result = await check_late_payments(client)
 
-        # sci-1 has 2 owners (user-123 and user-456) in the fake store
-        assert result == 2
+        # sci-1 has 2 owners, 3 graduated levels (J+5, J+15, J+30) = 6 notifications
+        assert result == 6
         notifs = client.store.get("notifications", [])
-        assert len(notifs) == 2
+        assert len(notifs) == 6
         types = {n["type"] for n in notifs}
         assert types == {"late_payment"}
-        # Verify dedup_key is set in metadata
-        assert all(n["metadata"].get("dedup_key") == "late_loyer-late-1" for n in notifs)
+        # Verify graduated dedup_keys are set
+        dedup_keys = {n["metadata"].get("dedup_key") for n in notifs}
+        assert "late_loyer-late-1_j5" in dedup_keys
+        assert "late_loyer-late-1_j15" in dedup_keys
+        assert "late_loyer-late-1_j30" in dedup_keys
 
     @pytest.mark.asyncio
     async def test_second_cron_run_does_not_duplicate(self):
@@ -369,9 +372,9 @@ class TestCheckLatePayments:
             first_run = await check_late_payments(client)
             second_run = await check_late_payments(client)
 
-        assert first_run == 2   # 2 owners notified
+        assert first_run == 6   # 2 owners x 3 levels
         assert second_run == 0  # dedup prevents re-creation
-        assert len(client.store.get("notifications", [])) == 2  # still only 2
+        assert len(client.store.get("notifications", [])) == 6  # still only 6
 
     @pytest.mark.asyncio
     async def test_skips_loyer_without_sci_id(self):

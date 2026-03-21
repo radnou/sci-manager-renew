@@ -1667,3 +1667,117 @@ export function cloturerBail(
 		headers: { 'Content-Type': 'application/json' }
 	});
 }
+
+// --- Congé bail ---
+
+export type CongeType = 'locataire' | 'bailleur';
+
+export interface CongeBailPayload {
+	type_conge: CongeType;
+	date_notification: string;
+	motif?: string;
+	date_effet?: string;
+}
+
+export function donnerConge(
+	sciId: string,
+	bienId: string,
+	bailId: string,
+	data: CongeBailPayload
+) {
+	return apiFetch(`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/conge`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+// --- Régularisation charges ---
+
+export interface RegularisationResult {
+	annee: number;
+	provisions_annuelles: number;
+	charges_reelles: number;
+	solde: number;
+}
+
+export function fetchRegularisation(
+	sciId: string,
+	bienId: string,
+	bailId: string,
+	annee: number
+) {
+	return apiFetch<RegularisationResult>(
+		`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/regularisation?annee=${annee}`
+	);
+}
+
+// --- AG modèles + convocation ---
+
+export interface AgModele {
+	type_ag: string;
+	ordre_du_jour: string;
+	resolutions: string;
+	notes: string;
+}
+
+export function fetchAgModele(sciId: EntityId, type: string) {
+	return apiFetch<AgModele>(`/api/v1/scis/${sciId}/assemblees-generales/modele/${type}`);
+}
+
+export interface ConvocationResult {
+	texte: string;
+	date_envoi: string;
+	ag_id: EntityId;
+}
+
+export function genererConvocation(sciId: EntityId, agId: EntityId) {
+	return apiFetch<ConvocationResult>(
+		`/api/v1/scis/${sciId}/assemblees-generales/${agId}/convocation`,
+		{ method: 'POST' }
+	);
+}
+
+// --- Simulation droits cession ---
+
+export interface SimulationCessionResult {
+	nb_parts: number;
+	prix_unitaire: number;
+	prix_total: number;
+	droits_enregistrement: number;
+	taux_droits: number;
+	checklist: string[];
+}
+
+export function simulerDroitsCession(sciId: EntityId, nbParts: number, prixUnitaire: number) {
+	return apiFetch<SimulationCessionResult>(
+		`/api/v1/scis/${sciId}/mouvements-parts/simulation`,
+		{
+			method: 'POST',
+			body: JSON.stringify({ nb_parts: nbParts, prix_unitaire: prixUnitaire }),
+			headers: { 'Content-Type': 'application/json' }
+		}
+	);
+}
+
+// --- Fiscalité pré-remplissage ---
+
+export interface FiscalitePrefillResult {
+	annee: number;
+	total_revenus: number;
+	total_charges: number;
+	interets_emprunt: number;
+	travaux: number;
+	frais_gestion: number;
+	assurance: number;
+	taxe_fonciere: number;
+	copropriete: number;
+	resultat_fiscal: number;
+}
+
+export function prefillFiscalite(sciId: EntityId, annee: number) {
+	return apiFetch<FiscalitePrefillResult>(
+		`/api/v1/fiscalite/prefill/${annee}?id_sci=${encodeURIComponent(String(sciId))}`,
+		{ method: 'POST' }
+	);
+}

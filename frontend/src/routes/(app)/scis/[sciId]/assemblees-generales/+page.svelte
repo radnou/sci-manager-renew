@@ -5,11 +5,14 @@
 		createAssembleeGenerale,
 		deleteAssembleeGenerale,
 		fetchAssembleesGenerales,
-		updateAssembleeGenerale
+		updateAssembleeGenerale,
+		fetchAgModele,
+		genererConvocation
 	} from '$lib/api';
+	import type { ConvocationResult } from '$lib/api';
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { CalendarDays, CheckCircle2, ClipboardList, FileText, Pencil, Plus, Trash2 } from 'lucide-svelte';
+	import { CalendarDays, CheckCircle2, ClipboardList, FileText, Pencil, Plus, Trash2, Send, Copy, Download, X, Loader2 } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -190,6 +193,69 @@
 		}
 		return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
 	}
+
+	// ── Modèles AG ─────────────────────────
+	let loadingModele: string | null = $state(null);
+
+	async function loadModele(type: string) {
+		loadingModele = type;
+		try {
+			const modele = await fetchAgModele(sci.id, type);
+			editor = {
+				date_ag: '',
+				type_ag: modele.type_ag === 'extraordinaire' ? 'extraordinaire' : 'ordinaire',
+				exercice_annee: new Date().getFullYear() - 1,
+				ordre_du_jour: modele.ordre_du_jour ?? '',
+				pv_url: '',
+				quorum_atteint: false,
+				resolutions: modele.resolutions ?? '',
+				notes: modele.notes ?? ''
+			};
+			editingId = null;
+			editorOpen = true;
+			addToast({ title: 'Modèle chargé', description: 'Le formulaire a été pré-rempli.', variant: 'success' });
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de charger le modèle.', variant: 'error' });
+		} finally {
+			loadingModele = null;
+		}
+	}
+
+	// ── Convocation ─────────────────────────
+	let showConvocationModal = $state(false);
+	let convocationData = $state<ConvocationResult | null>(null);
+	let generatingConvocation: string | null = $state(null);
+
+	async function handleGenererConvocation(ag: AssembleeGenerale) {
+		generatingConvocation = String(ag.id);
+		try {
+			convocationData = await genererConvocation(sci.id, ag.id);
+			showConvocationModal = true;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de générer la convocation.', variant: 'error' });
+		} finally {
+			generatingConvocation = null;
+		}
+	}
+
+	function copyConvocation() {
+		if (!convocationData) return;
+		navigator.clipboard.writeText(convocationData.texte);
+		addToast({ title: 'Copié', description: 'Le texte de la convocation a été copié.', variant: 'success' });
+	}
+
+	function downloadConvocation() {
+		if (!convocationData) return;
+		const blob = new Blob([convocationData.texte], { type: 'text/plain;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `convocation_ag_${convocationData.date_envoi}.txt`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <svelte:head><title>Assemblées générales | {sci.nom} | GérerSCI</title></svelte:head>
@@ -250,14 +316,42 @@
 					</p>
 				</div>
 				{#if isGerant}
-					<button
-						type="button"
-						class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-						onclick={openCreateEditor}
-					>
-						<Plus class="h-4 w-4" />
-						Planifier une AG
-					</button>
+					<div class="flex items-center gap-2">
+						<button
+							type="button"
+							class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+							onclick={() => loadModele('ago_approbation_comptes')}
+							disabled={loadingModele === 'ago_approbation_comptes'}
+						>
+							{#if loadingModele === 'ago_approbation_comptes'}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								<ClipboardList class="h-4 w-4" />
+							{/if}
+							Nouvelle AGO
+						</button>
+						<button
+							type="button"
+							class="inline-flex items-center gap-2 rounded-xl border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/30"
+							onclick={() => loadModele('age_modification_statuts')}
+							disabled={loadingModele === 'age_modification_statuts'}
+						>
+							{#if loadingModele === 'age_modification_statuts'}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								<FileText class="h-4 w-4" />
+							{/if}
+							Nouvelle AGE
+						</button>
+						<button
+							type="button"
+							class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+							onclick={openCreateEditor}
+						>
+							<Plus class="h-4 w-4" />
+							Planifier une AG
+						</button>
+					</div>
 				{/if}
 			</div>
 
@@ -329,6 +423,19 @@
 										>
 											<Trash2 class="h-4 w-4" />
 											Supprimer
+										</button>
+										<button
+											type="button"
+											class="inline-flex items-center gap-2 rounded-xl border border-sky-200 px-3 py-2 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/30"
+											disabled={generatingConvocation === String(ag.id)}
+											onclick={() => handleGenererConvocation(ag)}
+										>
+											{#if generatingConvocation === String(ag.id)}
+												<Loader2 class="h-4 w-4 animate-spin" />
+											{:else}
+												<Send class="h-4 w-4" />
+											{/if}
+											Convocation
 										</button>
 									</div>
 								{/if}
@@ -486,4 +593,40 @@
 			</div>
 		</div>
 	</div>
+<!-- Convocation Modal -->
+{#if showConvocationModal && convocationData}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true">
+		<div class="mx-4 w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-950">
+			<div class="flex items-center justify-between mb-4">
+				<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Convocation</h3>
+				<button
+					onclick={() => { showConvocationModal = false; }}
+					class="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+				>
+					<X class="h-5 w-5" />
+				</button>
+			</div>
+			<div class="max-h-96 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+				<pre class="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{convocationData.texte}</pre>
+			</div>
+			<div class="mt-4 flex justify-end gap-2">
+				<button
+					onclick={copyConvocation}
+					class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+				>
+					<Copy class="h-4 w-4" />
+					Copier
+				</button>
+				<button
+					onclick={downloadConvocation}
+					class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+				>
+					<Download class="h-4 w-4" />
+					Télécharger
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 </section>

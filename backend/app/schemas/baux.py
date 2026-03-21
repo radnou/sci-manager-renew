@@ -41,4 +41,7 @@ class BailResponse(BaseModel):
     depot_garantie: float = 0
     indice_irl_reference: Optional[str] = None
     statut: str = "en_cours"
+    date_conge: Optional[date] = None
+    motif_conge: Optional[str] = None
+    type_conge: Optional[str] = None
     locataires: list[dict] = []

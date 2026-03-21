@@ -566,3 +566,118 @@ class ResumeFiscalService:
             self._save_deficit(sci_id, annee, result, client)
 
         return result
+
+    def prefill_fiscalite(self, client, sci_id: str, annee: int) -> dict:
+        """Pre-fill fiscalite record from loyers and charges data.
+
+        Aggregates paid loyers and charges for the SCI in the given year,
+        then auto-creates or updates the fiscalite record with calculated values.
+
+        Args:
+            client: Supabase client (service role for writes).
+            sci_id: UUID of the SCI.
+            annee: Calendar year to aggregate.
+
+        Returns:
+            Dict with the pre-filled fiscalite data.
+        """
+        year_start = f"{annee}-01-01"
+        year_end = f"{annee}-12-31"
+
+        # --- Aggregate paid loyers ---
+        bien_rows = self._execute_select(
+            client.table("biens").select("id").eq("id_sci", sci_id)
+        )
+        bien_ids = [b["id"] for b in bien_rows]
+
+        total_revenus = 0.0
+        for bien_id in bien_ids:
+            loyer_rows = self._execute_select(
+                client.table("loyers")
+                .select("montant")
+                .eq("id_bien", bien_id)
+                .eq("statut", "paye")
+                .gte("date_loyer", year_start)
+                .lte("date_loyer", year_end)
+            )
+            total_revenus += sum(self._safe_float(l.get("montant")) for l in loyer_rows)
+
+        total_revenus = round(total_revenus, 2)
+
+        # --- Aggregate charges by fiscal category ---
+        charge_types_map = {
+            "interets_emprunt": ["interets_emprunt"],
+            "travaux": ["travaux_entretien", "travaux_amelioration"],
+            "frais_gestion": ["frais_gestion"],
+            "assurance": ["assurance_pno", "prime_assurance"],
+            "taxe_fonciere": ["taxe_fonciere"],
+            "copropriete": ["copropriete"],
+        }
+
+        charge_totals = {k: 0.0 for k in charge_types_map}
+        total_charges = 0.0
+
+        for bien_id in bien_ids:
+            charge_rows = self._execute_select(
+                client.table("charges")
+                .select("type_charge, montant")
+                .eq("id_bien", bien_id)
+                .gte("date_paiement", year_start)
+                .lte("date_paiement", year_end)
+            )
+            for charge in charge_rows:
+                montant = self._safe_float(charge.get("montant"))
+                total_charges += montant
+                charge_type = charge.get("type_charge", "")
+                for fiscal_key, db_types in charge_types_map.items():
+                    if charge_type in db_types:
+                        charge_totals[fiscal_key] += montant
+                        break
+
+        total_charges = round(total_charges, 2)
+        for k in charge_totals:
+            charge_totals[k] = round(charge_totals[k], 2)
+
+        resultat_fiscal = round(total_revenus - total_charges, 2)
+
+        fiscalite_data = {
+            "id_sci": sci_id,
+            "annee": annee,
+            "total_revenus": total_revenus,
+            "total_charges": total_charges,
+            "resultat_fiscal": resultat_fiscal,
+            **charge_totals,
+        }
+
+        # --- Upsert: check if record exists for this SCI + year ---
+        existing = self._execute_select(
+            client.table("fiscalite")
+            .select("id")
+            .eq("id_sci", sci_id)
+            .eq("annee", annee)
+        )
+
+        if existing:
+            record_id = existing[0]["id"]
+            update_payload = {k: v for k, v in fiscalite_data.items() if k not in ("id_sci", "annee")}
+            result = (
+                client.table("fiscalite")
+                .update(update_payload)
+                .eq("id", record_id)
+                .execute()
+            )
+            row = (result.data or [{}])[0]
+            logger.info("fiscalite_prefill_updated", sci_id=sci_id, annee=annee, record_id=record_id)
+        else:
+            result = (
+                client.table("fiscalite")
+                .insert(fiscalite_data)
+                .execute()
+            )
+            row = (result.data or [{}])[0]
+            logger.info("fiscalite_prefill_created", sci_id=sci_id, annee=annee)
+
+        return {
+            **fiscalite_data,
+            "id": row.get("id"),
+        }

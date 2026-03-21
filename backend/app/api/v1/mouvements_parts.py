@@ -10,7 +10,7 @@ import structlog
 from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field
 
-from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError
+from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 
@@ -169,3 +169,62 @@ async def delete_mouvement_parts(
     except Exception as exc:
         logger.error("delete_mouvement_parts_failed", mouvement_id=str(mouvement_id), error=str(exc), exc_info=True)
         raise DatabaseError("Unable to delete mouvement de parts")
+
+
+# ──────────────────────────────────────────────────────────────
+# SIMULATION droits d'enregistrement sur cession de parts
+# ──────────────────────────────────────────────────────────────
+
+TAUX_DROITS_ENREGISTREMENT = 5.0  # 5% — Art. 726 CGI
+
+_FORMALITES_CESSION = [
+    "Acte de cession (SSP ou notarié)",
+    "Enregistrement aux impôts dans 1 mois",
+    "Signification à la société (art. 1690 C.civ)",
+    "Mise à jour des statuts",
+    "Publication si changement de gérant",
+]
+
+
+class SimulationDroitsResponse(BaseModel):
+    prix_total: float
+    droits_enregistrement: float
+    taux: float
+    base_taxable: float
+    reference_legale: str
+    formalites: list[str]
+
+
+@router.get("/simulation-droits", response_model=SimulationDroitsResponse)
+async def simulation_droits_enregistrement(
+    sci_id: UUID,
+    request: Request,
+    nb_parts: int,
+    prix_unitaire: float,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Simulate registration duties for a share transfer (Art. 726 CGI)."""
+    if nb_parts <= 0:
+        raise ValidationError("nb_parts doit être supérieur à 0")
+    if prix_unitaire < 0:
+        raise ValidationError("prix_unitaire doit être positif ou nul")
+
+    logger.info(
+        "simulation_droits",
+        sci_id=str(sci_id),
+        nb_parts=nb_parts,
+        prix_unitaire=prix_unitaire,
+    )
+
+    prix_total = nb_parts * prix_unitaire
+    base_taxable = prix_total
+    droits = round(base_taxable * TAUX_DROITS_ENREGISTREMENT / 100, 2)
+
+    return SimulationDroitsResponse(
+        prix_total=prix_total,
+        droits_enregistrement=droits,
+        taux=TAUX_DROITS_ENREGISTREMENT,
+        base_taxable=base_taxable,
+        reference_legale="Art. 726 CGI — Droits d'enregistrement sur cessions de parts sociales",
+        formalites=_FORMALITES_CESSION,
+    )

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { SCIDetail, Fiscalite, ResumeFiscalData, AssocieQuotePart, SubscriptionEntitlements } from '$lib/api';
-	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, downloadReport2042Pdf, fetchResumeFiscal, createFiscalite, deleteFiscalite } from '$lib/api';
+	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, downloadReport2042Pdf, fetchResumeFiscal, createFiscalite, deleteFiscalite, prefillFiscalite } from '$lib/api';
+	import type { FiscalitePrefillResult } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale, User } from 'lucide-svelte';
+	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale, User, Sparkles } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const subscription = getContext<{ plan_key: string; features: Record<string, boolean> } | null>('subscription');
@@ -218,6 +219,44 @@
 		} finally {
 			deletingId = null;
 		}
+	}
+
+	// ── Pré-remplissage automatique ─────────────────────────
+	let prefilling = $state(false);
+	let prefillAnnee = $state(new Date().getFullYear() - 1);
+	let prefillResult = $state<FiscalitePrefillResult | null>(null);
+	let showPrefillPreview = $state(false);
+
+	async function handlePrefill() {
+		prefilling = true;
+		prefillResult = null;
+		showPrefillPreview = false;
+		try {
+			prefillResult = await prefillFiscalite(sci.id, prefillAnnee);
+			showPrefillPreview = true;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de pré-remplir.', variant: 'error' });
+		} finally {
+			prefilling = false;
+		}
+	}
+
+	function applyPrefill() {
+		if (!prefillResult) return;
+		newAnnee = prefillResult.annee;
+		newRevenus = prefillResult.total_revenus;
+		newCharges = prefillResult.total_charges;
+		newInteretsEmprunt = prefillResult.interets_emprunt;
+		newTravaux = prefillResult.travaux;
+		newFraisGestion = prefillResult.frais_gestion;
+		newAssurance = prefillResult.assurance;
+		newTaxeFonciere = prefillResult.taxe_fonciere;
+		newCopropriete = prefillResult.copropriete;
+		showChargeDetail = true;
+		showCreateForm = true;
+		showPrefillPreview = false;
+		prefillResult = null;
+		addToast({ title: 'Données pré-remplies', description: 'Vérifiez et ajustez les valeurs avant de créer.', variant: 'success' });
 	}
 </script>
 
@@ -513,15 +552,89 @@
 				</h2>
 			</div>
 			{#if isGerant && !upgradeRequired}
-				<button
-					onclick={() => { showCreateForm = !showCreateForm; }}
-					class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-				>
-					<Plus class="h-4 w-4" />
-					Ajouter
-				</button>
+				<div class="flex items-center gap-2">
+					<button
+						onclick={handlePrefill}
+						disabled={prefilling}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+					>
+						{#if prefilling}
+							<Loader2 class="h-4 w-4 animate-spin" />
+						{:else}
+							<Sparkles class="h-4 w-4" />
+						{/if}
+						Pré-remplir
+					</button>
+					<button
+						onclick={() => { showCreateForm = !showCreateForm; }}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+					>
+						<Plus class="h-4 w-4" />
+						Ajouter
+					</button>
+				</div>
 			{/if}
 		</div>
+
+		{#if showPrefillPreview && prefillResult}
+			<div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
+				<div class="flex items-center gap-2 mb-3">
+					<Sparkles class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+					<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Valeurs calculées pour {prefillResult.annee}</p>
+				</div>
+				<div class="grid gap-3 sm:grid-cols-3">
+					<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Revenus bruts</p>
+						<p class="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatEur(prefillResult.total_revenus)}</p>
+					</div>
+					<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Charges totales</p>
+						<p class="mt-1 text-lg font-bold text-rose-600 dark:text-rose-400">{formatEur(prefillResult.total_charges)}</p>
+					</div>
+					<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Résultat fiscal</p>
+						<p class="mt-1 text-lg font-bold {prefillResult.resultat_fiscal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">{formatEur(prefillResult.resultat_fiscal)}</p>
+					</div>
+				</div>
+				{#if prefillResult.interets_emprunt > 0 || prefillResult.travaux > 0 || prefillResult.taxe_fonciere > 0}
+					<div class="mt-3 grid gap-2 sm:grid-cols-3 text-xs text-slate-600 dark:text-slate-400">
+						{#if prefillResult.interets_emprunt > 0}
+							<p>Intérêts emprunt : {formatEur(prefillResult.interets_emprunt)}</p>
+						{/if}
+						{#if prefillResult.travaux > 0}
+							<p>Travaux : {formatEur(prefillResult.travaux)}</p>
+						{/if}
+						{#if prefillResult.frais_gestion > 0}
+							<p>Frais de gestion : {formatEur(prefillResult.frais_gestion)}</p>
+						{/if}
+						{#if prefillResult.assurance > 0}
+							<p>Assurance : {formatEur(prefillResult.assurance)}</p>
+						{/if}
+						{#if prefillResult.taxe_fonciere > 0}
+							<p>Taxe foncière : {formatEur(prefillResult.taxe_fonciere)}</p>
+						{/if}
+						{#if prefillResult.copropriete > 0}
+							<p>Copropriété : {formatEur(prefillResult.copropriete)}</p>
+						{/if}
+					</div>
+				{/if}
+				<div class="mt-4 flex justify-end gap-2">
+					<button
+						onclick={() => { showPrefillPreview = false; prefillResult = null; }}
+						class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+					>
+						Annuler
+					</button>
+					<button
+						onclick={applyPrefill}
+						class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+					>
+						<Sparkles class="h-3.5 w-3.5" />
+						Utiliser ces valeurs
+					</button>
+				</div>
+			</div>
+		{/if}
 
 		{#if showCreateForm}
 			<div class="mb-4 rounded-xl border border-sky-200 bg-sky-50/50 p-4 dark:border-sky-800 dark:bg-sky-950/20">

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import structlog
 
@@ -9,9 +9,96 @@ from app.services.notification_service import create_notification_with_email
 logger = structlog.get_logger(__name__)
 
 
+# ── TASK 1: Appel de loyer automatique ──────────────────────────────────
+
+
+async def check_monthly_loyer_generation(supabase_client) -> int:
+    """On the 1st of each month, auto-create loyer records for all active baux.
+
+    For each bail with statut='en_cours', creates a loyer with:
+    - date_loyer = 1st of current month
+    - montant = bail.loyer_hc + bail.charges_locatives
+    - statut = 'en_attente'
+    - id_bien = bail.id_bien
+
+    Skips if a loyer already exists for this bien + month (dedup).
+    """
+    today = date.today()
+    first_of_month = today.replace(day=1).isoformat()
+
+    # Fetch all active baux
+    result = (
+        supabase_client.table("baux")
+        .select("id, id_bien, loyer_hc, charges_locatives, statut")
+        .eq("statut", "en_cours")
+        .execute()
+    )
+
+    created_count = 0
+    for bail in result.data or []:
+        id_bien = bail.get("id_bien")
+        if not id_bien:
+            continue
+
+        loyer_hc = float(bail.get("loyer_hc") or 0)
+        charges_locatives = float(bail.get("charges_locatives") or 0)
+        montant = round(loyer_hc + charges_locatives, 2)
+        if montant <= 0:
+            continue
+
+        # Resolve id_sci from the bien
+        bien_result = (
+            supabase_client.table("biens")
+            .select("id_sci")
+            .eq("id", id_bien)
+            .execute()
+        )
+        bien_rows = bien_result.data or []
+        if not bien_rows:
+            continue
+        id_sci = bien_rows[0].get("id_sci")
+
+        # Dedup: check if loyer already exists for this bien + month
+        existing = (
+            supabase_client.table("loyers")
+            .select("id")
+            .eq("id_bien", id_bien)
+            .eq("date_loyer", first_of_month)
+            .execute()
+        )
+        if existing.data:
+            continue
+
+        # Create loyer record
+        supabase_client.table("loyers").insert({
+            "id_bien": id_bien,
+            "id_sci": id_sci,
+            "date_loyer": first_of_month,
+            "montant": montant,
+            "statut": "en_attente",
+            "quitus_genere": False,
+        }).execute()
+        created_count += 1
+
+    logger.info("check_monthly_loyer_generation_complete", created=created_count)
+    return created_count
+
+
+# ── TASK 2: Relance impaye graduee ──────────────────────────────────────
+
+
+_LATE_PAYMENT_LEVELS = [
+    {"days": 5, "title_prefix": "Relance amiable", "severity": "info"},
+    {"days": 15, "title_prefix": "Relance formelle", "severity": "warning"},
+    {"days": 30, "title_prefix": "Mise en demeure recommandee", "severity": "critical"},
+]
+
+
 async def check_late_payments(supabase_client) -> int:
-    """Find loyers more than 5 days unpaid and notify the owner."""
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d")
+    """Find unpaid loyers and send graduated reminders at J+5, J+15, J+30."""
+    now = datetime.now(timezone.utc)
+    # Fetch all unpaid loyers older than 5 days
+    cutoff = (now - timedelta(days=5)).strftime("%Y-%m-%d")
 
     result = (
         supabase_client.table("loyers")
@@ -23,9 +110,200 @@ async def check_late_payments(supabase_client) -> int:
 
     notified = 0
     for loyer in result.data or []:
-        # Resolve the owner via the SCI associes
         sci_id = loyer.get("id_sci") or (loyer.get("biens") or {}).get("id_sci")
         if not sci_id:
+            continue
+
+        bien = loyer.get("biens") or {}
+        adresse = bien.get("adresse", "un bien")
+
+        # Calculate days late
+        try:
+            loyer_date = datetime.strptime(loyer["date_loyer"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError):
+            continue
+        days_late = (now - loyer_date).days
+
+        owners = (
+            supabase_client.table("associes")
+            .select("user_id")
+            .eq("id_sci", sci_id)
+            .not_.is_("user_id", "null")
+            .execute()
+        )
+
+        for level in _LATE_PAYMENT_LEVELS:
+            if days_late < level["days"]:
+                continue
+
+            dedup_key = f"late_{loyer['id']}_j{level['days']}"
+            metadata = {
+                "loyer_id": loyer["id"],
+                "bien_adresse": adresse,
+                "days_late": days_late,
+                "dedup_key": dedup_key,
+            }
+            if level["severity"] == "critical":
+                metadata["severity"] = "critical"
+
+            for owner in owners.data or []:
+                created = await create_notification_with_email(
+                    supabase_client,
+                    user_id=owner["user_id"],
+                    notification_type="late_payment",
+                    data={
+                        "title": f"{level['title_prefix']} \u2014 {adresse}",
+                        "message": (
+                            f"Le loyer du {loyer['date_loyer']} ({loyer['montant']} EUR) "
+                            f"pour {adresse} est impaye depuis {days_late} jours."
+                        ),
+                        "metadata": metadata,
+                    },
+                )
+                if created:
+                    notified += 1
+
+    logger.info("check_late_payments_complete", notified=notified)
+    return notified
+
+
+# ── TASK 4: Renouvellement bail tacite ──────────────────────────────────
+
+
+async def check_bail_renewal(supabase_client) -> int:
+    """Handle tacit bail renewals and upcoming conge deadlines.
+
+    1. Find baux where date_fin is passed AND statut='en_cours'
+       → Tacitly renew: +3 years (nu) or +1 year (meuble)
+       → Notify owner of tacit renewal
+
+    2. Find baux expiring in 6+ months with no conge
+       → Notify about conge bailleur deadline
+    """
+    today = date.today()
+    today_str = today.isoformat()
+    notified = 0
+
+    # --- Part 1: Tacit renewals (date_fin passed, still en_cours) ---
+    expired_result = (
+        supabase_client.table("baux")
+        .select("id, id_bien, date_debut, date_fin, statut, biens(id_sci, adresse, ville, type_locatif)")
+        .eq("statut", "en_cours")
+        .lt("date_fin", today_str)
+        .execute()
+    )
+
+    for bail in (expired_result.data or []):
+        if not bail.get("date_fin"):
+            continue
+
+        bien = bail.get("biens") or {}
+        sci_id = bien.get("id_sci")
+        if not sci_id:
+            continue
+
+        type_locatif = bien.get("type_locatif", "nu")
+
+        # Calculate new end date: +3 years (nu/mixte) or +1 year (meuble)
+        try:
+            old_date_fin = datetime.strptime(bail["date_fin"], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            continue
+
+        if type_locatif == "meuble":
+            new_date_fin = old_date_fin.replace(year=old_date_fin.year + 1)
+        else:
+            new_date_fin = old_date_fin.replace(year=old_date_fin.year + 3)
+
+        # Update the bail with new date_fin
+        supabase_client.table("baux").update({
+            "date_fin": new_date_fin.isoformat(),
+        }).eq("id", bail["id"]).execute()
+
+        # Resolve locataire names for the notification
+        bl_result = (
+            supabase_client.table("bail_locataires")
+            .select("id_locataire")
+            .eq("id_bail", bail["id"])
+            .execute()
+        )
+        locataire_names = []
+        for bl in (bl_result.data or []):
+            loc_result = (
+                supabase_client.table("locataires")
+                .select("nom, prenom")
+                .eq("id", bl["id_locataire"])
+                .execute()
+            )
+            for loc in (loc_result.data or []):
+                locataire_names.append(f"{loc.get('prenom', '')} {loc.get('nom', '')}".strip())
+
+        locataire_label = ", ".join(locataire_names) if locataire_names else "le locataire"
+        adresse = bien.get("adresse", "un bien")
+
+        owners = (
+            supabase_client.table("associes")
+            .select("user_id")
+            .eq("id_sci", sci_id)
+            .not_.is_("user_id", "null")
+            .execute()
+        )
+
+        for owner in (owners.data or []):
+            created = await create_notification_with_email(
+                supabase_client,
+                user_id=owner["user_id"],
+                notification_type="bail_renewal",
+                data={
+                    "title": f"Renouvellement tacite \u2014 {adresse}",
+                    "message": (
+                        f"Le bail de {locataire_label} a ete tacitement "
+                        f"reconduit jusqu'au {new_date_fin.strftime('%d/%m/%Y')}."
+                    ),
+                    "metadata": {
+                        "bail_id": bail["id"],
+                        "bien_adresse": adresse,
+                        "new_date_fin": new_date_fin.isoformat(),
+                        "dedup_key": f"renewal_{bail['id']}_{new_date_fin.isoformat()}",
+                    },
+                },
+            )
+            if created:
+                notified += 1
+
+    # --- Part 2: Upcoming conge bailleur deadlines (6+ months before expiry) ---
+    six_months_later = today.replace(
+        year=today.year + (1 if today.month > 6 else 0),
+        month=((today.month + 5) % 12) + 1,
+        day=1,
+    )
+    horizon_str = six_months_later.isoformat()
+
+    upcoming_result = (
+        supabase_client.table("baux")
+        .select("id, id_bien, date_fin, biens(id_sci, adresse, ville)")
+        .eq("statut", "en_cours")
+        .gte("date_fin", horizon_str)
+        .execute()
+    )
+
+    for bail in (upcoming_result.data or []):
+        if not bail.get("date_fin"):
+            continue
+
+        bien = bail.get("biens") or {}
+        sci_id = bien.get("id_sci")
+        if not sci_id:
+            continue
+
+        try:
+            bail_date_fin = datetime.strptime(bail["date_fin"], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            continue
+
+        months_until = (bail_date_fin.year - today.year) * 12 + (bail_date_fin.month - today.month)
+        # Conge must be sent 6 months before expiry
+        if months_until > 12:
             continue
 
         owners = (
@@ -36,22 +314,31 @@ async def check_late_payments(supabase_client) -> int:
             .execute()
         )
 
-        bien = loyer.get("biens") or {}
-        for owner in owners.data or []:
+        adresse = bien.get("adresse", "un bien")
+        for owner in (owners.data or []):
             created = await create_notification_with_email(
                 supabase_client,
                 user_id=owner["user_id"],
-                notification_type="late_payment",
+                notification_type="bail_conge_deadline",
                 data={
-                    "title": "Loyer en retard",
-                    "message": f"Le loyer du {loyer['date_loyer']} ({loyer['montant']} EUR) pour {bien.get('adresse', 'un bien')} est impaye.",
-                    "metadata": {"loyer_id": loyer["id"], "bien_adresse": bien.get("adresse"), "dedup_key": f"late_{loyer['id']}"},
+                    "title": f"Deadline conge bailleur \u2014 {adresse}",
+                    "message": (
+                        f"Le bail pour {adresse} expire le {bail['date_fin']}. "
+                        f"Deadline conge bailleur dans {months_until} mois."
+                    ),
+                    "metadata": {
+                        "bail_id": bail["id"],
+                        "bien_adresse": adresse,
+                        "date_fin": bail["date_fin"],
+                        "months_until": months_until,
+                        "dedup_key": f"conge_{bail['id']}_{bail['date_fin']}",
+                    },
                 },
             )
             if created:
                 notified += 1
 
-    logger.info("check_late_payments_complete", notified=notified)
+    logger.info("check_bail_renewal_complete", notified=notified)
     return notified
 
 

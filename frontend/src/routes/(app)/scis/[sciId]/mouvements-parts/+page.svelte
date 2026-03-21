@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { SCIDetail } from '$lib/api';
-	import { fetchMouvementsParts, createMouvementParts, deleteMouvementParts } from '$lib/api';
+	import { fetchMouvementsParts, createMouvementParts, deleteMouvementParts, simulerDroitsCession } from '$lib/api';
+	import type { SimulationCessionResult } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { ArrowLeftRight, Plus, Trash2, Loader2 } from 'lucide-svelte';
+	import { ArrowLeftRight, Plus, Trash2, Loader2, Calculator, CheckCircle2 } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 
@@ -109,6 +110,29 @@
 		newCessionnaire = '';
 		newNbParts = 0;
 		newPrixTotal = 0;
+	}
+
+	// ── Simulateur de cession ─────────────────────────
+	let showSimulateur = $state(false);
+	let simNbParts = $state(1);
+	let simPrixUnitaire = $state(100);
+	let simLoading = $state(false);
+	let simResult = $state<SimulationCessionResult | null>(null);
+
+	async function handleSimulation() {
+		if (simNbParts <= 0 || simPrixUnitaire <= 0) {
+			addToast({ title: 'Champs requis', description: 'Nombre de parts et prix unitaire doivent être > 0.', variant: 'error' });
+			return;
+		}
+		simLoading = true;
+		simResult = null;
+		try {
+			simResult = await simulerDroitsCession(sci.id, simNbParts, simPrixUnitaire);
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de simuler.', variant: 'error' });
+		} finally {
+			simLoading = false;
+		}
 	}
 </script>
 
@@ -358,6 +382,103 @@
 						{/each}
 					</tbody>
 				</table>
+			</div>
+		{/if}
+	</div>
+
+	<!-- Simulateur de cession -->
+	<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+		<div class="mb-4 flex items-center justify-between">
+			<div class="flex items-center gap-2">
+				<Calculator class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+					Simulateur de cession
+				</h2>
+			</div>
+			<button
+				onclick={() => { showSimulateur = !showSimulateur; }}
+				class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+			>
+				<Calculator class="h-4 w-4" />
+				{showSimulateur ? 'Masquer' : 'Simuler'}
+			</button>
+		</div>
+
+		{#if showSimulateur}
+			<div class="rounded-xl border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-800 dark:bg-violet-950/20">
+				<p class="mb-3 text-sm text-slate-600 dark:text-slate-400">
+					Estimez les droits d'enregistrement et les formalités pour une cession de parts.
+				</p>
+				<div class="grid gap-3 sm:grid-cols-2">
+					<div>
+						<label for="sim-nb-parts" class="block text-xs font-medium text-slate-500 uppercase">Nombre de parts</label>
+						<input
+							id="sim-nb-parts"
+							type="number"
+							min="1"
+							bind:value={simNbParts}
+							class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</div>
+					<div>
+						<label for="sim-prix" class="block text-xs font-medium text-slate-500 uppercase">Prix unitaire</label>
+						<input
+							id="sim-prix"
+							type="number"
+							min="0"
+							step="0.01"
+							bind:value={simPrixUnitaire}
+							class="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</div>
+				</div>
+				<div class="mt-3 flex justify-end">
+					<button
+						onclick={handleSimulation}
+						disabled={simLoading}
+						class="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+					>
+						{#if simLoading}
+							<Loader2 class="h-4 w-4 animate-spin" />
+						{:else}
+							<Calculator class="h-4 w-4" />
+						{/if}
+						Simuler
+					</button>
+				</div>
+
+				{#if simResult}
+					<div class="mt-4 space-y-3">
+						<div class="grid gap-3 sm:grid-cols-3">
+							<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+								<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Prix total</p>
+								<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(simResult.prix_total)}</p>
+							</div>
+							<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+								<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Droits d'enregistrement ({simResult.taux_droits}%)</p>
+								<p class="mt-1 text-lg font-bold text-rose-600 dark:text-rose-400">{formatEur(simResult.droits_enregistrement)}</p>
+							</div>
+							<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
+								<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total avec droits</p>
+								<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(simResult.prix_total + simResult.droits_enregistrement)}</p>
+							</div>
+						</div>
+
+						{#if simResult.checklist && simResult.checklist.length > 0}
+							<div class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+								<p class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Checklist des formalités</p>
+								<ul class="space-y-1.5">
+									{#each simResult.checklist as item}
+										<li class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+											<CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+											{item}
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>

@@ -202,6 +202,51 @@ async def update_fiscalite(
         raise DatabaseError("Unable to update fiscalite")
 
 
+@router.post("/prefill/{annee}", response_model=dict)
+async def prefill_fiscalite_endpoint(
+    annee: int,
+    request: Request,
+    user_id: str = Depends(get_current_user),
+    id_sci: str | None = None,
+):
+    """Pre-fill fiscalite records from loyers and charges data for a given year.
+
+    If id_sci is provided, only pre-fills for that SCI.
+    Otherwise, pre-fills for all SCIs the user has access to.
+    """
+    logger.info("prefilling_fiscalite", user_id=user_id, annee=annee, id_sci=id_sci)
+
+    try:
+        SubscriptionService.ensure_feature_enabled(user_id, "fiscalite_enabled")
+        client = _get_client(request)
+        user_sci_ids = _get_user_sci_ids(client, user_id)
+
+        if id_sci:
+            _require_sci_access(user_sci_ids, id_sci)
+            target_sci_ids = [id_sci]
+        else:
+            target_sci_ids = user_sci_ids
+
+        if not target_sci_ids:
+            return {"results": [], "count": 0}
+
+        from app.services.resume_fiscal_service import ResumeFiscalService
+        service = ResumeFiscalService()
+        write_client = _get_write_client()
+
+        results = []
+        for sci_id in target_sci_ids:
+            prefilled = service.prefill_fiscalite(write_client, sci_id, annee)
+            results.append(prefilled)
+
+        return {"results": results, "count": len(results)}
+    except SCIManagerException:
+        raise
+    except Exception as exc:
+        logger.error("prefill_fiscalite_failed", user_id=user_id, annee=annee, error=str(exc), exc_info=True)
+        raise DatabaseError("Unable to prefill fiscalite")
+
+
 @router.delete("/{fiscalite_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_fiscalite(fiscalite_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_fiscalite", fiscalite_id=fiscalite_id, user_id=user_id)

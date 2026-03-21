@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 from uuid import UUID
 
@@ -826,6 +826,150 @@ async def cloturer_bail(
 
 
 # ──────────────────────────────────────────────────────────────
+# CONGE bail (notice to quit — locataire or bailleur)
+# ──────────────────────────────────────────────────────────────
+
+_VALID_CONGE_TYPES = {"locataire", "bailleur"}
+_VALID_MOTIFS_BAILLEUR = {"Reprise pour habiter", "Vente", "Motif légitime"}
+
+
+class CongePayload(BaseModel):
+    type_conge: str
+    date_notification: date
+    motif: Optional[str] = None
+    date_effet: Optional[date] = None  # If omitted, calculated from préavis
+
+
+def _calculate_date_effet(date_notification: date, type_conge: str, type_locatif: str) -> date:
+    """Calculate date_effet based on préavis rules.
+
+    - Locataire nu: 3 mois (1 mois en zone tendue, but we default to 3)
+    - Locataire meublé: 1 mois
+    - Bailleur: 6 mois
+    """
+    if type_conge == "bailleur":
+        return date_notification + timedelta(days=183)  # ~6 mois
+
+    # Locataire
+    if type_locatif == "meuble":
+        return date_notification + timedelta(days=30)  # 1 mois
+    return date_notification + timedelta(days=91)  # ~3 mois (nu / default)
+
+
+@router.post("/{bien_id}/baux/{bail_id}/conge", response_model=BailResponse)
+async def conge_bail(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: str,
+    payload: CongePayload,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Enregistre un congé (départ locataire ou congé bailleur) sur un bail."""
+    if payload.type_conge not in _VALID_CONGE_TYPES:
+        raise ValidationError(f"type_conge doit être l'un de : {', '.join(_VALID_CONGE_TYPES)}")
+
+    if payload.type_conge == "bailleur" and payload.motif and payload.motif not in _VALID_MOTIFS_BAILLEUR:
+        raise ValidationError(f"Motif bailleur invalide. Valeurs acceptées : {', '.join(_VALID_MOTIFS_BAILLEUR)}")
+
+    logger.info("conge_bail", bail_id=bail_id, bien_id=bien_id, type_conge=payload.type_conge)
+
+    client = _get_client(request)
+    bien = _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    # Verify bail exists and is en_cours
+    bail_result = (
+        client.table("baux")
+        .select("*")
+        .eq("id", bail_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if not bail_result.data:
+        raise ResourceNotFoundError("Bail", str(bail_id))
+
+    existing = bail_result.data[0]
+    if existing.get("statut") == "termine":
+        raise ValidationError("Impossible d'enregistrer un congé sur un bail terminé.")
+
+    if existing.get("date_conge"):
+        raise ValidationError("Un congé est déjà enregistré sur ce bail.")
+
+    # Calculate date_effet
+    type_locatif = (bien.get("type_locatif") or "").lower()
+    date_effet = payload.date_effet or _calculate_date_effet(
+        payload.date_notification, payload.type_conge, type_locatif
+    )
+
+    update_data = {
+        "date_conge": date_effet.isoformat(),
+        "motif_conge": payload.motif or "",
+        "type_conge": payload.type_conge,
+    }
+
+    result = (
+        client.table("baux")
+        .update(update_data)
+        .eq("id", bail_id)
+        .eq("id_bien", bien_id)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("Bail", str(bail_id))
+
+    bail = data[0]
+
+    # Fetch locataires for response
+    loc_result = (
+        client.table("bail_locataires")
+        .select("locataires(id, nom, email, telephone)")
+        .eq("id_bail", bail_id)
+        .execute()
+    )
+    locataires = []
+    if not getattr(loc_result, "error", None) and loc_result.data:
+        for row in loc_result.data:
+            if row.get("locataires"):
+                locataires.append(row["locataires"])
+
+    bail["locataires"] = locataires
+
+    # Create notification for the gérant
+    try:
+        from app.services.notification_service import create_notification_with_email
+        from app.core.supabase_client import get_supabase_service_client as _get_notif_client
+
+        notif_client = _get_notif_client()
+        label = "locataire" if payload.type_conge == "locataire" else "bailleur"
+        await create_notification_with_email(
+            notif_client,
+            membership.user_id,
+            "conge_bail",
+            {
+                "title": f"Congé {label} enregistré",
+                "message": f"Congé {label} enregistré sur le bail du bien {bien.get('adresse', '')}. Date d'effet : {date_effet.isoformat()}.",
+                "metadata": {
+                    "bail_id": bail_id,
+                    "bien_id": bien_id,
+                    "sci_id": str(sci_id),
+                    "type_conge": payload.type_conge,
+                    "date_effet": date_effet.isoformat(),
+                    "dedup_key": f"conge_{bail_id}",
+                },
+            },
+        )
+    except Exception:
+        logger.warning("conge_notification_failed", bail_id=bail_id, exc_info=True)
+
+    logger.info("conge_registered", bail_id=bail_id, type_conge=payload.type_conge, date_effet=date_effet.isoformat())
+    return bail
+
+
+# ──────────────────────────────────────────────────────────────
 # ATTACH locataire to bail
 # ──────────────────────────────────────────────────────────────
 
@@ -894,6 +1038,35 @@ async def detach_locataire_from_bail(
 
     logger.info("locataire_detached", bail_id=bail_id, locataire_id=locataire_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ──────────────────────────────────────────────────────────────
+# Regularisation annuelle des charges
+# ──────────────────────────────────────────────────────────────
+
+@router.get("/{bien_id}/baux/{bail_id}/regularisation/{annee}")
+async def get_regularisation(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: str,
+    annee: int,
+    request: Request,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Calcule la regularisation annuelle des charges pour un bail."""
+    from app.services.regularisation_service import calculate_regularisation
+
+    logger.info("calculating_regularisation", bail_id=bail_id, annee=annee)
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    try:
+        result = calculate_regularisation(client, bail_id, annee)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+    return result
 
 
 # ──────────────────────────────────────────────────────────────
