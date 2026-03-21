@@ -1,27 +1,27 @@
 """
-Seed script: crée un utilisateur test + données SCI réalistes.
+Seed script: crée des données réalistes pour développement et recette.
 
 Usage:
-    cd backend && python scripts/seed_dev_data.py
+    cd backend && python scripts/seed_dev_data.py [--clean]
 
 Crée:
-- 1 utilisateur test (demo@gerersci.fr / password123)
-- 2 SCI avec associés
-- 4 biens immobiliers (appartements, studio, maison) avec type_bien
-- 4 baux actifs avec locataires
-- 12 mois de loyers (mix payé/impayé/en attente)
-- Charges, assurances PNO, frais agence
-- Fiscalité 2024 et 2025
+- 2 utilisateurs (demo Pro + associé)
+- 2 SCI complètes (IR + IS) avec toutes les informations légales
+- 6 biens (dont 1 immeuble avec 3 lots) avec type_bien
+- 6 locataires avec baux actifs
+- 12 mois de loyers par bien (mix payé/impayé/en attente)
+- Charges décomposées (copro, TF, entretien, assurance, intérêts)
+- Assurances PNO + frais agence
+- Fiscalité 2024-2025 avec décomposition charges
 - Assemblées générales (AGO + AGE)
 - Mouvements de parts
 - Notifications réalistes
-- Abonnement Pro actif
+- Abonnement Fiscal (plan Pro, toutes features)
 """
 import os
 import sys
 import uuid
 from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
 
 import httpx
 
@@ -43,10 +43,8 @@ HEADERS = {
 }
 
 
-def api(method: str, path: str, json=None, headers_override=None):
-    url = f"{SUPABASE_URL}{path}"
-    h = headers_override or HEADERS
-    r = httpx.request(method, url, headers=h, json=json, timeout=15)
+def api(method: str, path: str, json=None):
+    r = httpx.request(method, f"{SUPABASE_URL}{path}", headers=HEADERS, json=json, timeout=15)
     if r.status_code >= 400:
         print(f"  ⚠️  {method} {path} → {r.status_code}: {r.text[:200]}")
         return None
@@ -56,21 +54,12 @@ def api(method: str, path: str, json=None, headers_override=None):
         return r.text
 
 
-def rpc(fn_name: str, params: dict = None):
-    return api("POST", f"/rest/v1/rpc/{fn_name}", json=params or {})
-
-
-def insert(table: str, data: dict | list):
+def insert(table: str, data):
     return api("POST", f"/rest/v1/{table}", json=data)
 
 
 def delete_all(table: str):
-    """Supprime toutes les lignes d'une table (via service role, bypass RLS)."""
-    # Tables avec PK composite ou non-standard
-    pk_map = {
-        "bail_locataires": "id_bail",
-        "admins": "user_id",
-    }
+    pk_map = {"bail_locataires": "id_bail", "admins": "user_id", "quittance_compteur": "sci_id"}
     pk = pk_map.get(table, "id")
     return api("DELETE", f"/rest/v1/{table}?{pk}=neq.00000000-0000-0000-0000-000000000000")
 
@@ -79,12 +68,26 @@ def uid():
     return str(uuid.uuid4())
 
 
+def create_or_find_user(email, password, full_name):
+    resp = api("POST", "/auth/v1/admin/users", json={
+        "email": email, "password": password,
+        "email_confirm": True, "user_metadata": {"full_name": full_name},
+    })
+    if resp and isinstance(resp, dict) and "id" in resp:
+        return resp["id"]
+    users = api("GET", "/auth/v1/admin/users?page=1&per_page=50")
+    if users and "users" in users:
+        for u in users["users"]:
+            if u.get("email") == email:
+                return u["id"]
+    return None
+
+
 def clean_all_data():
-    """Supprime toutes les données seed (ordre respecte les FK)."""
     print("\n🧹 Nettoyage des données existantes ...")
-    # Ordre inverse des dépendances FK
     tables = [
         "notification_preferences", "notifications",
+        "deficit_reportable", "quittance_compteur",
         "mouvements_parts", "assemblees_generales",
         "bail_locataires", "loyers",
         "frais_agence", "assurances_pno", "documents_bien",
@@ -94,125 +97,84 @@ def clean_all_data():
     ]
     for t in tables:
         delete_all(t)
-        print(f"  ↳ {t} vidée")
-
-    # Supprimer les users auth
+    # Clean auth users
     users = api("GET", "/auth/v1/admin/users?page=1&per_page=50")
     if users and "users" in users:
         for u in users["users"]:
             if u["email"] in (DEMO_EMAIL, "pierre.martin@gerersci.fr"):
                 api("DELETE", f"/auth/v1/admin/users/{u['id']}")
-                print(f"  ↳ User {u['email']} supprimé")
     print("  ✅ Nettoyage terminé")
 
 
-# ── Main ────────────────────────────────────────────────────────
 def main():
-    clean = "--clean" in sys.argv or "--reset" in sys.argv
-
-    print("🌱 Seed GererSCI — données de démonstration")
-    print("=" * 50)
-
-    if clean:
+    if "--clean" in sys.argv or "--reset" in sys.argv:
         clean_all_data()
 
-    # 1. Créer l'utilisateur via Supabase Auth Admin API
-    print("\n👤 Création utilisateur demo@gerersci.fr ...")
-    user_resp = api("POST", "/auth/v1/admin/users", json={
-        "email": DEMO_EMAIL,
-        "password": DEMO_PASSWORD,
-        "email_confirm": True,
-        "user_metadata": {"full_name": "Marie Dupont"},
-    })
-    if user_resp and isinstance(user_resp, dict) and "id" in user_resp:
-        user_id = user_resp["id"]
-        print(f"  ✅ User créé: {user_id}")
-    else:
-        # User existe peut-être déjà — le chercher
-        print("  🔄 User existe peut-être déjà, recherche...")
-        users = api("GET", f"/auth/v1/admin/users?page=1&per_page=50")
-        if users and "users" in users:
-            for u in users["users"]:
-                if u.get("email") == DEMO_EMAIL:
-                    user_id = u["id"]
-                    print(f"  ✅ User existant trouvé: {user_id}")
-                    break
-            else:
-                print("  ❌ Impossible de créer/trouver l'utilisateur")
-                sys.exit(1)
-        else:
-            print("  ❌ Impossible de lister les utilisateurs")
-            sys.exit(1)
+    print("\n🌱 Seed GérerSCI — données de démonstration complètes")
+    print("=" * 60)
+    today = date.today()
 
-    # 2. Créer un 2ème utilisateur (associé)
-    print("\n👤 Création 2ème utilisateur (associé) ...")
-    user2_resp = api("POST", "/auth/v1/admin/users", json={
-        "email": "pierre.martin@gerersci.fr",
-        "password": "password123",
-        "email_confirm": True,
-        "user_metadata": {"full_name": "Pierre Martin"},
-    })
-    user2_id = None
-    if user2_resp and isinstance(user2_resp, dict) and "id" in user2_resp:
-        user2_id = user2_resp["id"]
-        print(f"  ✅ User 2 créé: {user2_id}")
-    else:
-        users = api("GET", f"/auth/v1/admin/users?page=1&per_page=50")
-        if users and "users" in users:
-            for u in users["users"]:
-                if u.get("email") == "pierre.martin@gerersci.fr":
-                    user2_id = u["id"]
-                    print(f"  ✅ User 2 existant: {user2_id}")
-                    break
+    # ── Utilisateurs ──────────────────────────────────────────────
+    print("\n👤 Utilisateurs ...")
+    user_id = create_or_find_user(DEMO_EMAIL, DEMO_PASSWORD, "Marie Dupont")
+    print(f"  ✅ {DEMO_EMAIL}: {user_id}")
 
-    # ── SCI 1: SCI Belleville Patrimoine ────────────────────────
-    print("\n🏢 Création SCI Belleville Patrimoine ...")
+    user2_id = create_or_find_user("pierre.martin@gerersci.fr", "password123", "Pierre Martin")
+    print(f"  ✅ pierre.martin@gerersci.fr: {user2_id}")
+
+    # ── SCI 1: SCI Belleville Patrimoine (IR) ─────────────────────
+    print("\n🏢 SCI Belleville Patrimoine (IR) ...")
     sci1_id = uid()
     insert("sci", {
         "id": sci1_id,
         "nom": "SCI Belleville Patrimoine",
         "siren": "912345678",
         "regime_fiscal": "IR",
+        "statut": "exploitation",
         "capital_social": 150000,
+        "nb_parts_total": 1000,
+        "valeur_nominale_part": 150,
+        "objet_social": "Acquisition, gestion et administration de biens immobiliers situés à Paris et en Île-de-France",
+        "date_creation": "2019-01-15",
         "rcs_ville": "Paris",
         "rcs_numero": "912 345 678",
+        "forme_juridique": "SCI",
         "nom_gerant": "Marie Dupont",
         "adresse_siege": "12 rue de Belleville, 75020 Paris",
     })
-    print(f"  ✅ SCI 1: {sci1_id}")
 
     # Associés SCI 1
-    insert("associes", [
-        {
-            "id": uid(), "id_sci": sci1_id, "user_id": user_id,
-            "nom": "Marie Dupont", "email": DEMO_EMAIL,
-            "part": 60, "role": "gerant",
-        },
-        {
+    associes_sci1 = [
+        {"id": uid(), "id_sci": sci1_id, "user_id": user_id,
+         "nom": "Marie Dupont", "email": DEMO_EMAIL,
+         "part": 60, "role": "gerant"},
+    ]
+    if user2_id:
+        associes_sci1.append({
             "id": uid(), "id_sci": sci1_id, "user_id": user2_id,
             "nom": "Pierre Martin", "email": "pierre.martin@gerersci.fr",
             "part": 40, "role": "associe",
-        },
-    ] if user2_id else [
-        {
-            "id": uid(), "id_sci": sci1_id, "user_id": user_id,
-            "nom": "Marie Dupont", "email": DEMO_EMAIL,
-            "part": 100, "role": "gerant",
-        },
-    ])
-    print("  ✅ Associés ajoutés")
+        })
+    insert("associes", associes_sci1)
+    print(f"  ✅ SCI 1 + {len(associes_sci1)} associés")
 
-    # ── SCI 2: SCI Horizon Lyon ─────────────────────────────────
-    print("\n🏢 Création SCI Horizon Lyon ...")
+    # ── SCI 2: SCI Horizon Lyon (IS) ──────────────────────────────
+    print("\n🏢 SCI Horizon Lyon (IS) ...")
     sci2_id = uid()
     insert("sci", {
         "id": sci2_id,
         "nom": "SCI Horizon Lyon",
         "siren": "987654321",
         "regime_fiscal": "IS",
+        "statut": "exploitation",
         "capital_social": 200000,
+        "nb_parts_total": 500,
+        "valeur_nominale_part": 400,
+        "objet_social": "Gestion patrimoniale immobilière dans la métropole de Lyon",
+        "date_creation": "2022-06-01",
         "rcs_ville": "Lyon",
         "rcs_numero": "987 654 321",
+        "forme_juridique": "SCI",
         "nom_gerant": "Marie Dupont",
         "adresse_siege": "15 rue de la République, 69002 Lyon",
     })
@@ -221,28 +183,28 @@ def main():
         "nom": "Marie Dupont", "email": DEMO_EMAIL,
         "part": 100, "role": "gerant",
     })
-    print(f"  ✅ SCI 2: {sci2_id}")
+    print("  ✅ SCI 2 + 1 associé")
 
-    # ── Biens SCI 1 ────────────────────────────────────────────
-    print("\n🏠 Création des biens immobiliers ...")
-    biens = [
+    # ── Biens ─────────────────────────────────────────────────────
+    print("\n🏠 Biens immobiliers ...")
+
+    # SCI 1: 3 biens classiques + 1 immeuble avec 2 lots
+    biens_sci1 = [
         {
             "id": uid(), "id_sci": sci1_id,
-            "adresse": "12 rue de Belleville", "ville": "Paris",
+            "adresse": "12 rue de Belleville — Apt 1", "ville": "Paris",
             "code_postal": "75020", "type_locatif": "nu", "type_bien": "appartement",
             "loyer_cc": 1450, "charges": 150, "tmi": 30,
             "surface_m2": 65, "nb_pieces": 3, "dpe_classe": "D",
             "prix_acquisition": 320000,
-            "acquisition_date": "2019-06-15",
         },
         {
             "id": uid(), "id_sci": sci1_id,
-            "adresse": "45 avenue Jean Jaurès", "ville": "Paris",
-            "code_postal": "75019", "type_locatif": "meuble", "type_bien": "appartement",
+            "adresse": "12 rue de Belleville — Apt 2", "ville": "Paris",
+            "code_postal": "75020", "type_locatif": "meuble", "type_bien": "appartement",
             "loyer_cc": 1100, "charges": 100, "tmi": 30,
             "surface_m2": 42, "nb_pieces": 2, "dpe_classe": "C",
             "prix_acquisition": 245000,
-            "acquisition_date": "2020-03-01",
         },
         {
             "id": uid(), "id_sci": sci1_id,
@@ -251,275 +213,266 @@ def main():
             "loyer_cc": 780, "charges": 80, "tmi": 30,
             "surface_m2": 22, "nb_pieces": 1, "dpe_classe": "E",
             "prix_acquisition": 175000,
-            "acquisition_date": "2021-09-10",
         },
     ]
 
-    # Bien SCI 2
-    bien4 = {
-        "id": uid(), "id_sci": sci2_id,
-        "adresse": "15 rue de la République", "ville": "Lyon",
-        "code_postal": "69002", "type_locatif": "nu", "type_bien": "maison",
-        "loyer_cc": 1800, "charges": 200, "tmi": 30,
-        "surface_m2": 95, "nb_pieces": 4, "dpe_classe": "B",
-        "prix_acquisition": 410000,
-        "acquisition_date": "2022-01-20",
-    }
+    # SCI 2: 1 maison + 1 local commercial
+    biens_sci2 = [
+        {
+            "id": uid(), "id_sci": sci2_id,
+            "adresse": "15 rue de la République", "ville": "Lyon",
+            "code_postal": "69002", "type_locatif": "nu", "type_bien": "maison",
+            "loyer_cc": 1800, "charges": 200, "tmi": 30,
+            "surface_m2": 95, "nb_pieces": 4, "dpe_classe": "B",
+            "prix_acquisition": 410000,
+        },
+        {
+            "id": uid(), "id_sci": sci2_id,
+            "adresse": "22 cours Lafayette — Local A", "ville": "Lyon",
+            "code_postal": "69003", "type_locatif": "nu", "type_bien": "local_commercial",
+            "loyer_cc": 2200, "charges": 300, "tmi": 30,
+            "surface_m2": 55, "nb_pieces": 2, "dpe_classe": "C",
+            "prix_acquisition": 280000,
+        },
+    ]
 
-    all_biens = biens + [bien4]
+    all_biens = biens_sci1 + biens_sci2
     insert("biens", all_biens)
-    print(f"  ✅ {len(all_biens)} biens créés")
+    print(f"  ✅ {len(all_biens)} biens (dont 2 lots même adresse + 1 local commercial)")
 
-    # ── Locataires ──────────────────────────────────────────────
-    print("\n👥 Création des locataires ...")
+    # ── Locataires ────────────────────────────────────────────────
+    print("\n👥 Locataires ...")
     locataires = [
-        {
-            "id": uid(), "id_bien": biens[0]["id"],
-            "nom": "Jean-Marc Lefebvre", "email": "jm.lefebvre@email.fr",
-            "telephone": "06 12 34 56 78",
-            "date_debut": "2023-01-01",
-        },
-        {
-            "id": uid(), "id_bien": biens[1]["id"],
-            "nom": "Sophie Nguyen", "email": "sophie.nguyen@email.fr",
-            "telephone": "06 98 76 54 32",
-            "date_debut": "2023-06-01",
-        },
-        {
-            "id": uid(), "id_bien": biens[2]["id"],
-            "nom": "Lucas Bernard", "email": "lucas.b@email.fr",
-            "telephone": "07 11 22 33 44",
-            "date_debut": "2024-01-15",
-        },
-        {
-            "id": uid(), "id_bien": bien4["id"],
-            "nom": "Famille Moreau", "email": "moreau.famille@email.fr",
-            "telephone": "06 55 44 33 22",
-            "date_debut": "2023-09-01",
-        },
+        {"id": uid(), "id_bien": biens_sci1[0]["id"],
+         "nom": "Jean-Marc Lefebvre", "email": "jm.lefebvre@email.fr",
+         "telephone": "06 12 34 56 78", "date_debut": "2023-01-01"},
+        {"id": uid(), "id_bien": biens_sci1[1]["id"],
+         "nom": "Sophie Nguyen", "email": "sophie.nguyen@email.fr",
+         "telephone": "06 98 76 54 32", "date_debut": "2023-06-01"},
+        {"id": uid(), "id_bien": biens_sci1[2]["id"],
+         "nom": "Lucas Bernard", "email": "lucas.b@email.fr",
+         "telephone": "07 11 22 33 44", "date_debut": "2024-01-15"},
+        {"id": uid(), "id_bien": biens_sci2[0]["id"],
+         "nom": "Famille Moreau", "email": "moreau.famille@email.fr",
+         "telephone": "06 55 44 33 22", "date_debut": "2023-09-01"},
+        {"id": uid(), "id_bien": biens_sci2[1]["id"],
+         "nom": "SARL Boulangerie Centrale", "email": "contact@boulangerie-centrale.fr",
+         "telephone": "04 78 99 88 77", "date_debut": "2024-03-01"},
     ]
     insert("locataires", locataires)
-    print(f"  ✅ {len(locataires)} locataires créés")
+    print(f"  ✅ {len(locataires)} locataires (dont 1 professionnel)")
 
-    # ── Baux ────────────────────────────────────────────────────
-    print("\n📋 Création des baux ...")
+    # ── Baux ──────────────────────────────────────────────────────
+    print("\n📋 Baux ...")
     baux = [
-        {
-            "id": uid(), "id_bien": biens[0]["id"],
-            "date_debut": "2023-01-01", "date_fin": "2025-12-31",
-            "loyer_hc": 1300, "charges_locatives": 150,
-            "depot_garantie": 1300, "statut": "en_cours",
-            "indice_irl_reference": "T1 2023",
-            "date_revision": "2024-01-01",
-            "etat_lieux_entree": "2023-01-01",
-        },
-        {
-            "id": uid(), "id_bien": biens[1]["id"],
-            "date_debut": "2023-06-01", "date_fin": "2026-05-31",
-            "loyer_hc": 1000, "charges_locatives": 100,
-            "depot_garantie": 1000, "statut": "en_cours",
-            "indice_irl_reference": "T2 2023",
-            "date_revision": "2024-06-01",
-            "etat_lieux_entree": "2023-06-01",
-        },
-        {
-            "id": uid(), "id_bien": biens[2]["id"],
-            "date_debut": "2024-01-15", "date_fin": "2027-01-14",
-            "loyer_hc": 700, "charges_locatives": 80,
-            "depot_garantie": 700, "statut": "en_cours",
-            "indice_irl_reference": "T4 2023",
-            "date_revision": "2025-01-15",
-            "etat_lieux_entree": "2024-01-15",
-        },
-        {
-            "id": uid(), "id_bien": bien4["id"],
-            "date_debut": "2023-09-01", "date_fin": "2026-08-31",
-            "loyer_hc": 1600, "charges_locatives": 200,
-            "depot_garantie": 1600, "statut": "en_cours",
-            "indice_irl_reference": "T3 2023",
-            "date_revision": "2024-09-01",
-            "etat_lieux_entree": "2023-09-01",
-        },
+        {"id": uid(), "id_bien": biens_sci1[0]["id"],
+         "date_debut": "2023-01-01", "date_fin": "2025-12-31",
+         "loyer_hc": 1300, "charges_locatives": 150, "depot_garantie": 1300,
+         "statut": "en_cours"},
+        {"id": uid(), "id_bien": biens_sci1[1]["id"],
+         "date_debut": "2023-06-01", "date_fin": "2026-05-31",
+         "loyer_hc": 1000, "charges_locatives": 100, "depot_garantie": 1000,
+         "statut": "en_cours"},
+        {"id": uid(), "id_bien": biens_sci1[2]["id"],
+         "date_debut": "2024-01-15", "date_fin": "2027-01-14",
+         "loyer_hc": 700, "charges_locatives": 80, "depot_garantie": 700,
+         "statut": "en_cours"},
+        {"id": uid(), "id_bien": biens_sci2[0]["id"],
+         "date_debut": "2023-09-01", "date_fin": "2026-08-31",
+         "loyer_hc": 1600, "charges_locatives": 200, "depot_garantie": 1600,
+         "statut": "en_cours"},
+        {"id": uid(), "id_bien": biens_sci2[1]["id"],
+         "date_debut": "2024-03-01", "date_fin": "2030-02-28",
+         "loyer_hc": 1900, "charges_locatives": 300, "depot_garantie": 3800,
+         "statut": "en_cours"},
     ]
     insert("baux", baux)
-    print(f"  ✅ {len(baux)} baux créés")
-
     # Liaison bail-locataire
-    bail_locataires = [
-        {"id_bail": baux[i]["id"], "id_locataire": locataires[i]["id"]}
-        for i in range(4)
-    ]
-    insert("bail_locataires", bail_locataires)
-    print("  ✅ Liaisons bail↔locataire")
+    for i in range(min(len(baux), len(locataires))):
+        insert("bail_locataires", {"id_bail": baux[i]["id"], "id_locataire": locataires[i]["id"]})
+    print(f"  ✅ {len(baux)} baux + liaisons locataires")
 
-    # ── Loyers (12 derniers mois) ───────────────────────────────
-    print("\n💰 Création des loyers (12 mois) ...")
+    # ── Loyers (12 mois par bien) ─────────────────────────────────
+    print("\n💰 Loyers (12 mois) ...")
     loyer_count = 0
-    today = date.today()
+    montants = [1450, 1100, 780, 1800, 2200]
     seen_months = set()
     for month_offset in range(12, 0, -1):
         d = today.replace(day=1) - timedelta(days=month_offset * 30)
         loyer_date = d.replace(day=1)
-        # Éviter les doublons de mois (timedelta approximatif)
         month_key = (loyer_date.year, loyer_date.month)
         if month_key in seen_months:
             continue
         seen_months.add(month_key)
 
         for i, bien in enumerate(all_biens):
-            montant = [1450, 1100, 780, 1800][i]
-            loc = locataires[i]
-
-            # Réalisme: quelques impayés
+            if i >= len(locataires):
+                continue
+            montant = montants[i]
+            statut = "paye"
+            paiement_date = str(loyer_date + timedelta(days=5))
             if month_offset <= 2:
-                statut = "en_attente"  # Mois récents en attente
+                statut = "en_attente"
+                paiement_date = None
             elif month_offset == 5 and i == 2:
-                statut = "en_retard"  # Lucas en retard sur un mois
+                statut = "en_retard"
+                paiement_date = None
             elif month_offset == 8 and i == 0:
-                statut = "en_retard"  # Lefebvre en retard un mois
-            else:
-                statut = "paye"
+                statut = "en_retard"
+                paiement_date = None
 
             insert("loyers", {
-                "id": uid(),
-                "id_bien": bien["id"],
-                "id_locataire": loc["id"],
+                "id": uid(), "id_bien": bien["id"],
+                "id_locataire": locataires[i]["id"],
                 "date_loyer": str(loyer_date),
-                "montant": montant,
-                "statut": statut,
+                "montant": montant, "statut": statut,
+                "date_paiement": paiement_date,
+                "mode_paiement": "virement" if statut == "paye" else None,
                 "quitus_genere": statut == "paye",
             })
             loyer_count += 1
+    print(f"  ✅ {loyer_count} loyers")
 
-    print(f"  ✅ {loyer_count} loyers créés")
-
-    # ── Charges ─────────────────────────────────────────────────
-    print("\n📊 Création des charges ...")
-    charge_types = [
+    # ── Charges décomposées ────────────────────────────────────────
+    print("\n📊 Charges ...")
+    charge_count = 0
+    charge_definitions = [
         ("copropriete", 250), ("taxe_fonciere", 180),
         ("entretien", 120), ("assurance", 90),
+        ("interets_emprunt", 350),
     ]
-    charge_count = 0
     for bien in all_biens:
-        for type_charge, montant in charge_types:
-            for q in range(1, 5):  # 4 trimestres
+        for type_charge, montant in charge_definitions:
+            if type_charge == "interets_emprunt" and bien.get("prix_acquisition", 0) < 200000:
+                continue  # Pas d'emprunt sur petits biens
+            for q in range(1, 5):
                 insert("charges", {
-                    "id": uid(),
-                    "id_bien": bien["id"],
+                    "id": uid(), "id_bien": bien["id"],
                     "type_charge": type_charge,
                     "montant": montant,
                     "date_paiement": f"2025-{q*3:02d}-01",
                 })
                 charge_count += 1
-    print(f"  ✅ {charge_count} charges créées")
+    print(f"  ✅ {charge_count} charges (copro, TF, entretien, assurance, intérêts)")
 
-    # ── Assurances PNO ──────────────────────────────────────────
+    # ── Assurances PNO ────────────────────────────────────────────
     print("\n🛡️  Assurances PNO ...")
     for bien in all_biens:
         insert("assurances_pno", {
-            "id": uid(),
-            "id_bien": bien["id"],
+            "id": uid(), "id_bien": bien["id"],
             "compagnie": "MAIF" if bien["id_sci"] == sci1_id else "AXA",
             "numero_contrat": f"PNO-{bien['code_postal']}-{uid()[:6]}",
             "montant_annuel": 280 if bien.get("nb_pieces", 2) > 1 else 150,
-            "date_echeance": "2026-01-01",
+            "date_echeance": "2026-06-01",
         })
-    print("  ✅ 4 assurances PNO")
+    print(f"  ✅ {len(all_biens)} assurances PNO")
 
-    # ── Frais agence ────────────────────────────────────────────
+    # ── Frais agence ──────────────────────────────────────────────
     print("\n🏪 Frais agence ...")
     insert("frais_agence", {
-        "id": uid(),
-        "id_bien": bien4["id"],
+        "id": uid(), "id_bien": biens_sci2[0]["id"],
         "nom_agence": "Nexity Lyon Presqu'île",
         "contact": "04 72 10 20 30",
-        "type_frais": "pourcentage",
-        "montant_ou_pourcentage": 7.5,
+        "type_frais": "pourcentage", "montant_ou_pourcentage": 7.5,
     })
-    print("  ✅ 1 frais agence (bien Lyon)")
+    insert("frais_agence", {
+        "id": uid(), "id_bien": biens_sci2[1]["id"],
+        "nom_agence": "Century 21 Part-Dieu",
+        "contact": "04 78 60 50 40",
+        "type_frais": "fixe", "montant_ou_pourcentage": 180,
+    })
+    print("  ✅ 2 frais agence")
 
-    # ── Fiscalité ───────────────────────────────────────────────
+    # ── Fiscalité avec décomposition ──────────────────────────────
     print("\n📈 Fiscalité ...")
     for annee in [2024, 2025]:
         insert("fiscalite", {
-            "id": uid(),
-            "id_sci": sci1_id,
-            "annee": annee,
+            "id": uid(), "id_sci": sci1_id, "annee": annee,
             "total_revenus": 39960 if annee == 2024 else 20000,
             "total_charges": 10240 if annee == 2024 else 5500,
             "resultat_fiscal": 29720 if annee == 2024 else 14500,
+            "interets_emprunt": 4200 if annee == 2024 else 3800,
+            "travaux": 2500 if annee == 2024 else 0,
+            "frais_gestion": 60,
+            "assurance": 840, "taxe_fonciere": 2160, "copropriete": 3000,
         })
         insert("fiscalite", {
-            "id": uid(),
-            "id_sci": sci2_id,
-            "annee": annee,
-            "total_revenus": 21600 if annee == 2024 else 10800,
-            "total_charges": 5120 if annee == 2024 else 2700,
-            "resultat_fiscal": 16480 if annee == 2024 else 8100,
+            "id": uid(), "id_sci": sci2_id, "annee": annee,
+            "total_revenus": 48000 if annee == 2024 else 24000,
+            "total_charges": 12800 if annee == 2024 else 6400,
+            "resultat_fiscal": 35200 if annee == 2024 else 17600,
+            "interets_emprunt": 5600 if annee == 2024 else 5000,
+            "travaux": 0, "frais_gestion": 40,
+            "assurance": 560, "taxe_fonciere": 3600, "copropriete": 3000,
         })
-    print("  ✅ Fiscalité 2024 + 2025")
+    print("  ✅ Fiscalité 2024 + 2025 (avec décomposition charges)")
 
-    # ── Abonnement Pro ──────────────────────────────────────────
-    print("\n💳 Abonnement Pro ...")
+    # ── Abonnement Fiscal (Pro) — TOUTES les features ─────────────
+    print("\n💳 Abonnement Fiscal (plan Pro) ...")
     insert("subscriptions", {
-        "id": uid(),
-        "user_id": user_id,
+        "id": uid(), "user_id": user_id,
         "stripe_customer_id": f"cus_demo_{uid()[:8]}",
         "stripe_subscription_id": f"sub_demo_{uid()[:8]}",
-        "stripe_price_id": "price_pro_demo",
-        "mode": "subscription",
-        "status": "active",
-        "current_period_end": str(today + timedelta(days=30)),
+        "stripe_price_id": os.getenv("STRIPE_PRO_PRICE_ID", "price_pro_demo"),
+        "mode": "subscription", "status": "active",
+        "current_period_end": str(today + timedelta(days=365)),
         "onboarding_completed": True,
     })
-    print("  ✅ Abonnement Pro actif")
+    print("  ✅ Abonnement Fiscal actif (toutes features débloquées)")
 
-    # ── Notifications ───────────────────────────────────────────
+    # ── Notifications ─────────────────────────────────────────────
     print("\n🔔 Notifications ...")
-    # Insert notifications one by one (different columns per row)
     insert("notifications", {
         "id": uid(), "user_id": user_id,
         "type": "late_payment",
-        "title": "Loyer impayé — Studio Commerce",
-        "message": "Le loyer de Lucas Bernard (8 rue du Commerce) est en retard depuis 15 jours.",
-        "metadata": {"bien_id": biens[2]["id"], "locataire": "Lucas Bernard"},
+        "title": "Loyer impayé — 8 rue du Commerce",
+        "message": "Le loyer de Lucas Bernard est en retard de 15 jours. Montant dû : 780 €.",
+        "metadata": {"bien_id": biens_sci1[2]["id"], "locataire": "Lucas Bernard",
+                     "montant": 780, "jours_retard": 15},
+    })
+    insert("notifications", {
+        "id": uid(), "user_id": user_id,
+        "type": "bail_expiring",
+        "title": "Bail expirant — 12 rue de Belleville Apt 1",
+        "message": "Le bail de Jean-Marc Lefebvre expire le 31/12/2025. Pensez au renouvellement.",
+        "metadata": {"bail_id": baux[0]["id"], "locataire": "Jean-Marc Lefebvre",
+                     "date_fin": "2025-12-31"},
+    })
+    insert("notifications", {
+        "id": uid(), "user_id": user_id,
+        "type": "pno_expiring",
+        "title": "Assurance PNO — Renouvellement à prévoir",
+        "message": "L'assurance PNO MAIF pour 12 rue de Belleville expire le 01/06/2026.",
+        "metadata": {"bien_adresse": "12 rue de Belleville"},
     })
     insert("notifications", {
         "id": uid(), "user_id": user_id,
         "type": "info",
-        "title": "Bienvenue sur GererSCI !",
-        "message": "Votre espace de gestion SCI est prêt. Découvrez toutes les fonctionnalités.",
+        "title": "Bienvenue sur GérerSCI !",
+        "message": "Votre espace de gestion SCI est prêt. Explorez le tableau de bord pour commencer.",
         "metadata": {},
         "read_at": str(datetime.now(timezone.utc)),
     })
-    insert("notifications", {
-        "id": uid(), "user_id": user_id,
-        "type": "system",
-        "title": "Bail bientôt expiré",
-        "message": "Le bail de Jean-Marc Lefebvre (12 rue de Belleville) expire dans 9 mois.",
-        "metadata": {"bail_id": baux[0]["id"]},
-    })
-    notifs = [1, 2, 3]  # count placeholder
-    print(f"  ✅ {len(notifs)} notifications")
 
-    # ── Préférences notifications ───────────────────────────────
-    for ntype in ["late_payment", "status_change", "document_ready", "system"]:
+    # Préférences notifications (tous les types)
+    for ntype in ["late_payment", "bail_expiring", "quittance_pending",
+                   "pno_expiring", "new_loyer", "new_associe", "subscription_expiring"]:
         insert("notification_preferences", {
             "id": uid(), "user_id": user_id, "type": ntype,
-            "email_enabled": ntype in ("late_payment", "document_ready"),
+            "email_enabled": ntype in ("late_payment", "bail_expiring", "pno_expiring"),
             "in_app_enabled": True,
         })
-    print("  ✅ Préférences notifications")
+    print("  ✅ 4 notifications + 7 préférences")
 
-    # ── Assemblées générales ──────────────────────────────────
+    # ── Assemblées générales ──────────────────────────────────────
     print("\n📋 Assemblées générales ...")
     insert("assemblees_generales", {
         "id": uid(), "id_sci": sci1_id,
         "date_ag": "2025-06-15", "type_ag": "ordinaire",
         "exercice_concerne": 2024,
-        "ordre_du_jour": "Approbation des comptes 2024 et affectation du résultat",
-        "notes": "Comptes approuvés à l'unanimité. Résultat net de 29 720€ affecté en report à nouveau.",
-        "resolutions": "Résolution 1 : approbation des comptes 2024.\nRésolution 2 : affectation du résultat en report à nouveau.\nRésolution 3 : renouvellement du mandat de gérant.",
+        "ordre_du_jour": "1. Approbation des comptes de l'exercice 2024\n2. Affectation du résultat\n3. Renouvellement du mandat de gérant\n4. Questions diverses",
+        "notes": "Comptes approuvés à l'unanimité. Résultat net de 29 720 € affecté en report à nouveau. Mandat de gérant renouvelé pour 3 ans.",
+        "resolutions": "Résolution 1 : Les comptes de l'exercice 2024 sont approuvés à l'unanimité.\nRésolution 2 : Le résultat de 29 720 € est affecté en report à nouveau.\nRésolution 3 : Le mandat de gérant de Mme Dupont est renouvelé pour 3 ans.",
         "quorum_atteint": True,
         "pv_url": "https://example.com/pv-ago-2025.pdf",
     })
@@ -527,66 +480,65 @@ def main():
         "id": uid(), "id_sci": sci1_id,
         "date_ag": "2025-11-20", "type_ag": "extraordinaire",
         "exercice_concerne": 2025,
-        "ordre_du_jour": "Modification des statuts — augmentation de capital",
-        "notes": "Capital porté de 150 000€ à 200 000€ par création de 333 parts nouvelles.",
-        "resolutions": "Résolution unique : augmentation du capital social de 50 000€.",
+        "ordre_du_jour": "1. Augmentation du capital social\n2. Modification de l'article 7 des statuts",
+        "notes": "Capital porté de 150 000 € à 200 000 € par création de 333 parts nouvelles de 150 € chacune, souscrites en numéraire.",
+        "resolutions": "Résolution unique : Le capital social est augmenté de 50 000 € pour être porté à 200 000 €.",
         "quorum_atteint": True,
         "pv_url": None,
     })
-    print("  ✅ 2 AG (1 AGO + 1 AGE)")
+    print("  ✅ 2 AG (AGO + AGE)")
 
-    # ── Mouvements de parts ───────────────────────────────────
+    # ── Mouvements de parts ───────────────────────────────────────
     if user2_id:
         print("\n📊 Mouvements de parts ...")
         insert("mouvements_parts", {
             "id": uid(), "id_sci": sci1_id,
-            "type_mouvement": "cession",
-            "cedant": "Marie Dupont", "cessionnaire": "Pierre Martin",
-            "nombre_parts": 40, "prix_unitaire": 150,
-            "date_mouvement": "2023-03-15",
-            "acte_reference": "Acte notarié Me Lefèvre — Paris 20e",
+            "type_mouvement": "souscription",
+            "cedant": None, "cessionnaire": "Marie Dupont",
+            "nombre_parts": 1000, "prix_unitaire": 150,
+            "date_mouvement": "2019-01-15",
+            "acte_reference": "Statuts constitutifs — Acte SSP du 15/01/2019",
         })
         insert("mouvements_parts", {
             "id": uid(), "id_sci": sci1_id,
-            "type_mouvement": "souscription",
-            "cedant": None, "cessionnaire": "Marie Dupont",
-            "nombre_parts": 100, "prix_unitaire": 150,
-            "date_mouvement": "2022-01-15",
-            "acte_reference": "Statuts constitutifs SCI Belleville Patrimoine",
+            "type_mouvement": "cession",
+            "cedant": "Marie Dupont", "cessionnaire": "Pierre Martin",
+            "nombre_parts": 400, "prix_unitaire": 150,
+            "date_mouvement": "2023-03-15",
+            "acte_reference": "Acte de cession notarié — Me Lefèvre, Paris 20e — Enregistré le 18/03/2023",
         })
-        print("  ✅ 2 mouvements de parts")
+        print("  ✅ 2 mouvements (souscription + cession)")
 
-    # ── Admin flag ──────────────────────────────────────────────
-    print("\n👑 Admin flag ...")
+    # ── Admin + résumé ────────────────────────────────────────────
     insert("admins", {"user_id": user_id})
-    print("  ✅ User est admin")
 
-    # ── Résumé ──────────────────────────────────────────────────
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print("🎉 Seed terminé avec succès !")
-    print("=" * 50)
+    print("=" * 60)
     print(f"""
 📧 Email:    {DEMO_EMAIL}
 🔑 Password: {DEMO_PASSWORD}
 👑 Admin:    oui
+💳 Plan:     Fiscal (toutes features)
 
 📊 Données créées:
-  • 2 SCI (Belleville Patrimoine IR + Horizon Lyon IS)
-  • 4 biens (3 Paris + 1 Lyon)
-  • 4 locataires avec baux actifs
-  • {loyer_count} loyers (mix payé/impayé/en attente)
-  • {charge_count} charges trimestrielles
-  • 4 assurances PNO
-  • 1 frais agence
-  • Fiscalité 2024-2025
-  • 2 assemblées générales (AGO + AGE)
+  • 2 SCI complètes (Belleville IR + Horizon Lyon IS)
+  • {len(all_biens)} biens (dont lots immeuble + local commercial)
+  • {len(locataires)} locataires (dont 1 professionnel)
+  • {len(baux)} baux avec liaisons locataires
+  • {loyer_count} loyers (payé/impayé/en attente + date paiement)
+  • {charge_count} charges (copro, TF, entretien, assurance, intérêts)
+  • {len(all_biens)} assurances PNO
+  • 2 frais agence
+  • Fiscalité 2024-2025 (avec décomposition charges)
+  • 2 AG (AGO + AGE avec résolutions)
   • 2 mouvements de parts
-  • Abonnement Pro actif
-  • 3 notifications + préférences
+  • 4 notifications + 7 préférences
+  • Abonnement Fiscal actif
 
 🌐 URLs:
   • Frontend:  http://localhost:5173
-  • Backend:   http://localhost:8000
+  • Backend:   http://localhost:8001
   • Supabase:  http://localhost:54323 (Studio)
   • Mailpit:   http://localhost:54324 (Emails)
 """)
