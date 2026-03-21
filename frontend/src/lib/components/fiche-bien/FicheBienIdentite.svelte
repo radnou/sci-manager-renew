@@ -337,35 +337,5 @@
 		</div>
 	{/if}
 
-	{#if bien.rentabilite}
-		<div class="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800">
-			<h3 class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Rentabilité</h3>
-			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Brute</p>
-					<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-						{bien.rentabilite.brute.toFixed(1)}%
-					</p>
-				</div>
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Nette</p>
-					<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-						{bien.rentabilite.nette.toFixed(1)}%
-					</p>
-				</div>
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Cashflow mensuel</p>
-					<p class="mt-1 text-lg font-bold {bien.rentabilite.cashflow_mensuel >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
-						{formatEur(bien.rentabilite.cashflow_mensuel)}
-					</p>
-				</div>
-				<div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Cashflow annuel</p>
-					<p class="mt-1 text-lg font-bold {bien.rentabilite.cashflow_annuel >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
-						{formatEur(bien.rentabilite.cashflow_annuel)}
-					</p>
-				</div>
-			</div>
-		</div>
-	{/if}
+	<!-- Rentabilité affichée uniquement dans l'onglet Rentabilité dédié -->
 </div>
