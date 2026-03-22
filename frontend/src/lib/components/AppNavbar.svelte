@@ -228,7 +228,7 @@
 
 		<a
 			href="/exploitation"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex {isActive('/exploitation')
+			class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {isActive('/exploitation')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -237,7 +237,7 @@
 		</a>
 		<a
 			href="/echeances"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex {isActive('/echeances')
+			class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {isActive('/echeances')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
