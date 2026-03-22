@@ -28,6 +28,7 @@
 	} from '$lib/settings/application-preferences';
 	import { theme, type ThemePreference } from '$lib/stores/theme';
 	import { User as UserIcon, CreditCard, Bell, Shield, Settings, ExternalLink, AlertTriangle } from 'lucide-svelte';
+	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 
 	// --- Tab management ---
 	type TabId = 'profil' | 'abonnement' | 'notifications' | 'confidentialite' | 'preferences';
@@ -309,14 +310,6 @@
 	}
 
 	async function deleteAccount() {
-		if (!isDeleteConfirmValid()) {
-			addToast({
-				title: 'Veuillez saisir votre adresse email pour confirmer la suppression',
-				variant: 'error'
-			});
-			return;
-		}
-
 		deleteLoading = true;
 		try {
 			const token = await getAccessToken();
@@ -341,6 +334,7 @@
 			addToast({ title: 'Erreur r\u00e9seau', variant: 'error' });
 		} finally {
 			deleteLoading = false;
+			showDeleteConfirm = false;
 		}
 	}
 
@@ -864,65 +858,19 @@
 								</p>
 							</div>
 
-							{#if !showDeleteConfirm}
-								<Button variant="destructive" onclick={() => (showDeleteConfirm = true)}>
-									Supprimer d\u00e9finitivement mon compte
-								</Button>
-							{:else}
-								<div class="space-y-4 rounded-2xl border border-red-300 bg-red-50/50 p-4 dark:border-red-800 dark:bg-red-950/30">
-									<p class="text-sm font-semibold text-red-800 dark:text-red-300">
-										Pour confirmer la suppression, saisissez votre adresse email :
-									</p>
-									<p class="font-mono text-sm text-red-600 dark:text-red-400">
-										{dataSummary.email}
-									</p>
+							<Button variant="destructive" onclick={() => (showDeleteConfirm = true)}>
+								Supprimer d\u00e9finitivement mon compte
+							</Button>
 
-									<div>
-										<input
-											type="email"
-											bind:value={deleteConfirmEmail}
-											placeholder={dataSummary.email}
-											autocomplete="off"
-											spellcheck="false"
-											class="w-full max-w-md rounded-lg border border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 focus:outline-none dark:border-red-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-red-800"
-										/>
-										{#if deleteConfirmEmail && !isDeleteConfirmValid()}
-											<p class="mt-1 text-xs text-red-500">
-												L'adresse email ne correspond pas.
-											</p>
-										{/if}
-									</div>
-
-									<div class="flex flex-wrap gap-2">
-										<Button
-											variant="destructive"
-											onclick={deleteAccount}
-											disabled={deleteLoading || !isDeleteConfirmValid()}
-										>
-											{#if deleteLoading}
-												<span class="flex items-center gap-2">
-													<svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-														<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-														<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-													</svg>
-													Suppression en cours...
-												</span>
-											{:else}
-												Confirmer la suppression d\u00e9finitive
-											{/if}
-										</Button>
-										<Button
-											variant="outline"
-											onclick={() => {
-												showDeleteConfirm = false;
-												deleteConfirmEmail = '';
-											}}
-										>
-											Annuler
-										</Button>
-									</div>
-								</div>
-							{/if}
+							<ConfirmDeleteModal
+								open={showDeleteConfirm}
+								entityName={dataSummary.email}
+								entityType="votre compte"
+								warningMessage="La suppression du compte entra\u00eene l'effacement d\u00e9finitif de toutes vos SCI ({dataSummary.data_summary.sci_count}), biens ({dataSummary.data_summary.biens_count}), loyers ({dataSummary.data_summary.loyers_count}), associ\u00e9s ({dataSummary.data_summary.associes_count}) et documents. Les donn\u00e9es de facturation Stripe sont anonymis\u00e9es. Cette action est irr\u00e9versible."
+								loading={deleteLoading}
+								onConfirm={deleteAccount}
+								onCancel={() => { showDeleteConfirm = false; deleteConfirmEmail = ''; }}
+							/>
 						</CardContent>
 					</Card>
 

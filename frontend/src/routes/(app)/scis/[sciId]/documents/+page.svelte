@@ -6,6 +6,7 @@
 	import { addToast } from '$lib/components/ui/toast';
 	import { FileText, Download, FolderOpen, Upload, Trash2, Loader2, Plus } from 'lucide-svelte';
 	import { announceFicheBienModal, subscribeExclusiveFicheBienModal } from '$lib/components/fiche-bien/modal-coordinator';
+	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -22,6 +23,7 @@
 
 	// Delete state
 	let deletingDocId: number | null = $state(null);
+	let deleteDocTarget: { bienId: string | number; doc: DocumentBienEmbed } | null = $state(null);
 
 	type BienDocs = {
 		bien: Bien;
@@ -126,17 +128,23 @@
 		}
 	}
 
-	async function handleDeleteDoc(bienId: string | number, doc: DocumentBienEmbed) {
-		if (!confirm(`Supprimer le document "${doc.nom}" ?`)) return;
+	function requestDeleteDoc(bienId: string | number, doc: DocumentBienEmbed) {
+		deleteDocTarget = { bienId, doc };
+	}
+
+	async function confirmDeleteDoc() {
+		if (!deleteDocTarget) return;
+		const { bienId, doc } = deleteDocTarget;
 		deletingDocId = doc.id;
 		try {
 			await deleteDocumentBien(sciId, bienId, doc.id);
-			addToast({ title: 'Document supprimé', description: `${doc.nom} a été supprimé.`, variant: 'success' });
+			addToast({ title: 'Document supprim\u00e9', description: `${doc.nom} a \u00e9t\u00e9 supprim\u00e9.`, variant: 'success' });
 			await loadDocuments();
 		} catch (err: any) {
 			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de supprimer le document.', variant: 'error' });
 		} finally {
 			deletingDocId = null;
+			deleteDocTarget = null;
 		}
 	}
 </script>
@@ -256,7 +264,7 @@
 										</a>
 										{#if isGerant}
 											<button
-												onclick={() => handleDeleteDoc(group.bien.id!, doc)}
+												onclick={() => requestDeleteDoc(group.bien.id!, doc)}
 												disabled={deletingDocId === doc.id}
 												class="inline-flex items-center rounded-md border border-slate-200 bg-white p-1 text-slate-400 transition-colors hover:border-rose-200 hover:text-rose-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-rose-800 dark:hover:text-rose-400"
 												title="Supprimer ce document"
@@ -335,5 +343,17 @@
 				</div>
 			</form>
 		</div>
+	{/if}
+
+	{#if deleteDocTarget}
+		<ConfirmDeleteModal
+			open={deleteDocTarget != null}
+			entityName={deleteDocTarget.doc.nom}
+			entityType="ce document"
+			warningMessage="Ce document sera d\u00e9finitivement supprim\u00e9. Cette action est irr\u00e9versible."
+			loading={deletingDocId != null}
+			onConfirm={confirmDeleteDoc}
+			onCancel={() => { deleteDocTarget = null; }}
+		/>
 	{/if}
 </section>

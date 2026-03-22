@@ -7,6 +7,7 @@
 	import RoleGate from '$lib/components/RoleGate.svelte';
 	import { UserPlus, Pencil, Trash2, Loader2 } from 'lucide-svelte';
 	import AssocieModal from '$lib/components/fiche-bien/modals/AssocieModal.svelte';
+	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -21,6 +22,9 @@
 	let error: string | null = $state(null);
 	let deletingId: string | null = $state(null);
 	let confirmingDeleteId: string | null = $state(null);
+	let deleteTargetAssocie = $derived(
+		confirmingDeleteId ? associes.find(a => String(a.id) === confirmingDeleteId) ?? null : null
+	);
 
 	$effect(() => {
 		if (sciId) {
@@ -171,30 +175,7 @@
 							{/if}
 						</div>
 					</div>
-					{#if confirmingDeleteId === String(associe.id)}
-						<div class="mt-3 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 dark:border-rose-800 dark:bg-rose-950/30">
-							<p class="text-sm text-rose-700 dark:text-rose-300">Supprimer l'associé {associe.nom} ?</p>
-							<div class="flex items-center gap-2">
-								<button
-									onclick={() => { confirmingDeleteId = null; }}
-									class="rounded-md px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-								>
-									Annuler
-								</button>
-								<button
-									onclick={() => handleDeleteAssocie(associe)}
-									disabled={deletingId === String(associe.id)}
-									class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-								>
-									{#if deletingId === String(associe.id)}
-										<Loader2 class="h-3.5 w-3.5 animate-spin" />
-									{/if}
-									Confirmer
-								</button>
-							</div>
-						</div>
-					{/if}
-				</div>
+					</div>
 			{/each}
 		</div>
 		{#if associes.length > 0}
@@ -226,4 +207,16 @@
 	{/if}
 
 	<AssocieModal bind:open={showAssocieModal} {sciId} associe={editingAssocie} onSuccess={() => { editingAssocie = null; loadAssocies(); }} />
+
+	{#if deleteTargetAssocie}
+		<ConfirmDeleteModal
+			open={confirmingDeleteId != null}
+			entityName={deleteTargetAssocie.nom || deleteTargetAssocie.email || 'cet associ\u00e9'}
+			entityType="cet associ\u00e9"
+			warningMessage="Cette action retirera d\u00e9finitivement cet associ\u00e9 de la SCI {sci.nom}. Cette action est irr\u00e9versible."
+			loading={deletingId != null}
+			onConfirm={() => { if (deleteTargetAssocie) handleDeleteAssocie(deleteTargetAssocie); }}
+			onCancel={() => { confirmingDeleteId = null; }}
+		/>
+	{/if}
 </section>

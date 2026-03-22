@@ -9,6 +9,7 @@
 	import BienModal from '$lib/components/fiche-bien/modals/BienModal.svelte';
 	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
+	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -42,6 +43,9 @@
 	let biens: BienListItem[] = $state([]);
 	let loading = $state(true);
 	let error: string | null = $state(null);
+	let deleteTargetBien = $derived(
+		confirmingDeleteId ? biens.find(b => b.id != null && String(b.id) === confirmingDeleteId) ?? null : null
+	);
 
 	onMount(() => {
 		fetchSubscriptionEntitlements().then((ent) => { entitlements = ent; }).catch(() => {});
@@ -384,29 +388,6 @@
 								Quittance
 							</a>
 						</div>
-						{#if confirmingDeleteId != null && bien.id != null && confirmingDeleteId === String(bien.id)}
-							<div class="mt-3 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 dark:border-rose-800 dark:bg-rose-950/30">
-								<p class="text-sm text-rose-700 dark:text-rose-300">Supprimer "{bien.adresse}" ?</p>
-								<div class="flex items-center gap-2">
-									<button
-										onclick={() => { confirmingDeleteId = null; }}
-										class="rounded-md px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-									>
-										Annuler
-									</button>
-									<button
-										onclick={() => handleDeleteBien(bien)}
-										disabled={isDeleting}
-										class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-									>
-										{#if isDeleting}
-											<Loader2 class="h-3.5 w-3.5 animate-spin" />
-										{/if}
-										Confirmer
-									</button>
-								</div>
-							</div>
-						{/if}
 					{/if}
 				</div>
 			{/each}
@@ -528,33 +509,7 @@
 				</tbody>
 			</table>
 		</div>
-		{#if confirmingDeleteId}
-			{@const bienToDelete = biens.find(b => b.id != null && String(b.id) === confirmingDeleteId)}
-			{#if bienToDelete}
-				<div class="mt-3 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 dark:border-rose-800 dark:bg-rose-950/30">
-					<p class="text-sm text-rose-700 dark:text-rose-300">Supprimer "{bienToDelete.adresse}" ? Cette action est irréversible.</p>
-					<div class="flex items-center gap-2">
-						<button
-							onclick={() => { confirmingDeleteId = null; }}
-							class="rounded-md px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-						>
-							Annuler
-						</button>
-						<button
-							onclick={() => handleDeleteBien(bienToDelete)}
-							disabled={deletingId != null && bienToDelete.id != null && deletingId === String(bienToDelete.id)}
-							class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-						>
-							{#if deletingId != null && bienToDelete.id != null && deletingId === String(bienToDelete.id)}
-								<Loader2 class="h-3.5 w-3.5 animate-spin" />
-							{/if}
-							Confirmer
-						</button>
-					</div>
-				</div>
-			{/if}
 		{/if}
-	{/if}
 
 	<BienModal bind:open={showBienModal} {sciId} />
 	<ImportCsvModal
@@ -563,4 +518,16 @@
 		onClose={() => showImportModal = false}
 		onSuccess={() => { showImportModal = false; loadBiens(); }}
 	/>
+
+	{#if deleteTargetBien}
+		<ConfirmDeleteModal
+			open={confirmingDeleteId != null}
+			entityName={deleteTargetBien.adresse ?? 'ce bien'}
+			entityType="ce bien"
+			warningMessage="Cette action supprimera d\u00e9finitivement ce bien immobilier ainsi que tous ses baux, loyers, charges et documents associ\u00e9s. Cette action est irr\u00e9versible."
+			loading={deletingId != null}
+			onConfirm={() => { if (deleteTargetBien) handleDeleteBien(deleteTargetBien); }}
+			onCancel={() => { confirmingDeleteId = null; }}
+		/>
+	{/if}
 </section>

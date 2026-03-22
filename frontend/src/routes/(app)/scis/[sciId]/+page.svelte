@@ -7,6 +7,7 @@
 	import { formatEur } from '$lib/high-value/formatters';
 	import { Button } from '$lib/components/ui/button';
 	import { addToast } from '$lib/components/ui/toast';
+	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 	import { goto } from '$app/navigation';
 
 	const sci = getContext<SCIDetail>('sci');
@@ -947,50 +948,13 @@
 	{/if}
 
 	<!-- Delete SCI Confirmation Modal -->
-	{#if showDeleteConfirm}
-		<div
-			role="alertdialog"
-			aria-modal="true"
-			aria-labelledby="delete-sci-title"
-			aria-describedby="delete-sci-desc"
-			class="fixed inset-0 z-50 flex items-center justify-center p-4"
-		>
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick={() => { if (!deletingSci) showDeleteConfirm = false; }}></div>
-			<div class="relative w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-				<div class="flex items-start gap-3">
-					<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/40">
-						<Trash2 class="h-5 w-5 text-rose-600 dark:text-rose-400" />
-					</div>
-					<div>
-						<h2 id="delete-sci-title" class="text-base font-semibold text-slate-900 dark:text-slate-100">Supprimer {sci.nom} ?</h2>
-						<p id="delete-sci-desc" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Cette action supprimera définitivement :
-						</p>
-						<ul class="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
-							<li>• <strong>{biensCount}</strong> bien{biensCount > 1 ? 's' : ''}</li>
-							<li>• <strong>{sci.associes_count ?? sci.associes?.length ?? 0}</strong> associé{(sci.associes_count ?? sci.associes?.length ?? 0) > 1 ? 's' : ''}</li>
-							<li>• <strong>{sci.loyers_count ?? 0}</strong> loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''}</li>
-							<li>• <strong>{sci.charges_count ?? 0}</strong> charge{(sci.charges_count ?? 0) > 1 ? 's' : ''}</li>
-						</ul>
-						<p class="mt-2 text-sm text-rose-600 dark:text-rose-400 font-medium">
-							Toutes les données associées (baux, documents, quittances) seront également supprimées. Cette action est irréversible.
-						</p>
-					</div>
-				</div>
-				<div class="mt-5 flex items-center justify-end gap-2">
-					<button onclick={() => { showDeleteConfirm = false; }} disabled={deletingSci}
-						class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
-						Annuler
-					</button>
-					<button onclick={handleDeleteSci} disabled={deletingSci}
-						class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50">
-						{#if deletingSci}<Loader2 class="h-4 w-4 animate-spin" />{/if}
-						Supprimer définitivement
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
+	<ConfirmDeleteModal
+		open={showDeleteConfirm}
+		entityName={sci.nom}
+		entityType="cette SCI"
+		warningMessage="Cette action supprimera d\u00e9finitivement {biensCount} bien{biensCount > 1 ? 's' : ''}, {sci.associes_count ?? sci.associes?.length ?? 0} associ\u00e9{(sci.associes_count ?? sci.associes?.length ?? 0) > 1 ? 's' : ''}, {sci.loyers_count ?? 0} loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''}, {sci.charges_count ?? 0} charge{(sci.charges_count ?? 0) > 1 ? 's' : ''}, ainsi que tous les baux, documents et quittances associ\u00e9s. Cette action est irr\u00e9versible."
+		loading={deletingSci}
+		onConfirm={handleDeleteSci}
+		onCancel={() => { showDeleteConfirm = false; }}
+	/>
 </section>
