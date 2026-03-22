@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Check, ArrowRight, Loader2 } from 'lucide-svelte';
+	import { Check, ArrowRight, Loader2, Crown } from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
 	import { supabase } from '$lib/supabase';
 	import { addToast } from '$lib/components/ui/toast';
@@ -77,38 +77,19 @@
 
 	const plans = [
 		{
-			key: 'free',
-			name: 'Essentiel',
-			description: 'Découvrez la gestion SCI simplifiée',
-			monthlyPrice: 0,
-			yearlyPrice: 0,
-			popular: false,
-			annualSavings: null,
-			features: [
-				'1 SCI',
-				'1 bien',
-				'Suivi des loyers',
-				'Quittances PDF (filigrane)',
-				'Simulateurs gratuits',
-				'Calendrier fiscal (vue)'
-			],
-			cta: 'Commencer gratuitement',
-			href: '/register'
-		},
-		{
 			key: 'starter',
 			name: 'Gestion',
 			description: 'Automatisez votre gestion locative',
-			monthlyPrice: 14,
-			yearlyPrice: 108,
+			monthlyPrice: 19,
+			yearlyPrice: 190,
 			popular: false,
-			annualSavings: '60€',
 			features: [
-				'2 SCI',
+				'1 SCI',
 				'5 biens',
-				'Quittances PDF',
-				'Relance impayé automatique',
-				'Révision IRL',
+				'Quittances PDF conformes',
+				'Suivi des loyers + relances auto',
+				'Résumé fiscal CERFA 2044',
+				'Charges, PNO, frais agence',
 				'Export CSV',
 				'Support email 48h'
 			],
@@ -117,47 +98,22 @@
 		},
 		{
 			key: 'pro',
-			name: 'Fiscal',
+			name: 'Pilotage',
 			description: 'Votre co-pilote fiscal et juridique',
-			monthlyPrice: 34,
-			yearlyPrice: 288,
+			monthlyPrice: 39,
+			yearlyPrice: 390,
 			popular: true,
-			annualSavings: '120€',
-			features: [
-				'5 SCI',
-				'15 biens',
-				'Résumé fiscal CERFA 2044',
-				'Déficit foncier 10 ans',
-				'Report 2042 par associé',
-				'AG modèles + convocations',
-				'Mouvements de parts',
-				'Moteur 44+ échéances',
-				'Calendrier fiscal interactif',
-				'Tout Gestion inclus',
-				'Support email 24h'
-			],
-			cta: 'Essayer 14 jours gratuit',
-			href: null
-		},
-		{
-			key: 'cabinet',
-			name: 'Cabinet',
-			description: "La puissance d'un cabinet, en autonomie",
-			monthlyPrice: 69,
-			yearlyPrice: 588,
-			popular: false,
-			annualSavings: '240€',
 			features: [
 				'SCI illimitées',
 				'Biens illimités',
-				'Multi-régime IR/IS',
-				'Dissolution SCI',
-				'Cession biens + plus-value',
-				'Congé bailleur/locataire',
-				'Avenant bail',
-				'Export comptable complet',
-				'Tout Fiscal inclus',
-				'Support prioritaire'
+				'Tout Gestion inclus',
+				'Assemblées générales + convocations',
+				'Mouvements de parts + simulation droits',
+				'Moteur 44+ échéances',
+				'Calendrier fiscal interactif',
+				'Vue comptable annuelle',
+				'Révision IRL automatique',
+				'Support prioritaire 24h'
 			],
 			cta: 'Essayer 14 jours gratuit',
 			href: null
@@ -165,19 +121,16 @@
 	];
 
 	function formatPrice(plan: (typeof plans)[0]): string {
-		if (plan.monthlyPrice === 0) return 'Gratuit';
 		if (billingPeriod === 'month') return `${plan.monthlyPrice}€`;
 		return `${plan.yearlyPrice}€`;
 	}
 
-	function formatPeriod(plan: (typeof plans)[0]): string {
-		if (plan.monthlyPrice === 0) return '';
+	function formatPeriod(): string {
 		if (billingPeriod === 'month') return '/mois';
 		return '/an';
 	}
 
-	function formatPriceTTC(plan: (typeof plans)[0]): string | null {
-		if (plan.monthlyPrice === 0) return null;
+	function formatPriceTTC(plan: (typeof plans)[0]): string {
 		const ht = billingPeriod === 'month' ? plan.monthlyPrice : plan.yearlyPrice;
 		const ttc = (ht * 1.2).toFixed(2).replace('.', ',');
 		const period = billingPeriod === 'month' ? '/mois' : '/an';
@@ -189,14 +142,14 @@
 	<title>Tarifs — GérerSCI</title>
 	<meta
 		name="description"
-		content="Comparez les offres GérerSCI : Essentiel (gratuit), Gestion (14€/mois), Fiscal (34€/mois) et Cabinet (69€/mois)."
+		content="Comparez les offres GérerSCI : Gestion (19€/mois) et Pilotage (39€/mois). Essai gratuit 14 jours."
 	/>
 	<link rel="canonical" href="https://gerersci.fr/pricing" />
 	<meta property="og:url" content="https://gerersci.fr/pricing" />
 </svelte:head>
 
 <section class="bg-slate-50 py-20 dark:bg-slate-950">
-	<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+	<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
 		<div class="mb-12 text-center">
 			<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Tarifs</Badge>
 			<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
@@ -227,7 +180,7 @@
 					onclick={() => (billingPeriod = 'year')}
 				>
 					Annuel
-					<span class="ml-1 text-xs font-normal opacity-80">jusqu'à -35%</span>
+					<span class="ml-1 text-xs font-normal opacity-80">2 mois offerts</span>
 				</button>
 			</div>
 
@@ -239,7 +192,7 @@
 			{/if}
 		</div>
 
-		<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+		<div class="grid gap-8 md:grid-cols-2">
 			{#each plans as plan}
 				<div
 					class="relative flex flex-col rounded-2xl border bg-white p-8 transition-shadow hover:shadow-lg dark:bg-slate-800 {plan.popular
@@ -269,18 +222,16 @@
 						<span class="text-4xl font-extrabold text-slate-900 dark:text-white">
 							{formatPrice(plan)}
 						</span>
-						{#if plan.monthlyPrice > 0}
-							<span class="text-slate-500 dark:text-slate-400">
-								HT{formatPeriod(plan)}
-							</span>
-							<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
-								{formatPriceTTC(plan)}
+						<span class="text-slate-500 dark:text-slate-400">
+							HT{formatPeriod()}
+						</span>
+						<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
+							{formatPriceTTC(plan)}
+						</div>
+						{#if billingPeriod === 'year'}
+							<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+								2 mois offerts
 							</div>
-							{#if billingPeriod === 'year' && plan.annualSavings}
-								<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-									Économisez {plan.annualSavings}/an
-								</div>
-							{/if}
 						{/if}
 					</div>
 
@@ -295,38 +246,82 @@
 						{/each}
 					</ul>
 
-					{#if plan.href}
-						<a href={plan.href} class="mt-auto">
-							<Button
-								class="w-full {plan.popular
-									? 'bg-blue-600 text-white hover:bg-blue-700'
-									: ''}"
-								variant={plan.popular ? 'default' : 'outline'}
-								size="lg"
-							>
-								{plan.cta}
-							</Button>
-						</a>
-					{:else}
-						<Button
-							class="mt-auto w-full {plan.popular
-								? 'bg-blue-600 text-white hover:bg-blue-700'
-								: ''}"
-							variant={plan.popular ? 'default' : 'outline'}
-							size="lg"
-							disabled={checkoutLoading === plan.key}
-							onclick={() => handlePlanClick(plan.key, plan.href)}
-						>
-							{#if checkoutLoading === plan.key}
-								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-								Redirection...
-							{:else}
-								{plan.cta}
-							{/if}
-						</Button>
-					{/if}
+					<Button
+						class="mt-auto w-full {plan.popular
+							? 'bg-blue-600 text-white hover:bg-blue-700'
+							: ''}"
+						variant={plan.popular ? 'default' : 'outline'}
+						size="lg"
+						disabled={checkoutLoading === plan.key}
+						onclick={() => handlePlanClick(plan.key, plan.href)}
+					>
+						{#if checkoutLoading === plan.key}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+							Redirection...
+						{:else}
+							{plan.cta}
+						{/if}
+					</Button>
+
+					<p class="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
+						14 jours d'essai gratuit · Carte bancaire requise · Garantie 30 jours satisfait ou remboursé
+					</p>
 				</div>
 			{/each}
+		</div>
+
+		<!-- Fondateur offer -->
+		<div class="mt-12 rounded-2xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 p-8 dark:border-amber-500 dark:from-amber-950/30 dark:to-orange-950/30">
+			<div class="flex flex-col items-center text-center lg:flex-row lg:text-left lg:items-start lg:gap-8">
+				<div class="flex-1">
+					<Badge class="mb-3 bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-500">
+						Offre de lancement — 100 places
+					</Badge>
+					<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+						<Crown class="mr-2 inline h-6 w-6 text-amber-500" />
+						Fondateur
+					</h3>
+					<p class="mt-2 text-slate-600 dark:text-slate-400">
+						Accès à vie au plan Pilotage
+					</p>
+					<ul class="mt-4 space-y-2">
+						<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+							<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
+							Tout Pilotage inclus — à vie
+						</li>
+						<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+							<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
+							Badge Fondateur sur votre profil
+						</li>
+						<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+							<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
+							Accès beta aux nouvelles fonctionnalités
+						</li>
+					</ul>
+				</div>
+				<div class="mt-6 flex flex-col items-center lg:mt-0">
+					<div class="text-5xl font-extrabold text-slate-900 dark:text-white">349€</div>
+					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+						Paiement unique. Pas de mensualité. À vie.
+					</p>
+					<Button
+						size="lg"
+						class="mt-4 w-full bg-amber-500 px-8 text-white hover:bg-amber-600"
+						disabled={checkoutLoading === 'lifetime'}
+						onclick={() => handlePlanClick('lifetime', null)}
+					>
+						{#if checkoutLoading === 'lifetime'}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+							Redirection...
+						{:else}
+							Devenir Fondateur
+						{/if}
+					</Button>
+					<p class="mt-3 text-sm font-medium text-amber-700 dark:text-amber-400">
+						Places restantes sur 100
+					</p>
+				</div>
+			</div>
 		</div>
 
 		<p class="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">

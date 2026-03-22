@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -13,6 +14,7 @@ class PlanKey(str, Enum):
     PRO = "pro"
     LIFETIME = "lifetime"
     CABINET = "cabinet"
+    FONDATEUR = "fondateur"
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,7 @@ class PlanEntitlements:
     dashboard_complet: bool = False
     multi_user: bool = False
     api_access: bool = False
+    lifetime: bool = False
 
     def features_payload(self) -> dict[str, bool]:
         return {
@@ -72,33 +75,41 @@ class PlanEntitlements:
         return self.max_scis is None or self.max_scis > 1 or self.multi_sci_enabled
 
 
+# Trial (FREE) grants Pilotage-level access for 14 days.
+# After trial expiry, access is restricted (read-only).
 PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     PlanKey.FREE: PlanEntitlements(
         plan_key=PlanKey.FREE,
-        display_name="Essentiel",
+        display_name="Essai",
         billing_period="none",
         max_scis=1,
-        max_biens=1,
+        max_biens=5,
         multi_sci_enabled=False,
-        charges_enabled=False,
-        fiscalite_enabled=False,
+        charges_enabled=True,
+        fiscalite_enabled=True,
         quitus_enabled=True,
-        cerfa_enabled=False,
+        cerfa_enabled=True,
         priority_support=False,
         checkout_mode="subscription",
-        is_public=True,
+        is_public=False,
+        documents_enabled=True,
+        notifications_enabled=True,
+        associes_enabled=True,
+        pno_frais_enabled=True,
+        rentabilite_enabled=True,
+        dashboard_complet=True,
     ),
     PlanKey.STARTER: PlanEntitlements(
         plan_key=PlanKey.STARTER,
         display_name="Gestion",
         billing_period="month",
-        max_scis=2,
+        max_scis=1,
         max_biens=5,
-        multi_sci_enabled=True,
+        multi_sci_enabled=False,
         charges_enabled=True,
-        fiscalite_enabled=False,
+        fiscalite_enabled=True,
         quitus_enabled=True,
-        cerfa_enabled=False,
+        cerfa_enabled=True,
         priority_support=False,
         checkout_mode="subscription",
         is_public=True,
@@ -108,10 +119,10 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     ),
     PlanKey.PRO: PlanEntitlements(
         plan_key=PlanKey.PRO,
-        display_name="Fiscal",
+        display_name="Pilotage",
         billing_period="month",
-        max_scis=5,
-        max_biens=15,
+        max_scis=None,
+        max_biens=None,
         multi_sci_enabled=True,
         charges_enabled=True,
         fiscalite_enabled=True,
@@ -126,6 +137,28 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
         pno_frais_enabled=True,
         rentabilite_enabled=True,
         dashboard_complet=True,
+    ),
+    PlanKey.FONDATEUR: PlanEntitlements(
+        plan_key=PlanKey.FONDATEUR,
+        display_name="Fondateur",
+        billing_period="lifetime",
+        max_scis=None,
+        max_biens=None,
+        multi_sci_enabled=True,
+        charges_enabled=True,
+        fiscalite_enabled=True,
+        quitus_enabled=True,
+        cerfa_enabled=True,
+        priority_support=True,
+        checkout_mode="payment",
+        is_public=True,
+        documents_enabled=True,
+        notifications_enabled=True,
+        associes_enabled=True,
+        pno_frais_enabled=True,
+        rentabilite_enabled=True,
+        dashboard_complet=True,
+        lifetime=True,
     ),
     PlanKey.CABINET: PlanEntitlements(
         plan_key=PlanKey.CABINET,
@@ -152,12 +185,56 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     ),
 }
 
+# Entitlements for expired trials: read-only, no creation/editing
+_TRIAL_EXPIRED_ENTITLEMENTS = PlanEntitlements(
+    plan_key=PlanKey.FREE,
+    display_name="Essai expiré",
+    billing_period="none",
+    max_scis=0,
+    max_biens=0,
+    multi_sci_enabled=False,
+    charges_enabled=False,
+    fiscalite_enabled=False,
+    quitus_enabled=False,
+    cerfa_enabled=False,
+    priority_support=False,
+    checkout_mode="subscription",
+    is_public=False,
+)
+
 
 def get_plan(plan_key: PlanKey | str) -> PlanEntitlements:
     normalized = plan_key if isinstance(plan_key, PlanKey) else PlanKey(str(plan_key))
     if normalized == PlanKey.LIFETIME:
         normalized = PlanKey.PRO
     return PLAN_CATALOG[normalized]
+
+
+def get_trial_expired_plan() -> PlanEntitlements:
+    """Return the restricted entitlements for an expired trial."""
+    return _TRIAL_EXPIRED_ENTITLEMENTS
+
+
+def is_trial_active(status: str | None, current_period_end: str | None) -> bool:
+    """Check whether a trialing subscription is still within its trial window."""
+    if status != "trialing":
+        return False
+    if not current_period_end:
+        return False
+    try:
+        # Handle both ISO format and Unix timestamp
+        if isinstance(current_period_end, (int, float)):
+            end_dt = datetime.fromtimestamp(float(current_period_end), tz=timezone.utc)
+        else:
+            end_str = str(current_period_end)
+            # Try ISO format first, then Unix timestamp
+            try:
+                end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+            except ValueError:
+                end_dt = datetime.fromtimestamp(float(end_str), tz=timezone.utc)
+        return datetime.now(timezone.utc) < end_dt
+    except (ValueError, TypeError, OverflowError):
+        return False
 
 
 def list_public_plans() -> list[PlanEntitlements]:
@@ -168,12 +245,14 @@ def resolve_price_id_for_plan(plan_key: PlanKey | str, billing_period: str = "mo
     normalized = plan_key if isinstance(plan_key, PlanKey) else PlanKey(str(plan_key))
     if normalized == PlanKey.STARTER:
         if billing_period == "year":
-            return settings.stripe_starter_annual_price_id
-        return settings.stripe_starter_price_id
+            return settings.stripe_gestion_annual_price_id or settings.stripe_starter_annual_price_id
+        return settings.stripe_gestion_monthly_price_id or settings.stripe_starter_price_id
     if normalized == PlanKey.PRO:
         if billing_period == "year":
-            return settings.stripe_pro_annual_price_id
-        return settings.stripe_pro_price_id
+            return settings.stripe_pilotage_annual_price_id or settings.stripe_pro_annual_price_id
+        return settings.stripe_pilotage_monthly_price_id or settings.stripe_pro_price_id
+    if normalized == PlanKey.FONDATEUR:
+        return settings.stripe_fondateur_price_id
     if normalized == PlanKey.CABINET:
         if billing_period == "year":
             return settings.stripe_cabinet_annual_price_id
@@ -185,14 +264,36 @@ def resolve_plan_key_from_price_id(price_id: str | None) -> PlanKey | None:
     if not price_id:
         return None
 
-    price_mapping = {
-        settings.stripe_starter_price_id: PlanKey.STARTER,
-        settings.stripe_starter_annual_price_id: PlanKey.STARTER,
-        settings.stripe_pro_price_id: PlanKey.PRO,
-        settings.stripe_pro_annual_price_id: PlanKey.PRO,
-        settings.stripe_cabinet_price_id: PlanKey.CABINET,
-        settings.stripe_cabinet_annual_price_id: PlanKey.CABINET,
-    }
+    # Special sentinel for trial subscriptions
+    if price_id == "trial":
+        return PlanKey.FREE
+
+    price_mapping: dict[str, PlanKey] = {}
+
+    # Old env var names (backward compat)
+    price_mapping[settings.stripe_starter_price_id] = PlanKey.STARTER
+    price_mapping[settings.stripe_starter_annual_price_id] = PlanKey.STARTER
+    price_mapping[settings.stripe_pro_price_id] = PlanKey.PRO
+    price_mapping[settings.stripe_pro_annual_price_id] = PlanKey.PRO
+
+    # New env var names
+    if settings.stripe_gestion_monthly_price_id:
+        price_mapping[settings.stripe_gestion_monthly_price_id] = PlanKey.STARTER
+    if settings.stripe_gestion_annual_price_id:
+        price_mapping[settings.stripe_gestion_annual_price_id] = PlanKey.STARTER
+    if settings.stripe_pilotage_monthly_price_id:
+        price_mapping[settings.stripe_pilotage_monthly_price_id] = PlanKey.PRO
+    if settings.stripe_pilotage_annual_price_id:
+        price_mapping[settings.stripe_pilotage_annual_price_id] = PlanKey.PRO
+
+    # Fondateur (one-time lifetime)
+    if settings.stripe_fondateur_price_id:
+        price_mapping[settings.stripe_fondateur_price_id] = PlanKey.FONDATEUR
+
+    # Cabinet
+    price_mapping[settings.stripe_cabinet_price_id] = PlanKey.CABINET
+    price_mapping[settings.stripe_cabinet_annual_price_id] = PlanKey.CABINET
+
     result = price_mapping.get(price_id)
     if result is not None:
         return result

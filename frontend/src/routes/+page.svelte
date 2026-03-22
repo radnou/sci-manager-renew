@@ -18,7 +18,8 @@
 		BarChart3,
 		ChevronDown,
 		ChevronUp,
-		Loader2
+		Loader2,
+		Crown
 	} from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
 
@@ -206,38 +207,19 @@
 
 	const plans = [
 		{
-			key: 'free',
-			name: 'Essentiel',
-			description: 'Découvrez la gestion SCI simplifiée',
-			monthlyPrice: 0,
-			yearlyPrice: 0,
-			popular: false,
-			annualSavings: null,
-			features: [
-				'1 SCI',
-				'1 bien',
-				'Suivi des loyers',
-				'Quittances PDF (filigrane)',
-				'Simulateurs gratuits',
-				'Calendrier fiscal (vue)'
-			],
-			cta: 'Commencer gratuitement',
-			href: '/register'
-		},
-		{
 			key: 'starter',
 			name: 'Gestion',
 			description: 'Automatisez votre gestion locative',
-			monthlyPrice: 14,
-			yearlyPrice: 108,
+			monthlyPrice: 19,
+			yearlyPrice: 190,
 			popular: false,
-			annualSavings: '60€',
 			features: [
-				'2 SCI',
+				'1 SCI',
 				'5 biens',
-				'Quittances PDF',
-				'Relance impayé automatique',
-				'Révision IRL',
+				'Quittances PDF conformes',
+				'Suivi des loyers + relances auto',
+				'Résumé fiscal CERFA 2044',
+				'Charges, PNO, frais agence',
 				'Export CSV',
 				'Support email 48h'
 			],
@@ -246,47 +228,22 @@
 		},
 		{
 			key: 'pro',
-			name: 'Fiscal',
+			name: 'Pilotage',
 			description: 'Votre co-pilote fiscal et juridique',
-			monthlyPrice: 34,
-			yearlyPrice: 288,
+			monthlyPrice: 39,
+			yearlyPrice: 390,
 			popular: true,
-			annualSavings: '120€',
-			features: [
-				'5 SCI',
-				'15 biens',
-				'Résumé fiscal CERFA 2044',
-				'Déficit foncier 10 ans',
-				'Report 2042 par associé',
-				'AG modèles + convocations',
-				'Mouvements de parts',
-				'Moteur 44+ échéances',
-				'Calendrier fiscal interactif',
-				'Tout Gestion inclus',
-				'Support email 24h'
-			],
-			cta: 'Essayer 14 jours gratuit',
-			href: null
-		},
-		{
-			key: 'cabinet',
-			name: 'Cabinet',
-			description: "La puissance d'un cabinet, en autonomie",
-			monthlyPrice: 69,
-			yearlyPrice: 588,
-			popular: false,
-			annualSavings: '240€',
 			features: [
 				'SCI illimitées',
 				'Biens illimités',
-				'Multi-régime IR/IS',
-				'Dissolution SCI',
-				'Cession biens + plus-value',
-				'Congé bailleur/locataire',
-				'Avenant bail',
-				'Export comptable complet',
-				'Tout Fiscal inclus',
-				'Support prioritaire'
+				'Tout Gestion inclus',
+				'Assemblées générales + convocations',
+				'Mouvements de parts + simulation droits',
+				'Moteur 44+ échéances',
+				'Calendrier fiscal interactif',
+				'Vue comptable annuelle',
+				'Révision IRL automatique',
+				'Support prioritaire 24h'
 			],
 			cta: 'Essayer 14 jours gratuit',
 			href: null
@@ -317,36 +274,70 @@
 		}
 	];
 
+	const valueStack = [
+		{ item: 'Gestion locative complète', value: '25€/mois' },
+		{ item: 'Quittances PDF conformes', value: '10€/mois' },
+		{ item: 'Module fiscal CERFA 2044', value: '80€/mois' },
+		{ item: 'Suivi charges et PNO', value: '20€/mois' },
+		{ item: 'Calcul de rentabilité', value: '50€/mois' },
+		{ item: 'Registre AG + convocations', value: '40€/mois' },
+		{ item: 'Mouvements de parts', value: '30€/mois' },
+		{ item: 'Calendrier fiscal + échéances', value: '17€/mois' },
+		{ item: 'Notifications intelligentes', value: '10€/mois' },
+		{ item: 'Tableau de bord multi-SCI', value: '30€/mois' },
+		{ item: 'Import/Export données', value: '15€/mois' }
+	];
+
 	const faqItems = [
 		{
-			question: 'Le produit est-il adapté à une petite SCI familiale ?',
+			question: 'Mon comptable s\'occupe déjà de tout',
 			answer:
-				"Absolument. L'interface est pensée pour démarrer simple avec 1-2 biens, puis monter en sophistication sans refonte."
+				"Votre comptable intervient en fin d'année pour la déclaration. GérerSCI vous aide au quotidien : suivi des loyers, relances automatiques, quittances, charges. Vous arrivez chez votre comptable avec des données propres et structurées — il vous en remerciera."
 		},
 		{
-			question: 'Puis-je l\'utiliser avec mon expert-comptable actuel ?',
+			question: '19€/mois c\'est trop cher',
 			answer:
-				'Oui. Les données sont structurées pour faciliter les échanges avec votre comptable. Un résumé fiscal PDF par exercice est disponible sur le plan Fiscal.'
+				"Un retard de loyer non détecté vous coûte 800€ minimum. Une erreur sur la 2044 peut déclencher un contrôle fiscal. GérerSCI remplace en moyenne 150€/mois de prestations (quittances, suivi comptable, gestion locative). C'est 6x moins cher que le minimum."
 		},
 		{
-			question: 'Mes données sont-elles sécurisées (RGPD) ?',
+			question: 'J\'ai seulement 1 bien',
 			answer:
-				'Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité dédié (résumé des données, export JSON, suppression de compte).'
+				"Le plan Gestion à 19€/mois est conçu pour vous. Un seul bien mal géré peut coûter des milliers d'euros en impayés ou en erreurs fiscales. Et quand vous ajouterez un deuxième bien, tout sera déjà en place."
 		},
 		{
-			question: 'Comment migrer depuis Excel ou autre outil ?',
+			question: 'Mes données sont-elles sécurisées ?',
 			answer:
-				'La version actuelle privilégie une saisie structurée rapide pour repartir sur des bases fiables. Un module d\'import CSV/Excel est prévu dans la roadmap.'
+				'Hébergement UE via Supabase (PostgreSQL), isolation des données par SCI avec Row-Level Security, chiffrement en transit et au repos. Espace confidentialité dédié avec export JSON et suppression de compte. Conforme RGPD.'
 		},
 		{
-			question: "L'outil gère-t-il la conformité fiscale (2044, 2072) ?",
+			question: 'Je peux faire ça avec Excel',
 			answer:
-				'Un résumé fiscal simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. La déclaration 2072 (SCI à l\'IS) est prévue dans une version future.'
+				"Vous pouvez. Mais Excel ne génère pas de quittances PDF conformes, ne calcule pas votre CERFA 2044, ne vous alerte pas sur un loyer en retard, et ne produit pas de calendrier fiscal. GérerSCI fait tout ça en 10 minutes par mois."
 		},
 		{
-			question: 'Que se passe-t-il si je veux arrêter ?',
+			question: 'Et si je veux annuler ?',
 			answer:
-				'Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander la suppression de votre compte depuis l\'espace confidentialité.'
+				'Annulation en 1 clic depuis votre espace. Pas de période d\'engagement, pas de frais cachés. Vos données restent accessibles 30 jours après annulation. Garantie satisfait ou remboursé 30 jours.'
+		},
+		{
+			question: 'Je ne suis pas à l\'aise avec l\'informatique',
+			answer:
+				"L'onboarding guidé vous accompagne pas à pas : créer votre SCI, ajouter un bien, configurer un bail. En 5 minutes, vous êtes opérationnel. Et le support répond sous 48h (24h en Pilotage)."
+		},
+		{
+			question: 'C\'est un nouveau produit',
+			answer:
+				"GérerSCI est développé par des gérants de SCI, pour des gérants de SCI. Le produit est en production, utilisé quotidiennement. L'offre Fondateur vous donne un accès à vie au meilleur prix — et un accès beta à toutes les nouvelles fonctionnalités."
+		},
+		{
+			question: 'Est-ce que ça remplace la déclaration fiscale ?',
+			answer:
+				"Non. GérerSCI prépare vos données fiscales : résumé CERFA 2044, résultat foncier, répartition par associé. Votre comptable ou vous-même restez responsable de la déclaration finale. Les calculs sont fournis à titre indicatif."
+		},
+		{
+			question: 'Pourquoi pas d\'offre gratuite ?',
+			answer:
+				"Un outil gratuit ne peut pas offrir un support de qualité, des mises à jour régulières et la sécurité que vos données méritent. Le plan Gestion à 19€/mois vous donne un outil professionnel complet. L'essai gratuit de 14 jours vous permet de tout tester avant de vous engager."
 		}
 	];
 
@@ -369,19 +360,16 @@
 	};
 
 	function formatPrice(plan: (typeof plans)[0]): string {
-		if (plan.monthlyPrice === 0) return 'Gratuit';
 		if (billingPeriod === 'month') return `${plan.monthlyPrice}€`;
 		return `${plan.yearlyPrice}€`;
 	}
 
-	function formatPeriod(plan: (typeof plans)[0]): string {
-		if (plan.monthlyPrice === 0) return '';
+	function formatPeriod(): string {
 		if (billingPeriod === 'month') return '/mois';
 		return '/an';
 	}
 
-	function formatPriceTTC(plan: (typeof plans)[0]): string | null {
-		if (plan.monthlyPrice === 0) return null;
+	function formatPriceTTC(plan: (typeof plans)[0]): string {
 		const ht = billingPeriod === 'month' ? plan.monthlyPrice : plan.yearlyPrice;
 		const ttc = (ht * 1.2).toFixed(2).replace('.', ',');
 		const period = billingPeriod === 'month' ? '/mois' : '/an';
@@ -393,7 +381,7 @@
 	<title>GérerSCI — Gestion simplifiée de vos SCI</title>
 	<meta
 		name="description"
-		content="Centralisez biens, loyers et documents. Dashboard multi-SCI, quittances PDF, résumé fiscal."
+		content="Gérez vos biens, vos locataires et votre fiscalité depuis un seul tableau de bord — en 10 minutes par mois."
 	/>
 	<link rel="canonical" href="https://gerersci.fr" />
 	{@html `<script type="application/ld+json">${JSON.stringify({
@@ -405,47 +393,19 @@
 		"description": "Gestion simplifiée de Sociétés Civiles Immobilières",
 		"url": "https://gerersci.fr",
 		"offers": [
-			{ "@type": "Offer", "price": "0", "priceCurrency": "EUR", "name": "Essentiel" },
-			{ "@type": "Offer", "price": "14", "priceCurrency": "EUR", "name": "Gestion" },
-			{ "@type": "Offer", "price": "34", "priceCurrency": "EUR", "name": "Fiscal" },
-			{ "@type": "Offer", "price": "69", "priceCurrency": "EUR", "name": "Cabinet" }
+			{ "@type": "Offer", "price": "19", "priceCurrency": "EUR", "name": "Gestion" },
+			{ "@type": "Offer", "price": "39", "priceCurrency": "EUR", "name": "Pilotage" },
+			{ "@type": "Offer", "price": "349", "priceCurrency": "EUR", "name": "Fondateur" }
 		]
 	})}</script>`}
 	{@html `<script type="application/ld+json">${JSON.stringify({
 		"@context": "https://schema.org",
 		"@type": "FAQPage",
-		"mainEntity": [
-			{
-				"@type": "Question",
-				"name": "Le produit est-il adapté à une petite SCI familiale ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "Absolument. L'interface est pensée pour démarrer simple avec 1-2 biens, puis monter en sophistication sans refonte." }
-			},
-			{
-				"@type": "Question",
-				"name": "Puis-je l'utiliser avec mon expert-comptable actuel ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "Oui. Les données sont structurées pour faciliter les échanges avec votre comptable. Un résumé fiscal PDF par exercice est disponible sur le plan Fiscal." }
-			},
-			{
-				"@type": "Question",
-				"name": "Mes données sont-elles sécurisées (RGPD) ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "Oui. Hébergement UE via Supabase, isolation des données par SCI et espace confidentialité dédié (résumé des données, export JSON, suppression de compte)." }
-			},
-			{
-				"@type": "Question",
-				"name": "Comment migrer depuis Excel ou autre outil ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "La version actuelle privilégie une saisie structurée rapide pour repartir sur des bases fiables. Un module d'import CSV/Excel est prévu dans la roadmap." }
-			},
-			{
-				"@type": "Question",
-				"name": "L'outil gère-t-il la conformité fiscale (2044, 2072) ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "Un résumé fiscal simplifié du résultat foncier (revenus − charges) est disponible avec export PDF. La déclaration 2072 (SCI à l'IS) est prévue dans une version future." }
-			},
-			{
-				"@type": "Question",
-				"name": "Que se passe-t-il si je veux arrêter ?",
-				"acceptedAnswer": { "@type": "Answer", "text": "Aucun engagement. Vous pouvez arrêter votre abonnement Stripe à tout moment et demander la suppression de votre compte depuis l'espace confidentialité." }
-			}
-		]
+		"mainEntity": faqItems.map(item => ({
+			"@type": "Question",
+			"name": item.question,
+			"acceptedAnswer": { "@type": "Answer", "text": item.answer }
+		}))
 	})}</script>`}
 	<link rel="alternate" hreflang="fr" href="https://gerersci.fr/" />
 </svelte:head>
@@ -461,7 +421,7 @@
 		<div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mx-auto max-w-3xl text-center">
 				<Badge variant="secondary" class="mb-6 px-3 py-1 text-sm font-medium">
-					Produit SaaS pour SCI & immobilier locatif
+					Gestion SCI · Fiscalité · Automatisation
 				</Badge>
 				<h1
 					class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
@@ -470,29 +430,31 @@
 					<span
 						class="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent"
 					>
-						qu'un tableur Excel
+						qu'un tableur Excel.
 					</span>
 				</h1>
 				<p class="mt-6 text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-400">
-					Centralisez biens, loyers et documents en un seul endroit. Moins d'administratif, plus
-					de visibilité sur vos revenus, retards et la performance de chaque bien.
+					Gérez vos biens, vos locataires et votre fiscalité depuis un seul tableau de bord — en 10 minutes par mois.
 				</p>
 				<div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-					<a href="#pricing">
+					<a href="/register">
 						<Button
 							size="lg"
 							class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
 						>
-							Démarrer à 14€/mois
+							Essayer 14 jours gratuit
 							<ArrowRight class="ml-2 h-5 w-5" />
 						</Button>
 					</a>
-					<a href="/register">
+					<a href="#pricing">
 						<Button variant="outline" size="lg" class="px-8 text-lg font-semibold">
-							Essayer gratuitement
+							Voir les tarifs
 						</Button>
 					</a>
 				</div>
+				<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+					Carte bancaire requise · Garantie 30 jours · Annulation en 1 clic
+				</p>
 			</div>
 
 			<!-- Trust bar -->
@@ -627,6 +589,7 @@
 					Conçu pour ceux qui gèrent des SCI au quotidien
 				</h2>
 			</div>
+
 			<div class="grid gap-8 md:grid-cols-3">
 				{#each audiences as audience}
 					<Card class="rounded-2xl border-slate-200 dark:border-slate-700">
@@ -690,10 +653,65 @@
 	</section>
 
 	<!-- ============================================================ -->
+	<!-- VALUE STACK -->
+	<!-- ============================================================ -->
+	<section class="bg-white py-20 dark:bg-slate-900">
+		<div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+			<div class="mb-12 text-center">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Valeur</Badge>
+				<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
+					Tout ce que vous recevez
+				</h2>
+				<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
+					Chaque module remplace un outil ou un prestataire que vous payez déjà.
+				</p>
+			</div>
+
+			<div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+				<table class="w-full">
+					<thead>
+						<tr class="bg-slate-50 dark:bg-slate-800">
+							<th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-slate-100">Ce que vous recevez</th>
+							<th class="px-6 py-4 text-right text-sm font-semibold text-slate-900 dark:text-slate-100">Valeur équivalente</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each valueStack as row, i}
+							<tr class="{i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-800/50'}">
+								<td class="px-6 py-3 text-sm text-slate-600 dark:text-slate-400">
+									<span class="flex items-center gap-2">
+										<Check class="h-4 w-4 flex-shrink-0 text-emerald-500" />
+										{row.item}
+									</span>
+								</td>
+								<td class="px-6 py-3 text-right text-sm text-slate-500 line-through dark:text-slate-400">{row.value}</td>
+							</tr>
+						{/each}
+					</tbody>
+					<tfoot>
+						<tr class="border-t-2 border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800">
+							<td class="px-6 py-4 text-sm font-bold text-slate-900 dark:text-slate-100">Total</td>
+							<td class="px-6 py-4 text-right text-lg font-bold text-slate-400 line-through dark:text-slate-500">327€/mois</td>
+						</tr>
+						<tr class="bg-blue-50 dark:bg-blue-950/30">
+							<td class="px-6 py-4 text-sm font-bold text-blue-700 dark:text-blue-300">Votre prix avec GérerSCI</td>
+							<td class="px-6 py-4 text-right text-2xl font-extrabold text-blue-600 dark:text-blue-400">19€/mois</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+
+			<p class="mt-6 text-center text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+				Vous payeriez plus de 320€ par mois pour assembler tous ces services séparément. Avec GérerSCI, vous avez tout — pour 19€ par mois.
+			</p>
+		</div>
+	</section>
+
+	<!-- ============================================================ -->
 	<!-- PRICING -->
 	<!-- ============================================================ -->
-	<section id="pricing" class="bg-white py-20 dark:bg-slate-900">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+	<section id="pricing" class="bg-slate-50 py-20 dark:bg-slate-950">
+		<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
 			<div class="mb-12 text-center">
 				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Tarifs</Badge>
 				<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
@@ -702,12 +720,9 @@
 				<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
 					Chaque SCI mérite un co-pilote. Choisissez le vôtre.
 				</p>
-				<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-					Réduisez de 50% votre temps de gestion administrative — et fournissez à votre comptable des données propres et organisées.
-				</p>
 
 				<!-- Billing toggle -->
-				<div class="mt-8 inline-flex items-center rounded-xl bg-slate-100 p-1 shadow-sm dark:bg-slate-800">
+				<div class="mt-8 inline-flex items-center rounded-xl bg-white p-1 shadow-sm dark:bg-slate-800">
 					<button
 						class="rounded-lg px-5 py-2 text-sm font-medium transition-colors {billingPeriod === 'month'
 							? 'bg-blue-600 text-white shadow-sm'
@@ -723,12 +738,12 @@
 						onclick={() => (billingPeriod = 'year')}
 					>
 						Annuel
-						<span class="ml-1 text-xs font-normal opacity-80">jusqu'à -35%</span>
+						<span class="ml-1 text-xs font-normal opacity-80">2 mois offerts</span>
 					</button>
 				</div>
 			</div>
 
-			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+			<div class="grid gap-8 md:grid-cols-2">
 				{#each plans as plan}
 					<div
 						class="relative flex flex-col rounded-2xl border bg-white p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:bg-slate-800 {plan.popular
@@ -758,18 +773,16 @@
 							<span class="text-4xl font-extrabold text-slate-900 dark:text-white">
 								{formatPrice(plan)}
 							</span>
-							{#if plan.monthlyPrice > 0}
-								<span class="text-slate-500 dark:text-slate-400">
-									HT{formatPeriod(plan)}
-								</span>
-								<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
-									{formatPriceTTC(plan)}
+							<span class="text-slate-500 dark:text-slate-400">
+								HT{formatPeriod()}
+							</span>
+							<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
+								{formatPriceTTC(plan)}
+							</div>
+							{#if billingPeriod === 'year'}
+								<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+									2 mois offerts
 								</div>
-								{#if billingPeriod === 'year' && plan.annualSavings}
-									<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-										Économisez {plan.annualSavings}/an
-									</div>
-								{/if}
 							{/if}
 						</div>
 
@@ -784,43 +797,104 @@
 							{/each}
 						</ul>
 
-						{#if plan.href}
-							<a href={plan.href} class="mt-auto">
-								<Button
-									class="w-full {plan.popular
-										? 'bg-blue-600 text-white hover:bg-blue-700'
-										: ''}"
-									variant={plan.popular ? 'default' : 'outline'}
-									size="lg"
-								>
-									{plan.cta}
-								</Button>
-							</a>
-						{:else}
-							<Button
-								class="mt-auto w-full {plan.popular
-									? 'bg-blue-600 text-white hover:bg-blue-700'
-									: ''}"
-								variant={plan.popular ? 'default' : 'outline'}
-								size="lg"
-								disabled={checkoutLoading === plan.key}
-								onclick={() => createGuestCheckout(plan.key)}
-							>
-								{#if checkoutLoading === plan.key}
-									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-									Redirection...
-								{:else}
-									{plan.cta}
-								{/if}
-							</Button>
-						{/if}
+						<Button
+							class="mt-auto w-full {plan.popular
+								? 'bg-blue-600 text-white hover:bg-blue-700'
+								: ''}"
+							variant={plan.popular ? 'default' : 'outline'}
+							size="lg"
+							disabled={checkoutLoading === plan.key}
+							onclick={() => createGuestCheckout(plan.key)}
+						>
+							{#if checkoutLoading === plan.key}
+								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								Redirection...
+							{:else}
+								{plan.cta}
+							{/if}
+						</Button>
+
+						<p class="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
+							14 jours d'essai gratuit · Carte bancaire requise · Garantie 30 jours satisfait ou remboursé
+						</p>
 					</div>
 				{/each}
+			</div>
+
+			<!-- Fondateur offer -->
+			<div class="mt-12 rounded-2xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 p-8 dark:border-amber-500 dark:from-amber-950/30 dark:to-orange-950/30">
+				<div class="flex flex-col items-center text-center lg:flex-row lg:text-left lg:items-start lg:gap-8">
+					<div class="flex-1">
+						<Badge class="mb-3 bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-500">
+							Offre de lancement — 100 places
+						</Badge>
+						<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+							<Crown class="mr-2 inline h-6 w-6 text-amber-500" />
+							Fondateur
+						</h3>
+						<p class="mt-2 text-slate-600 dark:text-slate-400">
+							Accès à vie au plan Pilotage
+						</p>
+						<ul class="mt-4 space-y-2">
+							<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+								<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
+								Tout Pilotage inclus — à vie
+							</li>
+							<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+								<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
+								Badge Fondateur sur votre profil
+							</li>
+							<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+								<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
+								Accès beta aux nouvelles fonctionnalités
+							</li>
+						</ul>
+					</div>
+					<div class="mt-6 flex flex-col items-center lg:mt-0">
+						<div class="text-5xl font-extrabold text-slate-900 dark:text-white">349€</div>
+						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+							Paiement unique. Pas de mensualité. À vie.
+						</p>
+						<Button
+							size="lg"
+							class="mt-4 w-full bg-amber-500 px-8 text-white hover:bg-amber-600"
+							disabled={checkoutLoading === 'lifetime'}
+							onclick={() => createGuestCheckout('lifetime')}
+						>
+							{#if checkoutLoading === 'lifetime'}
+								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								Redirection...
+							{:else}
+								Devenir Fondateur
+							{/if}
+						</Button>
+						<p class="mt-3 text-sm font-medium text-amber-700 dark:text-amber-400">
+							Places restantes sur 100
+						</p>
+					</div>
+				</div>
 			</div>
 
 			<p class="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">
 				Remplace en moyenne 150€/mois d'honoraires comptables
 			</p>
+		</div>
+	</section>
+
+	<!-- ============================================================ -->
+	<!-- GUARANTEE -->
+	<!-- ============================================================ -->
+	<section class="bg-white py-16 dark:bg-slate-900">
+		<div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+			<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center dark:border-emerald-800 dark:bg-emerald-950/30">
+				<Shield class="mx-auto mb-4 h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+				<h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+					Garantie 30 jours : testez sans risque.
+				</h2>
+				<p class="mt-4 text-slate-600 dark:text-slate-400">
+					14 jours d'essai gratuit + 30 jours satisfait ou remboursé = 44 jours pour tester sans risque.
+				</p>
+			</div>
 		</div>
 	</section>
 
@@ -988,10 +1062,10 @@
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center">
 				<h2 class="mb-4 text-3xl font-bold text-white sm:text-4xl">
-					Créez votre compte gratuitement
+					Essayez GérerSCI pendant 14 jours
 				</h2>
 				<p class="mx-auto mb-8 max-w-2xl text-lg text-blue-100">
-					Sans engagement. Annulez quand vous voulez.
+					Carte bancaire requise. Garantie 30 jours satisfait ou remboursé. Annulation en 1 clic.
 				</p>
 				<div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
 					<a href="/register">
@@ -999,7 +1073,7 @@
 							size="lg"
 							class="bg-white px-8 text-lg font-semibold text-blue-600 shadow-lg hover:bg-blue-50"
 						>
-							Commencer gratuitement
+							Essayer 14 jours gratuit
 							<ArrowRight class="ml-2 h-5 w-5" />
 						</Button>
 					</a>

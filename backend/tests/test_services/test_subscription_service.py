@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timedelta, timezone
 
 from app.core.exceptions import PlanLimitError, SubscriptionInactiveError, UpgradeRequiredError
 from app.services.subscription_service import SubscriptionService
@@ -8,6 +9,20 @@ class _Result:
     def __init__(self, data, count=None):
         self.data = data
         self.count = len(data) if count is None else count
+
+
+class _UpsertQuery:
+    """Simulates Supabase upsert().execute() chain."""
+
+    def __init__(self, store, table_name, payload):
+        self.store = store
+        self.table_name = table_name
+        self.payload = payload
+
+    def execute(self):
+        rows = self.store.setdefault(self.table_name, [])
+        rows.append(self.payload)
+        return _Result([self.payload])
 
 
 class _Query:
@@ -28,6 +43,9 @@ class _Query:
     def in_(self, key, values):
         self.filters.append((key, {str(value) for value in values}))
         return self
+
+    def upsert(self, payload, **_kwargs):
+        return _UpsertQuery(self.store, self.table_name, payload)
 
     def execute(self):
         rows = self.store.get(self.table_name, [])
@@ -73,20 +91,85 @@ def patch_client(monkeypatch, store):
     )
 
 
-def test_get_subscription_summary_defaults_to_free(monkeypatch):
+def test_get_subscription_summary_creates_trial_for_new_user(monkeypatch):
     store = build_store()
     patch_client(monkeypatch, store)
 
     summary = SubscriptionService.get_subscription_summary("user-123")
-    assert summary["plan_key"] == "free"
-    assert summary["max_scis"] == 1
-    assert summary["max_biens"] == 1
-    assert summary["current_scis"] == 1
-    assert summary["current_biens"] == 5
+    assert summary["status"] == "trialing"
+    assert summary["is_active"] is True
+    assert summary["plan_name"] == "Essai Pilotage"
+    assert summary["trial_expired"] is False
+    assert summary["current_period_end"] is not None
+
+
+def test_get_subscription_summary_expired_trial(monkeypatch):
+    past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": True,
+            "stripe_price_id": "trial",
+            "current_period_end": past,
+            "max_scis": None,
+            "max_biens": None,
+            "features": {},
+        }
+    ]
+    patch_client(monkeypatch, store)
+
+    summary = SubscriptionService.get_subscription_summary("user-123")
+    assert summary["is_active"] is False
+    assert summary["plan_name"] == "Essai expiré"
+    assert summary["trial_expired"] is True
+    assert summary["max_scis"] == 0
+    assert summary["max_biens"] == 0
+
+
+def test_get_subscription_summary_active_trial(monkeypatch):
+    future = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": True,
+            "stripe_price_id": "trial",
+            "current_period_end": future,
+            "max_scis": None,
+            "max_biens": None,
+            "features": {},
+        }
+    ]
+    patch_client(monkeypatch, store)
+
+    summary = SubscriptionService.get_subscription_summary("user-123")
+    assert summary["is_active"] is True
+    assert summary["plan_name"] == "Essai Pilotage"
+    assert summary["trial_expired"] is False
+    # Should get Pilotage features during active trial
+    features = summary["features"]
+    assert features.get("cerfa_enabled") is True
+    assert features.get("fiscalite_enabled") is True
 
 
 def test_enforce_limit_raises_when_enforcement_active(monkeypatch):
     store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "max_scis": 1,
+            "max_biens": 1,
+            "features": {},
+        }
+    ]
     patch_client(monkeypatch, store)
     monkeypatch.setattr(
         "app.services.subscription_service.settings.feature_plan_entitlements_enforcement",
@@ -99,6 +182,17 @@ def test_enforce_limit_raises_when_enforcement_active(monkeypatch):
 
 def test_enforce_limit_warn_mode_allows_request(monkeypatch):
     store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "max_scis": 1,
+            "max_biens": 1,
+            "features": {},
+        }
+    ]
     patch_client(monkeypatch, store)
     monkeypatch.setattr(
         "app.services.subscription_service.settings.feature_plan_entitlements_enforcement",
@@ -106,7 +200,7 @@ def test_enforce_limit_warn_mode_allows_request(monkeypatch):
     )
 
     summary = SubscriptionService.enforce_limit("user-123", "biens")
-    assert summary["plan_key"] == "free"
+    assert summary["plan_key"] == "starter"
 
 
 def test_inactive_subscription_can_be_bypassed_in_observe_mode(monkeypatch):
@@ -303,8 +397,8 @@ def test_enforce_limit_reached_warn_mode(monkeypatch):
         "subscriptions": [
             {
                 "user_id": "user-123",
-                "plan_key": "free",
-                "status": "free",
+                "plan_key": "starter",
+                "status": "active",
                 "is_active": True,
                 "max_scis": 1,
                 "max_biens": 2,
@@ -325,5 +419,34 @@ def test_enforce_limit_reached_warn_mode(monkeypatch):
 
     # current_biens (2) >= max_biens (2) but warn mode allows
     summary = SubscriptionService.enforce_limit("user-123", "biens")
-    assert summary["plan_key"] == "free"
+    assert summary["plan_key"] == "starter"
     assert summary["current_biens"] == 2
+
+
+def test_fondateur_subscription_active(monkeypatch):
+    """Fondateur plan is active with payment mode."""
+    store = build_store()
+    store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "fondateur",
+            "status": "active",
+            "is_active": True,
+            "mode": "payment",
+            "max_scis": None,
+            "max_biens": None,
+            "features": {
+                "cerfa_enabled": True,
+                "fiscalite_enabled": True,
+                "associes_enabled": True,
+                "multi_sci_enabled": True,
+            },
+        }
+    ]
+    patch_client(monkeypatch, store)
+
+    summary = SubscriptionService.get_subscription_summary("user-123")
+    assert summary["plan_key"] == "fondateur"
+    assert summary["is_active"] is True
+    assert summary["max_scis"] is None
+    assert summary["max_biens"] is None

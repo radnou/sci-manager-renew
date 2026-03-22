@@ -44,9 +44,8 @@ def enforce_mode(monkeypatch):
 
 
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """FREE plan: max_biens=1, user already has 1 bien -> 402 PlanLimitError."""
+    """Expired trial: max_biens=0, user already has 1 bien -> 402 PlanLimitError."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
-    # Put one existing bien so the user is at the limit.
     fake_supabase.store["biens"] = [
         {
             "id": "bien-existing-1",
@@ -60,8 +59,20 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "tmi": 0,
         }
     ]
-    # No subscription row -> defaults to FREE (max_biens=1).
-    fake_supabase.store["subscriptions"] = []
+    # Expired trial -> restricted access (max_biens=0).
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": False,
+            "stripe_price_id": "trial",
+            "current_period_end": "2020-01-01T00:00:00+00:00",
+            "max_scis": 0,
+            "max_biens": 0,
+            "features": {},
+        }
+    ]
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
@@ -87,7 +98,20 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
             "tmi": 0,
         }
     ]
-    fake_supabase.store["subscriptions"] = []
+    # Expired trial -> restricted access (max_biens=0).
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": False,
+            "stripe_price_id": "trial",
+            "current_period_end": "2020-01-01T00:00:00+00:00",
+            "max_scis": 0,
+            "max_biens": 0,
+            "features": {},
+        }
+    ]
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
@@ -97,7 +121,7 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
-    assert body["details"]["limit"] == 1
+    assert body["details"]["limit"] == 0
     assert body["details"]["current"] == 1
     assert body["details"]["plan_key"] == "free"
     assert "request_id" in body
@@ -162,16 +186,8 @@ def test_create_bien_within_quota_allowed(client, auth_headers, fake_supabase):
 
 
 def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """FREE plan: max_scis=1, user already has 1 SCI -> 402 PlanLimitError.
-
-    The scis endpoint first calls enforce_limit (which raises 402 PlanLimitError),
-    then checks multi_sci_enabled (raising 402 UpgradeRequiredError). Since enforce_limit
-    is called first and current_scis >= max_scis, PlanLimitError fires first.
-
-    Note: The conftest seeds 2 associe rows for user-123 (sci-1 and sci-2), so current_scis=2.
-    We override to have only 1 to test the boundary.
-    """
-    # Override associes so user-123 has exactly 1 SCI membership (at the limit).
+    """Expired trial: max_scis=0, user already has 1 SCI -> 402 PlanLimitError."""
+    # Override associes so user-123 has exactly 1 SCI membership.
     fake_supabase.store["associes"] = [
         {
             "id": "associe-1",
@@ -183,11 +199,23 @@ def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
             "role": "gerant",
         },
     ]
-    fake_supabase.store["subscriptions"] = []
+    # Expired trial -> restricted access (max_scis=0).
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": False,
+            "stripe_price_id": "trial",
+            "current_period_end": "2020-01-01T00:00:00+00:00",
+            "max_scis": 0,
+            "max_biens": 0,
+            "features": {},
+        }
+    ]
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
-    # enforce_limit fires first: current_scis=1 >= max_scis=1 -> PlanLimitError (402)
     assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
     body = response.json()
     assert body["code"] == "plan_limit_reached"
@@ -208,7 +236,20 @@ def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase)
             "role": "gerant",
         },
     ]
-    fake_supabase.store["subscriptions"] = []
+    # Expired trial -> restricted access (max_scis=0).
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": False,
+            "stripe_price_id": "trial",
+            "current_period_end": "2020-01-01T00:00:00+00:00",
+            "max_scis": 0,
+            "max_biens": 0,
+            "features": {},
+        }
+    ]
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
@@ -218,7 +259,7 @@ def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase)
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "scis"
-    assert body["details"]["limit"] == 1
+    assert body["details"]["limit"] == 0
     assert body["details"]["current"] == 1
     assert body["details"]["plan_key"] == "free"
     assert "request_id" in body

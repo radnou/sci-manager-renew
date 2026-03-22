@@ -137,6 +137,7 @@ def _handle_event(event: Any) -> None:
         user_id = _to_str(obj.get("client_reference_id"))
         status_value = "active" if obj.get("payment_status") == "paid" else "pending"
         plan_key = _to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None
+        checkout_mode = _to_str(obj.get("mode"))
 
         # Guest checkout flow: no client_reference_id
         if not user_id:
@@ -152,11 +153,19 @@ def _handle_event(event: Any) -> None:
         if not user_id:
             return
 
-        _sync_subscription(
-            {**obj, "client_reference_id": user_id},
-            status_value,
-            plan_key=plan_key,
-        )
+        # Fondateur: one-time payment, no subscription object from Stripe
+        if checkout_mode == "payment" and plan_key == "fondateur":
+            _sync_subscription(
+                {**obj, "client_reference_id": user_id, "mode": "payment"},
+                "active",
+                plan_key="fondateur",
+            )
+        else:
+            _sync_subscription(
+                {**obj, "client_reference_id": user_id},
+                status_value,
+                plan_key=plan_key,
+            )
         return
 
     if event_type == "customer.subscription.deleted":
@@ -272,7 +281,8 @@ async def create_checkout_session(
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
     checkout_mode = payload.mode or resolved_plan.checkout_mode
-    if checkout_mode != resolved_plan.checkout_mode:
+    # Allow fondateur to use 'payment' mode
+    if checkout_mode != resolved_plan.checkout_mode and payload.plan_key != PlanKey.FONDATEUR:
         raise ValidationError("Checkout mode does not match the selected plan")
 
     logger.info(
@@ -343,21 +353,26 @@ async def create_guest_checkout(
             flag_name="feature_stripe_payments",
         )
 
-    if payload.plan_key not in ("starter", "pro"):
-        raise ValidationError("plan_key must be 'starter' or 'pro'.")
+    if payload.plan_key not in ("starter", "pro", "fondateur"):
+        raise ValidationError("plan_key must be 'starter', 'pro', or 'fondateur'.")
 
-    if payload.billing_period not in ("month", "year"):
+    is_fondateur = payload.plan_key == "fondateur"
+
+    if not is_fondateur and payload.billing_period not in ("month", "year"):
         raise ValidationError("billing_period must be 'month' or 'year'.")
 
     price_id = resolve_price_id_for_plan(payload.plan_key, billing_period=payload.billing_period)
     if not price_id:
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
+    checkout_mode = "payment" if is_fondateur else "subscription"
+
     logger.info(
         "creating_guest_checkout_session",
         plan_key=payload.plan_key,
         billing_period=payload.billing_period,
         price_id=price_id,
+        mode=checkout_mode,
     )
 
     stripe.api_key = settings.stripe_secret_key
@@ -371,7 +386,7 @@ async def create_guest_checkout(
                     "quantity": 1,
                 }
             ],
-            mode="subscription",
+            mode=checkout_mode,
             success_url=f"{settings.frontend_url}/welcome?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{settings.frontend_url}/#pricing",
             metadata={"plan_key": payload.plan_key, "billing_period": payload.billing_period},

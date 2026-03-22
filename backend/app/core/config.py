@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     stripe_cabinet_price_id: str = "price_cabinet_placeholder"
     stripe_cabinet_annual_price_id: str = "price_cabinet_annual_placeholder"
 
+    # New pricing: Gestion / Pilotage / Fondateur
+    # These fall back to the old STARTER/PRO env vars if empty.
+    stripe_fondateur_price_id: str = "price_fondateur_placeholder"
+    stripe_gestion_monthly_price_id: str = ""   # fallback: stripe_starter_price_id
+    stripe_gestion_annual_price_id: str = ""    # fallback: stripe_starter_annual_price_id
+    stripe_pilotage_monthly_price_id: str = ""  # fallback: stripe_pro_price_id
+    stripe_pilotage_annual_price_id: str = ""   # fallback: stripe_pro_annual_price_id
+
     # Email
     resend_api_key: str = "re_placeholder"
     resend_from_email: str = "noreply@email.radnoumane.com"

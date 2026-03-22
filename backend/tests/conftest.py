@@ -459,8 +459,39 @@ def fake_storage(_fake_storage_session):
 
 @pytest.fixture
 def free_plan(fake_supabase: FakeSupabaseClient):
-    """Clear subscriptions so user-123 falls back to free plan."""
-    fake_supabase.store["subscriptions"] = []
+    """Set an expired trial so user-123 gets restricted (read-only) access.
+
+    With the new pricing (no free tier), new users get a 14-day trial.
+    This fixture simulates an expired trial: all features disabled, max 0 biens/scis.
+    """
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "free",
+            "status": "trialing",
+            "is_active": False,
+            "stripe_price_id": "trial",
+            "current_period_end": "2020-01-01T00:00:00+00:00",
+            "max_scis": 0,
+            "max_biens": 0,
+            "features": {
+                "multi_sci_enabled": False,
+                "charges_enabled": False,
+                "fiscalite_enabled": False,
+                "quitus_enabled": False,
+                "cerfa_enabled": False,
+                "priority_support": False,
+                "documents_enabled": False,
+                "notifications_enabled": False,
+                "associes_enabled": False,
+                "pno_frais_enabled": False,
+                "rentabilite_enabled": False,
+                "dashboard_complet": False,
+                "multi_user": False,
+                "api_access": False,
+            },
+        }
+    ]
 
 
 @pytest.fixture
