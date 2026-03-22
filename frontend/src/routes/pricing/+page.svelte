@@ -79,15 +79,18 @@
 		{
 			key: 'free',
 			name: 'Essentiel',
-			description: 'Pour démarrer avec une petite SCI',
+			description: 'Découvrez la gestion SCI simplifiée',
 			monthlyPrice: 0,
 			yearlyPrice: 0,
 			popular: false,
+			annualSavings: null,
 			features: [
 				'1 SCI',
-				'2 biens maximum',
+				'1 bien',
 				'Suivi des loyers',
-				'Quittances PDF'
+				'Quittances PDF (filigrane)',
+				'Simulateurs gratuits',
+				'Calendrier fiscal (vue)'
 			],
 			cta: 'Commencer gratuitement',
 			href: '/register'
@@ -95,38 +98,68 @@
 		{
 			key: 'starter',
 			name: 'Gestion',
-			description: 'Pour les gérants actifs avec plusieurs biens',
-			monthlyPrice: 19,
-			yearlyPrice: 190,
+			description: 'Automatisez votre gestion locative',
+			monthlyPrice: 14,
+			yearlyPrice: 108,
 			popular: false,
+			annualSavings: '60€',
 			features: [
-				'3 SCI',
-				'10 biens maximum',
-				'Gestion documentaire',
-				'Notifications email',
-				'Assurance PNO & frais agence',
-				'Support email prioritaire'
+				'2 SCI',
+				'5 biens',
+				'Quittances PDF',
+				'Relance impayé automatique',
+				'Révision IRL',
+				'Export CSV',
+				'Support email 48h'
 			],
-			cta: 'Choisir Gestion',
+			cta: 'Essayer 14 jours gratuit',
 			href: null
 		},
 		{
 			key: 'pro',
 			name: 'Fiscal',
-			description: 'Pour les gestionnaires patrimoniaux exigeants',
-			monthlyPrice: 39,
-			yearlyPrice: 390,
+			description: 'Votre co-pilote fiscal et juridique',
+			monthlyPrice: 34,
+			yearlyPrice: 288,
 			popular: true,
+			annualSavings: '120€',
+			features: [
+				'5 SCI',
+				'15 biens',
+				'Résumé fiscal CERFA 2044',
+				'Déficit foncier 10 ans',
+				'Report 2042 par associé',
+				'AG modèles + convocations',
+				'Mouvements de parts',
+				'Moteur 44+ échéances',
+				'Calendrier fiscal interactif',
+				'Tout Gestion inclus',
+				'Support email 24h'
+			],
+			cta: 'Essayer 14 jours gratuit',
+			href: null
+		},
+		{
+			key: 'cabinet',
+			name: 'Cabinet',
+			description: "La puissance d'un cabinet, en autonomie",
+			monthlyPrice: 69,
+			yearlyPrice: 588,
+			popular: false,
+			annualSavings: '240€',
 			features: [
 				'SCI illimitées',
 				'Biens illimités',
-				'Calcul de rentabilité avancé',
-				'Dashboard complet multi-SCI',
-				'Résumé fiscal PDF',
-				'Tout Gestion inclus',
-				'Support prioritaire dédié'
+				'Multi-régime IR/IS',
+				'Dissolution SCI',
+				'Cession biens + plus-value',
+				'Congé bailleur/locataire',
+				'Avenant bail',
+				'Export comptable complet',
+				'Tout Fiscal inclus',
+				'Support prioritaire'
 			],
-			cta: 'Choisir Fiscal',
+			cta: 'Essayer 14 jours gratuit',
 			href: null
 		}
 	];
@@ -156,7 +189,7 @@
 	<title>Tarifs — GérerSCI</title>
 	<meta
 		name="description"
-		content="Comparez les offres GérerSCI : Essentiel (gratuit), Gestion (19€/mois) et Fiscal (39€/mois)."
+		content="Comparez les offres GérerSCI : Essentiel (gratuit), Gestion (14€/mois), Fiscal (34€/mois) et Cabinet (69€/mois)."
 	/>
 	<link rel="canonical" href="https://gerersci.fr/pricing" />
 	<meta property="og:url" content="https://gerersci.fr/pricing" />
@@ -170,7 +203,7 @@
 				Un prix simple, sans surprise
 			</h2>
 			<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-				Commencez gratuitement, passez au plan supérieur quand vous en avez besoin.
+				Chaque SCI mérite un co-pilote. Choisissez le vôtre.
 			</p>
 
 			<!-- Billing toggle -->
@@ -194,7 +227,7 @@
 					onclick={() => (billingPeriod = 'year')}
 				>
 					Annuel
-					<span class="ml-1 text-xs font-normal opacity-80">-2 mois</span>
+					<span class="ml-1 text-xs font-normal opacity-80">jusqu'à -35%</span>
 				</button>
 			</div>
 
@@ -206,7 +239,7 @@
 			{/if}
 		</div>
 
-		<div class="grid gap-8 md:grid-cols-3">
+		<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
 			{#each plans as plan}
 				<div
 					class="relative flex flex-col rounded-2xl border bg-white p-8 transition-shadow hover:shadow-lg dark:bg-slate-800 {plan.popular
@@ -243,9 +276,9 @@
 							<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
 								{formatPriceTTC(plan)}
 							</div>
-							{#if billingPeriod === 'year'}
+							{#if billingPeriod === 'year' && plan.annualSavings}
 								<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-									Économisez 2 mois par rapport au mensuel
+									Économisez {plan.annualSavings}/an
 								</div>
 							{/if}
 						{/if}
@@ -296,7 +329,11 @@
 			{/each}
 		</div>
 
-		<div class="mt-12 text-center">
+		<p class="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">
+			Remplace en moyenne 150€/mois d'honoraires comptables
+		</p>
+
+		<div class="mt-8 text-center">
 			<a
 				href="/"
 				class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"

@@ -80,7 +80,7 @@ def test_get_subscription_summary_defaults_to_free(monkeypatch):
     summary = SubscriptionService.get_subscription_summary("user-123")
     assert summary["plan_key"] == "free"
     assert summary["max_scis"] == 1
-    assert summary["max_biens"] == 2
+    assert summary["max_biens"] == 1
     assert summary["current_scis"] == 1
     assert summary["current_biens"] == 5
 

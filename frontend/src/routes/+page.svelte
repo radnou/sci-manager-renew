@@ -208,15 +208,18 @@
 		{
 			key: 'free',
 			name: 'Essentiel',
-			description: 'Pour démarrer avec une petite SCI',
+			description: 'Découvrez la gestion SCI simplifiée',
 			monthlyPrice: 0,
 			yearlyPrice: 0,
 			popular: false,
+			annualSavings: null,
 			features: [
 				'1 SCI',
-				'2 biens maximum',
+				'1 bien',
 				'Suivi des loyers',
-				'Quittances PDF'
+				'Quittances PDF (filigrane)',
+				'Simulateurs gratuits',
+				'Calendrier fiscal (vue)'
 			],
 			cta: 'Commencer gratuitement',
 			href: '/register'
@@ -224,38 +227,68 @@
 		{
 			key: 'starter',
 			name: 'Gestion',
-			description: 'Pour les gérants actifs avec plusieurs biens',
-			monthlyPrice: 19,
-			yearlyPrice: 180,
+			description: 'Automatisez votre gestion locative',
+			monthlyPrice: 14,
+			yearlyPrice: 108,
 			popular: false,
+			annualSavings: '60€',
 			features: [
-				'3 SCI',
-				'10 biens maximum',
-				'Gestion documentaire',
-				'Notifications email',
-				'Assurance PNO & frais agence',
-				'Support email prioritaire'
+				'2 SCI',
+				'5 biens',
+				'Quittances PDF',
+				'Relance impayé automatique',
+				'Révision IRL',
+				'Export CSV',
+				'Support email 48h'
 			],
-			cta: 'Choisir Gestion',
+			cta: 'Essayer 14 jours gratuit',
 			href: null
 		},
 		{
 			key: 'pro',
 			name: 'Fiscal',
-			description: 'Pour les gestionnaires patrimoniaux exigeants',
-			monthlyPrice: 39,
-			yearlyPrice: 348,
+			description: 'Votre co-pilote fiscal et juridique',
+			monthlyPrice: 34,
+			yearlyPrice: 288,
 			popular: true,
+			annualSavings: '120€',
+			features: [
+				'5 SCI',
+				'15 biens',
+				'Résumé fiscal CERFA 2044',
+				'Déficit foncier 10 ans',
+				'Report 2042 par associé',
+				'AG modèles + convocations',
+				'Mouvements de parts',
+				'Moteur 44+ échéances',
+				'Calendrier fiscal interactif',
+				'Tout Gestion inclus',
+				'Support email 24h'
+			],
+			cta: 'Essayer 14 jours gratuit',
+			href: null
+		},
+		{
+			key: 'cabinet',
+			name: 'Cabinet',
+			description: "La puissance d'un cabinet, en autonomie",
+			monthlyPrice: 69,
+			yearlyPrice: 588,
+			popular: false,
+			annualSavings: '240€',
 			features: [
 				'SCI illimitées',
 				'Biens illimités',
-				'Calcul de rentabilité avancé',
-				'Dashboard complet multi-SCI',
-				'Résumé fiscal PDF',
-				'Tout Gestion inclus',
-				'Support prioritaire dédié'
+				'Multi-régime IR/IS',
+				'Dissolution SCI',
+				'Cession biens + plus-value',
+				'Congé bailleur/locataire',
+				'Avenant bail',
+				'Export comptable complet',
+				'Tout Fiscal inclus',
+				'Support prioritaire'
 			],
-			cta: 'Choisir Fiscal',
+			cta: 'Essayer 14 jours gratuit',
 			href: null
 		}
 	];
@@ -373,8 +406,9 @@
 		"url": "https://gerersci.fr",
 		"offers": [
 			{ "@type": "Offer", "price": "0", "priceCurrency": "EUR", "name": "Essentiel" },
-			{ "@type": "Offer", "price": "19", "priceCurrency": "EUR", "name": "Gestion" },
-			{ "@type": "Offer", "price": "39", "priceCurrency": "EUR", "name": "Fiscal" }
+			{ "@type": "Offer", "price": "14", "priceCurrency": "EUR", "name": "Gestion" },
+			{ "@type": "Offer", "price": "34", "priceCurrency": "EUR", "name": "Fiscal" },
+			{ "@type": "Offer", "price": "69", "priceCurrency": "EUR", "name": "Cabinet" }
 		]
 	})}</script>`}
 	{@html `<script type="application/ld+json">${JSON.stringify({
@@ -449,7 +483,7 @@
 							size="lg"
 							class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
 						>
-							Démarrer à 19€/mois
+							Démarrer à 14€/mois
 							<ArrowRight class="ml-2 h-5 w-5" />
 						</Button>
 					</a>
@@ -666,7 +700,7 @@
 					Un prix simple, sans surprise
 				</h2>
 				<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-					Commencez gratuitement, passez au plan supérieur quand vous en avez besoin.
+					Chaque SCI mérite un co-pilote. Choisissez le vôtre.
 				</p>
 				<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
 					Réduisez de 50% votre temps de gestion administrative — et fournissez à votre comptable des données propres et organisées.
@@ -689,12 +723,12 @@
 						onclick={() => (billingPeriod = 'year')}
 					>
 						Annuel
-						<span class="ml-1 text-xs font-normal opacity-80">-2 mois</span>
+						<span class="ml-1 text-xs font-normal opacity-80">jusqu'à -35%</span>
 					</button>
 				</div>
 			</div>
 
-			<div class="grid gap-8 md:grid-cols-3">
+			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
 				{#each plans as plan}
 					<div
 						class="relative flex flex-col rounded-2xl border bg-white p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:bg-slate-800 {plan.popular
@@ -731,9 +765,9 @@
 								<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
 									{formatPriceTTC(plan)}
 								</div>
-								{#if billingPeriod === 'year'}
+								{#if billingPeriod === 'year' && plan.annualSavings}
 									<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-										Économisez 2 mois par rapport au mensuel
+										Économisez {plan.annualSavings}/an
 									</div>
 								{/if}
 							{/if}
@@ -784,18 +818,9 @@
 				{/each}
 			</div>
 
-			<!-- Cabinet CTA -->
-			<div class="mt-10 text-center">
-				<p class="text-sm text-slate-500 dark:text-slate-400">
-					Vous êtes expert-comptable ?
-					<a
-						href="mailto:contact@gerersci.fr?subject=Offre%20Cabinet"
-						class="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2"
-					>
-						Découvrez notre offre Cabinet
-					</a>
-				</p>
-			</div>
+			<p class="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">
+				Remplace en moyenne 150€/mois d'honoraires comptables
+			</p>
 		</div>
 	</section>
 

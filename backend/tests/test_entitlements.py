@@ -14,14 +14,14 @@ def test_free_plan_is_public():
     assert plan.is_public is True
     assert plan.display_name == "Essentiel"
     assert plan.max_scis == 1
-    assert plan.max_biens == 2
+    assert plan.max_biens == 1
 
 
 def test_starter_plan_renamed_gestion():
     plan = get_plan(PlanKey.STARTER)
     assert plan.display_name == "Gestion"
-    assert plan.max_scis == 3
-    assert plan.max_biens == 10
+    assert plan.max_scis == 2
+    assert plan.max_biens == 5
     assert plan.multi_sci_enabled is True
     assert plan.documents_enabled is True
     assert plan.notifications_enabled is True
@@ -33,8 +33,8 @@ def test_starter_plan_renamed_gestion():
 def test_pro_plan_renamed_fiscal():
     plan = get_plan(PlanKey.PRO)
     assert plan.display_name == "Fiscal"
-    assert plan.max_scis is None
-    assert plan.max_biens is None
+    assert plan.max_scis == 5
+    assert plan.max_biens == 15
     assert plan.cerfa_enabled is True
     assert plan.fiscalite_enabled is True
     assert plan.associes_enabled is True
@@ -61,10 +61,10 @@ def test_features_payload_includes_new_fields():
     assert payload["documents_enabled"] is True
 
 
-def test_list_public_plans_includes_all_three():
+def test_list_public_plans_includes_all_four():
     plans = list_public_plans()
     keys = {p.plan_key for p in plans}
-    assert keys == {PlanKey.FREE, PlanKey.STARTER, PlanKey.PRO}
+    assert keys == {PlanKey.FREE, PlanKey.STARTER, PlanKey.PRO, PlanKey.CABINET}
 
 
 def test_resolve_price_id_annual_starter(monkeypatch):
