@@ -161,7 +161,7 @@ jobs:
     name: Smoke Prod Auth
     runs-on: ubuntu-latest
     needs: [deploy]
-    if: ${{ (secrets.E2E_MAGIC_LINK_URL != '' || secrets.E2E_AUTH_TOKEN != '') && secrets.E2E_SCI_ID != '' && secrets.E2E_BIEN_ID != '' }}
+    if: ${{ always() && needs.deploy.result == 'success' }}
     timeout-minutes: 15
 
     steps:
