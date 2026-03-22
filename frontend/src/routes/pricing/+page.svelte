@@ -340,17 +340,28 @@
 		</div>
 
 		<p class="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">
-			Remplace en moyenne 150€/mois d'honoraires comptables
+			Remplace en moyenne 150€/mois de tableurs, erreurs et temps perdu
 		</p>
 
-		<div class="mt-8 text-center">
+		<div class="mt-8 flex flex-col items-center gap-3">
 			<a
 				href="/"
 				class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
 			>
-				<ArrowRight class="h-4 w-4 rotate-180" />
+				<ArrowRight class="h-4 w-4 rotate-180" aria-hidden="true" />
 				Retour à l'accueil
 			</a>
+			{#if isAuthenticated}
+				<button
+					class="text-sm text-slate-400 underline hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+					onclick={async () => {
+						await supabase.auth.signOut();
+						window.location.href = '/';
+					}}
+				>
+					Se déconnecter
+				</button>
+			{/if}
 		</div>
 	</div>
 </section>
