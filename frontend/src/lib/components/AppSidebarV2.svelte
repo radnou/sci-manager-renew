@@ -81,8 +81,7 @@
 		{ suffix: '/fiscalite', label: 'Fiscalité', icon: Calculator },
 		{ suffix: '/mouvements-parts', label: 'Mouvements de parts', icon: ArrowLeftRight },
 		{ suffix: '/assemblees-generales', label: 'Assemblées générales', icon: Gavel },
-		{ suffix: '/documents', label: 'Documents', icon: FileText },
-		{ suffix: '/settings', label: 'Paramètres', icon: Settings }
+		{ suffix: '/documents', label: 'Documents', icon: FileText }
 	];
 
 	function isActive(href: string): boolean {
@@ -145,7 +144,7 @@
 		: '-translate-x-full'} md:relative md:translate-x-0"
 	role={mobileOpen ? 'dialog' : undefined}
 	aria-modal={mobileOpen ? 'true' : undefined}
-	aria-hidden={mobileOpen ? undefined : 'true'}
+	aria-hidden={undefined}
 	aria-label="Navigation principale"
 >
 	<!-- SCI Switcher -->
@@ -223,6 +222,11 @@
 		{/if}
 	</div>
 
+	<!-- Notifications (outside nav scroll container to prevent dropdown clipping) -->
+	<div class="flex-shrink-0 border-b border-slate-200 px-3 py-2 dark:border-slate-700">
+		<NotificationCenter variant="sidebar" />
+	</div>
+
 	<!-- Navigation -->
 	<nav class="flex-1 overflow-y-auto px-3 py-4">
 		<!-- Dashboard -->
@@ -237,7 +241,18 @@
 				: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
 			<LayoutDashboard class="h-4 w-4 flex-shrink-0" />
-			<span>Dashboard</span>
+			<span>Tableau de bord</span>
+		</a>
+		<a
+			href="/scis"
+			onclick={closeMobileOnNavigate}
+			aria-current={isActive('/scis') && !activeSciId ? 'page' : undefined}
+			class="mb-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isActive('/scis') && !activeSciId
+				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+				: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+		>
+			<Building2 class="h-4 w-4 flex-shrink-0" />
+			<span>Mes SCI</span>
 		</a>
 
 		<!-- SCI Sub-nav (always visible when a SCI is active) -->
@@ -286,7 +301,7 @@
 		<!-- Gestion -->
 		<div class="mt-4">
 			<p class="mb-2 px-3 text-xs font-semibold tracking-[0.15em] text-slate-400 uppercase dark:text-slate-500">
-				Gestion
+				Gestion courante
 			</p>
 			<a
 				href="/exploitation"
@@ -341,7 +356,6 @@
 	<div class="flex-shrink-0 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
 		<!-- Utilities row -->
 		<div class="mb-2 flex items-center gap-1">
-			<NotificationCenter />
 			<ThemeToggle />
 			<a
 				href="/settings"

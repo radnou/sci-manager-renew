@@ -4,6 +4,12 @@
 	import { notifications } from '$lib/stores/notifications';
 	import { Button } from '$lib/components/ui/button';
 
+	interface Props {
+		variant?: 'icon' | 'sidebar';
+	}
+
+	let { variant = 'icon' }: Props = $props();
+
 	let open = $state(false);
 
 	onMount(() => {
@@ -32,25 +38,48 @@
 </script>
 
 <div class="relative">
-	<button
-		type="button"
-		class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-		onclick={() => (open = !open)}
-		aria-label="Notifications"
-		aria-haspopup="dialog"
-		aria-expanded={open}
-	>
-		<Bell class="h-4.5 w-4.5" />
-		{#if $notifications.unreadCount > 0}
-			<span class="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-				{$notifications.unreadCount > 9 ? '9+' : $notifications.unreadCount}
+	{#if variant === 'sidebar'}
+		<button
+			type="button"
+			class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors {open
+				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+				: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+			onclick={() => (open = !open)}
+			aria-label="Notifications"
+			aria-haspopup="dialog"
+			aria-expanded={open}
+		>
+			<span class="flex items-center gap-3">
+				<Bell class="h-4 w-4 flex-shrink-0" />
+				<span>Notifications</span>
 			</span>
-		{/if}
-	</button>
+			{#if $notifications.unreadCount > 0}
+				<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">
+					{$notifications.unreadCount > 9 ? '9+' : $notifications.unreadCount}
+				</span>
+			{/if}
+		</button>
+	{:else}
+		<button
+			type="button"
+			class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+			onclick={() => (open = !open)}
+			aria-label="Notifications"
+			aria-haspopup="dialog"
+			aria-expanded={open}
+		>
+			<Bell class="h-4.5 w-4.5" />
+			{#if $notifications.unreadCount > 0}
+				<span class="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+					{$notifications.unreadCount > 9 ? '9+' : $notifications.unreadCount}
+				</span>
+			{/if}
+		</button>
+	{/if}
 
 	{#if open}
 		<div
-			class="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950"
+			class="absolute {variant === 'sidebar' ? 'left-0' : 'right-0'} top-full z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950"
 			role="dialog"
 			aria-label="Centre de notifications"
 		>

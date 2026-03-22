@@ -15,6 +15,7 @@
 	import DashboardSciCards from '$lib/components/dashboard/DashboardSciCards.svelte';
 	import DashboardActivity from '$lib/components/dashboard/DashboardActivity.svelte';
 	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
+	import OnboardingTour from '$lib/components/OnboardingTour.svelte';
 
 	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
 
@@ -196,3 +197,5 @@
 		</div>
 	{/if}
 </section>
+
+<OnboardingTour />

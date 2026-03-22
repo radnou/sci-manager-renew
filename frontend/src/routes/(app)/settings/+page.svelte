@@ -1,18 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { getContext } from 'svelte';
+	import { goto } from '$app/navigation';
+	import type { User } from '@supabase/supabase-js';
 	import {
 		fetchSubscriptionEntitlements,
 		fetchNotificationPreferences,
 		updateNotificationPreferences,
+		cancelSubscription,
+		API_URL,
 		type SubscriptionEntitlements,
 		type NotificationPreference
 	} from '$lib/api';
-	import WorkspaceActionBar from '$lib/components/WorkspaceActionBar.svelte';
-	import WorkspaceHeader from '$lib/components/WorkspaceHeader.svelte';
-	import WorkspaceRailCard from '$lib/components/WorkspaceRailCard.svelte';
-	import { addToast } from '$lib/components/ui/toast';
+	import { getCurrentSession } from '$lib/auth/session';
+	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
+	import { addToast } from '$lib/components/ui/toast';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
 	import {
 		DEFAULT_APPLICATION_PREFERENCES,
@@ -22,109 +27,157 @@
 		type ApplicationPreferences
 	} from '$lib/settings/application-preferences';
 	import { theme, type ThemePreference } from '$lib/stores/theme';
+	import { User as UserIcon, CreditCard, Bell, Shield, Settings, ExternalLink, AlertTriangle } from 'lucide-svelte';
 
+	// --- Tab management ---
+	type TabId = 'profil' | 'abonnement' | 'notifications' | 'confidentialite' | 'preferences';
+
+	const tabs: Array<{ id: TabId; label: string; icon: typeof UserIcon }> = [
+		{ id: 'profil', label: 'Profil', icon: UserIcon },
+		{ id: 'abonnement', label: 'Abonnement', icon: CreditCard },
+		{ id: 'notifications', label: 'Notifications', icon: Bell },
+		{ id: 'confidentialite', label: 'Confidentialit\u00e9', icon: Shield },
+		{ id: 'preferences', label: 'Pr\u00e9f\u00e9rences', icon: Settings }
+	];
+
+	let activeTab: TabId = $state('profil');
+
+	function setTab(tab: TabId) {
+		activeTab = tab;
+		window.history.replaceState(null, '', `#${tab}`);
+	}
+
+	// --- Profile tab ---
+	const user = getContext<User>('user');
+	const email = user?.email || 'Compte non connect\u00e9';
+
+	let newPassword = $state('');
+	let newPasswordConfirm = $state('');
+	let passwordLoading = $state(false);
+	let passwordError = $state('');
+	let passwordSuccess = $state(false);
+	const passwordMinLength = 8;
+
+	async function handlePasswordChange() {
+		passwordError = '';
+		passwordSuccess = false;
+
+		if (newPassword !== newPasswordConfirm) {
+			passwordError = 'Les mots de passe ne correspondent pas.';
+			return;
+		}
+
+		if (newPassword.length < passwordMinLength) {
+			passwordError = `Le mot de passe doit contenir au moins ${passwordMinLength} caract\u00e8res.`;
+			return;
+		}
+
+		passwordLoading = true;
+
+		const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+		if (error) {
+			passwordError = 'Erreur lors de la mise \u00e0 jour du mot de passe.';
+		} else {
+			passwordSuccess = true;
+			newPassword = '';
+			newPasswordConfirm = '';
+			addToast({
+				title: 'Mot de passe mis \u00e0 jour',
+				description: 'Votre mot de passe a \u00e9t\u00e9 modifi\u00e9 avec succ\u00e8s.',
+				variant: 'success'
+			});
+		}
+
+		passwordLoading = false;
+	}
+
+	// --- App preferences (Profil tab) ---
 	const landingRouteOptions: Array<{ value: ApplicationLandingRoute; label: string }> = [
 		{ value: '/dashboard', label: 'Tableau de bord' },
 		{ value: '/scis', label: 'Portefeuille' },
 		{ value: '/exploitation', label: 'Exploitation' },
 		{ value: '/finances', label: 'Finances' },
-		{ value: '/settings', label: "Paramètres de l'application" }
+		{ value: '/settings', label: "Param\u00e8tres" }
 	];
-
-	const notificationTypeLabels: Record<string, string> = {
-		late_payment: 'Loyer en retard',
-		bail_expiring: 'Bail expirant',
-		quittance_pending: 'Quittance en attente',
-		pno_expiring: 'PNO expirant',
-		new_loyer: 'Nouveau loyer',
-		new_associe: 'Nouvel associé',
-		subscription_expiring: 'Abonnement expirant'
-	};
 
 	let preferences: ApplicationPreferences = $state({ ...DEFAULT_APPLICATION_PREFERENCES });
 	let currentTheme: ThemePreference = $state('system');
-	let subscription: SubscriptionEntitlements | null = $state(null);
-	let subscriptionError = $state('');
 
-	let notifPreferences: NotificationPreference[] = $state([]);
-	let notifLoading = $state(true);
-	let notifSaving = $state(false);
-	let notifError = $state('');
+	function handleSavePreferences() {
+		saveApplicationPreferences(preferences);
+		addToast({
+			title: 'Param\u00e8tres enregistr\u00e9s',
+			description: "Les pr\u00e9f\u00e9rences ont \u00e9t\u00e9 mises \u00e0 jour sur ce navigateur.",
+			variant: 'success'
+		});
+	}
+
+	// --- Subscription tab ---
+	let subscription: SubscriptionEntitlements | null = $state(null);
+	let subscriptionLoading = $state(true);
+	let subscriptionError = $state('');
+	let cancelStep = $state(0);
+	let cancelError = $state('');
 	let portalLoading = $state(false);
+
+	function getCapacityLabel(sub: SubscriptionEntitlements): string {
+		if (sub.max_scis == null) return 'SCI et biens illimit\u00e9s';
+		return `${sub.current_scis}/${sub.max_scis} SCI \u00b7 ${sub.current_biens}/${sub.max_biens} biens`;
+	}
 
 	async function openCustomerPortal() {
 		portalLoading = true;
 		try {
 			const { apiFetch } = await import('$lib/api');
 			const data: { url: string } = await apiFetch('/api/v1/stripe/customer-portal', {
-				method: 'POST',
+				method: 'POST'
 			});
 			window.location.href = data.url;
 		} catch {
 			addToast({
 				title: 'Erreur',
 				description: "Impossible d'ouvrir le portail de gestion d'abonnement.",
-				variant: 'error',
+				variant: 'error'
 			});
 			portalLoading = false;
 		}
 	}
 
-	let landingRouteLabel = $derived(
-		landingRouteOptions.find((option) => option.value === preferences.defaultLandingRoute)?.label ??
-		'Tableau de bord'
-	);
-	let densityLabel = $derived(preferences.density === 'compact' ? 'Compacte' : 'Confortable');
-	let themeLabel = $derived(
-		currentTheme === 'system' ? 'Système' : currentTheme === 'dark' ? 'Sombre' : 'Clair'
-	);
-
-	onMount(() => {
-		preferences = readApplicationPreferences();
-		const unsubscribeTheme = theme.subscribe((value) => {
-			currentTheme = value;
-		});
-
-		Promise.allSettled([fetchSubscriptionEntitlements(), fetchNotificationPreferences()])
-			.then(([subResult, notifResult]) => {
-				if (subResult.status === 'fulfilled') {
-					subscription = subResult.value;
-				} else {
-					subscriptionError = formatApiErrorMessage(
-						subResult.reason,
-						"Impossible de charger l'offre active."
-					);
-				}
-
-				if (notifResult.status === 'fulfilled') {
-					notifPreferences = notifResult.value.preferences;
-				} else {
-					notifError = formatApiErrorMessage(
-						notifResult.reason,
-						'Impossible de charger les préférences de notification.'
-					);
-				}
-			})
-			.catch(() => {
-				notifError = 'Impossible de charger les préférences de notification.';
-			})
-			.finally(() => {
-				notifLoading = false;
-			});
-
-		return () => {
-			unsubscribeTheme();
-		};
-	});
-
-	function handleSave() {
-		saveApplicationPreferences(preferences);
-		addToast({
-			title: 'Paramètres enregistrés',
-			description: "Les préférences d'application ont été mises à jour sur ce navigateur.",
-			variant: 'success'
-		});
+	async function handleCancel() {
+		if (cancelStep === 0) {
+			cancelStep = 1;
+			return;
+		}
+		if (cancelStep === 1) {
+			cancelStep = 2;
+			try {
+				const result = await cancelSubscription();
+				addToast({ title: result.message, variant: 'success' });
+				cancelStep = 0;
+				subscription = await fetchSubscriptionEntitlements();
+			} catch (err) {
+				cancelError = formatApiErrorMessage(err, 'Erreur lors de la r\u00e9siliation.');
+				cancelStep = 1;
+			}
+		}
 	}
+
+	// --- Notifications tab ---
+	const notificationTypeLabels: Record<string, string> = {
+		late_payment: 'Loyer en retard',
+		bail_expiring: 'Bail expirant',
+		quittance_pending: 'Quittance en attente',
+		pno_expiring: 'PNO expirant',
+		new_loyer: 'Nouveau loyer',
+		new_associe: 'Nouvel associ\u00e9',
+		subscription_expiring: 'Abonnement expirant'
+	};
+
+	let notifPreferences: NotificationPreference[] = $state([]);
+	let notifLoading = $state(true);
+	let notifSaving = $state(false);
+	let notifError = $state('');
 
 	async function handleNotifSave() {
 		notifSaving = true;
@@ -133,14 +186,14 @@
 			const result = await updateNotificationPreferences(notifPreferences);
 			notifPreferences = result.preferences;
 			addToast({
-				title: 'Notifications mises à jour',
-				description: 'Vos préférences de notification ont été enregistrées.',
+				title: 'Notifications mises \u00e0 jour',
+				description: 'Vos pr\u00e9f\u00e9rences de notification ont \u00e9t\u00e9 enregistr\u00e9es.',
 				variant: 'success'
 			});
 		} catch (error) {
 			notifError = formatApiErrorMessage(
 				error,
-				'Impossible de sauvegarder les préférences de notification.'
+				'Impossible de sauvegarder les pr\u00e9f\u00e9rences de notification.'
 			);
 		} finally {
 			notifSaving = false;
@@ -160,312 +213,822 @@
 			in_app_enabled: !notifPreferences[index].in_app_enabled
 		};
 	}
+
+	// --- Privacy tab ---
+	interface DataSummary {
+		user_id: string;
+		email: string;
+		created_at: string;
+		data_summary: {
+			sci_count: number;
+			biens_count: number;
+			loyers_count: number;
+			associes_count: number;
+			account_created: string;
+			last_sign_in: string;
+		};
+	}
+
+	let privacyLoading = $state(false);
+	let exportLoading = $state(false);
+	let deleteLoading = $state(false);
+	let dataSummary = $state<DataSummary | null>(null);
+	let showDeleteConfirm = $state(false);
+	let deleteConfirmEmail = $state('');
+	let privacyLoadError = $state('');
+
+	async function getAccessToken(): Promise<string | null> {
+		const session = await getCurrentSession();
+		if (!session?.access_token) {
+			goto('/login');
+			return null;
+		}
+		return session.access_token;
+	}
+
+	async function loadDataSummary() {
+		privacyLoading = true;
+		privacyLoadError = '';
+		try {
+			const token = await getAccessToken();
+			if (!token) return;
+
+			const response = await fetch(`${API_URL}/api/v1/gdpr/data-summary`, {
+				headers: { Authorization: `Bearer ${token}` }
+			});
+
+			if (response.ok) {
+				dataSummary = await response.json();
+			} else {
+				privacyLoadError = 'Impossible de charger le r\u00e9sum\u00e9 des donn\u00e9es personnelles.';
+			}
+		} catch {
+			privacyLoadError = 'Erreur r\u00e9seau pendant le chargement des donn\u00e9es personnelles.';
+		} finally {
+			privacyLoading = false;
+		}
+	}
+
+	async function exportData() {
+		exportLoading = true;
+		try {
+			const token = await getAccessToken();
+			if (!token) return;
+
+			const response = await fetch(`${API_URL}/api/v1/gdpr/data-export`, {
+				headers: { Authorization: `Bearer ${token}` }
+			});
+
+			if (response.ok) {
+				const data = (await response.json()) as { export_url?: string; expires_at?: string };
+				if (data.export_url) {
+					window.open(data.export_url, '_blank', 'noopener,noreferrer');
+					addToast({
+						title: 'Export pr\u00eat. Le t\u00e9l\u00e9chargement a \u00e9t\u00e9 ouvert dans un nouvel onglet.',
+						variant: 'success'
+					});
+				} else {
+					addToast({
+						title: "Export cr\u00e9\u00e9, mais aucun lien de t\u00e9l\u00e9chargement n'a \u00e9t\u00e9 retourn\u00e9.",
+						variant: 'error'
+					});
+				}
+			} else {
+				addToast({ title: "Erreur lors de l'export des donn\u00e9es", variant: 'error' });
+			}
+		} catch {
+			addToast({ title: 'Erreur r\u00e9seau', variant: 'error' });
+		} finally {
+			exportLoading = false;
+		}
+	}
+
+	function isDeleteConfirmValid(): boolean {
+		if (!dataSummary?.email) return false;
+		return deleteConfirmEmail.trim().toLowerCase() === dataSummary.email.trim().toLowerCase();
+	}
+
+	async function deleteAccount() {
+		if (!isDeleteConfirmValid()) {
+			addToast({
+				title: 'Veuillez saisir votre adresse email pour confirmer la suppression',
+				variant: 'error'
+			});
+			return;
+		}
+
+		deleteLoading = true;
+		try {
+			const token = await getAccessToken();
+			if (!token) return;
+
+			const response = await fetch(`${API_URL}/api/v1/gdpr/account`, {
+				method: 'DELETE',
+				headers: { Authorization: `Bearer ${token}` }
+			});
+
+			if (response.ok) {
+				addToast({
+					title: 'Compte supprim\u00e9 avec succ\u00e8s. Redirection...',
+					variant: 'success'
+				});
+				await supabase.auth.signOut();
+				setTimeout(() => goto('/'), 2000);
+			} else {
+				addToast({ title: 'Erreur lors de la suppression du compte', variant: 'error' });
+			}
+		} catch {
+			addToast({ title: 'Erreur r\u00e9seau', variant: 'error' });
+		} finally {
+			deleteLoading = false;
+		}
+	}
+
+	function formatDate(dateStr: string | null | undefined): string {
+		if (!dateStr || dateStr === 'None') return 'Non disponible';
+		try {
+			return new Date(dateStr).toLocaleDateString('fr-FR', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
+			});
+		} catch {
+			return 'Non disponible';
+		}
+	}
+
+	function formatDateTime(dateStr: string | null | undefined): string {
+		if (!dateStr || dateStr === 'None') return 'Non disponible';
+		try {
+			return new Date(dateStr).toLocaleDateString('fr-FR', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		} catch {
+			return 'Non disponible';
+		}
+	}
+
+	// --- Lifecycle ---
+	onMount(() => {
+		// Read hash for initial tab
+		const hash = window.location.hash.replace('#', '') as TabId;
+		if (tabs.some((t) => t.id === hash)) {
+			activeTab = hash;
+		}
+
+		// Listen for hash changes
+		function onHashChange() {
+			const h = window.location.hash.replace('#', '') as TabId;
+			if (tabs.some((t) => t.id === h)) {
+				activeTab = h;
+			}
+		}
+		window.addEventListener('hashchange', onHashChange);
+
+		// Load preferences
+		preferences = readApplicationPreferences();
+		const unsubscribeTheme = theme.subscribe((value) => {
+			currentTheme = value;
+		});
+
+		// Load subscription + notification preferences
+		Promise.allSettled([fetchSubscriptionEntitlements(), fetchNotificationPreferences()])
+			.then(([subResult, notifResult]) => {
+				if (subResult.status === 'fulfilled') {
+					subscription = subResult.value;
+				} else {
+					subscriptionError = formatApiErrorMessage(
+						subResult.reason,
+						"Impossible de charger l'offre active."
+					);
+				}
+
+				if (notifResult.status === 'fulfilled') {
+					notifPreferences = notifResult.value.preferences;
+				} else {
+					notifError = formatApiErrorMessage(
+						notifResult.reason,
+						'Impossible de charger les pr\u00e9f\u00e9rences de notification.'
+					);
+				}
+			})
+			.catch(() => {
+				notifError = 'Impossible de charger les pr\u00e9f\u00e9rences de notification.';
+			})
+			.finally(() => {
+				subscriptionLoading = false;
+				notifLoading = false;
+			});
+
+		// Load GDPR data summary
+		loadDataSummary();
+
+		return () => {
+			unsubscribeTheme();
+			window.removeEventListener('hashchange', onHashChange);
+		};
+	});
 </script>
 
-<svelte:head><title>Paramètres | GérerSCI</title></svelte:head>
+<svelte:head><title>Param\u00e8tres | G\u00e9rerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
-	<WorkspaceHeader
-		eyebrow="Paramètres d'affichage"
-		title="Préférences de l'application"
-		subtitle="Les paramètres ajustent uniquement l'expérience locale du navigateur : point d'entrée, densité, PDF et signaux. L'identité et l'offre restent dans Compte."
-		contextLabel="Configuration active"
-		contextValue={`${landingRouteLabel} - ${densityLabel}`}
-		contextDetail={preferences.showPdfPreview ? 'Prévisualisation PDF active.' : 'Prévisualisation PDF désactivée.'}
-	>
-		<Button href="/account">Ouvrir le compte</Button>
-		<Button href="/dashboard" variant="outline">Retour au tableau de bord</Button>
-	</WorkspaceHeader>
+	<!-- Page header -->
+	<header class="sci-page-header">
+		<p class="sci-eyebrow">Mon compte</p>
+		<h1 class="sci-page-title">Param\u00e8tres</h1>
+		<p class="sci-page-subtitle">
+			G\u00e9rez votre profil, votre abonnement, vos notifications et vos donn\u00e9es personnelles.
+		</p>
+	</header>
 
-	<WorkspaceActionBar
-		eyebrow="Cadre des préférences"
-		title="Réglages locaux, pas décisions métier"
-		description="On ajuste ici la façon dont l'interface s'ouvre et se lit sur ce navigateur. Les paramètres ne doivent pas concurrencer les écrans métier."
+	<!-- Tab bar -->
+	<nav
+		class="mt-4 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+		aria-label="Sections des param\u00e8tres"
 	>
-		<div class="sci-action-grid">
-			<div class="sci-action-card">
-				<p class="sci-action-card-title">Point d'entrée</p>
-				<p class="sci-action-card-value">{landingRouteLabel}</p>
-				<p class="sci-action-card-body">Page ouverte après connexion sur ce navigateur.</p>
-			</div>
-			<div class="sci-action-card">
-				<p class="sci-action-card-title">Densité</p>
-				<p class="sci-action-card-value">{densityLabel}</p>
-				<p class="sci-action-card-body">Réglage de lecture appliqué à l'ensemble du shell connecté.</p>
-			</div>
-			<div class="sci-action-card">
-				<p class="sci-action-card-title">Thème</p>
-				<p class="sci-action-card-value">{themeLabel}</p>
-				<p class="sci-action-card-body">Le navigateur suit le système par défaut, avec surcharge possible.</p>
-			</div>
-			<div class="sci-action-card">
-				<p class="sci-action-card-title">Signaux</p>
-				<p class="sci-action-card-value">{preferences.riskAlertsEnabled ? 'Alertes actives' : 'Alertes neutres'}</p>
-				<p class="sci-action-card-body">Met en avant ou non les retards et risques dans les vues clés.</p>
-			</div>
+		<div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Navigation param\u00e8tres">
+			{#each tabs as tab (tab.id)}
+				<button
+					type="button"
+					onclick={() => setTab(tab.id)}
+					role="tab"
+					aria-selected={activeTab === tab.id}
+					aria-controls={`panel-${tab.id}`}
+					id={`tab-${tab.id}`}
+					class="relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors {activeTab === tab.id
+						? 'bg-sky-600 text-white shadow-sm'
+						: 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}"
+				>
+					<tab.icon class="h-4 w-4" aria-hidden="true" />
+					{tab.label}
+				</button>
+			{/each}
 		</div>
-		<div class="mt-5 sci-primary-actions">
-			<Button onclick={handleSave}>Enregistrer les paramètres</Button>
-			<Button href="/account" variant="outline">Revenir au compte</Button>
-		</div>
-		{#snippet aside()}
-			<WorkspaceRailCard
-				title="Lecture immédiate"
-				description="Le panneau de droite rappelle les réglages actifs et l'impact de l'offre sans mélanger les actions du compte."
-			>
-				<div class="space-y-3">
-					<div class="sci-action-card">
-						<p class="sci-action-card-title">PDF</p>
-						<p class="sci-action-card-value">{preferences.showPdfPreview ? 'Preview active' : 'Download prioritaire'}</p>
-					</div>
-					{#if subscription}
-						<div class="sci-action-card">
-							<p class="sci-action-card-title">Capacité active</p>
-							<p class="sci-action-card-value">{subscription.plan_name}</p>
-							<p class="sci-action-card-body">
-								{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.remaining_scis ?? 0} SCI restantes`}
-								-
-								{subscription.max_biens == null ? 'Biens illimités' : `${subscription.remaining_biens ?? 0} biens restants`}
+	</nav>
+
+	<!-- Tab panels -->
+	<div class="mt-6">
+		{#if activeTab === 'profil'}
+			<div id="panel-profil" role="tabpanel" aria-labelledby="tab-profil" class="space-y-6">
+				<!-- Identity -->
+				<Card class="sci-section-card">
+					<CardHeader>
+						<div>
+							<CardTitle class="text-lg">Identit\u00e9</CardTitle>
+							<CardDescription>Adresse email de connexion et mode d'acc\u00e8s.</CardDescription>
+						</div>
+					</CardHeader>
+					<CardContent class="grid gap-4 pt-0 sm:grid-cols-2">
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Email</p>
+							<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{email}</p>
+						</div>
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Mode d'acc\u00e8s</p>
+							<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								{user?.email ? 'Connexion par lien s\u00e9curis\u00e9' : 'Aucune session active'}
 							</p>
 						</div>
-					{/if}
-				</div>
-			</WorkspaceRailCard>
-		{/snippet}
-	</WorkspaceActionBar>
+					</CardContent>
+				</Card>
 
-	<div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-		<div class="space-y-6">
-			<Card class="sci-section-card">
-				<CardHeader>
-					<div>
-						<CardTitle class="text-lg">Préférences d'expérience</CardTitle>
-						<CardDescription>Ces réglages sont propres au navigateur courant et s'appliquent à tout l'espace connecté.</CardDescription>
-					</div>
-				</CardHeader>
-				<CardContent class="space-y-6 pt-0">
-					<label class="sci-field" for="settings-landing-route">
-						<span class="sci-field-label">Page d'ouverture par défaut</span>
-						<select
-							id="settings-landing-route"
-							name="settings-landing-route"
-							class="sci-select"
-							bind:value={preferences.defaultLandingRoute}
-						>
-							{#each landingRouteOptions as option (option.value)}
-								<option value={option.value}>{option.label}</option>
-							{/each}
-						</select>
-					</label>
-
-					<label class="sci-field" for="settings-density">
-						<span class="sci-field-label">Densité d'affichage</span>
-						<select id="settings-density" name="settings-density" class="sci-select" bind:value={preferences.density}>
-							<option value="comfortable">Confortable</option>
-							<option value="compact">Compacte</option>
-						</select>
-					</label>
-
-					<label class="sci-field" for="settings-theme">
-						<span class="sci-field-label">Thème</span>
-						<select
-							id="settings-theme"
-							name="settings-theme"
-							class="sci-select"
-							bind:value={currentTheme}
-							onchange={(event) => theme.set((event.currentTarget as HTMLSelectElement).value as ThemePreference)}
-						>
-							<option value="system">Système</option>
-							<option value="light">Clair</option>
-							<option value="dark">Sombre</option>
-						</select>
-					</label>
-
-					<div class="grid gap-3 md:grid-cols-3">
-						<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-							<div class="flex items-start justify-between gap-3">
-								<div>
-									<p class="font-semibold text-slate-900 dark:text-slate-100">Prévisualisation PDF</p>
-									<p class="mt-1 text-slate-500 dark:text-slate-400">Affiche les quittances directement dans l'interface.</p>
-								</div>
-								<input type="checkbox" bind:checked={preferences.showPdfPreview} aria-label="Activer la prévisualisation PDF" />
-							</div>
-						</label>
-
-						<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-							<div class="flex items-start justify-between gap-3">
-								<div>
-									<p class="font-semibold text-slate-900 dark:text-slate-100">Digest email</p>
-									<p class="mt-1 text-slate-500 dark:text-slate-400">Préférence de réception des rappels et synthèses.</p>
-								</div>
-								<input type="checkbox" bind:checked={preferences.emailDigestEnabled} aria-label="Activer le digest email" />
-							</div>
-						</label>
-
-						<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-							<div class="flex items-start justify-between gap-3">
-								<div>
-									<p class="font-semibold text-slate-900 dark:text-slate-100">Alertes de risque</p>
-									<p class="mt-1 text-slate-500 dark:text-slate-400">Priorise les retards et charges anormales dans les vues clés.</p>
-								</div>
-								<input type="checkbox" bind:checked={preferences.riskAlertsEnabled} aria-label="Activer les alertes de risque" />
-							</div>
-						</label>
-					</div>
-				</CardContent>
-			</Card>
-
-			<!-- Notification Preferences Section -->
-			<Card class="sci-section-card">
-				<CardHeader>
-					<div>
-						<CardTitle class="text-lg">Notifications</CardTitle>
-						<CardDescription>Configurez les types de notifications que vous souhaitez recevoir par email et dans l'application.</CardDescription>
-					</div>
-				</CardHeader>
-				<CardContent class="space-y-4 pt-0">
-					{#if notifLoading}
-						<div class="flex items-center justify-center py-8">
-							<div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-slate-100"></div>
-							<span class="ml-3 text-sm text-slate-500 dark:text-slate-400">Chargement des préférences...</span>
+				<!-- Password change -->
+				<Card class="sci-section-card">
+					<CardHeader>
+						<div>
+							<CardTitle class="text-lg">S\u00e9curit\u00e9</CardTitle>
+							<CardDescription>Modifiez votre mot de passe pour s\u00e9curiser votre compte.</CardDescription>
 						</div>
-					{:else if notifError}
-						<p class="sci-inline-alert sci-inline-alert-error">{notifError}</p>
-					{:else}
-						<div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-							<table class="w-full text-sm">
-								<thead>
-									<tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
-										<th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Type</th>
-										<th class="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300">Email</th>
-										<th class="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300">In-app</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each notifPreferences as pref, i (pref.type)}
-										<tr class="border-b border-slate-100 last:border-b-0 dark:border-slate-800">
-											<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
-												{notificationTypeLabels[pref.type] ?? pref.type}
-											</td>
-											<td class="px-4 py-3 text-center">
-												<button
-													type="button"
-													role="switch"
-													aria-checked={pref.email_enabled}
-													aria-label={`Email pour ${notificationTypeLabels[pref.type] ?? pref.type}`}
-													class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 {pref.email_enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}"
-													onclick={() => toggleEmailEnabled(i)}
-												>
-													<span
-														class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out {pref.email_enabled ? 'translate-x-5' : 'translate-x-0'}"
-													></span>
-												</button>
-											</td>
-											<td class="px-4 py-3 text-center">
-												<button
-													type="button"
-													role="switch"
-													aria-checked={pref.in_app_enabled}
-													aria-label={`In-app pour ${notificationTypeLabels[pref.type] ?? pref.type}`}
-													class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 {pref.in_app_enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}"
-													onclick={() => toggleInAppEnabled(i)}
-												>
-													<span
-														class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out {pref.in_app_enabled ? 'translate-x-5' : 'translate-x-0'}"
-													></span>
-												</button>
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
+					</CardHeader>
+					<CardContent class="pt-0">
+						<form class="max-w-md space-y-4" onsubmit={(e) => { e.preventDefault(); handlePasswordChange(); }}>
+							<label class="sci-field">
+								<span class="sci-field-label">Nouveau mot de passe</span>
+								<Input
+									type="password"
+									bind:value={newPassword}
+									placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+									disabled={passwordLoading}
+									autocomplete="new-password"
+								/>
+							</label>
+							<label class="sci-field">
+								<span class="sci-field-label">Confirmer le nouveau mot de passe</span>
+								<Input
+									type="password"
+									bind:value={newPasswordConfirm}
+									placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+									disabled={passwordLoading}
+									autocomplete="new-password"
+								/>
+							</label>
 
-						<div class="flex items-center gap-3 pt-2">
-							<Button onclick={handleNotifSave} disabled={notifSaving}>
-								{notifSaving ? 'Enregistrement...' : 'Enregistrer les notifications'}
-							</Button>
-						</div>
-					{/if}
-				</CardContent>
-			</Card>
-		</div>
+							{#if passwordError}
+								<p class="sci-inline-alert sci-inline-alert-error">{passwordError}</p>
+							{/if}
 
-		<Card class="sci-section-card">
-			<CardHeader>
-				<div>
-					<CardTitle class="text-lg">Impact des réglages</CardTitle>
-					<CardDescription>Lecture immédiate de la configuration active sur ce navigateur, sans mélanger cela avec les actions de compte.</CardDescription>
-				</div>
-			</CardHeader>
-			<CardContent class="grid gap-3 pt-0">
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Point d'entrée</p>
-					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{landingRouteLabel}</p>
-					<p class="mt-1 text-slate-500 dark:text-slate-400">La première page ouverte après connexion sur ce navigateur.</p>
-				</div>
-				<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-					<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Densité d'affichage</p>
-					<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{densityLabel}</p>
-					<p class="mt-1 text-slate-500 dark:text-slate-400">
-						{preferences.density === 'compact'
-							? "Priorise la densité d'information pour une consultation rapide."
-							: "Laisse davantage d'air entre les blocs pour une lecture confortable."}
-					</p>
-				</div>
-				<div class="grid gap-3 md:grid-cols-2">
-					<div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
-						<p class="font-semibold text-slate-900 dark:text-slate-100">PDF</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							{preferences.showPdfPreview ? 'Prévisualisation intégrée active.' : 'Téléchargement sans preview priorisé.'}
-						</p>
-					</div>
-					<div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
-						<p class="font-semibold text-slate-900 dark:text-slate-100">Alertes</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							{preferences.riskAlertsEnabled ? 'Les signaux de risque sont mis en avant.' : 'Les vues restent neutres sans priorisation des risques.'}
-						</p>
-					</div>
-				</div>
-				{#if !notifLoading && notifPreferences.length > 0}
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Notifications</p>
-						<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-							{notifPreferences.filter((p) => p.email_enabled).length}/{notifPreferences.length} email
-							-
-							{notifPreferences.filter((p) => p.in_app_enabled).length}/{notifPreferences.length} in-app
-						</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">Canaux actifs par type de notification.</p>
-					</div>
-				{/if}
-				{#if subscription}
-					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-						<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Capacité active</p>
-						<p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{subscription.plan_name}</p>
-						<p class="mt-1 text-slate-500 dark:text-slate-400">
-							{subscription.max_scis == null ? 'SCI illimitées' : `${subscription.remaining_scis ?? 0} SCI restantes`}
-							-
-							{subscription.max_biens == null ? 'Biens illimités' : `${subscription.remaining_biens ?? 0} biens restants`}
-						</p>
-						{#if subscription.plan_key !== 'free'}
+							{#if passwordSuccess}
+								<p class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+									Mot de passe mis \u00e0 jour avec succ\u00e8s.
+								</p>
+							{/if}
+
 							<Button
-								variant="outline"
-								class="mt-3 w-full justify-start text-xs"
-								onclick={openCustomerPortal}
-								disabled={portalLoading}
+								type="submit"
+								disabled={passwordLoading || !newPassword || !newPasswordConfirm || newPassword !== newPasswordConfirm || newPassword.length < passwordMinLength}
 							>
-								{portalLoading ? 'Ouverture...' : 'Gérer mon abonnement'}
+								{passwordLoading ? 'Mise \u00e0 jour...' : 'Modifier le mot de passe'}
 							</Button>
-						{/if}
-					</div>
-				{:else if subscriptionError}
-					<p class="sci-inline-alert sci-inline-alert-error">{subscriptionError}</p>
-				{/if}
-				<div class="grid gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-					<Button href="/account" variant="outline" class="justify-start">Aller au compte</Button>
-					<Button href="/account/privacy" variant="outline" class="justify-start">Ouvrir la confidentialité</Button>
+						</form>
+					</CardContent>
+				</Card>
+
 				</div>
-			</CardContent>
-		</Card>
+
+		{:else if activeTab === 'abonnement'}
+			<div id="panel-abonnement" role="tabpanel" aria-labelledby="tab-abonnement">
+				{#if subscriptionLoading}
+					<div class="sci-loading" role="status" aria-label="Chargement"></div>
+				{:else if subscriptionError}
+					<div class="sci-inline-alert sci-inline-alert-error" role="alert">{subscriptionError}</div>
+				{:else if subscription}
+					<div class="grid gap-6 lg:grid-cols-2">
+						<Card class="sci-section-card">
+							<CardHeader>
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-900/30">
+										<CreditCard class="h-5 w-5 text-sky-600 dark:text-sky-400" />
+									</div>
+									<div>
+										<CardTitle class="text-lg">Offre active</CardTitle>
+										<CardDescription>Votre plan et ses limites</CardDescription>
+									</div>
+								</div>
+							</CardHeader>
+							<CardContent class="grid gap-4 pt-0">
+								<div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
+									<p class="sci-eyebrow">Plan actuel</p>
+									<p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+										{subscription.plan_name}
+									</p>
+									<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{getCapacityLabel(subscription)}</p>
+								</div>
+
+								<div class="grid gap-3 sm:grid-cols-2">
+									<div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950">
+										<p class="sci-eyebrow">SCI</p>
+										<p class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+											{subscription.current_scis}{#if subscription.max_scis != null}<span class="text-sm font-normal text-slate-400"> / {subscription.max_scis}</span>{/if}
+										</p>
+									</div>
+									<div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950">
+										<p class="sci-eyebrow">Biens</p>
+										<p class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+											{subscription.current_biens}{#if subscription.max_biens != null}<span class="text-sm font-normal text-slate-400"> / {subscription.max_biens}</span>{/if}
+										</p>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card class="sci-section-card">
+							<CardHeader>
+								<div>
+									<CardTitle class="text-lg">Actions</CardTitle>
+									<CardDescription>G\u00e9rez votre abonnement et votre facturation</CardDescription>
+								</div>
+							</CardHeader>
+							<CardContent class="grid gap-3 pt-0">
+								<Button href="/pricing" class="justify-start gap-2">
+									<ExternalLink class="h-4 w-4" aria-hidden="true" />
+									Changer d'offre
+								</Button>
+
+								{#if subscription.plan_key !== 'free'}
+									<Button
+										variant="outline"
+										class="justify-start gap-2"
+										onclick={openCustomerPortal}
+										disabled={portalLoading}
+									>
+										<CreditCard class="h-4 w-4" aria-hidden="true" />
+										{portalLoading ? 'Ouverture...' : 'G\u00e9rer la facturation (Stripe)'}
+									</Button>
+								{/if}
+
+								<!-- R\u00e9siliation en 3 clics (loi 16 ao\u00fbt 2022) -->
+								{#if subscription.is_active && subscription.status !== 'no_subscription'}
+									<hr class="my-2 border-slate-200 dark:border-slate-700" />
+
+									{#if cancelStep === 0}
+										<Button
+											variant="outline"
+											class="justify-start gap-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950"
+											onclick={handleCancel}
+										>
+											<AlertTriangle class="h-4 w-4" aria-hidden="true" />
+											R\u00e9silier mon abonnement
+										</Button>
+									{:else if cancelStep === 1}
+										<div class="rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/30">
+											<p class="text-sm font-medium text-rose-800 dark:text-rose-200">
+												Confirmez la r\u00e9siliation
+											</p>
+											<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">
+												Votre abonnement restera actif jusqu'\u00e0 la fin de la p\u00e9riode en cours.
+												Vous conserverez l'acc\u00e8s \u00e0 toutes les fonctionnalit\u00e9s jusqu'\u00e0 cette date.
+											</p>
+											{#if cancelError}
+												<p class="mt-2 text-xs font-medium text-rose-700" role="alert">{cancelError}</p>
+											{/if}
+											<div class="mt-3 flex gap-2">
+												<Button variant="destructive" size="sm" onclick={handleCancel}>
+													Confirmer la r\u00e9siliation
+												</Button>
+												<Button variant="outline" size="sm" onclick={() => { cancelStep = 0; cancelError = ''; }}>
+													Annuler
+												</Button>
+											</div>
+										</div>
+									{:else}
+										<div class="flex items-center gap-2 text-sm text-slate-500">
+											<div class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-rose-500"></div>
+											R\u00e9siliation en cours...
+										</div>
+									{/if}
+								{/if}
+							</CardContent>
+						</Card>
+					</div>
+				{:else}
+					<div class="sci-empty-state">
+						<p>Aucun abonnement actif. Choisissez un plan pour acc\u00e9der \u00e0 G\u00e9rerSCI.</p>
+						<Button href="/pricing" class="mt-4">Choisir un plan</Button>
+					</div>
+				{/if}
+			</div>
+
+		{:else if activeTab === 'notifications'}
+			<div id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications">
+				<Card class="sci-section-card">
+					<CardHeader>
+						<div>
+							<CardTitle class="text-lg">Pr\u00e9f\u00e9rences de notification</CardTitle>
+							<CardDescription>Configurez les types de notifications que vous souhaitez recevoir par email et dans l'application.</CardDescription>
+						</div>
+					</CardHeader>
+					<CardContent class="space-y-4 pt-0">
+						{#if notifLoading}
+							<div class="flex items-center justify-center py-8">
+								<div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-slate-100"></div>
+								<span class="ml-3 text-sm text-slate-500 dark:text-slate-400">Chargement des pr\u00e9f\u00e9rences...</span>
+							</div>
+						{:else if notifError}
+							<p class="sci-inline-alert sci-inline-alert-error">{notifError}</p>
+						{:else}
+							<div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+								<table class="w-full text-sm">
+									<thead>
+										<tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
+											<th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Type</th>
+											<th class="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300">Email</th>
+											<th class="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-300">In-app</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each notifPreferences as pref, i (pref.type)}
+											<tr class="border-b border-slate-100 last:border-b-0 dark:border-slate-800">
+												<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+													{notificationTypeLabels[pref.type] ?? pref.type}
+												</td>
+												<td class="px-4 py-3 text-center">
+													<button
+														type="button"
+														role="switch"
+														aria-checked={pref.email_enabled}
+														aria-label={`Email pour ${notificationTypeLabels[pref.type] ?? pref.type}`}
+														class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 {pref.email_enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}"
+														onclick={() => toggleEmailEnabled(i)}
+													>
+														<span
+															class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out {pref.email_enabled ? 'translate-x-5' : 'translate-x-0'}"
+														></span>
+													</button>
+												</td>
+												<td class="px-4 py-3 text-center">
+													<button
+														type="button"
+														role="switch"
+														aria-checked={pref.in_app_enabled}
+														aria-label={`In-app pour ${notificationTypeLabels[pref.type] ?? pref.type}`}
+														class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 {pref.in_app_enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}"
+														onclick={() => toggleInAppEnabled(i)}
+													>
+														<span
+															class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out {pref.in_app_enabled ? 'translate-x-5' : 'translate-x-0'}"
+														></span>
+													</button>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+
+							<div class="flex items-center gap-3 pt-2">
+								<Button onclick={handleNotifSave} disabled={notifSaving}>
+									{notifSaving ? 'Enregistrement...' : 'Enregistrer les notifications'}
+								</Button>
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
+			</div>
+
+		{:else if activeTab === 'confidentialite'}
+			<div id="panel-confidentialite" role="tabpanel" aria-labelledby="tab-confidentialite" class="space-y-6">
+				{#if privacyLoading}
+					<div class="sci-loading" role="status" aria-label="Chargement"></div>
+				{:else if !dataSummary}
+					<Card class="sci-section-card">
+						<CardContent class="py-8">
+							<p class="sci-inline-alert sci-inline-alert-error">
+								{privacyLoadError || "Impossible de charger les donn\u00e9es personnelles. Rechargez la page."}
+							</p>
+						</CardContent>
+					</Card>
+				{:else}
+					<!-- Data summary -->
+					<Card class="sci-section-card">
+						<CardHeader>
+							<div>
+								<CardTitle class="text-lg">R\u00e9sum\u00e9 des donn\u00e9es</CardTitle>
+								<CardDescription>Vue d'ensemble des informations stock\u00e9es sur le compte connect\u00e9.</CardDescription>
+							</div>
+						</CardHeader>
+						<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
+							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Email</p>
+								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{dataSummary.email}</p>
+							</div>
+							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Compte cr\u00e9\u00e9 le</p>
+								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(dataSummary.created_at)}</p>
+							</div>
+							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Derni\u00e8re connexion</p>
+								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDateTime(dataSummary.data_summary.last_sign_in)}</p>
+							</div>
+							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Donn\u00e9es stock\u00e9es</p>
+								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+									{dataSummary.data_summary.sci_count} SCI \u00b7
+									{dataSummary.data_summary.biens_count} biens \u00b7
+									{dataSummary.data_summary.loyers_count} loyers \u00b7
+									{dataSummary.data_summary.associes_count} associ\u00e9s
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+
+					<!-- Export -->
+					<Card class="sci-section-card">
+						<CardHeader>
+							<div>
+								<CardTitle class="text-lg">Export des donn\u00e9es (JSON)</CardTitle>
+								<CardDescription>Droit \u00e0 la portabilit\u00e9 (RGPD Art. 20). T\u00e9l\u00e9chargez une copie compl\u00e8te de vos donn\u00e9es.</CardDescription>
+							</div>
+						</CardHeader>
+						<CardContent class="space-y-4 pt-0">
+							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+								<p class="text-sm text-slate-700 dark:text-slate-300">
+									L'export contient toutes les donn\u00e9es rattach\u00e9es au compte dans un fichier JSON structur\u00e9 :
+								</p>
+								<ul class="mt-2 list-inside list-disc space-y-1 text-sm text-slate-600 dark:text-slate-400">
+									<li>Informations du compte (email, dates de cr\u00e9ation et connexion)</li>
+									<li>SCI et associ\u00e9s</li>
+									<li>Biens immobiliers</li>
+									<li>Loyers enregistr\u00e9s</li>
+									<li>Charges et donn\u00e9es fiscales</li>
+								</ul>
+								<p class="mt-3 text-xs text-slate-500 dark:text-slate-500">
+									Le lien de t\u00e9l\u00e9chargement est valide 30 minutes. L'export est limit\u00e9 \u00e0 3 demandes par heure.
+								</p>
+							</div>
+
+							<Button onclick={exportData} disabled={exportLoading} class="w-full sm:w-auto">
+								{#if exportLoading}
+									<span class="flex items-center gap-2">
+										<svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+										</svg>
+										Export en cours...
+									</span>
+								{:else}
+									T\u00e9l\u00e9charger mes donn\u00e9es (JSON)
+								{/if}
+							</Button>
+						</CardContent>
+					</Card>
+
+					<!-- Delete account -->
+					<Card class="sci-section-card border-red-200 dark:border-red-900">
+						<CardHeader>
+							<div>
+								<CardTitle class="text-red-600 dark:text-red-400">Suppression du compte</CardTitle>
+								<CardDescription>Droit \u00e0 l'effacement (RGPD Art. 17). Cette action est d\u00e9finitive et irr\u00e9versible.</CardDescription>
+							</div>
+						</CardHeader>
+						<CardContent class="space-y-4 pt-0">
+							<div class="rounded-2xl bg-red-50 p-4 dark:bg-red-900/20">
+								<p class="mb-2 text-sm font-semibold text-red-800 dark:text-red-300">
+									Attention : action irr\u00e9versible
+								</p>
+								<p class="text-sm text-red-700 dark:text-red-400">
+									La suppression du compte entra\u00eene l'effacement d\u00e9finitif de :
+								</p>
+								<ul class="mt-2 list-inside list-disc space-y-1 text-sm text-red-700 dark:text-red-400">
+									<li>Toutes les SCI ({dataSummary.data_summary.sci_count}) et leurs associ\u00e9s ({dataSummary.data_summary.associes_count})</li>
+									<li>Tous les biens immobiliers ({dataSummary.data_summary.biens_count})</li>
+									<li>Tous les loyers ({dataSummary.data_summary.loyers_count}), charges et donn\u00e9es fiscales</li>
+									<li>Tous les documents upload\u00e9s</li>
+								</ul>
+								<p class="mt-3 text-xs text-red-600 dark:text-red-500">
+									Les donn\u00e9es de facturation Stripe sont anonymis\u00e9es (non supprim\u00e9es) pour respecter les obligations l\u00e9gales de conservation de 10 ans (Code G\u00e9n\u00e9ral des Imp\u00f4ts).
+								</p>
+							</div>
+
+							{#if !showDeleteConfirm}
+								<Button variant="destructive" onclick={() => (showDeleteConfirm = true)}>
+									Supprimer d\u00e9finitivement mon compte
+								</Button>
+							{:else}
+								<div class="space-y-4 rounded-2xl border border-red-300 bg-red-50/50 p-4 dark:border-red-800 dark:bg-red-950/30">
+									<p class="text-sm font-semibold text-red-800 dark:text-red-300">
+										Pour confirmer la suppression, saisissez votre adresse email :
+									</p>
+									<p class="font-mono text-sm text-red-600 dark:text-red-400">
+										{dataSummary.email}
+									</p>
+
+									<div>
+										<input
+											type="email"
+											bind:value={deleteConfirmEmail}
+											placeholder={dataSummary.email}
+											autocomplete="off"
+											spellcheck="false"
+											class="w-full max-w-md rounded-lg border border-red-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 focus:outline-none dark:border-red-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-red-800"
+										/>
+										{#if deleteConfirmEmail && !isDeleteConfirmValid()}
+											<p class="mt-1 text-xs text-red-500">
+												L'adresse email ne correspond pas.
+											</p>
+										{/if}
+									</div>
+
+									<div class="flex flex-wrap gap-2">
+										<Button
+											variant="destructive"
+											onclick={deleteAccount}
+											disabled={deleteLoading || !isDeleteConfirmValid()}
+										>
+											{#if deleteLoading}
+												<span class="flex items-center gap-2">
+													<svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+														<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+														<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+													</svg>
+													Suppression en cours...
+												</span>
+											{:else}
+												Confirmer la suppression d\u00e9finitive
+											{/if}
+										</Button>
+										<Button
+											variant="outline"
+											onclick={() => {
+												showDeleteConfirm = false;
+												deleteConfirmEmail = '';
+											}}
+										>
+											Annuler
+										</Button>
+									</div>
+								</div>
+							{/if}
+						</CardContent>
+					</Card>
+
+					<!-- RGPD contact -->
+					<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+						<div class="flex flex-wrap gap-6">
+							<div>
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Contact RGPD</p>
+								<a href="mailto:privacy@gerersci.fr" class="mt-1 text-cyan-600 underline-offset-4 hover:underline dark:text-cyan-300">
+									privacy@gerersci.fr
+								</a>
+							</div>
+							<div>
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Autorit\u00e9 de contr\u00f4le</p>
+								<a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" class="mt-1 text-cyan-600 underline-offset-4 hover:underline dark:text-cyan-300">
+									CNIL
+								</a>
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+		{:else if activeTab === 'preferences'}
+			<div id="panel-preferences" role="tabpanel" aria-labelledby="tab-preferences" class="space-y-6">
+				<Card class="sci-section-card">
+					<CardHeader>
+						<div>
+							<CardTitle class="text-lg">Pr\u00e9f\u00e9rences d'affichage</CardTitle>
+							<CardDescription>R\u00e9glages propres au navigateur courant : page d'ouverture, densit\u00e9, th\u00e8me.</CardDescription>
+						</div>
+					</CardHeader>
+					<CardContent class="space-y-6 pt-0">
+						<label class="sci-field" for="settings-landing-route">
+							<span class="sci-field-label">Page d'ouverture par d\u00e9faut</span>
+							<select
+								id="settings-landing-route"
+								name="settings-landing-route"
+								class="sci-select"
+								bind:value={preferences.defaultLandingRoute}
+							>
+								{#each landingRouteOptions as option (option.value)}
+									<option value={option.value}>{option.label}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="sci-field" for="settings-density">
+							<span class="sci-field-label">Densit\u00e9 d'affichage</span>
+							<select id="settings-density" name="settings-density" class="sci-select" bind:value={preferences.density}>
+								<option value="comfortable">Confortable</option>
+								<option value="compact">Compacte</option>
+							</select>
+						</label>
+
+						<label class="sci-field" for="settings-theme">
+							<span class="sci-field-label">Th\u00e8me</span>
+							<select
+								id="settings-theme"
+								name="settings-theme"
+								class="sci-select"
+								bind:value={currentTheme}
+								onchange={(event) => theme.set((event.currentTarget as HTMLSelectElement).value as ThemePreference)}
+							>
+								<option value="system">Syst\u00e8me</option>
+								<option value="light">Clair</option>
+								<option value="dark">Sombre</option>
+							</select>
+						</label>
+
+						<div class="grid gap-3 md:grid-cols-3">
+							<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<p class="font-semibold text-slate-900 dark:text-slate-100">Pr\u00e9visualisation PDF</p>
+										<p class="mt-1 text-slate-500 dark:text-slate-400">Affiche les quittances directement dans l'interface.</p>
+									</div>
+									<input type="checkbox" bind:checked={preferences.showPdfPreview} aria-label="Activer la pr\u00e9visualisation PDF" />
+								</div>
+							</label>
+
+							<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<p class="font-semibold text-slate-900 dark:text-slate-100">Digest email</p>
+										<p class="mt-1 text-slate-500 dark:text-slate-400">Pr\u00e9f\u00e9rence de r\u00e9ception des rappels et synth\u00e8ses.</p>
+									</div>
+									<input type="checkbox" bind:checked={preferences.emailDigestEnabled} aria-label="Activer le digest email" />
+								</div>
+							</label>
+
+							<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<p class="font-semibold text-slate-900 dark:text-slate-100">Alertes de risque</p>
+										<p class="mt-1 text-slate-500 dark:text-slate-400">Priorise les retards et charges anormales dans les vues cl\u00e9s.</p>
+									</div>
+									<input type="checkbox" bind:checked={preferences.riskAlertsEnabled} aria-label="Activer les alertes de risque" />
+								</div>
+							</label>
+						</div>
+
+						<Button onclick={handleSavePreferences}>Enregistrer les pr\u00e9f\u00e9rences</Button>
+					</CardContent>
+				</Card>
+			</div>
+		{/if}
 	</div>
 </section>
