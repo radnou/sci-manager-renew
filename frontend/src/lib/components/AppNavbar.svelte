@@ -17,7 +17,9 @@
 		Check,
 		House,
 		Briefcase,
-		CalendarClock
+		CalendarClock,
+		ArrowLeftRight,
+		Gavel
 	} from 'lucide-svelte';
 	import { fetchScis, type SCIOverview } from '$lib/api';
 	import { supabase } from '$lib/supabase';
@@ -82,6 +84,8 @@
 		{ suffix: '/biens', label: 'Biens', icon: Home },
 		{ suffix: '/associes', label: 'Associés', icon: Users },
 		{ suffix: '/fiscalite', label: 'Fiscalité', icon: Calculator },
+		{ suffix: '/mouvements-parts', label: 'Parts', icon: ArrowLeftRight },
+		{ suffix: '/assemblees-generales', label: 'AG', icon: Gavel },
 		{ suffix: '/documents', label: 'Documents', icon: FileText }
 	];
 
