@@ -11,7 +11,7 @@ from app.core.exceptions import ExternalServiceError, FeatureDisabledError, SCIM
 from app.core.supabase_client import get_supabase_user_client
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.models.quitus import QuitusRequest, QuitusResponse
+from app.models.quitus import PublicQuitusRequest, QuitusRequest, QuitusResponse
 from app.services.quitus_service import QuitusService, get_next_quittance_number
 from app.services.storage_service import storage_service
 from app.services.subscription_service import SubscriptionService
@@ -167,6 +167,30 @@ def _fetch_enrichment_data(request: Request, sci_id: str, id_bien: str, id_loyer
         pass
 
     return result
+
+
+@router.post("/public-generate")
+@limiter.limit("5/minute")
+async def public_generate_quitus(request: Request, payload: PublicQuitusRequest):
+    """Generate a simple quittance PDF without authentication.
+
+    Public lead magnet tool — stateless, no DB, no storage.
+    Rate limited to 5/minute per IP.
+    """
+    import re
+
+    pdf_bytes = QuitusService.generate_public_quitus_pdf(payload)
+    slug = re.sub(r"[^a-z0-9]+", "-", payload.periode.lower()).strip("-")
+    filename = f"quittance-{slug or 'periode'}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.post("/generate", response_model=QuitusResponse)

@@ -11,6 +11,11 @@ services:
       dockerfile: Dockerfile
     container_name: gerersci_backend
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
@@ -39,6 +44,8 @@ services:
       LOG_FORMAT: ${LOG_FORMAT:-json}
       FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT: ${FEATURE_PLAN_ENTITLEMENTS_ENFORCEMENT:-enforce}
       ADMIN_SECRET_KEY: ${ADMIN_SECRET_KEY:-}
+      MAINTENANCE_MODE: ${MAINTENANCE_MODE:-false}
+      BETA_PASSWORD: ${BETA_PASSWORD:-}
     networks:
       - internal
     extra_hosts:
@@ -73,6 +80,11 @@ services:
         VITE_MATOMO_SITE_ID: ${VITE_MATOMO_SITE_ID:-1}
     container_name: gerersci_frontend
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       # adapter-node runtime config
       PORT: "4173"

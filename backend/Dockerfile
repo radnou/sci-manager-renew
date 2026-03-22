@@ -13,6 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY templates ./templates
 
+# Run as non-root user (security: container escape mitigation)
+RUN addgroup --system app && adduser --system --ingroup app app
+USER app
+
 EXPOSE 8000
 
 # Production-ready command avec graceful shutdown

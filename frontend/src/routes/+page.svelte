@@ -223,7 +223,7 @@
 				'Export CSV',
 				'Support email 48h'
 			],
-			cta: 'Essayer 14 jours gratuit',
+			cta: 'Démarrer pour 19€/mois',
 			href: null
 		},
 		{
@@ -245,7 +245,7 @@
 				'Révision IRL automatique',
 				'Support prioritaire 24h'
 			],
-			cta: 'Essayer 14 jours gratuit',
+			cta: 'Démarrer pour 39€/mois',
 			href: null
 		}
 	];
@@ -337,7 +337,7 @@
 		{
 			question: 'Pourquoi pas d\'offre gratuite ?',
 			answer:
-				"Un outil gratuit ne peut pas offrir un support de qualité, des mises à jour régulières et la sécurité que vos données méritent. Le plan Gestion à 19€/mois vous donne un outil professionnel complet. L'essai gratuit de 14 jours vous permet de tout tester avant de vous engager."
+				"Un outil gratuit ne peut pas offrir un support de qualité, des mises à jour régulières et la sécurité que vos données méritent. Le plan Gestion à 19€/mois vous donne un outil professionnel complet. Garantie 30 jours satisfait ou remboursé — si l'outil ne vous convient pas, on vous rembourse sans condition."
 		}
 	];
 
@@ -395,7 +395,7 @@
 		"offers": [
 			{ "@type": "Offer", "price": "19", "priceCurrency": "EUR", "name": "Gestion" },
 			{ "@type": "Offer", "price": "39", "priceCurrency": "EUR", "name": "Pilotage" },
-			{ "@type": "Offer", "price": "349", "priceCurrency": "EUR", "name": "Fondateur" }
+			{ "@type": "Offer", "price": "500", "priceCurrency": "EUR", "name": "Fondateur" }
 		]
 	})}</script>`}
 	{@html `<script type="application/ld+json">${JSON.stringify({
@@ -421,7 +421,7 @@
 		<div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mx-auto max-w-3xl text-center">
 				<Badge variant="secondary" class="mb-6 px-3 py-1 text-sm font-medium">
-					Gestion SCI · Fiscalité · Automatisation
+					Pour les gérants de SCI en France
 				</Badge>
 				<h1
 					class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
@@ -437,24 +437,16 @@
 					Gérez vos biens, vos locataires et votre fiscalité depuis un seul tableau de bord — en 10 minutes par mois.
 				</p>
 				<div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-					<a href="/register">
+					<a href="/pricing">
 						<Button
 							size="lg"
 							class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
 						>
-							Essayer 14 jours gratuit
+							Démarrer à partir de 19€/mois
 							<ArrowRight class="ml-2 h-5 w-5" />
 						</Button>
 					</a>
-					<a href="#pricing">
-						<Button variant="outline" size="lg" class="px-8 text-lg font-semibold">
-							Voir les tarifs
-						</Button>
-					</a>
 				</div>
-				<p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
-					Carte bancaire requise · Garantie 30 jours · Annulation en 1 clic
-				</p>
 			</div>
 
 			<!-- Trust bar -->
@@ -463,7 +455,7 @@
 				<span class="text-slate-300 dark:text-slate-600">·</span>
 				<span>RGPD</span>
 				<span class="text-slate-300 dark:text-slate-600">·</span>
-				<span>Sans engagement</span>
+				<span>Garanti 30 jours satisfait ou remboursé</span>
 				<span class="text-slate-300 dark:text-slate-600">·</span>
 				<span>Annulez à tout moment</span>
 			</div>
@@ -568,6 +560,11 @@
 							</p>
 							<a href="/mentions-legales" class="text-xs text-sky-500 hover:text-sky-600 underline underline-offset-2">
 								En savoir plus sur notre méthodologie de calcul
+							</a>
+						{/if}
+						{#if feature.eyebrow === 'Gestion des biens'}
+							<a href="/generateur-quittance" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+								Générer une quittance gratuitement →
 							</a>
 						{/if}
 					</div>
@@ -815,7 +812,7 @@
 						</Button>
 
 						<p class="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
-							14 jours d'essai gratuit · Carte bancaire requise · Garantie 30 jours satisfait ou remboursé
+							Paiement sécurisé · Garanti 30 jours satisfait ou remboursé · Annulation en 1 clic
 						</p>
 					</div>
 				{/each}
@@ -826,7 +823,7 @@
 				<div class="flex flex-col items-center text-center lg:flex-row lg:text-left lg:items-start lg:gap-8">
 					<div class="flex-1">
 						<Badge class="mb-3 bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-500">
-							Offre de lancement — 100 places
+							Offre de lancement — 25 places
 						</Badge>
 						<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
 							<Crown class="mr-2 inline h-6 w-6 text-amber-500" />
@@ -842,7 +839,7 @@
 							</li>
 							<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
 								<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
-								Badge Fondateur sur votre profil
+								Ligne directe avec le fondateur
 							</li>
 							<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
 								<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
@@ -851,7 +848,7 @@
 						</ul>
 					</div>
 					<div class="mt-6 flex flex-col items-center lg:mt-0">
-						<div class="text-5xl font-extrabold text-slate-900 dark:text-white">349€</div>
+						<div class="text-5xl font-extrabold text-slate-900 dark:text-white">500€</div>
 						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 							Paiement unique. Pas de mensualité. À vie.
 						</p>
@@ -869,14 +866,14 @@
 							{/if}
 						</Button>
 						<p class="mt-3 text-sm font-medium text-amber-700 dark:text-amber-400">
-							Places restantes sur 100
+							Places restantes sur 25
 						</p>
 					</div>
 				</div>
 			</div>
 
 			<p class="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">
-				Remplace en moyenne 150€/mois d'honoraires comptables
+				Remplace en moyenne 150€/mois de tableurs, erreurs et temps perdu
 			</p>
 		</div>
 	</section>
@@ -892,7 +889,7 @@
 					Garantie 30 jours : testez sans risque.
 				</h2>
 				<p class="mt-4 text-slate-600 dark:text-slate-400">
-					14 jours d'essai gratuit + 30 jours satisfait ou remboursé = 44 jours pour tester sans risque.
+					30 jours satisfait ou remboursé — sans condition. Si l'outil ne vous convient pas, on vous rembourse.
 				</p>
 			</div>
 		</div>
@@ -1062,18 +1059,18 @@
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="text-center">
 				<h2 class="mb-4 text-3xl font-bold text-white sm:text-4xl">
-					Essayez GérerSCI pendant 14 jours
+					Commencez avec GérerSCI aujourd'hui
 				</h2>
 				<p class="mx-auto mb-8 max-w-2xl text-lg text-blue-100">
 					Carte bancaire requise. Garantie 30 jours satisfait ou remboursé. Annulation en 1 clic.
 				</p>
 				<div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
-					<a href="/register">
+					<a href="/pricing">
 						<Button
 							size="lg"
 							class="bg-white px-8 text-lg font-semibold text-blue-600 shadow-lg hover:bg-blue-50"
 						>
-							Essayer 14 jours gratuit
+							Démarrer maintenant
 							<ArrowRight class="ml-2 h-5 w-5" />
 						</Button>
 					</a>

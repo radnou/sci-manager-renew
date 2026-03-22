@@ -91,20 +91,21 @@ def patch_client(monkeypatch, store):
     )
 
 
-def test_get_subscription_summary_creates_trial_for_new_user(monkeypatch):
+def test_get_subscription_summary_no_subscription_returns_blocked(monkeypatch):
+    """Payment-first: no subscription → blocked FREE state."""
     store = build_store()
     patch_client(monkeypatch, store)
 
     summary = SubscriptionService.get_subscription_summary("user-123")
-    assert summary["status"] == "trialing"
-    assert summary["is_active"] is True
-    assert summary["plan_name"] == "Essai Pilotage"
-    assert summary["trial_expired"] is False
-    assert summary["current_period_end"] is not None
+    assert summary["status"] == "no_subscription"
+    assert summary["is_active"] is False
+    assert summary["plan_name"] == "Non abonné"
+    assert summary["max_scis"] == 0
+    assert summary["max_biens"] == 0
 
 
-def test_get_subscription_summary_expired_trial(monkeypatch):
-    past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+def test_get_subscription_summary_legacy_trialing_is_inactive(monkeypatch):
+    """Legacy trialing rows are treated as inactive (must re-subscribe)."""
     store = build_store()
     store["subscriptions"] = [
         {
@@ -113,7 +114,7 @@ def test_get_subscription_summary_expired_trial(monkeypatch):
             "status": "trialing",
             "is_active": True,
             "stripe_price_id": "trial",
-            "current_period_end": past,
+            "current_period_end": "2030-01-01T00:00:00+00:00",
             "max_scis": None,
             "max_biens": None,
             "features": {},
@@ -123,38 +124,7 @@ def test_get_subscription_summary_expired_trial(monkeypatch):
 
     summary = SubscriptionService.get_subscription_summary("user-123")
     assert summary["is_active"] is False
-    assert summary["plan_name"] == "Essai expiré"
-    assert summary["trial_expired"] is True
-    assert summary["max_scis"] == 0
-    assert summary["max_biens"] == 0
-
-
-def test_get_subscription_summary_active_trial(monkeypatch):
-    future = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-    store = build_store()
-    store["subscriptions"] = [
-        {
-            "user_id": "user-123",
-            "plan_key": "free",
-            "status": "trialing",
-            "is_active": True,
-            "stripe_price_id": "trial",
-            "current_period_end": future,
-            "max_scis": None,
-            "max_biens": None,
-            "features": {},
-        }
-    ]
-    patch_client(monkeypatch, store)
-
-    summary = SubscriptionService.get_subscription_summary("user-123")
-    assert summary["is_active"] is True
-    assert summary["plan_name"] == "Essai Pilotage"
-    assert summary["trial_expired"] is False
-    # Should get Pilotage features during active trial
-    features = summary["features"]
-    assert features.get("cerfa_enabled") is True
-    assert features.get("fiscalite_enabled") is True
+    assert summary["plan_name"] == "Non abonné"
 
 
 def test_enforce_limit_raises_when_enforcement_active(monkeypatch):

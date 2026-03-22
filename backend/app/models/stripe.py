@@ -43,4 +43,3 @@ class SubscriptionEntitlementsResponse(BaseModel):
     features: dict[str, Any] = Field(default_factory=dict)
     onboarding_completed: bool = False
     current_period_end: str | None = None
-    trial_expired: bool = False

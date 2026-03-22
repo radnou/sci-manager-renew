@@ -16,7 +16,7 @@
 		Conditions Générales de Vente
 	</h1>
 	<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-		Dernière mise à jour : 12 mars 2026
+		Dernière mise à jour : 22 mars 2026
 	</p>
 
 	<div class="mt-10 space-y-10 text-slate-700 dark:text-slate-300">
@@ -154,7 +154,30 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				4. Droit de rétractation
+				4. Garantie satisfait ou remboursé
+			</h2>
+			<p class="mt-3 text-sm">
+				L'Utilisateur dispose d'un délai de <strong>30 jours</strong> à compter de la date de souscription
+				pour demander un remboursement intégral, sans condition ni justification.
+			</p>
+			<p class="mt-2 text-sm">
+				La demande de remboursement s'effectue par email à l'adresse
+				<strong>support@gerersci.fr</strong> en indiquant l'adresse email du compte concerné.
+			</p>
+			<p class="mt-2 text-sm">
+				Le remboursement est effectué sous <strong>14 jours ouvrés</strong> suivant la réception
+				de la demande, sur le moyen de paiement d'origine utilisé lors de la souscription.
+			</p>
+			<p class="mt-2 text-sm">
+				Cette garantie s'applique à la première souscription de chaque utilisateur. Elle n'est
+				pas cumulable avec d'autres offres promotionnelles et ne s'applique pas en cas
+				d'utilisation abusive ou frauduleuse du Service.
+			</p>
+		</section>
+
+		<section>
+			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+				5. Droit de rétractation et consentement à l'exécution immédiate
 			</h2>
 			<p class="mt-3 text-sm">
 				Conformément à l'article L221-28, 13° du Code de la consommation, le droit de
@@ -164,16 +187,27 @@
 				rétractation.
 			</p>
 			<p class="mt-2 text-sm">
+				<strong>Conformément à l'article L221-28 du Code de la consommation, l'Utilisateur
+				qui souhaite accéder immédiatement au Service reconnaît expressément renoncer
+				à son droit de rétractation de 14 jours.</strong> Ce consentement est recueilli
+				par une case à cocher obligatoire avant la validation du paiement.
+			</p>
+			<p class="mt-2 text-sm">
 				En souscrivant à un abonnement GérerSCI, l'utilisateur reconnaît et accepte que
 				l'accès au Service est activé immédiatement après la validation du paiement. En
 				conséquence, l'utilisateur renonce expressément à son droit de rétractation
 				conformément aux dispositions légales précitées.
 			</p>
+			<p class="mt-2 text-sm">
+				Nonobstant ce qui précède, l'Utilisateur bénéficie de la garantie satisfait ou
+				remboursé de 30 jours prévue à l'article 4 ci-dessus, qui offre une protection
+				supérieure au droit de rétractation légal de 14 jours.
+			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				5. Durée et renouvellement
+				6. Durée et renouvellement
 			</h2>
 			<p class="mt-3 text-sm">
 				Les abonnements sont souscrits pour une durée mensuelle ou annuelle, selon le choix
@@ -194,7 +228,7 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				6. Résiliation
+				7. Résiliation
 			</h2>
 			<p class="mt-3 text-sm">
 				L'utilisateur peut résilier son abonnement à tout moment par l'un des moyens
@@ -211,8 +245,8 @@
 				jusqu'à l'échéance de la période payée.
 			</p>
 			<p class="mt-2 text-sm">
-				À l'issue de la période payée, le compte est automatiquement basculé vers le plan
-				Essentiel (gratuit). Les données de l'utilisateur sont conservées conformément à
+				À l'issue de la période payée, l'accès aux fonctionnalités est automatiquement
+				suspendu. Les données de l'utilisateur sont conservées pendant 90 jours conformément à
 				notre
 				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialité</a>.
 			</p>
@@ -227,7 +261,7 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				7. Garanties et responsabilité
+				8. Garanties et responsabilité
 			</h2>
 			<p class="mt-3 text-sm">
 				Le Service est fourni « en l'état ». Le Prestataire s'efforce d'assurer une
@@ -264,7 +298,7 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				8. Données personnelles
+				9. Données personnelles
 			</h2>
 			<p class="mt-3 text-sm">
 				Dans le cadre de l'exécution des présentes CGV, le Prestataire est amené à collecter
@@ -281,7 +315,7 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				9. Médiation et règlement des litiges
+				10. Médiation et règlement des litiges
 			</h2>
 			<p class="mt-3 text-sm">
 				Conformément aux articles L611-1 et suivants du Code de la consommation,
@@ -307,7 +341,7 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				10. Loi applicable et juridiction compétente
+				11. Loi applicable et juridiction compétente
 			</h2>
 			<p class="mt-3 text-sm">
 				Les présentes CGV sont soumises au droit français. En cas de litige relatif à

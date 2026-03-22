@@ -30,22 +30,7 @@ export const load: LayoutLoad = async ({ url }) => {
 		if (err && typeof err === 'object' && 'status' in err) {
 			throw err;
 		}
-		// API error (e.g. network) — let user through with minimal data
-		return {
-			user: session.user,
-			subscription: {
-				plan_key: 'free' as const,
-				plan_name: 'Free',
-				status: 'free',
-				mode: 'subscription' as const,
-				is_active: true,
-				entitlements_version: 1,
-				current_scis: 0,
-				current_biens: 0,
-				over_limit: false,
-				features: {},
-				onboarding_completed: true
-			}
-		};
+		// API error — assume unpaid, redirect to pricing (payment-first model)
+		throw redirect(302, '/pricing');
 	}
 };

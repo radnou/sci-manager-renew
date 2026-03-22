@@ -10,7 +10,7 @@ test.describe('Landing page @P0', () => {
     await expect(navLinks.first()).toBeVisible();
 
     // Verify CTA buttons link to appropriate pages
-    const cta = page.locator('a:has-text("Démarrer"), a:has-text("Essayer"), a:has-text("Connexion"), a:has-text("Inscription")');
+    const cta = page.locator('a:has-text("Démarrer"), a:has-text("Connexion"), a:has-text("Inscription")');
     const ctaCount = await cta.count();
     expect(ctaCount).toBeGreaterThan(0);
 

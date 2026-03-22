@@ -68,12 +68,10 @@ test.describe('Audit Billing & Paywall @BILLING', () => {
       await dismissCookieBanner(page);
 
       const content = await page.textContent('body');
-      expect(content).toContain('Essentiel');
       expect(content).toContain('Gestion');
-      expect(content).toContain('Fiscal');
-      expect(content).toContain('19€');
-      expect(content).toContain('39€');
-      expect(content).toContain('Gratuit');
+      expect(content).toContain('Pilotage');
+      expect(content).toContain('19');
+      expect(content).toContain('39');
 
       await capture(page, '01-pricing-plans');
     });

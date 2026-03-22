@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import EmailCapture from '$lib/components/EmailCapture.svelte';
 	import { ArrowRight, Calculator, TrendingDown, TrendingUp, Info } from 'lucide-svelte';
 
 	// Form state
@@ -56,6 +57,9 @@
 			setter(raw ? parseInt(raw, 10) : 0);
 		};
 	}
+
+	// Email gate: detailed results hidden until email captured
+	let emailUnlocked = $state(false);
 
 	// Track previous resultat for animation
 	let resultChanged = $state(false);
@@ -346,7 +350,12 @@
 									{formatCurrency(resultat)}
 								</span>
 							</div>
-							{#if resultat < 0 && regime === 'reel'}
+							{#if !emailUnlocked}
+								<p class="mt-3 text-xs text-slate-400 dark:text-slate-500 italic">
+									Détails masqués — entrez votre email ci-dessous pour voir l'analyse complète.
+								</p>
+							{/if}
+							{#if emailUnlocked && resultat < 0 && regime === 'reel'}
 								<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
 									Déficit foncier imputable sur le revenu global :
 									<strong class="text-rose-600 dark:text-rose-400">{formatCurrency(deficitImputable)}</strong>
@@ -362,7 +371,7 @@
 						</div>
 
 						<!-- Economie estimee -->
-						{#if resultat < 0 && regime === 'reel' && economieEstimee > 0}
+						{#if emailUnlocked && resultat < 0 && regime === 'reel' && economieEstimee > 0}
 							<div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/20">
 								<div class="flex items-center justify-between">
 									<span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
@@ -379,7 +388,7 @@
 						{/if}
 
 						<!-- Comparison micro vs reel (when eligible) -->
-						{#if microEligible && regime === 'reel' && loyersAnnuels > 0}
+						{#if emailUnlocked && microEligible && regime === 'reel' && loyersAnnuels > 0}
 							<div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
 								<div class="flex items-center gap-2 mb-2">
 									<Info class="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -413,7 +422,7 @@
 							</div>
 						{/if}
 
-						{#if microEligible && regime === 'micro' && loyersAnnuels > 0}
+						{#if emailUnlocked && microEligible && regime === 'micro' && loyersAnnuels > 0}
 							<div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
 								<div class="flex items-center gap-2 mb-2">
 									<Info class="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -427,17 +436,26 @@
 							</div>
 						{/if}
 
+						<!-- Email capture funnel -->
+						<EmailCapture
+							source="simulateur-cerfa"
+							title={emailUnlocked ? 'Résultat complet débloqué' : 'Débloquez l\'analyse complète'}
+							description={emailUnlocked ? 'Merci ! Vous avez accès à tous les détails.' : 'Déficit foncier, économie d\'impôt, comparaison micro-foncier vs régime réel.'}
+							buttonText="Voir l'analyse complète"
+							onCaptured={() => (emailUnlocked = true)}
+						/>
+
 						<!-- CTA -->
-						<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-700 dark:bg-slate-900">
+						<div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-700 dark:bg-slate-900">
 							<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
 								Pour générer votre CERFA 2044 officiel prêt à déposer
 							</p>
-							<a href="/register">
+							<a href="/pricing">
 								<Button
 									size="lg"
 									class="w-full bg-blue-600 text-white hover:bg-blue-700"
 								>
-									Créer mon compte gratuit
+									Démarrer à 19€/mois
 									<ArrowRight class="ml-2 h-4 w-4" />
 								</Button>
 							</a>

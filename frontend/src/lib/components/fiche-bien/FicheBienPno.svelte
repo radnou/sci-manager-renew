@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { AssurancePnoEmbed } from '$lib/api';
-	import { createPnoForBien, updatePnoForBien, deletePnoForBien } from '$lib/api';
+	import { createPnoForBien, updatePnoForBien, deletePnoForBien, declarerSinistre } from '$lib/api';
 	import type { PnoCreate, PnoUpdate } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { Shield, Plus, Trash2, X, Pencil, CheckCircle, AlertTriangle } from 'lucide-svelte';
+	import { Shield, Plus, Trash2, X, Pencil, CheckCircle, AlertTriangle, AlertOctagon, Loader2 } from 'lucide-svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import {
 		announceFicheBienModal,
@@ -112,6 +112,47 @@
 		});
 	}
 
+	// Sinistre declaration
+	let showSinistreForm = $state(false);
+	let sinistreLoading = $state(false);
+	let sinistreDateSinistre = $state('');
+	let sinistreDescription = $state('');
+	let sinistreMontantEstime = $state<number | null>(null);
+	let sinistreNumeroDossier = $state('');
+
+	function openSinistreForm() {
+		announceFicheBienModal('sinistre');
+		showSinistreForm = true;
+		sinistreDateSinistre = new Date().toISOString().split('T')[0];
+		sinistreDescription = '';
+		sinistreMontantEstime = null;
+		sinistreNumeroDossier = '';
+	}
+
+	function closeSinistreForm() {
+		showSinistreForm = false;
+	}
+
+	async function handleSinistreSubmit() {
+		if (!sinistreDateSinistre || !sinistreDescription.trim()) return;
+		sinistreLoading = true;
+		try {
+			await declarerSinistre(sciId, bienId, {
+				date_sinistre: sinistreDateSinistre,
+				description: sinistreDescription,
+				montant_estime: sinistreMontantEstime ?? undefined,
+				numero_dossier: sinistreNumeroDossier || undefined
+			});
+			addToast({ title: 'Sinistre déclaré', description: 'Le sinistre a été enregistré et les associés notifiés.', variant: 'success' });
+			closeSinistreForm();
+			onRefresh();
+		} catch (err: any) {
+			addToast({ title: err?.message ?? 'Erreur lors de la déclaration du sinistre', variant: 'error' });
+		} finally {
+			sinistreLoading = false;
+		}
+	}
+
 	// Compute validity status
 	const pnoStatus = $derived.by(() => {
 		if (!assurancePno) return null;
@@ -140,15 +181,26 @@
 				<Shield class="h-5 w-5 text-sky-600 dark:text-sky-400" />
 				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Assurance PNO</h2>
 			</div>
-			{#if isGerant && !assurancePno && !showPnoForm}
-				<button
-					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={() => openPnoForm()}
-				>
-					<Plus class="h-4 w-4" />
-					Ajouter
-				</button>
-			{/if}
+			<div class="flex items-center gap-2">
+				{#if isGerant && assurancePno && !showSinistreForm}
+					<button
+						class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-900/40"
+						onclick={openSinistreForm}
+					>
+						<AlertOctagon class="h-4 w-4" />
+						Déclarer un sinistre
+					</button>
+				{/if}
+				{#if isGerant && !assurancePno && !showPnoForm}
+					<button
+						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+						onclick={() => openPnoForm()}
+					>
+						<Plus class="h-4 w-4" />
+						Ajouter
+					</button>
+				{/if}
+			</div>
 		</div>
 
 		{#if showPnoForm}
@@ -246,6 +298,96 @@
 						class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
 					>
 						{pnoLoading ? 'Enregistrement…' : pnoIsEdit ? 'Mettre à jour' : 'Ajouter'}
+					</button>
+				</div>
+			</form>
+		{/if}
+
+		{#if showSinistreForm}
+			<form
+				class="mb-5 rounded-2xl border border-rose-200 bg-rose-50/60 p-4 dark:border-rose-900/60 dark:bg-rose-950/20"
+				onsubmit={(event) => {
+					event.preventDefault();
+					handleSinistreSubmit();
+				}}
+			>
+				<div class="mb-3 flex items-start justify-between gap-3">
+					<div>
+						<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+							Déclarer un sinistre
+						</p>
+						<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+							Le sinistre sera enregistré et les associés notifiés.
+						</p>
+					</div>
+					<button
+						type="button"
+						class="rounded-full border border-slate-300 p-2 text-slate-500 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100"
+						onclick={closeSinistreForm}
+						aria-label="Fermer le formulaire sinistre"
+					>
+						<X class="h-4 w-4" />
+					</button>
+				</div>
+
+				<div class="grid gap-4 md:grid-cols-2">
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Date du sinistre</span>
+						<input
+							type="date"
+							lang="fr"
+							bind:value={sinistreDateSinistre}
+							required
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">N° de dossier (optionnel)</span>
+						<input
+							type="text"
+							bind:value={sinistreNumeroDossier}
+							placeholder="Ex : SIN-2026-001"
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+					<label class="block md:col-span-2">
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Description</span>
+						<textarea
+							bind:value={sinistreDescription}
+							required
+							rows="3"
+							placeholder="Décrivez le sinistre (dégât des eaux, incendie, vol...)"
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						></textarea>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Montant estimé (€, optionnel)</span>
+						<input
+							type="number"
+							bind:value={sinistreMontantEstime}
+							min="0"
+							step="0.01"
+							placeholder="0.00"
+							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+						/>
+					</label>
+				</div>
+
+				<div class="mt-4 flex justify-end gap-2">
+					<button
+						type="button"
+						class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+						onclick={closeSinistreForm}
+					>
+						Annuler
+					</button>
+					<button
+						type="submit"
+						disabled={sinistreLoading || !sinistreDescription.trim()}
+						class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
+					>
+						{#if sinistreLoading}<Loader2 class="h-4 w-4 animate-spin" />{/if}
+						{sinistreLoading ? 'Envoi…' : 'Déclarer le sinistre'}
 					</button>
 				</div>
 			</form>

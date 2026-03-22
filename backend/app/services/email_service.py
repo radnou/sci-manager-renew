@@ -290,6 +290,7 @@ class EmailService:
                 notification_type=notification_type,
                 cta_url=f"{self.frontend_url}/dashboard",
                 cta_text="Voir mon tableau de bord",
+                unsubscribe_url=f"{self.frontend_url}/settings",
             )
 
             payload = {
@@ -355,6 +356,39 @@ class EmailService:
         except Exception as e:
             logger.error("reset_password_send_failed", email=email, error=str(e), exc_info=True)
             raise ExternalServiceError("Resend", f"Reset password email send failed: {str(e)}")
+
+    async def send_email(
+        self,
+        *,
+        to: str,
+        subject: str,
+        template: str,
+        context: dict | None = None,
+    ) -> dict:
+        """Generic email send using a Jinja2 template.
+
+        Raises:
+            ExternalServiceError: Si l'envoi échoue
+        """
+        logger.info("sending_generic_email", to=to, template=template)
+        try:
+            html = _render_template(template, **(context or {}))
+            payload = {
+                "from": self.from_email,
+                "to": to,
+                "subject": subject,
+                "html": html,
+            }
+            result = await run_with_retry(
+                operation=f"resend.send_{template}",
+                func=lambda: resend.Emails.send(payload),
+                context={"email": to},
+            )
+            logger.info("generic_email_sent", to=to, template=template)
+            return result
+        except Exception as e:
+            logger.error("generic_email_send_failed", to=to, template=template, error=str(e))
+            raise ExternalServiceError("Resend", f"Email send failed: {str(e)}")
 
 
 # Singleton instance

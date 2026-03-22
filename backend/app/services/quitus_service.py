@@ -9,7 +9,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-from app.models.quitus import QuitusRequest
+from app.models.quitus import PublicQuitusRequest, QuitusRequest
 
 # Register a TTF font with Latin-1 support for French accented characters.
 # Priority: DejaVu Sans (system) > Bitstream Vera (bundled with reportlab) > Helvetica.
@@ -396,6 +396,197 @@ class QuitusService:
         pdf.drawRightString(width - 40, sig_y - 16, issuer)
 
         # Legal mentions
+        legal_y = 80
+        pdf.setFont(_FONT_NAME, 7)
+        pdf.setFillColor(_GRAY)
+        pdf.drawString(
+            40, legal_y,
+            "Ce document est délivré conformément à l'article 21 de la loi n° 89-462 du 6 juillet 1989 "
+            "et à l'article 1366 du Code civil.",
+        )
+        pdf.drawString(
+            40, legal_y - 11,
+            "Cette quittance ne libère l'occupant que pour la période et le montant indiqués.",
+        )
+        pdf.drawString(
+            40, legal_y - 22,
+            "Conservez ce document : il pourra être demandé pour justifier de domicile "
+            "(article 3 du décret n° 2015-1437).",
+        )
+
+        # Branding
+        pdf.setFont(_FONT_NAME, 6)
+        pdf.setFillColor(HexColor("#94a3b8"))
+        pdf.drawCentredString(width / 2, 30, "Généré par GérerSCI (gerersci.fr)")
+
+        pdf.showPage()
+        pdf.save()
+
+        buffer.seek(0)
+        return buffer.read()
+
+    @staticmethod
+    def generate_public_quitus_pdf(payload: PublicQuitusRequest) -> bytes:
+        """Generate a simple quittance PDF for the public (free) tool.
+
+        No DB access, no storage — purely stateless PDF generation.
+        """
+        buffer = BytesIO()
+        pdf = canvas.Canvas(buffer, pagesize=A4, pageCompression=0)
+        width, height = A4
+
+        issuer = payload.nom_proprietaire
+        nom_locataire = payload.nom_locataire
+        property_label = payload.adresse_bien
+        loyer_hc = payload.loyer_hc
+        charges_provisions = payload.charges_locatives
+        total_du = loyer_hc + charges_provisions
+        total_verse = payload.montant_paye
+        reste_du = max(0, round(total_du - total_verse, 2))
+        is_partial = reste_du > 0.005
+
+        # Parse payment date
+        try:
+            paiement_date = date.fromisoformat(payload.date_paiement)
+        except ValueError:
+            paiement_date = date.today()
+
+        issue_date = date.today()
+        issue_date_str = _fmt_date_fr(issue_date)
+        doc_title = "REÇU DE PAIEMENT" if is_partial else "QUITTANCE DE LOYER"
+
+        pdf.setTitle(f"Quittance {payload.periode}")
+        pdf.setAuthor(issuer)
+        pdf.setSubject(doc_title)
+
+        # ── HEADER ──
+        header_h = 100
+        pdf.setFillColor(_DARK)
+        pdf.rect(0, height - header_h, width, header_h, stroke=0, fill=1)
+
+        y = height - 28
+        pdf.setFillColor(_LIGHT)
+        pdf.setFont(_FONT_NAME_BOLD, 13)
+        pdf.drawString(40, y, issuer)
+
+        # Right column
+        right_x = width - 40
+        y_right = height - 30
+        pdf.setFont(_FONT_NAME_BOLD, 16)
+        pdf.drawRightString(right_x, y_right, doc_title)
+        y_right -= 18
+        pdf.setFont(_FONT_NAME, 9)
+        pdf.drawRightString(right_x, y_right, f"Émise le {issue_date_str}")
+
+        # ── LOCATAIRE + BIEN ──
+        y = height - header_h - 30
+        pdf.setFillColor(_DARK)
+        pdf.setFont(_FONT_NAME, 11)
+        pdf.drawString(40, y, f"Locataire : {nom_locataire}")
+        y -= 18
+        pdf.drawString(40, y, f"Bien : {property_label}")
+
+        # ── TABLE ──
+        y -= 35
+        table_left = 40
+        table_right = width - 40
+        table_width = table_right - table_left
+        row_h = 24
+
+        # Table header
+        pdf.setFillColor(HexColor("#f1f5f9"))
+        pdf.rect(table_left, y - row_h, table_width, row_h, stroke=0, fill=1)
+        pdf.setStrokeColor(_BORDER)
+        pdf.rect(table_left, y - row_h, table_width, row_h, stroke=1, fill=0)
+        pdf.setFillColor(_DARK)
+        pdf.setFont(_FONT_NAME_BOLD, 10)
+        pdf.drawString(table_left + 10, y - 16, "Désignation")
+        pdf.drawRightString(table_right - 10, y - 16, "Montant")
+        y -= row_h
+
+        def _draw_row(label: str, amount: float, bold: bool = False) -> None:
+            nonlocal y
+            pdf.setStrokeColor(_BORDER)
+            pdf.rect(table_left, y - row_h, table_width, row_h, stroke=1, fill=0)
+            font = _FONT_NAME_BOLD if bold else _FONT_NAME
+            pdf.setFont(font, 10)
+            pdf.setFillColor(_DARK)
+            pdf.drawString(table_left + 10, y - 16, label)
+            pdf.drawRightString(table_right - 10, y - 16, _fmt_eur(amount))
+            y -= row_h
+
+        _draw_row(f"Loyer hors charges — Période : {payload.periode}", loyer_hc)
+        _draw_row("Provision pour charges", charges_provisions)
+
+        # Total dû
+        pdf.setFillColor(HexColor("#e2e8f0"))
+        pdf.rect(table_left, y - row_h, table_width, row_h, stroke=0, fill=1)
+        pdf.setStrokeColor(_BORDER)
+        pdf.rect(table_left, y - row_h, table_width, row_h, stroke=1, fill=0)
+        pdf.setFont(_FONT_NAME_BOLD, 10)
+        pdf.setFillColor(_DARK)
+        pdf.drawString(table_left + 10, y - 16, "Total dû")
+        pdf.drawRightString(table_right - 10, y - 16, _fmt_eur(total_du))
+        y -= row_h
+
+        _draw_row("Total versé", total_verse, bold=True)
+
+        if is_partial:
+            pdf.setFillColor(HexColor("#fef2f2"))
+            pdf.rect(table_left, y - row_h, table_width, row_h, stroke=0, fill=1)
+            pdf.setStrokeColor(HexColor("#fca5a5"))
+            pdf.rect(table_left, y - row_h, table_width, row_h, stroke=1, fill=0)
+            pdf.setFont(_FONT_NAME_BOLD, 10)
+            pdf.setFillColor(HexColor("#991b1b"))
+            pdf.drawString(table_left + 10, y - 16, "Reste dû")
+            pdf.drawRightString(table_right - 10, y - 16, _fmt_eur(reste_du))
+            y -= row_h
+
+        # ── ATTESTATION TEXT ──
+        y -= 25
+        pdf.setFont(_FONT_NAME, 10)
+        pdf.setFillColor(_DARK)
+        text = pdf.beginText(40, y)
+        text.setLeading(16)
+
+        if is_partial:
+            text.textLine(
+                f"Nous attestons avoir reçu de {nom_locataire} la somme de {_fmt_eur(total_verse)}"
+            )
+            text.textLine(
+                f"au titre du loyer et des charges de la période {payload.periode}."
+            )
+            text.textLine(
+                f"Le solde restant dû s'élève à {_fmt_eur(reste_du)}."
+            )
+        else:
+            text.textLine(
+                f"Nous soussignés attestons avoir reçu de {nom_locataire} la somme de {_fmt_eur(total_verse)}"
+            )
+            text.textLine(
+                f"au titre du loyer ({_fmt_eur(loyer_hc)}) et des charges locatives "
+                f"({_fmt_eur(charges_provisions)}) pour la période {payload.periode},"
+            )
+            text.textLine(
+                "et lui en donnons quittance, sous réserve de tous droits."
+            )
+
+        text.textLine(f"Le paiement concerne le bien situé {property_label}.")
+        text.textLine(f"Date de paiement : {_fmt_date_fr(paiement_date)}.")
+        text.textLine("")
+        text.textLine(f"Document établi le {issue_date_str}.")
+        pdf.drawText(text)
+
+        # ── SIGNATURE ──
+        sig_y = 170
+        pdf.setStrokeColor(HexColor("#94a3b8"))
+        pdf.line(40, sig_y, 220, sig_y)
+        pdf.setFont(_FONT_NAME, 10)
+        pdf.setFillColor(_DARK)
+        pdf.drawString(40, sig_y - 16, "Le bailleur")
+        pdf.drawRightString(width - 40, sig_y - 16, issuer)
+
+        # ── LEGAL FOOTER ──
         legal_y = 80
         pdf.setFont(_FONT_NAME, 7)
         pdf.setFillColor(_GRAY)

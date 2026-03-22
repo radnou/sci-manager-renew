@@ -1,8 +1,8 @@
-"""Admin panel API routes — protected by ADMIN_SECRET_KEY query param."""
+"""Admin panel API routes — protected by X-Admin-Key header or query param."""
 
 import structlog
 
-from fastapi import APIRouter, Query, HTTPException, Body
+from fastapi import APIRouter, Query, HTTPException, Body, Request
 
 from app.core.security import verify_admin_secret
 from app.services.admin_metrics_service import (
@@ -28,28 +28,29 @@ router = APIRouter(
 
 
 @router.get("/metrics")
-async def admin_metrics(key: str | None = Query(None)):
+async def admin_metrics(request: Request, key: str | None = Query(None)):
     """Hero KPIs with trend comparison."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     return compute_hero_metrics()
 
 
 @router.get("/alerts")
-async def admin_alerts(key: str | None = Query(None)):
+async def admin_alerts(request: Request, key: str | None = Query(None)):
     """Business alerts based on metric thresholds."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     return compute_business_alerts()
 
 
 @router.get("/funnel")
-async def admin_funnel(key: str | None = Query(None)):
+async def admin_funnel(request: Request, key: str | None = Query(None)):
     """Activation funnel counts."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     return compute_activation_funnel()
 
 
 @router.get("/users")
 async def admin_list_users(
+    request: Request,
     key: str | None = Query(None),
     search: str | None = Query(None),
     status: str | None = Query(None),
@@ -59,7 +60,7 @@ async def admin_list_users(
     per_page: int = Query(50, ge=1, le=100),
 ):
     """Enriched user list with filters and status classification."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     return compute_enriched_users(
         search=search,
         status_filter=status,
@@ -72,11 +73,12 @@ async def admin_list_users(
 
 @router.get("/users/{user_id}")
 async def admin_get_user(
+    request: Request,
     user_id: str,
     key: str | None = Query(None),
 ):
     """Detailed info for a specific user."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     from app.core.supabase_client import get_supabase_service_client
 
     client = get_supabase_service_client()
@@ -113,12 +115,13 @@ async def admin_get_user(
 
 @router.put("/users/{user_id}/plan")
 async def admin_change_plan(
+    request: Request,
     user_id: str,
     key: str | None = Query(None),
     plan: str = Body(..., embed=True),
 ):
     """Change a user's subscription plan."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     from app.core.supabase_client import get_supabase_service_client
 
     if plan not in PLAN_PRICE_MAP:
@@ -148,13 +151,14 @@ async def admin_change_plan(
 
 @router.post("/users/{user_id}/email")
 async def admin_send_email(
+    request: Request,
     user_id: str,
     key: str | None = Query(None),
     subject: str = Body(...),
     message: str = Body(...),
 ):
     """Send a custom email to a user using the branded email template."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     from app.core.supabase_client import get_supabase_service_client
     from app.services.email_service import EmailService, _render_template
 
@@ -185,11 +189,12 @@ async def admin_send_email(
 
 @router.delete("/users/{user_id}")
 async def admin_disable_user(
+    request: Request,
     user_id: str,
     key: str | None = Query(None),
 ):
     """Disable a user account (ban from Supabase Auth)."""
-    verify_admin_secret(key)
+    verify_admin_secret(request)
     from app.core.supabase_client import get_supabase_service_client
 
     client = get_supabase_service_client()

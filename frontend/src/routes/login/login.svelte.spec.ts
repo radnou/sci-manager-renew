@@ -28,7 +28,7 @@ describe('/login/+page.svelte', () => {
 	it('should have a link to /register', async () => {
 		render(Page);
 
-		const registerLink = page.getByRole('link', { name: /Créer un compte gratuit/ });
+		const registerLink = page.getByRole('link', { name: /Créer un compte/ });
 		await expect.element(registerLink).toHaveAttribute('href', '/register');
 	});
 

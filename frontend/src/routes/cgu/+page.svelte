@@ -63,14 +63,14 @@
 			</p>
 			<ul class="mt-2 list-inside list-disc space-y-1 text-sm">
 				<li>
-					<strong>Standard (gratuit) :</strong> gestion d'une SCI avec un maximum de 5 biens
+					<strong>Gestion (19€/mois) :</strong> gestion d'une SCI avec un maximum de 5 biens
 				</li>
 				<li>
-					<strong>Pro :</strong> gestion multi-SCI avec un nombre illimite de biens, fonctionnalites
+					<strong>Pilotage (39€/mois) :</strong> gestion multi-SCI avec un nombre illimite de biens, fonctionnalites
 					avancees
 				</li>
 				<li>
-					<strong>Lifetime :</strong> acces permanent a l'ensemble des fonctionnalites Pro avec un
+					<strong>Fondateur (500€) :</strong> acces permanent a l'ensemble des fonctionnalites Pilotage avec un
 					paiement unique
 				</li>
 			</ul>

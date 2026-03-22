@@ -39,6 +39,8 @@
 		password.length > 0 && password.length < passwordMinLength
 	);
 
+	let consentCgu = $state(false);
+
 	async function handleRegister(event: SubmitEvent) {
 		event.preventDefault();
 		errorMessage = '';
@@ -92,13 +94,13 @@
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">
 			<CardHeader>
-				<p class="sci-eyebrow">{planLabel ? `Plan ${planLabel}` : 'Plan Essentiel — Gratuit'}</p>
+				<p class="sci-eyebrow">{planLabel ? `Plan ${planLabel}` : 'Créer un compte'}</p>
 				<CardTitle class="text-2xl">Créer un compte</CardTitle>
 				<CardDescription>
 					{#if planLabel}
 						Créez votre compte pour activer le plan {planLabel}.
 					{:else}
-						Gérez jusqu'à 1 SCI et 2 biens gratuitement. Passez à un plan supérieur quand vous voulez.
+						Créez votre compte pour accéder à GérerSCI. Choisissez votre plan après inscription.
 					{/if}
 				</CardDescription>
 			</CardHeader>
@@ -174,12 +176,27 @@
 							</p>
 						{/if}
 
+						<label class="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
+							<input
+								type="checkbox"
+								bind:checked={consentCgu}
+								required
+								class="mt-0.5 rounded border-slate-300"
+							/>
+							<span>
+								J'ai lu et j'accepte les
+								<a href="/cgu" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400">CGU</a>
+								et la
+								<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400">politique de confidentialité</a>.
+							</span>
+						</label>
+
 						<Button
 							type="submit"
 							class="w-full"
-							disabled={isLoading || !email || !password || !passwordConfirm || passwordMismatch || passwordTooShort}
+							disabled={isLoading || !email || !password || !passwordConfirm || passwordMismatch || passwordTooShort || !consentCgu}
 						>
-							{isLoading ? 'Inscription en cours...' : "S'inscrire gratuitement"}
+							{isLoading ? 'Inscription en cours...' : "S'inscrire"}
 						</Button>
 					</form>
 
@@ -194,7 +211,6 @@
 					</p>
 
 					<p class="mt-4 text-center text-xs text-slate-500 dark:text-slate-500">
-						En vous inscrivant, vous acceptez nos
 						<a href="/cgu" class="underline hover:text-slate-700 dark:hover:text-slate-300">CGU</a>
 						et notre
 						<a href="/confidentialite" class="underline hover:text-slate-700 dark:hover:text-slate-300">politique de confidentialité</a>.

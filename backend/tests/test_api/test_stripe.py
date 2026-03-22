@@ -232,17 +232,16 @@ def test_sync_subscription_deleted_with_service_client(monkeypatch):
     assert writes["executed"] is True
 
 
-def test_get_subscription_returns_expired_trial_fallback(client, auth_headers, free_plan):
-    """Expired trial returns restricted access (max 0 biens/scis)."""
+def test_get_subscription_returns_blocked_free_fallback(client, auth_headers, free_plan):
+    """No subscription returns blocked FREE state (payment-first model)."""
     response = client.get("/api/v1/stripe/subscription", headers=auth_headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload["plan_key"] == "free"
-    assert payload["plan_name"] == "Essai expiré"
+    assert payload["plan_name"] == "Non abonné"
     assert payload["max_scis"] == 0
     assert payload["max_biens"] == 0
     assert payload["is_active"] is False
-    assert payload["trial_expired"] is True
 
 
 def test_create_checkout_session_feature_disabled(client, auth_headers, monkeypatch):

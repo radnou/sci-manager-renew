@@ -51,6 +51,7 @@ from app.api.v1 import (
     gdpr,
     health,
     import_csv,
+    leads,
     locataires,
     loyers,
     mouvements_parts,
@@ -69,6 +70,7 @@ from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
 from app.services.irl_service import check_irl_revisions
+from app.services.nurture_service import process_nurture_emails
 from app.services.notification_cron import (
     check_bail_renewal,
     check_expiring_bails,
@@ -114,6 +116,10 @@ async def _notification_cron_loop():
             await check_bail_renewal(client)
             # Task 5: Auto-generate recurring charges (quarterly)
             await check_recurring_charges(client)
+            # Task 6: Lead nurture email sequence
+            nurture_sent = await process_nurture_emails()
+            if nurture_sent:
+                logger.info("nurture_emails_sent", count=nurture_sent)
             logger.info("notification_cron_cycle_complete")
             await asyncio.sleep(86_400)  # 24h
         except asyncio.CancelledError:
@@ -418,6 +424,34 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def maintenance_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Block all requests in maintenance mode, except health + webhooks."""
+    if settings.maintenance_mode:
+        path = request.url.path
+        # Always allow health checks and Stripe webhooks
+        if path in ("/api/v1/health", "/api/v1/health/ready") or path.startswith("/api/v1/stripe/webhooks"):
+            return await call_next(request)
+        # Allow beta access with password
+        if settings.beta_password:
+            beta_cookie = request.cookies.get("beta_access")
+            beta_header = request.headers.get("X-Beta-Password")
+            if beta_cookie == settings.beta_password or beta_header == settings.beta_password:
+                return await call_next(request)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "code": "maintenance",
+                "error": "GérerSCI est en cours de mise à jour. Revenez bientôt.",
+                "maintenance": True,
+            },
+        )
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def logging_middleware(
     request: Request,
     call_next: Callable[[Request], Awaitable[Response]]
@@ -561,4 +595,5 @@ app.include_router(comptabilite.router, prefix="/api/v1")
 app.include_router(echeances.router, prefix="/api/v1")
 app.include_router(import_csv.router, prefix="/api/v1")
 app.include_router(import_csv.templates_router, prefix="/api/v1")
+app.include_router(leads.router, prefix="/api/v1")
 app.include_router(admin.router)

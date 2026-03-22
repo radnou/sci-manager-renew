@@ -21,7 +21,9 @@ const PUBLIC_ROUTE_PREFIXES = [
 	'/mentions-legales',
 	'/privacy',
 	'/simulateur-cerfa',
-	'/simulateur-plus-value'
+	'/simulateur-plus-value',
+	'/generateur-quittance',
+	'/calendrier-fiscal'
 ];
 
 function matchesRoutePrefix(pathname: string, routePrefix: string) {

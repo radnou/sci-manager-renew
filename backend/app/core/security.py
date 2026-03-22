@@ -2,7 +2,7 @@ import asyncio
 from time import monotonic
 
 import httpx
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
 from jwt.exceptions import PyJWTError
@@ -125,14 +125,21 @@ async def get_current_admin(
     return user_id
 
 
-def verify_admin_secret(key: str | None) -> None:
-    """Verify the admin secret key from URL query param."""
+def verify_admin_secret(request: Request) -> None:
+    """Verify admin secret from X-Admin-Key header (preferred) or query param (legacy).
+
+    Uses hmac.compare_digest for timing-safe comparison.
+    """
+    import hmac
+
     if not settings.admin_secret_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Admin not configured",
         )
-    if not key or key != settings.admin_secret_key:
+    # Prefer header (secure), fallback to query param (legacy, logged in nginx)
+    key = request.headers.get("X-Admin-Key") or request.query_params.get("secret") or request.query_params.get("key")
+    if not key or not hmac.compare_digest(key, settings.admin_secret_key):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid admin key",

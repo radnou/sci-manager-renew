@@ -11,8 +11,8 @@ describe('/+page.svelte', () => {
 		await expect.element(heading).toBeInTheDocument();
 		await expect.element(heading).toHaveTextContent(/Votre SCI mérite mieux/);
 		await expect.element(
-			page.getByRole('link', { name: /Essayer gratuitement/ })
-		).toHaveAttribute('href', '/register');
+			page.getByRole('link', { name: /Démarrer maintenant/ })
+		).toHaveAttribute('href', '/pricing');
 		await expect.element(
 			page.getByRole('link', { name: /Démarrer à 19€/ })
 		).toHaveAttribute('href', '#pricing');

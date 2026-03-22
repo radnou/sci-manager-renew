@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     app_name: str = "gerersci"
     app_env: Environment = Environment.DEVELOPMENT
     debug: bool = False
+    maintenance_mode: bool = False
+    beta_password: str = ""
 
     # Supabase
     supabase_url: str = "http://localhost:54321"

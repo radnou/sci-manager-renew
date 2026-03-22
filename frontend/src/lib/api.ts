@@ -1883,3 +1883,32 @@ export function demarquerEcheanceFiscale(sciId: EntityId, annee: number, key: st
 export function fetchCalendrierFiscalStatut(sciId: EntityId, annee: number) {
 	return apiFetch<Record<string, boolean>>(`/api/v1/scis/${sciId}/calendrier-fiscal/${annee}/statut`);
 }
+
+// --- Sinistre PNO ---
+
+export interface DeclarerSinistrePayload {
+	date_sinistre: string;
+	description: string;
+	montant_estime?: number | null;
+	numero_dossier?: string | null;
+}
+
+export interface SinistreResult {
+	evenement: Record<string, unknown>;
+	assurance_pno: Record<string, unknown> | null;
+}
+
+export function declarerSinistre(sciId: EntityId, bienId: EntityId, data: DeclarerSinistrePayload) {
+	return apiFetch<SinistreResult>(`/api/v1/scis/${sciId}/biens/${bienId}/sinistre`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+// ── Subscription management ──────────────────────────────────
+export function cancelSubscription() {
+	return apiFetch<{ status: string; message: string }>('/api/v1/stripe/cancel-subscription', {
+		method: 'POST'
+	});
+}

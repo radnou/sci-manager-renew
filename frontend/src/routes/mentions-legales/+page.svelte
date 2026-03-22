@@ -80,7 +80,36 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				6. Donnees personnelles
+				6. Mediation de la consommation
+			</h2>
+			<div class="mt-3 space-y-2 text-sm">
+				<p>
+					Conformement aux articles L611-1 et R612-1 du Code de la consommation, tout
+					consommateur a le droit de recourir gratuitement a un mediateur de la consommation
+					en vue de la resolution amiable d'un litige.
+				</p>
+				<p>
+					<strong>Mediateur :</strong> CNPM - MEDIATION DE LA CONSOMMATION
+				</p>
+				<p>
+					<strong>Site web :</strong>
+					<a href="https://cnpm-mediation-consommation.eu" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+						>cnpm-mediation-consommation.eu</a>
+				</p>
+				<p>
+					<strong>Adresse :</strong> 27 avenue de la Liberation, 42400 Saint-Chamond
+				</p>
+				<p>
+					Avant de saisir le mediateur, vous devez avoir tente de resoudre le litige
+					directement aupres du service client en adressant une reclamation ecrite a
+					contact@gerersci.fr.
+				</p>
+			</div>
+		</section>
+
+		<section>
+			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+				7. Donnees personnelles
 			</h2>
 			<p class="mt-3 text-sm">
 				Pour en savoir plus sur la gestion de vos donnees personnelles et pour exercer vos droits,

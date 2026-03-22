@@ -44,7 +44,7 @@ def enforce_mode(monkeypatch):
 
 
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """Expired trial: max_biens=0, user already has 1 bien -> 402 PlanLimitError."""
+    """No active subscription: max_biens=0, user already has 1 bien -> 402 PlanLimitError."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
     fake_supabase.store["biens"] = [
         {
@@ -59,7 +59,7 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "tmi": 0,
         }
     ]
-    # Expired trial -> restricted access (max_biens=0).
+    # No active subscription -> restricted access (max_biens=0).
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
@@ -98,7 +98,7 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
             "tmi": 0,
         }
     ]
-    # Expired trial -> restricted access (max_biens=0).
+    # No active subscription -> restricted access (max_biens=0).
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
@@ -186,7 +186,7 @@ def test_create_bien_within_quota_allowed(client, auth_headers, fake_supabase):
 
 
 def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """Expired trial: max_scis=0, user already has 1 SCI -> 402 PlanLimitError."""
+    """No active subscription: max_scis=0, user already has 1 SCI -> 402 PlanLimitError."""
     # Override associes so user-123 has exactly 1 SCI membership.
     fake_supabase.store["associes"] = [
         {
@@ -199,7 +199,7 @@ def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
             "role": "gerant",
         },
     ]
-    # Expired trial -> restricted access (max_scis=0).
+    # No active subscription -> restricted access (max_scis=0).
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
@@ -236,7 +236,7 @@ def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase)
             "role": "gerant",
         },
     ]
-    # Expired trial -> restricted access (max_scis=0).
+    # No active subscription -> restricted access (max_scis=0).
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",

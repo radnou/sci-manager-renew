@@ -102,7 +102,8 @@
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
           <tr>
             <td style="padding:16px 32px;text-align:center;">
-              <p style="color:#94a3b8;font-size:11px;margin:0;">Cet email a &eacute;t&eacute; envoy&eacute; par GererSCI. Si vous n&rsquo;avez pas demand&eacute; cet email, vous pouvez l&rsquo;ignorer.</p>
+              <p style="color:#94a3b8;font-size:11px;margin:0;">Cet email a &eacute;t&eacute; envoy&eacute; par GererSCI.
+              {% if unsubscribe_url %}<a href="{{ unsubscribe_url }}" style="color:#94a3b8;text-decoration:underline;">G&eacute;rer mes pr&eacute;f&eacute;rences</a> &middot; {% endif %}Si vous n&rsquo;avez pas demand&eacute; cet email, vous pouvez l&rsquo;ignorer.</p>
             </td>
           </tr>
         </table>

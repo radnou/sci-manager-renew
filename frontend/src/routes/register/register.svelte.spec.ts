@@ -32,7 +32,7 @@ describe('/register/+page.svelte', () => {
 	it('should display plan description', async () => {
 		render(Page);
 
-		const eyebrow = page.getByText('Plan Essentiel — Gratuit');
+		const eyebrow = page.getByText('Créer un compte');
 		await expect.element(eyebrow).toBeInTheDocument();
 	});
 

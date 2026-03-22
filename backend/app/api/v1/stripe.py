@@ -420,6 +420,35 @@ async def create_guest_checkout(
     return CheckoutSessionCreateResponse(url=session_url, session_id=session_id or "")
 
 
+@router.post("/cancel-subscription")
+@limiter.limit("3/minute")
+async def cancel_subscription(
+    request: Request,
+    user_id: str = Depends(get_current_user),
+):
+    """Cancel subscription at end of current period (loi résiliation 3 clics)."""
+    if not settings.feature_stripe_payments:
+        raise FeatureDisabledError("Les paiements Stripe sont désactivés.", flag_name="feature_stripe_payments")
+
+    client = get_supabase_service_client()
+    result = client.table("subscriptions").select("stripe_subscription_id").eq("user_id", user_id).limit(1).execute()
+
+    if not result.data or not result.data[0].get("stripe_subscription_id"):
+        raise ValidationError("Aucun abonnement actif à résilier.")
+
+    sub_id = result.data[0]["stripe_subscription_id"]
+    stripe.api_key = settings.stripe_secret_key
+
+    try:
+        # Cancel at period end (user keeps access until end of billing cycle)
+        stripe.Subscription.modify(sub_id, cancel_at_period_end=True)
+    except stripe.error.StripeError as exc:
+        raise ExternalServiceError("Stripe", f"Résiliation échouée: {str(exc)}")
+
+    logger.info("subscription_cancelled", user_id=user_id, subscription_id=sub_id)
+    return {"status": "cancelled", "message": "Votre abonnement sera résilié à la fin de la période en cours."}
+
+
 @router.post("/customer-portal")
 @limiter.limit("5/minute")
 async def create_customer_portal(

@@ -36,8 +36,8 @@
 
 	const planLabels: Record<string, string> = {
 		starter: 'Gestion',
-		pro: 'Fiscal',
-		free: 'Essentiel'
+		pro: 'Pilotage',
+		fondateur: 'Fondateur'
 	};
 
 	onMount(async () => {

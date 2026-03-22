@@ -10,8 +10,6 @@ from app.core.entitlements import (
     build_plan_snapshot,
     compute_remaining_quota,
     get_plan,
-    get_trial_expired_plan,
-    is_trial_active,
     resolve_plan_key_from_price_id,
 )
 from app.core.exceptions import PlanLimitError, SubscriptionInactiveError, UpgradeRequiredError
@@ -19,7 +17,7 @@ from app.core.supabase_client import get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
 
-ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing", "paid", "free"}
+ACTIVE_SUBSCRIPTION_STATUSES = {"active", "paid"}
 
 
 class SubscriptionService:
@@ -59,41 +57,6 @@ class SubscriptionService:
         return len(rows)
 
     @staticmethod
-    def _create_trial_subscription(user_id: str) -> dict[str, Any] | None:
-        """Create a 14-day trial subscription for a new user."""
-        from datetime import datetime, timedelta, timezone
-
-        try:
-            trial_end = datetime.now(timezone.utc) + timedelta(days=14)
-            trial_end_iso = trial_end.isoformat()
-
-            payload = {
-                "user_id": user_id,
-                "stripe_price_id": "trial",
-                "status": "trialing",
-                "mode": "subscription",
-                "is_active": True,
-                "current_period_end": trial_end_iso,
-                "plan_key": "free",
-                "entitlements_version": 1,
-                "max_scis": None,
-                "max_biens": None,
-                "features": get_plan(PlanKey.PRO).features_payload(),
-            }
-
-            client = get_supabase_service_client()
-            result = client.table("subscriptions").upsert(
-                payload, on_conflict="user_id"
-            ).execute()
-
-            if result.data:
-                return result.data[0]
-            return payload
-        except Exception:
-            logger.warning("trial_subscription_creation_failed", user_id=user_id, exc_info=True)
-            return None
-
-    @staticmethod
     def _load_subscription_row(user_id: str) -> dict[str, Any] | None:
         client = get_supabase_service_client()
         result = client.table("subscriptions").select("*").eq("user_id", user_id).execute()
@@ -129,43 +92,25 @@ class SubscriptionService:
     def get_subscription_summary(cls, user_id: str) -> dict[str, Any]:
         row = cls._load_subscription_row(user_id)
         if not row:
-            # No subscription row at all: create a trial record for the user
-            trial_row = cls._create_trial_subscription(user_id)
-            if trial_row:
-                row = trial_row
-            else:
-                # Fallback if trial creation fails
-                row = build_plan_snapshot(PlanKey.FREE)
-                row.update(
-                    {
-                        "status": "trialing",
-                        "mode": "subscription",
-                        "is_active": True,
-                        "stripe_price_id": "trial",
-                    }
-                )
+            # No subscription: return blocked FREE state (payment required)
+            row = build_plan_snapshot(PlanKey.FREE)
+            row.update(
+                {
+                    "status": "no_subscription",
+                    "mode": "subscription",
+                    "is_active": False,
+                    "stripe_price_id": None,
+                }
+            )
 
-        # Handle trialing status with expiry check
         row_status = str(row.get("status") or "").lower()
+
+        # Legacy trialing rows → treat as inactive (must re-subscribe)
         if row_status == "trialing":
-            current_period_end = row.get("current_period_end")
-            if is_trial_active(row_status, current_period_end):
-                # Active trial: grant Pilotage-level access
-                snapshot = build_plan_snapshot(PlanKey.PRO)
-                row = {**snapshot, **row}
-                row["is_active"] = True
-                row["plan_name"] = "Essai Pilotage"
-            else:
-                # Expired trial: read-only access
-                # Expired values MUST override DB row values
-                expired_plan = get_trial_expired_plan()
-                snapshot = build_plan_snapshot(PlanKey.FREE)
-                row = {**snapshot, **row}
-                row["features"] = expired_plan.features_payload()
-                row["max_scis"] = expired_plan.max_scis
-                row["max_biens"] = expired_plan.max_biens
-                row["is_active"] = False
-                row["plan_name"] = "Essai expiré"
+            snapshot = build_plan_snapshot(PlanKey.FREE)
+            row = {**snapshot, **row}
+            row["is_active"] = False
+            row["plan_name"] = "Non abonné"
         else:
             plan_key = row.get("plan_key") or resolve_plan_key_from_price_id(row.get("stripe_price_id")) or PlanKey.FREE.value
             snapshot = build_plan_snapshot(plan_key)
@@ -202,10 +147,6 @@ class SubscriptionService:
             "remaining_biens": remaining_biens,
             "over_limit": over_limit,
             "current_period_end": row.get("current_period_end"),
-            "trial_expired": (
-                row_status == "trialing"
-                and not is_trial_active(row_status, row.get("current_period_end"))
-            ),
         }
 
     @classmethod

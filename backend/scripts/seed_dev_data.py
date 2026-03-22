@@ -416,6 +416,27 @@ def main():
             "in_app_enabled": True})
     print("  ✅ 4 notifications + 7 préférences")
 
+    # ── Lead captures (SEO funnel demo) ─────────────────────────
+    for i, (src, email_lead) in enumerate([
+        ("simulateur-cerfa", "marie.dupont@gmail.com"),
+        ("generateur-quittance", "jean.martin@outlook.fr"),
+        ("calendrier-fiscal", "sophie.leroy@free.fr"),
+    ]):
+        insert("lead_captures", {
+            "email": email_lead,
+            "source": src,
+            "utm_source": "google" if i == 0 else "organic",
+            "utm_medium": "cpc" if i == 0 else None,
+            "nurture_step": i,
+        })
+    print("  ✅ 3 leads capturés (funnel SEO)")
+
+    # ── Guarantee tracking ────────────────────────────────────────
+    guarantee_end = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    api("PATCH", f"/rest/v1/subscriptions?user_id=eq.{user_id}",
+        json={"guarantee_expires_at": guarantee_end})
+    print("  ✅ Garantie 30j active")
+
     # ── Admin ─────────────────────────────────────────────────────
     insert("admins", {"user_id": user_id})
 

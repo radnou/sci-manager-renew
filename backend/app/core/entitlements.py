@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -75,29 +74,23 @@ class PlanEntitlements:
         return self.max_scis is None or self.max_scis > 1 or self.multi_sci_enabled
 
 
-# Trial (FREE) grants Pilotage-level access for 14 days.
-# After trial expiry, access is restricted (read-only).
+# FREE = non-subscriber fallback (no access, must upgrade via /pricing).
+# Payment-first model: no trial, no freemium.
 PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     PlanKey.FREE: PlanEntitlements(
         plan_key=PlanKey.FREE,
-        display_name="Essai",
+        display_name="Non abonné",
         billing_period="none",
-        max_scis=1,
-        max_biens=5,
+        max_scis=0,
+        max_biens=0,
         multi_sci_enabled=False,
-        charges_enabled=True,
-        fiscalite_enabled=True,
-        quitus_enabled=True,
-        cerfa_enabled=True,
+        charges_enabled=False,
+        fiscalite_enabled=False,
+        quitus_enabled=False,
+        cerfa_enabled=False,
         priority_support=False,
         checkout_mode="subscription",
         is_public=False,
-        documents_enabled=True,
-        notifications_enabled=True,
-        associes_enabled=True,
-        pno_frais_enabled=True,
-        rentabilite_enabled=True,
-        dashboard_complet=True,
     ),
     PlanKey.STARTER: PlanEntitlements(
         plan_key=PlanKey.STARTER,
@@ -185,56 +178,11 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     ),
 }
 
-# Entitlements for expired trials: read-only, no creation/editing
-_TRIAL_EXPIRED_ENTITLEMENTS = PlanEntitlements(
-    plan_key=PlanKey.FREE,
-    display_name="Essai expiré",
-    billing_period="none",
-    max_scis=0,
-    max_biens=0,
-    multi_sci_enabled=False,
-    charges_enabled=False,
-    fiscalite_enabled=False,
-    quitus_enabled=False,
-    cerfa_enabled=False,
-    priority_support=False,
-    checkout_mode="subscription",
-    is_public=False,
-)
-
-
 def get_plan(plan_key: PlanKey | str) -> PlanEntitlements:
     normalized = plan_key if isinstance(plan_key, PlanKey) else PlanKey(str(plan_key))
     if normalized == PlanKey.LIFETIME:
         normalized = PlanKey.PRO
     return PLAN_CATALOG[normalized]
-
-
-def get_trial_expired_plan() -> PlanEntitlements:
-    """Return the restricted entitlements for an expired trial."""
-    return _TRIAL_EXPIRED_ENTITLEMENTS
-
-
-def is_trial_active(status: str | None, current_period_end: str | None) -> bool:
-    """Check whether a trialing subscription is still within its trial window."""
-    if status != "trialing":
-        return False
-    if not current_period_end:
-        return False
-    try:
-        # Handle both ISO format and Unix timestamp
-        if isinstance(current_period_end, (int, float)):
-            end_dt = datetime.fromtimestamp(float(current_period_end), tz=timezone.utc)
-        else:
-            end_str = str(current_period_end)
-            # Try ISO format first, then Unix timestamp
-            try:
-                end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
-            except ValueError:
-                end_dt = datetime.fromtimestamp(float(end_str), tz=timezone.utc)
-        return datetime.now(timezone.utc) < end_dt
-    except (ValueError, TypeError, OverflowError):
-        return False
 
 
 def list_public_plans() -> list[PlanEntitlements]:
@@ -263,10 +211,6 @@ def resolve_price_id_for_plan(plan_key: PlanKey | str, billing_period: str = "mo
 def resolve_plan_key_from_price_id(price_id: str | None) -> PlanKey | None:
     if not price_id:
         return None
-
-    # Special sentinel for trial subscriptions
-    if price_id == "trial":
-        return PlanKey.FREE
 
     price_mapping: dict[str, PlanKey] = {}
 

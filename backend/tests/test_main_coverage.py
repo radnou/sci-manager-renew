@@ -223,7 +223,8 @@ class TestNotificationCronLoop:
              patch("app.main.check_expiring_bails", new_callable=AsyncMock), \
              patch("app.main.check_expiring_pno", new_callable=AsyncMock), \
              patch("app.main.check_pending_quittances", new_callable=AsyncMock), \
-             patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock):
+             patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock), \
+             patch("app.main.process_nurture_emails", new_callable=AsyncMock, return_value=0):
             await _notification_cron_loop()
 
     @pytest.mark.asyncio
@@ -236,7 +237,8 @@ class TestNotificationCronLoop:
              patch("app.main.check_expiring_bails", new_callable=AsyncMock) as m2, \
              patch("app.main.check_expiring_pno", new_callable=AsyncMock) as m3, \
              patch("app.main.check_pending_quittances", new_callable=AsyncMock) as m4, \
-             patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock) as m5:
+             patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock) as m5, \
+             patch("app.main.process_nurture_emails", new_callable=AsyncMock, return_value=0):
             await _notification_cron_loop()
             m1.assert_called_once_with(mock_client)
             m2.assert_called_once_with(mock_client)

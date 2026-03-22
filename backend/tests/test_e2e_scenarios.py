@@ -880,14 +880,13 @@ class TestPaywallEnforcement:
         )
         assert resp.status_code == 201
 
-    def test_finances_with_free_plan_still_works(self, client, auth_headers, fake_supabase):
-        """Free plan is still active -- finances returns 200 (free plan defaults to is_active=True)."""
+    def test_finances_with_no_subscription_returns_402(self, client, auth_headers, fake_supabase):
+        """Payment-first: no subscription → 402 (must subscribe)."""
         fake_supabase.store["subscriptions"] = []
         fake_supabase.store["associes"] = [GERANT_ASSOC]
 
         resp = client.get("/api/v1/finances", headers=auth_headers)
-        # Free plan defaults to is_active=True, so finances works
-        assert resp.status_code == 200
+        assert resp.status_code == 402
 
     def test_finances_with_cancelled_subscription(self, client, auth_headers, fake_supabase):
         """A cancelled (non-active) paid subscription blocks finances."""

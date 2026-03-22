@@ -378,7 +378,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
     """Boot TestClient + monkeypatch once per xdist worker."""
     from app.api.v1 import associes, biens, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
     from app.api.v1 import dashboard, scis_biens, notification_preferences
-    from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle, calendrier_fiscal
+    from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle, calendrier_fiscal, leads
     from app import main
     from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin
     from app.services import subscription_service
@@ -397,7 +397,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
                     notifications, dashboard, scis_biens, notification_preferences, quitus,
                     assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle,
-                    calendrier_fiscal]:
+                    calendrier_fiscal, leads]:
             mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
             mp.setattr(mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
 
@@ -459,19 +459,19 @@ def fake_storage(_fake_storage_session):
 
 @pytest.fixture
 def free_plan(fake_supabase: FakeSupabaseClient):
-    """Set an expired trial so user-123 gets restricted (read-only) access.
+    """Set a non-subscriber state so user-123 gets blocked (no access).
 
-    With the new pricing (no free tier), new users get a 14-day trial.
-    This fixture simulates an expired trial: all features disabled, max 0 biens/scis.
+    Payment-first model: no trial, no freemium. Users without a paid
+    subscription get max 0 biens/scis and all features disabled.
     """
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
             "plan_key": "free",
-            "status": "trialing",
+            "status": "no_subscription",
             "is_active": False,
-            "stripe_price_id": "trial",
-            "current_period_end": "2020-01-01T00:00:00+00:00",
+            "stripe_price_id": None,
+            "current_period_end": None,
             "max_scis": 0,
             "max_biens": 0,
             "features": {

@@ -127,15 +127,12 @@ def paywall_client(monkeypatch, paywall_supabase):
 class TestRequireActiveSubscription:
     """Tests for the require_active_subscription dependency."""
 
-    def test_free_plan_is_active_by_default(self, paywall_client, paywall_supabase):
-        """Users with no subscription row default to free plan and are active."""
+    def test_no_subscription_returns_402(self, paywall_client, paywall_supabase):
+        """Payment-first: users with no subscription get 402."""
         paywall_supabase.store["subscriptions"] = []
 
         resp = paywall_client.get("/sub-required", headers=_auth_headers())
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["plan_key"] == "free"
-        assert data["is_active"] is True
+        assert resp.status_code == 402
 
     def test_active_subscription_returns_plan(self, paywall_client, paywall_supabase):
         """Active paid subscription returns plan info."""

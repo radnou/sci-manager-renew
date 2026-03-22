@@ -10,6 +10,7 @@
 	let checkoutLoading = $state<string | null>(null);
 	let isAuthenticated = $state(false);
 	let checkoutError = $state<string | null>(null);
+	let consentRetractation = $state(false);
 
 	$effect(() => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
@@ -93,7 +94,7 @@
 				'Export CSV',
 				'Support email 48h'
 			],
-			cta: 'Essayer 14 jours gratuit',
+			cta: 'Démarrer pour 19€/mois',
 			href: null
 		},
 		{
@@ -115,7 +116,7 @@
 				'Révision IRL automatique',
 				'Support prioritaire 24h'
 			],
-			cta: 'Essayer 14 jours gratuit',
+			cta: 'Démarrer pour 39€/mois',
 			href: null
 		}
 	];
@@ -142,7 +143,7 @@
 	<title>Tarifs — GérerSCI</title>
 	<meta
 		name="description"
-		content="Comparez les offres GérerSCI : Gestion (19€/mois) et Pilotage (39€/mois). Essai gratuit 14 jours."
+		content="Comparez les offres GérerSCI : Gestion (19€/mois) et Pilotage (39€/mois). Garanti 30 jours satisfait ou remboursé."
 	/>
 	<link rel="canonical" href="https://gerersci.fr/pricing" />
 	<meta property="og:url" content="https://gerersci.fr/pricing" />
@@ -190,6 +191,20 @@
 					<p class="mt-1">{checkoutError}</p>
 				</div>
 			{/if}
+
+			<label class="mx-auto mt-6 flex max-w-2xl cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-blue-600">
+				<input
+					type="checkbox"
+					bind:checked={consentRetractation}
+					class="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+				/>
+				<span>
+					Conformément à l'article L221-28 du Code de la consommation, je souhaite accéder
+					immédiatement au Service et je reconnais expressément <strong>renoncer à mon droit
+					de rétractation de 14 jours</strong>. Je bénéficie de la
+					<a href="/cgv#garantie" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">garantie satisfait ou remboursé de 30 jours</a>.
+				</span>
+			</label>
 		</div>
 
 		<div class="grid gap-8 md:grid-cols-2">
@@ -252,7 +267,7 @@
 							: ''}"
 						variant={plan.popular ? 'default' : 'outline'}
 						size="lg"
-						disabled={checkoutLoading === plan.key}
+						disabled={checkoutLoading === plan.key || !consentRetractation}
 						onclick={() => handlePlanClick(plan.key, plan.href)}
 					>
 						{#if checkoutLoading === plan.key}
@@ -264,7 +279,7 @@
 					</Button>
 
 					<p class="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
-						14 jours d'essai gratuit · Carte bancaire requise · Garantie 30 jours satisfait ou remboursé
+						Paiement sécurisé · Garanti 30 jours satisfait ou remboursé · Annulation en 1 clic
 					</p>
 				</div>
 			{/each}
@@ -275,7 +290,7 @@
 			<div class="flex flex-col items-center text-center lg:flex-row lg:text-left lg:items-start lg:gap-8">
 				<div class="flex-1">
 					<Badge class="mb-3 bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-500">
-						Offre de lancement — 100 places
+						Offre de lancement — 25 places
 					</Badge>
 					<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
 						<Crown class="mr-2 inline h-6 w-6 text-amber-500" />
@@ -291,7 +306,7 @@
 						</li>
 						<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
 							<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
-							Badge Fondateur sur votre profil
+							Ligne directe avec le fondateur
 						</li>
 						<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
 							<Check class="h-4 w-4 flex-shrink-0 text-amber-500" />
@@ -300,14 +315,14 @@
 					</ul>
 				</div>
 				<div class="mt-6 flex flex-col items-center lg:mt-0">
-					<div class="text-5xl font-extrabold text-slate-900 dark:text-white">349€</div>
+					<div class="text-5xl font-extrabold text-slate-900 dark:text-white">500€</div>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 						Paiement unique. Pas de mensualité. À vie.
 					</p>
 					<Button
 						size="lg"
 						class="mt-4 w-full bg-amber-500 px-8 text-white hover:bg-amber-600"
-						disabled={checkoutLoading === 'lifetime'}
+						disabled={checkoutLoading === 'lifetime' || !consentRetractation}
 						onclick={() => handlePlanClick('lifetime', null)}
 					>
 						{#if checkoutLoading === 'lifetime'}
@@ -318,7 +333,7 @@
 						{/if}
 					</Button>
 					<p class="mt-3 text-sm font-medium text-amber-700 dark:text-amber-400">
-						Places restantes sur 100
+						Places restantes sur 25
 					</p>
 				</div>
 			</div>

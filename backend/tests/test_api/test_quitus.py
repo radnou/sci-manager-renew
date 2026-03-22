@@ -96,8 +96,19 @@ def test_download_quitus_missing_file_returns_structured_404(client, auth_header
     assert data["error"] == "Quittance introuvable."
 
 
-def test_download_quitus_blocks_non_member_before_storage_access(client, monkeypatch):
+def test_download_quitus_blocks_non_member_before_storage_access(client, monkeypatch, fake_supabase):
     from app.api.v1 import quitus
+
+    # Give user-456 an active subscription so they pass the paywall
+    fake_supabase.store["subscriptions"].append({
+        "user_id": "user-456",
+        "plan_key": "starter",
+        "status": "active",
+        "is_active": True,
+        "max_scis": 1,
+        "max_biens": 5,
+        "features": {"quitus_enabled": True},
+    })
 
     called = {"value": False}
 

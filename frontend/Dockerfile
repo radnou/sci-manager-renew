@@ -43,6 +43,10 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
 
+# Run as non-root user (security: container escape mitigation)
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
 EXPOSE 4173
 
 CMD ["node", "build"]

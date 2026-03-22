@@ -32,6 +32,7 @@
 	let user = $state<User | null>(null);
 	let authResolved = $state(false);
 	let mobileMenuOpen = $state(false);
+	let simulateursOpen = $state(false);
 	let previousPath = page.url.pathname;
 
 	// Track page views on SvelteKit client-side navigation
@@ -148,33 +149,57 @@
 						>
 							Tarifs
 						</a>
-						<div class="group relative">
+						<div class="relative">
 							<button
 								class="flex items-center gap-1 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+								aria-haspopup="true"
+								aria-expanded={simulateursOpen}
+								onclick={() => (simulateursOpen = !simulateursOpen)}
+								onkeydown={(e) => { if (e.key === 'Escape') simulateursOpen = false; }}
 							>
 								Simulateurs
-								<svg class="h-3 w-3 transition-transform group-hover:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+								<svg class="h-3 w-3 transition-transform {simulateursOpen ? 'rotate-180' : ''}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 									<path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
 								</svg>
 							</button>
-							<div class="invisible absolute left-0 top-full z-50 pt-2 opacity-0 transition-all group-hover:visible group-hover:opacity-100">
+							{#if simulateursOpen}
+							<div class="absolute left-0 top-full z-50 pt-2">
 								<div class="w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
 									<a
 										href="/simulateur-cerfa"
 										class="block rounded-lg px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+										onclick={() => (simulateursOpen = false)}
 									>
 										<span class="font-medium">CERFA 2044</span>
 										<span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Revenus fonciers</span>
 									</a>
 									<a
+										href="/generateur-quittance"
+										class="block rounded-lg px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+										onclick={() => (simulateursOpen = false)}
+									>
+										<span class="font-medium">Quittance de loyer</span>
+										<span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Générateur gratuit</span>
+									</a>
+									<a
+										href="/calendrier-fiscal"
+										class="block rounded-lg px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+										onclick={() => (simulateursOpen = false)}
+									>
+										<span class="font-medium">Calendrier fiscal SCI</span>
+										<span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Dates clés 2026</span>
+									</a>
+									<a
 										href="/simulateur-plus-value"
 										class="block rounded-lg px-3 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+										onclick={() => (simulateursOpen = false)}
 									>
 										<span class="font-medium">Plus-value immobilière</span>
 										<span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Impôt sur la cession</span>
 									</a>
 								</div>
 							</div>
+							{/if}
 						</div>
 					</div>
 					<div class="flex items-center gap-3">

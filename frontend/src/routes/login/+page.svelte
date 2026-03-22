@@ -246,7 +246,7 @@
 							href="/register"
 							class="font-medium text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
 						>
-							Créer un compte gratuit
+							Créer un compte
 						</a>
 					</p>
 				{/if}

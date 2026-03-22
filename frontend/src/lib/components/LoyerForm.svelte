@@ -247,7 +247,7 @@
 			{/if}
 			<label class="sci-field" for="loyer-date">
 				<span class="sci-field-label">Date</span>
-				<Input id="loyer-date" name="loyer-date" bind:value={dateLoyer} required type="date" />
+				<Input id="loyer-date" name="loyer-date" bind:value={dateLoyer} required type="date" lang="fr" />
 			</label>
 			<label class="sci-field" for="loyer-montant">
 				<span class="sci-field-label">Montant (€)</span>

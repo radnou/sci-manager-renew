@@ -1,28 +1,26 @@
 """Tests for plan entitlements catalog and helper functions."""
 
-from datetime import datetime, timedelta, timezone
-
 from app.core.entitlements import (
     PlanKey,
     get_plan,
-    get_trial_expired_plan,
-    is_trial_active,
     list_public_plans,
     resolve_plan_key_from_price_id,
     resolve_price_id_for_plan,
 )
 
 
-def test_free_plan_is_trial():
+def test_free_plan_is_blocked():
+    """FREE plan is a blocked non-subscriber state (payment-first model)."""
     plan = get_plan(PlanKey.FREE)
     assert plan.is_public is False
-    assert plan.display_name == "Essai"
-    assert plan.max_scis == 1
-    assert plan.max_biens == 5
-    # Trial has full Pilotage-level features
-    assert plan.cerfa_enabled is True
-    assert plan.fiscalite_enabled is True
-    assert plan.associes_enabled is True
+    assert plan.display_name == "Non abonné"
+    assert plan.max_scis == 0
+    assert plan.max_biens == 0
+    # No features enabled
+    assert plan.cerfa_enabled is False
+    assert plan.fiscalite_enabled is False
+    assert plan.charges_enabled is False
+    assert plan.associes_enabled is False
 
 
 def test_starter_plan_is_gestion():
@@ -89,7 +87,6 @@ def test_features_payload_includes_new_fields():
 def test_list_public_plans_includes_paid_plans():
     plans = list_public_plans()
     keys = {p.plan_key for p in plans}
-    # FREE is no longer public (it's trial-only), FONDATEUR is public
     assert PlanKey.STARTER in keys
     assert PlanKey.PRO in keys
     assert PlanKey.FONDATEUR in keys
@@ -152,49 +149,12 @@ def test_resolve_plan_key_fondateur(monkeypatch):
     assert result == PlanKey.FONDATEUR
 
 
-def test_resolve_plan_key_trial():
-    result = resolve_plan_key_from_price_id("trial")
+def test_resolve_plan_key_unknown_falls_back_to_free():
+    """Unknown price_id falls back to FREE."""
+    result = resolve_plan_key_from_price_id("price_unknown_xyz")
     assert result == PlanKey.FREE
 
 
 def test_resolve_price_id_lifetime_returns_none():
     result = resolve_price_id_for_plan(PlanKey.LIFETIME)
     assert result is None
-
-
-def test_trial_expired_plan():
-    plan = get_trial_expired_plan()
-    assert plan.display_name == "Essai expiré"
-    assert plan.max_scis == 0
-    assert plan.max_biens == 0
-    assert plan.cerfa_enabled is False
-    assert plan.fiscalite_enabled is False
-    assert plan.charges_enabled is False
-
-
-def test_is_trial_active_within_window():
-    future = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-    assert is_trial_active("trialing", future) is True
-
-
-def test_is_trial_active_expired():
-    past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-    assert is_trial_active("trialing", past) is False
-
-
-def test_is_trial_active_wrong_status():
-    future = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-    assert is_trial_active("active", future) is False
-
-
-def test_is_trial_active_no_end_date():
-    assert is_trial_active("trialing", None) is False
-
-
-def test_is_trial_active_unix_timestamp():
-    future_ts = (datetime.now(timezone.utc) + timedelta(days=7)).timestamp()
-    assert is_trial_active("trialing", str(future_ts)) is True
-
-
-def test_is_trial_active_invalid_value():
-    assert is_trial_active("trialing", "not-a-date") is False
