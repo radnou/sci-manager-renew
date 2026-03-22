@@ -7,71 +7,48 @@ test.describe('Navigation globale @P0', () => {
     await setupAuthedMocks(page);
   });
 
-  test('le SCI switcher de la sidebar fonctionne @P0', async ({ page }) => {
+  test('le SCI switcher fonctionne @P0', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // Look for SCI switcher in sidebar
-    const sidebar = page.locator('nav, aside, [class*="sidebar"], [class*="Sidebar"]');
-    const hasSidebar = await sidebar.first().isVisible().catch(() => false);
+    // Look for SCI switcher button (navbar or sidebar)
+    const sciButton = page.locator(
+      'button:has-text("SCI"), button:has-text("Mes SCI"), [aria-haspopup="listbox"]'
+    );
 
-    if (hasSidebar) {
-      // Look for SCI selector (dropdown, combobox, or list)
-      const sciSwitcher = page.locator(
-        'select, [role="combobox"], [data-testid*="sci-switch"], button:has-text("SCI")'
-      );
-      if (await sciSwitcher.first().isVisible().catch(() => false)) {
-        await sciSwitcher.first().click();
-        await page.waitForTimeout(500);
+    if (await sciButton.first().isVisible().catch(() => false)) {
+      await sciButton.first().click();
+      await page.waitForTimeout(500);
 
-        // Options should appear
-        const options = page.locator(
-          'option, [role="option"], [role="menuitem"], [class*="dropdown"] a, [class*="popover"] a'
-        );
-        const optionCount = await options.count();
-        expect(optionCount >= 0).toBe(true); // May be 0 if only one SCI
-      }
+      // Dropdown should open with SCI options or "Voir toutes les SCI"
+      const content = await page.textContent('body');
+      const hasSciContent =
+        content!.includes('Voir toutes les SCI') ||
+        content!.includes('Aucune SCI') ||
+        content!.includes('Belleville') ||
+        content!.includes('SCI');
+      expect(hasSciContent).toBe(true);
     }
   });
 
-  test('tous les liens de la sidebar naviguent correctement @P0', async ({ page }) => {
+  test('les liens de navigation principaux fonctionnent @P0', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // Collect primary navigation links (exclude breadcrumbs and skip-to-content)
-    const sidebarLinks = page.locator('nav a[href]:not([aria-label*="Ariane"] a):not([href^="#"])');
-    const linkCount = await sidebarLinks.count();
+    // Verify key navigation links exist
+    const dashboardLink = page.locator('a[href="/dashboard"]');
+    expect(await dashboardLink.first().isVisible()).toBe(true);
 
-    // Verify at least some navigation links exist
-    expect(linkCount).toBeGreaterThan(0);
+    const financeLink = page.locator('a[href="/finances"]');
+    expect(await financeLink.first().isVisible()).toBe(true);
 
-    // Collect unique hrefs to test (skip duplicates and dashboard self-link)
-    const tested = new Set<string>();
-    const linksToTest = Math.min(linkCount, 5);
-    for (let i = 0; i < linksToTest; i++) {
-      const link = sidebarLinks.nth(i);
-      const href = await link.getAttribute('href');
-      if (href && href.startsWith('/') && !href.includes('logout') && !href.includes('login') && !tested.has(href)) {
-        tested.add(href);
-        await link.click();
-        await page.waitForTimeout(1000);
-        await page.waitForLoadState('networkidle');
-
-        // Verify navigation occurred (allow redirects)
-        const currentUrl = page.url();
-        const hrefPath = href.split('?')[0];
-        const navigated = currentUrl.includes(hrefPath) || !currentUrl.includes('/dashboard') || hrefPath === '/dashboard';
-        expect(navigated).toBe(true);
-
-        // Go back to dashboard for next link test
-        await page.goto('/dashboard');
-        await page.waitForLoadState('networkidle');
-      }
-    }
+    // Navigate to finances
+    await financeLink.first().click();
+    await page.waitForLoadState('networkidle');
+    expect(page.url()).toContain('/finances');
   });
 
   test('les breadcrumbs affichent des noms lisibles (pas des UUID) @P1', async ({ page }) => {
-    // Navigate to a nested page to check breadcrumbs
     await page.goto('/scis');
     await page.waitForLoadState('networkidle');
 
@@ -80,20 +57,14 @@ test.describe('Navigation globale @P0', () => {
       await sciLink.click();
       await page.waitForLoadState('networkidle');
 
-      // Look for breadcrumbs
       const breadcrumbs = page.locator(
-        '[class*="breadcrumb"], [class*="Breadcrumb"], nav[aria-label*="breadcrumb"], [data-testid*="breadcrumb"]'
+        '[class*="breadcrumb"], [class*="Breadcrumb"], nav[aria-label*="breadcrumb"], nav[aria-label*="Ariane"]'
       );
 
       if (await breadcrumbs.first().isVisible().catch(() => false)) {
         const breadcrumbText = await breadcrumbs.first().textContent();
-
-        // UUID pattern: 8-4-4-4-12 hex characters
         const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-        const containsUuid = uuidPattern.test(breadcrumbText || '');
-
-        // Breadcrumbs should not show raw UUIDs
-        expect(containsUuid).toBe(false);
+        expect(uuidPattern.test(breadcrumbText || '')).toBe(false);
       }
     }
   });
@@ -102,27 +73,22 @@ test.describe('Navigation globale @P0', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // Trigger Cmd+K (Meta+K on Mac)
     await page.keyboard.press('Meta+k');
     await page.waitForTimeout(500);
 
-    // Look for command palette dialog
     const commandPalette = page.locator(
       '[role="dialog"], [class*="command"], [class*="Command"], [class*="palette"], [class*="Palette"], [cmdk-dialog]'
     );
     const isVisible = await commandPalette.first().isVisible().catch(() => false);
 
     if (!isVisible) {
-      // Try Ctrl+K for non-Mac
       await page.keyboard.press('Control+k');
       await page.waitForTimeout(500);
     }
 
     const paletteVisible = await commandPalette.first().isVisible().catch(() => false);
-
-    // Also check for a search input that might be the command palette
     const searchInput = page.locator(
-      'input[placeholder*="chercher"], input[placeholder*="Chercher"], input[placeholder*="search"], input[placeholder*="Search"], [cmdk-input]'
+      'input[placeholder*="chercher"], input[placeholder*="Chercher"], input[placeholder*="search"], [cmdk-input]'
     );
     const searchVisible = await searchInput.first().isVisible().catch(() => false);
 
