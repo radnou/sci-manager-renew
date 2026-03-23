@@ -40,10 +40,14 @@
 
 {#if !authorized}
 	<div class="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-		<div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+		<div
+			class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+		>
 			<div class="mb-6 flex items-center gap-3">
 				<h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Admin</h1>
-				<span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+				<span
+					class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400"
+				>
 					Restricted
 				</span>
 			</div>
@@ -80,10 +84,7 @@
 
 		<nav class="mb-8 flex gap-2">
 			{#each adminNav as item}
-				<a
-					href={item.href}
-					class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-				>
+				<a href={item.href} class="rounded-lg px-4 py-2 text-sm font-medium transition-colors">
 					{item.label}
 				</a>
 			{/each}

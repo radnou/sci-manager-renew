@@ -61,3 +61,4 @@ marketing-*.png
 .superpowers/
 .claude/
 playwright-report/
+.playwright-mcp/

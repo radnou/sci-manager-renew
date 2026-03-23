@@ -116,7 +116,13 @@ export type Fiscalite = {
 	updated_at?: string;
 };
 
-export type BienCategory = 'appartement' | 'maison' | 'immeuble' | 'local_commercial' | 'parking' | 'autre';
+export type BienCategory =
+	| 'appartement'
+	| 'maison'
+	| 'immeuble'
+	| 'local_commercial'
+	| 'parking'
+	| 'autre';
 
 export type Bien = {
 	id?: EntityId;

@@ -21,7 +21,9 @@ export function markAllNotificationsRead(): Promise<{ updated: number }> {
 export async function fetchNotificationPreferences(): Promise<{
 	preferences: NotificationPreference[];
 }> {
-	return apiFetch<{ preferences: NotificationPreference[] }>('/api/v1/user/notification-preferences');
+	return apiFetch<{ preferences: NotificationPreference[] }>(
+		'/api/v1/user/notification-preferences'
+	);
 }
 
 export async function updateNotificationPreferences(

@@ -93,7 +93,10 @@ export async function deleteEvenement(
 	});
 }
 
-export async function fetchObligations(sciId: EntityId, bienId: EntityId): Promise<ObligationsData> {
+export async function fetchObligations(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<ObligationsData> {
 	return apiFetch<ObligationsData>(`/api/v1/scis/${sciId}/biens/${bienId}/obligations`);
 }
 
@@ -173,7 +176,10 @@ export function creerAvenant(
 	);
 }
 
-export async function fetchBienPno(sciId: EntityId, bienId: EntityId): Promise<AssurancePnoEmbed[]> {
+export async function fetchBienPno(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<AssurancePnoEmbed[]> {
 	return apiFetch<AssurancePnoEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno`);
 }
 
@@ -195,11 +201,14 @@ export async function updatePnoForBien(
 	pnoId: number,
 	data: PnoUpdate
 ): Promise<AssurancePnoEmbed> {
-	return apiFetch<AssurancePnoEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`, {
-		method: 'PATCH',
-		body: JSON.stringify(data),
-		headers: { 'Content-Type': 'application/json' }
-	});
+	return apiFetch<AssurancePnoEmbed>(
+		`/api/v1/scis/${sciId}/biens/${bienId}/assurance-pno/${pnoId}`,
+		{
+			method: 'PATCH',
+			body: JSON.stringify(data),
+			headers: { 'Content-Type': 'application/json' }
+		}
+	);
 }
 
 export async function deletePnoForBien(

@@ -40,4 +40,3 @@ export function exportLoyersCsv(sciId?: EntityId, period?: string): Promise<Blob
 	const qs = searchParams.toString();
 	return apiFetchBlob(`/api/v1/export/loyers/csv${qs ? `?${qs}` : ''}`);
 }
-

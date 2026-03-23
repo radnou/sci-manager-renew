@@ -49,7 +49,7 @@
 			await adminFetch(`/api/v1/admin/users/${userId}/plan`, {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ plan: selectedPlan }),
+				body: JSON.stringify({ plan: selectedPlan })
 			});
 			actionMessage = `Plan change en "${selectedPlan}"`;
 			showPlanForm = false;
@@ -69,7 +69,7 @@
 			await adminFetch(`/api/v1/admin/users/${userId}/email`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ subject: emailSubject, message: emailBody }),
+				body: JSON.stringify({ subject: emailSubject, message: emailBody })
 			});
 			actionMessage = `Email envoye a ${userData?.user?.email}`;
 			showEmailForm = false;
@@ -83,7 +83,9 @@
 	}
 
 	async function disableUser() {
-		if (!confirm(`Desactiver le compte de ${userData?.user?.email} ? Cette action est irreversible.`))
+		if (
+			!confirm(`Desactiver le compte de ${userData?.user?.email} ? Cette action est irreversible.`)
+		)
 			return;
 		actionLoading = 'disable';
 		actionMessage = '';
@@ -112,7 +114,9 @@
 
 {#if loading}
 	<div class="flex items-center justify-center py-20">
-		<div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"></div>
+		<div
+			class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"
+		></div>
 	</div>
 {:else if userData}
 	<!-- User Header -->
@@ -150,7 +154,7 @@
 	</div>
 
 	<!-- Stats Grid -->
-	<div class="mt-4 grid gap-4 grid-cols-3">
+	<div class="mt-4 grid grid-cols-3 gap-4">
 		<div
 			class="rounded-2xl border border-slate-200 bg-white p-5 text-center dark:border-slate-800 dark:bg-slate-950"
 		>
@@ -257,7 +261,9 @@
 
 		<!-- Plan Change Form -->
 		{#if showPlanForm}
-			<div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+			<div
+				class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+			>
 				<p class="text-sm font-medium text-slate-700 dark:text-slate-300">Nouveau plan :</p>
 				<div class="mt-2 flex items-center gap-3">
 					<select
@@ -287,10 +293,15 @@
 
 		<!-- Email Form -->
 		{#if showEmailForm}
-			<div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+			<div
+				class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+			>
 				<div class="space-y-3">
 					<div>
-						<label for="email-subject" class="text-xs font-medium text-slate-600 dark:text-slate-400">Sujet</label>
+						<label
+							for="email-subject"
+							class="text-xs font-medium text-slate-600 dark:text-slate-400">Sujet</label
+						>
 						<input
 							type="text"
 							bind:value={emailSubject}
@@ -300,7 +311,9 @@
 						/>
 					</div>
 					<div>
-						<label for="email-body" class="text-xs font-medium text-slate-600 dark:text-slate-400">Message</label>
+						<label for="email-body" class="text-xs font-medium text-slate-600 dark:text-slate-400"
+							>Message</label
+						>
 						<textarea
 							bind:value={emailBody}
 							id="email-body"

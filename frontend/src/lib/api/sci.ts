@@ -167,7 +167,9 @@ export function demarquerEcheanceFiscale(sciId: EntityId, annee: number, key: st
 }
 
 export function fetchCalendrierFiscalStatut(sciId: EntityId, annee: number) {
-	return apiFetch<Record<string, boolean>>(`/api/v1/scis/${sciId}/calendrier-fiscal/${annee}/statut`);
+	return apiFetch<Record<string, boolean>>(
+		`/api/v1/scis/${sciId}/calendrier-fiscal/${annee}/statut`
+	);
 }
 
 export async function fetchComptabiliteAnnuelle(

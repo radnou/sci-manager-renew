@@ -23,11 +23,15 @@
 		return d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
 	}
 
-	const maxMonths = $derived(Math.max(...data.cohorts.map(c => c.retained.length), 0));
+	const maxMonths = $derived(Math.max(...data.cohorts.map((c) => c.retained.length), 0));
 </script>
 
-<div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-	<h3 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">Rétention par cohorte</h3>
+<div
+	class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900"
+>
+	<h3 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
+		Rétention par cohorte
+	</h3>
 
 	<div class="overflow-x-auto">
 		<table class="w-full text-sm">
@@ -43,7 +47,7 @@
 			<tbody>
 				{#each data.cohorts as cohort}
 					<tr>
-						<td class="whitespace-nowrap px-2 py-1 font-medium text-slate-700 dark:text-slate-300">
+						<td class="px-2 py-1 font-medium whitespace-nowrap text-slate-700 dark:text-slate-300">
 							{formatMonth(cohort.month)}
 						</td>
 						<td class="px-2 py-1 text-center font-medium text-slate-900 dark:text-slate-100">
@@ -52,7 +56,9 @@
 						{#each cohort.retained as count, i}
 							{@const pct = cohort.total > 0 ? (count / cohort.total) * 100 : 0}
 							<td class="px-1 py-1">
-								<div class="rounded px-2 py-1 text-center text-xs font-medium {retentionColor(pct)}">
+								<div
+									class="rounded px-2 py-1 text-center text-xs font-medium {retentionColor(pct)}"
+								>
 									{pct.toFixed(0)}%
 								</div>
 							</td>

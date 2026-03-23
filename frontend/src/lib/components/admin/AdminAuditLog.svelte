@@ -57,11 +57,15 @@
 			<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 				{#each entries as entry}
 					<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-						<td class="whitespace-nowrap px-4 py-3 text-slate-600 dark:text-slate-400">
+						<td class="px-4 py-3 whitespace-nowrap text-slate-600 dark:text-slate-400">
 							{relativeTime(entry.created_at)}
 						</td>
 						<td class="px-4 py-3">
-							<span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium {actionBadge[entry.admin_action] || 'bg-slate-100 text-slate-600'}">
+							<span
+								class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium {actionBadge[
+									entry.admin_action
+								] || 'bg-slate-100 text-slate-600'}"
+							>
 								{entry.admin_action}
 							</span>
 						</td>
@@ -81,20 +85,25 @@
 	</div>
 
 	{#if totalPages > 1}
-		<div class="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700">
+		<div
+			class="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700"
+		>
 			<span class="text-sm text-slate-500">{total} entrées</span>
 			<div class="flex gap-1">
 				<button
 					onclick={() => onPageChange(page - 1)}
 					disabled={page <= 1}
-					class="rounded px-3 py-1 text-sm disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800"
-				>←</button>
-				<span class="px-3 py-1 text-sm text-slate-600 dark:text-slate-400">{page}/{totalPages}</span>
+					class="rounded px-3 py-1 text-sm hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
+					>←</button
+				>
+				<span class="px-3 py-1 text-sm text-slate-600 dark:text-slate-400">{page}/{totalPages}</span
+				>
 				<button
 					onclick={() => onPageChange(page + 1)}
 					disabled={page >= totalPages}
-					class="rounded px-3 py-1 text-sm disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800"
-				>→</button>
+					class="rounded px-3 py-1 text-sm hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
+					>→</button
+				>
 			</div>
 		</div>
 	{/if}

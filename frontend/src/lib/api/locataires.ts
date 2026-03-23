@@ -1,10 +1,5 @@
 import { apiFetch } from './client';
-import type {
-	EntityId,
-	Locataire,
-	LocataireCreatePayload,
-	LocataireUpdatePayload
-} from './types';
+import type { EntityId, Locataire, LocataireCreatePayload, LocataireUpdatePayload } from './types';
 
 export function createLocataire(payload: LocataireCreatePayload) {
 	return apiFetch<Locataire>('/api/v1/locataires', {

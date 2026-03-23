@@ -38,10 +38,14 @@
 
 {#if loading}
 	<div class="flex items-center justify-center py-20">
-		<div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"></div>
+		<div
+			class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-600"
+		></div>
 	</div>
 {:else if error}
-	<div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 dark:border-rose-800 dark:bg-rose-950/30">
+	<div
+		class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 dark:border-rose-800 dark:bg-rose-950/30"
+	>
 		<p class="text-rose-700 dark:text-rose-400">{error}</p>
 	</div>
 {:else}
