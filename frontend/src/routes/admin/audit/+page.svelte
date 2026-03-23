@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import { adminKey } from '$lib/stores/admin-auth';
 	import AdminAuditLog from '$lib/components/admin/AdminAuditLog.svelte';
 
@@ -9,7 +10,7 @@
 	let loading = $state(true);
 
 	async function adminFetch<T>(path: string): Promise<T> {
-		const resp = await fetch(path, { headers: { 'X-Admin-Key': $adminKey } });
+		const resp = await fetch(path, { headers: { 'X-Admin-Key': get(adminKey) } });
 		if (!resp.ok) throw new Error(`${resp.status}`);
 		return resp.json();
 	}

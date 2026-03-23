@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import { adminKey } from '$lib/stores/admin-auth';
 	import AdminRevenueBreakdown from '$lib/components/admin/AdminRevenueBreakdown.svelte';
 	import AdminCohortTable from '$lib/components/admin/AdminCohortTable.svelte';
@@ -10,13 +11,13 @@
 	let error = $state('');
 
 	async function adminFetch<T>(path: string): Promise<T> {
-		const resp = await fetch(path, { headers: { 'X-Admin-Key': $adminKey } });
+		const resp = await fetch(path, { headers: { 'X-Admin-Key': get(adminKey) } });
 		if (!resp.ok) throw new Error(`${resp.status}`);
 		return resp.json();
 	}
 
 	onMount(async () => {
-		if (!$adminKey) return;
+		if (!get(adminKey)) return;
 		try {
 			const [rev, coh] = await Promise.all([
 				adminFetch('/api/v1/admin/revenue'),
@@ -37,7 +38,14 @@
 					percentage: p.pct_of_total ?? p.percentage ?? 0
 				}))
 			};
-			cohortData = coh;
+			// Normalize cohort response
+			cohortData = {
+				cohorts: ((coh as any).cohorts || []).map((c: any) => ({
+					month: c.month ?? c.cohort ?? '',
+					total: c.total ?? c.size ?? 0,
+					retained: c.retained ?? c.retention ?? []
+				}))
+			};
 		} catch {
 			error = 'Erreur lors du chargement';
 		} finally {
