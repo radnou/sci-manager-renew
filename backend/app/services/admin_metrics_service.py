@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 import structlog
@@ -31,8 +32,11 @@ logger = structlog.get_logger(__name__)
 MRR_MONTHLY_PRICES: dict[str, float] = {
     "free": 0.0,
     "starter": 9.90,
+    "gestion": 9.90,
     "pro": 19.90,
-    "lifetime": 0.0,  # one-time, excluded from MRR
+    "pilotage": 19.90,
+    "fondateur": 0.0,   # one-time lifetime, excluded from recurring MRR
+    "lifetime": 0.0,    # one-time, excluded from MRR
     "cabinet": 49.90,
 }
 
@@ -125,6 +129,8 @@ def _compute_mrr(client) -> float:
 
 def compute_hero_metrics() -> dict:
     """Compute the 5 hero KPIs with trend comparison."""
+    from app.services.mrr_snapshot_service import get_mrr_trend
+
     client = get_supabase_service_client()
     now = datetime.now(timezone.utc)
     d30 = (now - timedelta(days=30)).date().isoformat()
@@ -135,11 +141,10 @@ def compute_hero_metrics() -> dict:
     ns_current = _count_active_scis(client, d30)
     ns_previous = _count_active_scis(client, d60, d30)
 
-    # MRR: current snapshot only — no historical snapshots stored yet.
-    # Previous = current, so trend will always be "stable" and mrr_declining alert
-    # will never fire. This is a known limitation for early stage.
-    mrr_current = _compute_mrr(client)
-    mrr_previous = mrr_current
+    # MRR: use snapshot-based trend for real historical comparison
+    mrr_trend = get_mrr_trend(days=30)
+    mrr_current = mrr_trend["current_mrr"]
+    mrr_previous = mrr_trend["previous_mrr"]
 
     # Activation rate
     total_users = _get_total_users(client)
@@ -435,4 +440,171 @@ def compute_enriched_users(
         "total": total,
         "page": page,
         "per_page": per_page,
+    }
+
+
+def compute_revenue_breakdown() -> dict:
+    """Return MRR broken down per plan (free, gestion, pilotage, fondateur, cabinet)."""
+    client = get_supabase_service_client()
+    subs = client.table("subscriptions").select("stripe_price_id, status").execute()
+
+    mrr_by_plan: dict[str, float] = defaultdict(float)
+    count_by_plan: dict[str, int] = defaultdict(int)
+
+    for s in subs.data or []:
+        if s.get("status") in ACTIVE_STATUSES:
+            plan = _resolve_plan(s.get("stripe_price_id"))
+            monthly = MRR_MONTHLY_PRICES.get(plan, 0.0)
+            mrr_by_plan[plan] += monthly
+            count_by_plan[plan] += 1
+
+    total_mrr = round(sum(mrr_by_plan.values()), 2)
+
+    plans = [
+        "free", "gestion", "pilotage", "fondateur", "cabinet",
+        "starter", "pro", "lifetime",  # legacy
+    ]
+    breakdown = []
+    for plan in plans:
+        mrr_val = round(mrr_by_plan.get(plan, 0.0), 2)
+        count = count_by_plan.get(plan, 0)
+        pct = round(mrr_val / total_mrr * 100, 1) if total_mrr > 0 else 0.0
+        breakdown.append({
+            "plan": plan,
+            "mrr": mrr_val,
+            "subscribers": count,
+            "pct_of_total": pct,
+        })
+
+    return {
+        "total_mrr": total_mrr,
+        "breakdown": breakdown,
+    }
+
+
+def compute_arpu() -> dict:
+    """Average Revenue Per User across all active paying subscribers."""
+    client = get_supabase_service_client()
+    subs = client.table("subscriptions").select("stripe_price_id, status").execute()
+
+    total_mrr = 0.0
+    paying_count = 0
+
+    for s in subs.data or []:
+        if s.get("status") in ACTIVE_STATUSES:
+            plan = _resolve_plan(s.get("stripe_price_id"))
+            monthly = MRR_MONTHLY_PRICES.get(plan, 0.0)
+            if monthly > 0:
+                total_mrr += monthly
+                paying_count += 1
+
+    arpu = round(total_mrr / paying_count, 2) if paying_count > 0 else 0.0
+
+    return {
+        "arpu": arpu,
+        "total_mrr": round(total_mrr, 2),
+        "paying_subscribers": paying_count,
+    }
+
+
+def compute_cohort_retention(months: int = 6) -> dict:
+    """
+    Monthly cohort retention table.
+    For each cohort month (signup month), computes what % of users were
+    still active (had ≥1 loyer) in month+1, month+2, … up to `months` intervals.
+    """
+    client = get_supabase_service_client()
+    now = datetime.now(timezone.utc)
+
+    # Fetch all auth users with their creation dates
+    auth_users = client.auth.admin.list_users()
+    auth_list = auth_users if isinstance(auth_users, list) else []
+
+    # Group users by cohort month (YYYY-MM)
+    cohort_users: dict[str, list[str]] = defaultdict(list)
+    for u in auth_list:
+        uid = u.id if hasattr(u, "id") else u.get("id", "")
+        created = str(u.created_at if hasattr(u, "created_at") else u.get("created_at", ""))
+        if len(created) >= 7:
+            cohort_month = created[:7]  # "YYYY-MM"
+            cohort_users[cohort_month].append(uid)
+
+    # Fetch associes to map user_id → set of sci_ids
+    associes = client.table("associes").select("user_id, id_sci").execute()
+    user_scis: dict[str, set[str]] = defaultdict(set)
+    for a in associes.data or []:
+        user_scis[a["user_id"]].add(a["id_sci"])
+
+    # Fetch all loyers with dates to determine user activity per month
+    all_loyers = (
+        client.table("loyers")
+        .select("date_loyer, biens!inner(id_sci)")
+        .execute()
+    )
+
+    # Build: sci_id → set of active months ("YYYY-MM")
+    sci_active_months: dict[str, set[str]] = defaultdict(set)
+    for l in all_loyers.data or []:
+        sci_id = l.get("biens", {}).get("id_sci")
+        date_loyer = l.get("date_loyer", "")
+        if sci_id and len(date_loyer) >= 7:
+            sci_active_months[sci_id].add(date_loyer[:7])
+
+    # Build: user_id → set of active months
+    def user_active_months(uid: str) -> set[str]:
+        scis = user_scis.get(uid, set())
+        active: set[str] = set()
+        for sci in scis:
+            active |= sci_active_months.get(sci, set())
+        return active
+
+    # Build cohort table
+    # Only include cohort months within the last `months` months
+    cohort_table = []
+    sorted_cohorts = sorted(cohort_users.keys(), reverse=True)[:months]
+
+    for cohort_month in sorted(sorted_cohorts):
+        users = cohort_users[cohort_month]
+        cohort_size = len(users)
+        if cohort_size == 0:
+            continue
+
+        retention_row: dict = {
+            "cohort": cohort_month,
+            "size": cohort_size,
+            "retention": {},
+        }
+
+        # Compute year/month from cohort_month
+        try:
+            cy, cm = int(cohort_month[:4]), int(cohort_month[5:7])
+        except ValueError:
+            continue
+
+        for interval in range(0, months + 1):
+            # Target month = cohort_month + interval months
+            tm = cm + interval
+            ty = cy + (tm - 1) // 12
+            tm = ((tm - 1) % 12) + 1
+            target_month = f"{ty:04d}-{tm:02d}"
+
+            # Don't compute retention for future months
+            target_dt = datetime(ty, tm, 1, tzinfo=timezone.utc)
+            if target_dt > now:
+                break
+
+            active_in_month = sum(
+                1 for uid in users if target_month in user_active_months(uid)
+            )
+            rate = round(active_in_month / cohort_size * 100, 1)
+            retention_row["retention"][f"month_{interval}"] = {
+                "active": active_in_month,
+                "rate": rate,
+            }
+
+        cohort_table.append(retention_row)
+
+    return {
+        "cohorts": cohort_table,
+        "months_tracked": months,
     }
