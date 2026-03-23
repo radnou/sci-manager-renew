@@ -32,6 +32,9 @@ jobs:
             echo "=== Backup .env before deploy ==="
             cp .env.production .env.pre-deploy-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
 
+            echo "=== Fix file ownership before pull ==="
+            sudo chown -R $(whoami):$(whoami) .
+
             echo "=== Pulling latest code ==="
             git fetch origin main
             git reset --hard origin/main
