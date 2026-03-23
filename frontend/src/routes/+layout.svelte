@@ -109,7 +109,8 @@
 	});
 
 	// Show public navbar only for non-authenticated or public routes
-	const showPublicNav = $derived(!user || isPublicRoute(page.url.pathname));
+	const isAdminPage = $derived(page.url.pathname.startsWith('/admin'));
+	const showPublicNav = $derived(!isAdminPage && (!user || isPublicRoute(page.url.pathname)));
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
