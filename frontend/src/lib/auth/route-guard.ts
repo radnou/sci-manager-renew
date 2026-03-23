@@ -1,8 +1,8 @@
 const PROTECTED_ROUTE_PREFIXES = [
 	'/account',
 	'/settings',
-	'/onboarding',
-	'/admin'
+	'/onboarding'
+	// '/admin' — excluded: admin panel has its own auth (X-Admin-Key header)
 ];
 
 const GUEST_ONLY_ROUTE_PREFIXES = ['/login', '/register', '/forgot-password'];
