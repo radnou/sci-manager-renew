@@ -56,3 +56,8 @@ coverage/
 # E2E artifacts
 marketing/
 e2e-artifacts/
+audit-*.png
+marketing-*.png
+.superpowers/
+.claude/
+playwright-report/
