@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/state';
+	import { get } from 'svelte/store';
+	import { adminKey } from '$lib/stores/admin-auth';
 	import AdminHeroKpis from '$lib/components/admin/AdminHeroKpis.svelte';
 	import AdminAlerts from '$lib/components/admin/AdminAlerts.svelte';
 	import AdminFunnel from '$lib/components/admin/AdminFunnel.svelte';
@@ -38,16 +39,15 @@
 	let loading = $state(true);
 	let error = $state('');
 
-	const adminKey = $derived(page.url.searchParams.get('secret') ?? '');
-
-	async function adminFetch<T>(path: string): Promise<T> {
-		const resp = await fetch(`${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(adminKey)}`);
+	async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
+		const headers = new Headers(options?.headers);
+		headers.set('X-Admin-Key', get(adminKey));
+		const resp = await fetch(path, { ...options, headers });
 		if (!resp.ok) throw new Error(`${resp.status}`);
 		return resp.json();
 	}
 
 	onMount(async () => {
-		if (!adminKey) return;
 		try {
 			const [m, a, f] = await Promise.all([
 				adminFetch<Metrics>('/api/v1/admin/metrics'),

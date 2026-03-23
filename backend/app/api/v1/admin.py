@@ -10,15 +10,26 @@ from app.services.admin_metrics_service import (
     compute_business_alerts,
     compute_activation_funnel,
     compute_enriched_users,
+    compute_revenue_breakdown,
+    compute_arpu,
+    compute_cohort_retention,
 )
+from app.services.mrr_snapshot_service import take_mrr_snapshot
+from app.services.admin_audit_service import log_admin_action, get_audit_log
 
 logger = structlog.get_logger(__name__)
 
 # Plan price IDs for manual plan changes
 PLAN_PRICE_MAP = {
     "free": None,
+    "gestion": "price_gestion",
+    "pilotage": "price_pilotage",
+    "fondateur": "price_fondateur",
+    "cabinet": "price_cabinet",
+    # Legacy
     "starter": "price_starter",
     "pro": "price_pro",
+    "lifetime": "price_lifetime",
 }
 
 router = APIRouter(
@@ -129,11 +140,18 @@ async def admin_change_plan(
 
     client = get_supabase_service_client()
     price_id = PLAN_PRICE_MAP[plan]
+    ip = request.client.host if request.client else "unknown"
 
     if plan == "free":
         # Delete subscription row (revert to free)
         client.table("subscriptions").delete().eq("user_id", user_id).execute()
         logger.info("admin_plan_changed", user_id=user_id, plan=plan)
+        await log_admin_action(
+            action="plan_change",
+            target_user_id=user_id,
+            details={"plan": plan},
+            ip=ip,
+        )
         return {"status": "ok", "plan": plan}
 
     # Upsert subscription
@@ -146,6 +164,12 @@ async def admin_change_plan(
     }
     client.table("subscriptions").upsert(sub_data, on_conflict="user_id").execute()
     logger.info("admin_plan_changed", user_id=user_id, plan=plan)
+    await log_admin_action(
+        action="plan_change",
+        target_user_id=user_id,
+        details={"plan": plan, "price_id": price_id},
+        ip=ip,
+    )
     return {"status": "ok", "plan": plan}
 
 
@@ -166,6 +190,7 @@ async def admin_send_email(
     user = client.auth.admin.get_user_by_id(user_id)
     user_data = user.user if hasattr(user, "user") else user
     email = user_data.email if hasattr(user_data, "email") else ""
+    ip = request.client.host if request.client else "unknown"
 
     if not email:
         raise HTTPException(status_code=400, detail="User has no email")
@@ -184,6 +209,12 @@ async def admin_send_email(
     })
 
     logger.info("admin_email_sent", user_id=user_id, email=email, subject=subject)
+    await log_admin_action(
+        action="send_email",
+        target_user_id=user_id,
+        details={"subject": subject, "email": email},
+        ip=ip,
+    )
     return {"status": "ok", "email": email}
 
 
@@ -198,6 +229,56 @@ async def admin_disable_user(
     from app.core.supabase_client import get_supabase_service_client
 
     client = get_supabase_service_client()
+    ip = request.client.host if request.client else "unknown"
     client.auth.admin.update_user_by_id(user_id, {"ban_duration": "876000h"})  # ~100 years
     logger.info("admin_user_disabled", user_id=user_id)
+    await log_admin_action(
+        action="disable_user",
+        target_user_id=user_id,
+        details={"ban_duration": "876000h"},
+        ip=ip,
+    )
     return {"status": "ok", "user_id": user_id}
+
+
+# ── New KPI endpoints ────────────────────────────────────────────────
+
+
+@router.get("/revenue")
+async def admin_revenue(request: Request, key: str | None = Query(None)):
+    """MRR breakdown per plan."""
+    verify_admin_secret(request)
+    return compute_revenue_breakdown()
+
+
+@router.get("/cohorts")
+async def admin_cohorts(
+    request: Request,
+    key: str | None = Query(None),
+    months: int = Query(6, ge=1, le=24),
+):
+    """Monthly cohort retention table."""
+    verify_admin_secret(request)
+    return compute_cohort_retention(months=months)
+
+
+@router.post("/snapshots/mrr")
+async def admin_take_mrr_snapshot(request: Request, key: str | None = Query(None)):
+    """Manually trigger an MRR snapshot for today."""
+    verify_admin_secret(request)
+    return await take_mrr_snapshot()
+
+
+# ── Audit log endpoint ───────────────────────────────────────────────
+
+
+@router.get("/audit-log")
+async def admin_audit_log(
+    request: Request,
+    key: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=100),
+):
+    """Paginated admin audit log."""
+    verify_admin_secret(request)
+    return get_audit_log(page=page, per_page=per_page)

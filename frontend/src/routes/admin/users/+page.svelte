@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page as pageState } from '$app/state';
+	import { get } from 'svelte/store';
+	import { adminKey } from '$lib/stores/admin-auth';
 	import AdminUserStatusBadge from '$lib/components/admin/AdminUserStatusBadge.svelte';
 
 	type EnrichedUser = {
@@ -28,12 +29,11 @@
 
 	const perPage = 50;
 	const totalPages = $derived(Math.ceil(total / perPage));
-	const adminKey = $derived(pageState.url.searchParams.get('secret') ?? '');
 
-	async function adminFetch<T>(path: string): Promise<T> {
-		const resp = await fetch(
-			`${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(adminKey)}`
-		);
+	async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
+		const headers = new Headers(options?.headers);
+		headers.set('X-Admin-Key', get(adminKey));
+		const resp = await fetch(path, { ...options, headers });
 		if (!resp.ok) throw new Error(`${resp.status}`);
 		return resp.json();
 	}
@@ -163,7 +163,7 @@
 					>
 						<td class="px-4 py-3 font-medium">
 							<a
-								href="/admin/users/{user.id}?secret={adminKey}"
+								href="/admin/users/{user.id}"
 								class="text-slate-900 underline decoration-slate-300 underline-offset-2 hover:text-sky-600 dark:text-slate-100 dark:decoration-slate-600"
 							>
 								{user.email}

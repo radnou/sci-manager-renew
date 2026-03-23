@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import { page } from '$app/state';
+	import { adminKey } from '$lib/stores/admin-auth';
 	import { ArrowLeft, Mail, Shield, UserX, Crown } from 'lucide-svelte';
 	import AdminUserStatusBadge from '$lib/components/admin/AdminUserStatusBadge.svelte';
 
-	const adminKey = $derived(page.url.searchParams.get('secret') ?? '');
 	const userId = $derived(page.params.userId);
 
 	let userData = $state<any>(null);
@@ -22,8 +23,9 @@
 	let selectedPlan = $state('free');
 
 	async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
-		const sep = path.includes('?') ? '&' : '?';
-		const resp = await fetch(`${path}${sep}key=${encodeURIComponent(adminKey)}`, options);
+		const headers = new Headers(options?.headers);
+		headers.set('X-Admin-Key', get(adminKey));
+		const resp = await fetch(path, { ...options, headers });
 		if (!resp.ok) throw new Error(`${resp.status}`);
 		return resp.json();
 	}
@@ -101,7 +103,7 @@
 </svelte:head>
 
 <a
-	href="/admin/users?secret={adminKey}"
+	href="/admin/users"
 	class="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
 >
 	<ArrowLeft class="h-4 w-4" />
