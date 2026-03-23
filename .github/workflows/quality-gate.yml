@@ -86,8 +86,8 @@ jobs:
       - name: Svelte check (TypeScript + Svelte)
         run: pnpm --dir frontend run check
 
-      - name: Lint (non-blocking)
-        run: pnpm --dir frontend run lint || true
+      - name: Lint
+        run: pnpm --dir frontend run lint
 
       - name: Unit tests (high-value)
         run: pnpm --dir frontend run test:high-value || true

@@ -37,6 +37,8 @@ gerersci.fr, www.gerersci.fr, app.gerersci.fr {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(self)"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://*.stripe.com https://*.sentry.io https://analytics.gerersci.fr; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.stripe.com https://*.sentry.io https://analytics.gerersci.fr https://api.gerersci.fr; frame-src https://*.stripe.com; object-src 'none'; base-uri 'self'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 	}
 }
 
