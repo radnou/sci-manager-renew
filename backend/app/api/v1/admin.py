@@ -39,21 +39,21 @@ router = APIRouter(
 
 
 @router.get("/metrics")
-async def admin_metrics(request: Request, key: str | None = Query(None)):
+async def admin_metrics(request: Request):
     """Hero KPIs with trend comparison."""
     verify_admin_secret(request)
     return compute_hero_metrics()
 
 
 @router.get("/alerts")
-async def admin_alerts(request: Request, key: str | None = Query(None)):
+async def admin_alerts(request: Request):
     """Business alerts based on metric thresholds."""
     verify_admin_secret(request)
     return compute_business_alerts()
 
 
 @router.get("/funnel")
-async def admin_funnel(request: Request, key: str | None = Query(None)):
+async def admin_funnel(request: Request):
     """Activation funnel counts."""
     verify_admin_secret(request)
     return compute_activation_funnel()
@@ -62,7 +62,6 @@ async def admin_funnel(request: Request, key: str | None = Query(None)):
 @router.get("/users")
 async def admin_list_users(
     request: Request,
-    key: str | None = Query(None),
     search: str | None = Query(None),
     status: str | None = Query(None),
     plan: str | None = Query(None),
@@ -86,7 +85,6 @@ async def admin_list_users(
 async def admin_get_user(
     request: Request,
     user_id: str,
-    key: str | None = Query(None),
 ):
     """Detailed info for a specific user."""
     verify_admin_secret(request)
@@ -128,7 +126,6 @@ async def admin_get_user(
 async def admin_change_plan(
     request: Request,
     user_id: str,
-    key: str | None = Query(None),
     plan: str = Body(..., embed=True),
 ):
     """Change a user's subscription plan."""
@@ -177,7 +174,6 @@ async def admin_change_plan(
 async def admin_send_email(
     request: Request,
     user_id: str,
-    key: str | None = Query(None),
     subject: str = Body(...),
     message: str = Body(...),
 ):
@@ -222,7 +218,6 @@ async def admin_send_email(
 async def admin_disable_user(
     request: Request,
     user_id: str,
-    key: str | None = Query(None),
 ):
     """Disable a user account (ban from Supabase Auth)."""
     verify_admin_secret(request)
@@ -245,7 +240,7 @@ async def admin_disable_user(
 
 
 @router.get("/revenue")
-async def admin_revenue(request: Request, key: str | None = Query(None)):
+async def admin_revenue(request: Request):
     """MRR breakdown per plan."""
     verify_admin_secret(request)
     return compute_revenue_breakdown()
@@ -254,7 +249,6 @@ async def admin_revenue(request: Request, key: str | None = Query(None)):
 @router.get("/cohorts")
 async def admin_cohorts(
     request: Request,
-    key: str | None = Query(None),
     months: int = Query(6, ge=1, le=24),
 ):
     """Monthly cohort retention table."""
@@ -263,7 +257,7 @@ async def admin_cohorts(
 
 
 @router.post("/snapshots/mrr")
-async def admin_take_mrr_snapshot(request: Request, key: str | None = Query(None)):
+async def admin_take_mrr_snapshot(request: Request):
     """Manually trigger an MRR snapshot for today."""
     verify_admin_secret(request)
     return await take_mrr_snapshot()
@@ -275,7 +269,6 @@ async def admin_take_mrr_snapshot(request: Request, key: str | None = Query(None
 @router.get("/audit-log")
 async def admin_audit_log(
     request: Request,
-    key: str | None = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=100),
 ):

@@ -1,0 +1,122 @@
+<h2>Layout des Modals CRUD</h2>
+<p class="subtitle">Comment structurer les formulaires de création/édition dans les modals ?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;border-radius:12px;padding:0;overflow:hidden;font-family:system-ui;font-size:13px;color:#e2e8f0;">
+        <!-- Modal overlay -->
+        <div style="background:rgba(0,0,0,0.5);padding:40px 20px;min-height:320px;display:flex;align-items:center;justify-content:center;">
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;width:100%;max-width:400px;overflow:hidden;">
+            <!-- Header -->
+            <div style="padding:16px 20px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;font-size:15px;">Enregistrer un loyer</span>
+              <span style="color:#64748b;cursor:pointer;">✕</span>
+            </div>
+            <!-- Body -->
+            <div style="padding:20px;">
+              <div style="margin-bottom:12px;">
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Période</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#94a3b8;">Mars 2026</div>
+              </div>
+              <div style="margin-bottom:12px;">
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Montant (€)</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;">850.00</div>
+              </div>
+              <div style="margin-bottom:12px;">
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Statut</div>
+                <div style="display:flex;gap:8px;">
+                  <span style="background:#0c4a6e;color:#7dd3fc;padding:4px 12px;border-radius:20px;font-size:12px;">Payé</span>
+                  <span style="background:#0f172a;border:1px solid #334155;color:#94a3b8;padding:4px 12px;border-radius:20px;font-size:12px;">En attente</span>
+                  <span style="background:#0f172a;border:1px solid #334155;color:#94a3b8;padding:4px 12px;border-radius:20px;font-size:12px;">En retard</span>
+                </div>
+              </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding:12px 20px;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:8px;">
+              <span style="padding:6px 16px;border-radius:8px;color:#94a3b8;font-size:13px;">Annuler</span>
+              <span style="background:#0284c7;color:white;padding:6px 16px;border-radius:8px;font-size:13px;">Enregistrer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Modal Compact</h3>
+      <p>Centré, largeur fixe ~420px. Header avec titre + ✕, body avec champs verticaux, footer avec actions. Statut en chips/pills cliquables. Adapté aux formulaires courts (3-5 champs).</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1e293b;border-radius:12px;padding:0;overflow:hidden;font-family:system-ui;font-size:13px;color:#e2e8f0;">
+        <!-- Modal overlay -->
+        <div style="background:rgba(0,0,0,0.5);padding:40px 20px;min-height:320px;display:flex;align-items:center;justify-content:center;">
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;width:100%;max-width:560px;overflow:hidden;">
+            <!-- Header -->
+            <div style="padding:16px 20px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-weight:600;font-size:15px;">Créer un bail</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px;">Appartement T3 — 15 rue de la Paix</div>
+              </div>
+              <span style="color:#64748b;cursor:pointer;">✕</span>
+            </div>
+            <!-- Body 2-col -->
+            <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Date début</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#94a3b8;">01/04/2026</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Date fin</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#94a3b8;">31/03/2029</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Loyer HC (€)</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;">750.00</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Charges provisions (€)</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;">100.00</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Type bail</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#94a3b8;">Habitation vide</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Dépôt garantie (€)</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;">750.00</div>
+              </div>
+              <div style="grid-column:1/-1;">
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Locataires</div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;display:flex;gap:6px;align-items:center;">
+                  <span style="background:#1e3a5f;color:#7dd3fc;padding:2px 8px;border-radius:12px;font-size:11px;">Jean Dupont</span>
+                  <span style="color:#64748b;font-size:12px;">+ Ajouter</span>
+                </div>
+              </div>
+            </div>
+            <!-- Footer -->
+            <div style="padding:12px 20px;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:8px;">
+              <span style="padding:6px 16px;border-radius:8px;color:#94a3b8;font-size:13px;">Annuler</span>
+              <span style="background:#0284c7;color:white;padding:6px 16px;border-radius:8px;font-size:13px;">Créer le bail</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Modal Élargi (2 colonnes)</h3>
+      <p>~560px de large. Header avec titre + contexte (nom du bien). Body en grille 2 colonnes pour les champs date/montant. Champ locataire en tag chips avec ajout. Pour les formulaires plus longs (bail: 7 champs, associé: 4 champs).</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>Proposition</h3>
+  <p>Utiliser <strong>les deux tailles selon le formulaire</strong> :</p>
+  <ul style="color:#94a3b8;line-height:1.8;">
+    <li><strong>Compact (A)</strong> → Loyer (3 champs), Charge (3), PNO (4), Frais agence (3), Inviter associé (3)</li>
+    <li><strong>Élargi (B)</strong> → Bail (7 champs + locataires), Créer SCI (4+), Ajouter bien (5+)</li>
+  </ul>
+  <p style="color:#64748b;font-size:12px;margin-top:8px;">Cliquez sur le layout qui vous plaît, ou validez la proposition "les deux" dans le terminal.</p>
+</div>

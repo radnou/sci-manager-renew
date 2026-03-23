@@ -10,7 +10,9 @@
 
 	const adminNav = [
 		{ href: '/admin', label: 'Dashboard' },
-		{ href: '/admin/users', label: 'Utilisateurs' }
+		{ href: '/admin/users', label: 'Utilisateurs' },
+		{ href: '/admin/revenue', label: 'Revenue' },
+		{ href: '/admin/audit', label: 'Audit Log' }
 	];
 
 	async function login() {
