@@ -1,4 +1,4 @@
-"""Tests for admin panel endpoints — protected by ADMIN_SECRET_KEY query param."""
+"""Tests for admin panel endpoints — protected by X-Admin-Key header."""
 
 import pytest
 from unittest.mock import patch
@@ -9,17 +9,16 @@ from app.core.config import settings
 if not settings.admin_secret_key:
     settings.admin_secret_key = "test-admin-key"
 
-# ── Helper: build URL with admin key ──────────────────────────────────
+# ── Helper: build admin headers ──────────────────────────────────────
 
 ADMIN_KEY = settings.admin_secret_key
 
 
-def _url(path: str, key: str | None = ADMIN_KEY) -> str:
-    """Build admin URL with optional key param."""
+def _admin_headers(key: str | None = ADMIN_KEY) -> dict[str, str]:
+    """Build admin auth headers."""
     if key is None:
-        return path
-    sep = "&" if "?" in path else "?"
-    return f"{path}{sep}key={key}"
+        return {}
+    return {"X-Admin-Key": key}
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -33,7 +32,12 @@ class TestAdminMetrics:
         assert response.status_code == 403
 
     def test_wrong_key_returns_403(self, client):
-        response = client.get("/api/v1/admin/metrics?key=wrong-key")
+        response = client.get("/api/v1/admin/metrics", headers={"X-Admin-Key": "wrong-key"})
+        assert response.status_code == 403
+
+    def test_query_param_key_returns_403(self, client):
+        """Verify that legacy query param auth is rejected."""
+        response = client.get(f"/api/v1/admin/metrics?key={ADMIN_KEY}")
         assert response.status_code == 403
 
     @patch("app.api.v1.admin.compute_hero_metrics")
@@ -41,7 +45,7 @@ class TestAdminMetrics:
         mock_compute.return_value = {
             "north_star": {"value": 5, "previous": 3, "trend": "up", "change_pct": 66.7},
         }
-        response = client.get(_url("/api/v1/admin/metrics"))
+        response = client.get("/api/v1/admin/metrics", headers=_admin_headers())
         assert response.status_code == 200
         assert "north_star" in response.json()
 
@@ -59,7 +63,7 @@ class TestAdminAlerts:
     @patch("app.api.v1.admin.compute_business_alerts")
     def test_returns_alerts(self, mock_compute, client):
         mock_compute.return_value = {"alerts": []}
-        response = client.get(_url("/api/v1/admin/alerts"))
+        response = client.get("/api/v1/admin/alerts", headers=_admin_headers())
         assert response.status_code == 200
         assert "alerts" in response.json()
 
@@ -80,7 +84,7 @@ class TestAdminFunnel:
             "steps": [{"label": "Inscrits", "count": 10, "rate": 100.0}],
             "bottleneck_index": 0,
         }
-        response = client.get(_url("/api/v1/admin/funnel"))
+        response = client.get("/api/v1/admin/funnel", headers=_admin_headers())
         assert response.status_code == 200
         assert "steps" in response.json()
 
@@ -98,7 +102,7 @@ class TestAdminListUsers:
     @patch("app.api.v1.admin.compute_enriched_users")
     def test_returns_user_list(self, mock_compute, client):
         mock_compute.return_value = {"users": [], "total": 0, "page": 1, "per_page": 50}
-        response = client.get(_url("/api/v1/admin/users"))
+        response = client.get("/api/v1/admin/users", headers=_admin_headers())
         assert response.status_code == 200
         data = response.json()
         assert "users" in data
@@ -107,7 +111,7 @@ class TestAdminListUsers:
     @patch("app.api.v1.admin.compute_enriched_users")
     def test_default_pagination(self, mock_compute, client):
         mock_compute.return_value = {"users": [], "total": 0, "page": 1, "per_page": 50}
-        client.get(_url("/api/v1/admin/users"))
+        client.get("/api/v1/admin/users", headers=_admin_headers())
         mock_compute.assert_called_once_with(
             search=None,
             status_filter=None,
@@ -120,7 +124,9 @@ class TestAdminListUsers:
     @patch("app.api.v1.admin.compute_enriched_users")
     def test_custom_pagination(self, mock_compute, client):
         mock_compute.return_value = {"users": [], "total": 0, "page": 2, "per_page": 10}
-        response = client.get(_url("/api/v1/admin/users?page=2&per_page=10"))
+        response = client.get(
+            "/api/v1/admin/users?page=2&per_page=10", headers=_admin_headers()
+        )
         data = response.json()
         assert data["page"] == 2
         assert data["per_page"] == 10
@@ -129,7 +135,8 @@ class TestAdminListUsers:
     def test_filters_forwarded(self, mock_compute, client):
         mock_compute.return_value = {"users": [], "total": 0, "page": 1, "per_page": 50}
         client.get(
-            _url("/api/v1/admin/users?search=test@example.com&status=power_user&plan=pro&sort=last_activity"),
+            "/api/v1/admin/users?search=test@example.com&status=power_user&plan=pro&sort=last_activity",
+            headers=_admin_headers(),
         )
         mock_compute.assert_called_once_with(
             search="test@example.com",
@@ -155,7 +162,7 @@ class TestAdminGetUser:
         fake_supabase.store["subscriptions"] = [
             {"user_id": "user-123", "stripe_price_id": "price_pro_demo", "status": "active"},
         ]
-        response = client.get(_url("/api/v1/admin/users/user-123"))
+        response = client.get("/api/v1/admin/users/user-123", headers=_admin_headers())
         assert response.status_code == 200
         data = response.json()
         assert "user" in data
@@ -163,7 +170,7 @@ class TestAdminGetUser:
         assert "subscription" in data
 
     def test_user_fields_populated(self, client):
-        response = client.get(_url("/api/v1/admin/users/user-123"))
+        response = client.get("/api/v1/admin/users/user-123", headers=_admin_headers())
         data = response.json()
         user = data["user"]
         assert user["id"] == "user-123"
@@ -172,7 +179,7 @@ class TestAdminGetUser:
 
     def test_user_without_subscription(self, client, fake_supabase):
         fake_supabase.store["subscriptions"] = []
-        response = client.get(_url("/api/v1/admin/users/user-123"))
+        response = client.get("/api/v1/admin/users/user-123", headers=_admin_headers())
         data = response.json()
         assert data["subscription"] is None
 
@@ -197,6 +204,12 @@ class TestAdminGating:
         assert response.status_code == 403
 
     @pytest.mark.parametrize("endpoint", ENDPOINTS)
-    def test_all_endpoints_reject_wrong_key(self, client, endpoint):
-        response = client.get(f"{endpoint}?key=totally-wrong")
+    def test_all_endpoints_reject_wrong_header_key(self, client, endpoint):
+        response = client.get(endpoint, headers={"X-Admin-Key": "totally-wrong"})
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("endpoint", ENDPOINTS)
+    def test_all_endpoints_reject_query_param_key(self, client, endpoint):
+        """Legacy query param auth must be rejected."""
+        response = client.get(f"{endpoint}?key={ADMIN_KEY}")
         assert response.status_code == 403
