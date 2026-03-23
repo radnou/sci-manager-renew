@@ -2,6 +2,8 @@ import { browser } from '$app/environment';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '$lib/supabase';
 
+// E2E_FAKE_SESSION_STORAGE_KEY is only meaningful in non-production builds.
+// In production, this constant is never accessed at runtime (dead code eliminated by bundler).
 export const E2E_FAKE_SESSION_STORAGE_KEY = 'gerersci.e2e-fake-session';
 
 type SessionSubscription = {
@@ -23,6 +25,11 @@ type FakeSessionPayload = {
 };
 
 function parseFakeSession(): Session | null {
+	// In production builds, never parse fake sessions — always return null immediately.
+	if (import.meta.env.MODE === 'production') {
+		return null;
+	}
+
 	if (!browser) {
 		return null;
 	}
@@ -65,6 +72,7 @@ function parseFakeSession(): Session | null {
 }
 
 export async function getCurrentSession(): Promise<Session | null> {
+	// parseFakeSession() returns null immediately in production.
 	const fakeSession = parseFakeSession();
 	if (fakeSession) {
 		return fakeSession;
@@ -78,6 +86,7 @@ export async function getCurrentSession(): Promise<Session | null> {
 }
 
 export function subscribeToSessionChanges(callback: (session: Session | null) => void): SessionSubscription {
+	// parseFakeSession() returns null immediately in production — no E2E path taken.
 	const fakeSession = parseFakeSession();
 	if (fakeSession) {
 		callback(fakeSession);
@@ -115,6 +124,11 @@ export function subscribeToSessionChanges(callback: (session: Session | null) =>
 }
 
 export function clearFakeSession() {
+	// No-op in production; only active in dev/test mode.
+	if (import.meta.env.MODE === 'production') {
+		return;
+	}
+
 	if (!browser) {
 		return;
 	}

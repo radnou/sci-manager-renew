@@ -74,7 +74,10 @@ class Settings(BaseSettings):
     log_format: Literal["json", "console"] = "json"
 
     # Admin
-    admin_secret_key: str = ""  # If set, ?key=<value> grants admin access without admins table
+    admin_secret_key: str = ""  # If set, X-Admin-Key header grants admin access without admins table
+
+    # Security
+    jwks_cache_ttl_seconds: float = 600.0  # Supabase JWKS cache TTL (default: 10 minutes)
 
     # Feature Flags
     feature_cerfa_generation: bool = True
