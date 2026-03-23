@@ -22,7 +22,21 @@
 				adminFetch('/api/v1/admin/revenue'),
 				adminFetch('/api/v1/admin/cohorts')
 			]);
-			revenueData = rev;
+			// Normalize API response to match component props
+			const totalSubs = (rev as any).breakdown?.reduce(
+				(s: number, p: any) => s + (p.subscribers || p.count || 0),
+				0
+			);
+			revenueData = {
+				total_mrr: (rev as any).total_mrr || 0,
+				arpu: totalSubs > 0 ? (rev as any).total_mrr / totalSubs : 0,
+				breakdown: ((rev as any).breakdown || []).map((p: any) => ({
+					plan: p.plan,
+					count: p.subscribers ?? p.count ?? 0,
+					mrr: p.mrr ?? 0,
+					percentage: p.pct_of_total ?? p.percentage ?? 0
+				}))
+			};
 			cohortData = coh;
 		} catch {
 			error = 'Erreur lors du chargement';
