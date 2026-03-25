@@ -60,7 +60,7 @@
 			eyebrow: 'Gouvernance',
 			title: 'Associes et parts sociales',
 			description:
-				"Gerez vos associes, leurs parts et roles. Total automatique avec alerte si \u2260 100%.",
+				"Gerez vos associes, leurs parts et roles. Total automatique avec alerte si ≠ 100%.",
 			image: '/images/showcase/fiche-identite.png',
 			alt: 'Page associes — parts sociales, roles, total 100%',
 			bullets: [
@@ -373,7 +373,7 @@
 		const ht = billingPeriod === 'month' ? plan.monthlyPrice : plan.yearlyPrice;
 		const ttc = (ht * 1.2).toFixed(2).replace('.', ',');
 		const period = billingPeriod === 'month' ? '/mois' : '/an';
-		return `(${ttc}\u202F\u20AC TTC${period})`;
+		return `(${ttc} € TTC${period})`;
 	}
 </script>
 

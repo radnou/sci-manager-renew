@@ -15,7 +15,7 @@
 		open,
 		entityName,
 		entityType,
-		warningMessage = 'Cette action est irr\u00e9versible. Toutes les donn\u00e9es associ\u00e9es seront d\u00e9finitivement supprim\u00e9es.',
+		warningMessage = 'Cette action est irréversible. Toutes les données associées seront définitivement supprimées.',
 		loading = false,
 		onConfirm,
 		onCancel
@@ -168,7 +168,7 @@
 					{#if loading}
 						<Loader2 class="h-4 w-4 animate-spin" />
 					{/if}
-					Supprimer d\u00e9finitivement
+					Supprimer définitivement
 				</button>
 			</div>
 		</div>

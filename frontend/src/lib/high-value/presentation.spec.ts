@@ -110,7 +110,7 @@ describe('high-value presentation helpers', () => {
 		expect(mapAssociateRoleLabel('co_gerant')).toBe('Gérant');
 		expect(mapAssociateRoleLabel('president_du_conseil')).toBe('President Du Conseil');
 		expect(mapAssociateRoleLabel(undefined)).toBe('Associé');
-		expect(mapChargeTypeLabel('taxe_fonciere')).toBe('Taxe fonci\u00e8re');
+		expect(mapChargeTypeLabel('taxe_fonciere')).toBe('Taxe foncière');
 		expect(mapChargeTypeLabel('travaux')).toBe('Travaux');
 		expect(mapChargeTypeLabel(undefined)).toBe('Charge');
 	});

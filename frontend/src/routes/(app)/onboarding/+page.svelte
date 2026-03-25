@@ -120,7 +120,7 @@
 			createdSciId = String(sci.id);
 			currentStep = 2;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation de la SCI.';
+			error = err instanceof Error ? err.message : 'Erreur lors de la création de la SCI.';
 		} finally {
 			submitting = false;
 		}
@@ -159,7 +159,7 @@
 
 			// Build all payloads
 			const payloads = Array.from({ length: lotsToCreate }, (_, i) => {
-				const lotSuffix = lotsToCreate > 1 ? ` \u2014 Lot ${i + 1}` : '';
+				const lotSuffix = lotsToCreate > 1 ? ` — Lot ${i + 1}` : '';
 				return {
 					id_sci: createdSciId,
 					adresse: bienAdresse.trim() + lotSuffix,
@@ -193,7 +193,7 @@
 			batchTotal = 0;
 			currentStep = 3;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bien.';
+			error = err instanceof Error ? err.message : 'Erreur lors de la création du bien.';
 		} finally {
 			submitting = false;
 		}
@@ -239,7 +239,7 @@
 
 			currentStep = 4;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur lors de la cr\u00e9ation du bail.';
+			error = err instanceof Error ? err.message : 'Erreur lors de la création du bail.';
 		} finally {
 			submitting = false;
 		}

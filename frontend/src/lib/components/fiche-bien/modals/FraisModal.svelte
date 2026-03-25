@@ -37,7 +37,7 @@
     try {
       const data: FraisCreate = { type_frais, montant, date_frais, description: description || undefined };
       await createFraisForBien(sciId, bienId, data);
-      addToast({ title: 'Frais ajout\u00e9s', variant: 'success' });
+      addToast({ title: 'Frais ajoutés', variant: 'success' });
       onSuccess();
       open = false;
     } catch (err: any) {

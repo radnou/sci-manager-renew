@@ -49,7 +49,7 @@
 			currentPath = `${currentPath}/${segment}`;
 			let label = names[segment] ?? labelMap[segment];
 			if (!label) {
-				label = UUID_RE.test(segment) ? '\u2026' : segment;
+				label = UUID_RE.test(segment) ? '…' : segment;
 			}
 			crumbs.push({ label, href: currentPath });
 		}

@@ -138,7 +138,7 @@
 		deletingDocId = doc.id;
 		try {
 			await deleteDocumentBien(sciId, bienId, doc.id);
-			addToast({ title: 'Document supprim\u00e9', description: `${doc.nom} a \u00e9t\u00e9 supprim\u00e9.`, variant: 'success' });
+			addToast({ title: 'Document supprimé', description: `${doc.nom} a été supprimé.`, variant: 'success' });
 			await loadDocuments();
 		} catch (err: any) {
 			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de supprimer le document.', variant: 'error' });
@@ -350,7 +350,7 @@
 			open={deleteDocTarget != null}
 			entityName={deleteDocTarget.doc.nom}
 			entityType="ce document"
-			warningMessage="Ce document sera d\u00e9finitivement supprim\u00e9. Cette action est irr\u00e9versible."
+			warningMessage="Ce document sera définitivement supprimé. Cette action est irréversible."
 			loading={deletingDocId != null}
 			onConfirm={confirmDeleteDoc}
 			onCancel={() => { deleteDocTarget = null; }}

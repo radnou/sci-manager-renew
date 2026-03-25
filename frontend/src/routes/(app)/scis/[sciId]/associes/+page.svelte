@@ -211,9 +211,9 @@
 	{#if deleteTargetAssocie}
 		<ConfirmDeleteModal
 			open={confirmingDeleteId != null}
-			entityName={deleteTargetAssocie.nom || deleteTargetAssocie.email || 'cet associ\u00e9'}
-			entityType="cet associ\u00e9"
-			warningMessage="Cette action retirera d\u00e9finitivement cet associ\u00e9 de la SCI {sci.nom}. Cette action est irr\u00e9versible."
+			entityName={deleteTargetAssocie.nom || deleteTargetAssocie.email || 'cet associé'}
+			entityType="cet associé"
+			warningMessage="Cette action retirera définitivement cet associé de la SCI {sci.nom}. Cette action est irréversible."
 			loading={deletingId != null}
 			onConfirm={() => { if (deleteTargetAssocie) handleDeleteAssocie(deleteTargetAssocie); }}
 			onCancel={() => { confirmingDeleteId = null; }}

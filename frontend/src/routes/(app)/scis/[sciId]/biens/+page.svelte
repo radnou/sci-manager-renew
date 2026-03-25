@@ -524,7 +524,7 @@
 			open={confirmingDeleteId != null}
 			entityName={deleteTargetBien.adresse ?? 'ce bien'}
 			entityType="ce bien"
-			warningMessage="Cette action supprimera d\u00e9finitivement ce bien immobilier ainsi que tous ses baux, loyers, charges et documents associ\u00e9s. Cette action est irr\u00e9versible."
+			warningMessage="Cette action supprimera définitivement ce bien immobilier ainsi que tous ses baux, loyers, charges et documents associés. Cette action est irréversible."
 			loading={deletingId != null}
 			onConfirm={() => { if (deleteTargetBien) handleDeleteBien(deleteTargetBien); }}
 			onCancel={() => { confirmingDeleteId = null; }}

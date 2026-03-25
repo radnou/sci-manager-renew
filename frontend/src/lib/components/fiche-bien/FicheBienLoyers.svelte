@@ -66,7 +66,7 @@
 				statut
 			};
 			await createLoyerForBien(sciId, bienId, data);
-			addToast({ title: 'Loyer enregistr\u00e9', variant: 'success' });
+			addToast({ title: 'Loyer enregistré', variant: 'success' });
 			closeLoyerComposer();
 			onRefresh();
 		} catch (err: any) {
@@ -80,7 +80,7 @@
 		if (!payDateLoyerId) return;
 		try {
 			await updateLoyer(payDateLoyerId, { statut: 'paye', date_paiement: date });
-			addToast({ title: 'Loyer marqu\u00e9 pay\u00e9', variant: 'success' });
+			addToast({ title: 'Loyer marqué payé', variant: 'success' });
 			payDateLoyerId = null;
 			onRefresh();
 		} catch (err: any) {
@@ -90,7 +90,7 @@
 
 	const statutConfig: Record<string, { label: string; class: string }> = {
 		paye: {
-			label: 'Pay\u00e9',
+			label: 'Payé',
 			class: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
 		},
 		en_attente: {
@@ -152,8 +152,8 @@
 	async function handleGenerateQuittance(loyer: any) {
 		if (!loyer.id || !nomLocataire) {
 			addToast({
-				title: 'Donn\u00e9es manquantes',
-				description: 'Le locataire ou le loyer est introuvable. V\u00e9rifiez le bail actif.',
+				title: 'Données manquantes',
+				description: 'Le locataire ou le loyer est introuvable. Vérifiez le bail actif.',
 				variant: 'error'
 			});
 			return;
@@ -181,14 +181,14 @@
 			setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
 			addToast({
-				title: 'Quittance g\u00e9n\u00e9r\u00e9e',
+				title: 'Quittance générée',
 				description: `Quittance pour ${buildPeriodeLabel(loyer.date_loyer)} ouverte dans un nouvel onglet.`,
 				variant: 'success'
 			});
 		} catch (err: any) {
-			const message = err?.message ?? 'Impossible de g\u00e9n\u00e9rer la quittance.';
+			const message = err?.message ?? 'Impossible de générer la quittance.';
 			addToast({
-				title: 'Erreur de g\u00e9n\u00e9ration',
+				title: 'Erreur de génération',
 				description: message,
 				variant: 'error'
 			});
@@ -272,7 +272,7 @@
 								class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors {statut === s ? 'bg-sky-600 text-white' : 'border border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'}"
 								onclick={() => (statut = s)}
 							>
-								{s === 'paye' ? 'Pay\u00e9' : s === 'en_attente' ? 'En attente' : 'En retard'}
+								{s === 'paye' ? 'Payé' : s === 'en_attente' ? 'En attente' : 'En retard'}
 							</button>
 						{/each}
 					</div>
@@ -292,7 +292,7 @@
 					disabled={savingLoyer}
 					class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
 				>
-					{savingLoyer ? 'Enregistrement\u2026' : 'Enregistrer'}
+					{savingLoyer ? 'Enregistrement…' : 'Enregistrer'}
 				</button>
 			</div>
 		</form>
@@ -318,7 +318,7 @@
 			<select
 				bind:value={loyerFilterYear}
 				class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-				aria-label="Filtrer par ann\u00e9e"
+				aria-label="Filtrer par année"
 			>
 				<option value="tous">Toutes les ann&eacute;es</option>
 				{#each loyerYears() as year}
@@ -384,7 +384,7 @@
 								</span>
 							</td>
 							<td class="py-3 pr-4 text-slate-500 dark:text-slate-400">
-								{loyer.date_paiement ? formatFrDate(loyer.date_paiement) : '\u2014'}
+								{loyer.date_paiement ? formatFrDate(loyer.date_paiement) : '—'}
 							</td>
 							{#if isGerant}
 								<td class="py-3">
@@ -393,11 +393,11 @@
 											<div class="relative">
 												<button
 													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
-													title="Marquer comme pay\u00e9"
+													title="Marquer comme payé"
 													onclick={() => { payDateLoyerId = loyer.id; payDateOpen = true; }}
 												>
 													<Check class="h-3 w-3" />
-													Pay\u00e9
+													Payé
 												</button>
 												{#if payDateOpen && payDateLoyerId === loyer.id}
 													<DatePopover
@@ -412,11 +412,11 @@
 											onclick={() => handleGenerateQuittance(loyer)}
 											disabled={isGenerating}
 											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-											title="G\u00e9n\u00e9rer la quittance"
+											title="Générer la quittance"
 										>
 											{#if isGenerating}
 												<Loader2 class="h-3 w-3 animate-spin" />
-												G\u00e9n\u00e9ration\u2026
+												Génération…
 											{:else}
 												<FileText class="h-3 w-3" />
 												Quittance

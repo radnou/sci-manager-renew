@@ -39,11 +39,11 @@
       if (isEdit && editItem) {
         const data: PnoUpdate = { assureur, numero_contrat: numero_contrat || undefined, prime_annuelle, date_debut, date_fin: date_fin || undefined };
         await updatePnoForBien(sciId, bienId, editItem.id, data);
-        addToast({ title: 'Assurance PNO mise \u00e0 jour', variant: 'success' });
+        addToast({ title: 'Assurance PNO mise à jour', variant: 'success' });
       } else {
         const data: PnoCreate = { assureur, numero_contrat: numero_contrat || undefined, prime_annuelle, date_debut, date_fin: date_fin || undefined };
         await createPnoForBien(sciId, bienId, data);
-        addToast({ title: 'Assurance PNO ajout\u00e9e', variant: 'success' });
+        addToast({ title: 'Assurance PNO ajoutée', variant: 'success' });
       }
       onSuccess();
       open = false;
@@ -55,7 +55,7 @@
   }
 </script>
 
-<CrudModal bind:open title={isEdit ? 'Modifier assurance PNO' : 'Ajouter assurance PNO'} submitLabel={isEdit ? 'Mettre \u00e0 jour' : 'Ajouter'} {loading} onsubmit={handleSubmit}>
+<CrudModal bind:open title={isEdit ? 'Modifier assurance PNO' : 'Ajouter assurance PNO'} submitLabel={isEdit ? 'Mettre à jour' : 'Ajouter'} {loading} onsubmit={handleSubmit}>
   <div>
     <label for="pno-assureur" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Assureur</label>
     <input id="pno-assureur" type="text" bind:value={assureur} required placeholder="Nom de l'assureur"

@@ -74,20 +74,20 @@ export function mapAssociateRoleLabel(role: string | null | undefined) {
 
 const CHARGE_TYPE_LABELS: Record<string, string> = {
 	travaux_entretien: "Travaux d'entretien",
-	interets_emprunt: "Int\u00e9r\u00eats d'emprunt",
-	taxe_fonciere: 'Taxe fonci\u00e8re',
-	copropriete: 'Copropri\u00e9t\u00e9',
+	interets_emprunt: "Intérêts d'emprunt",
+	taxe_fonciere: 'Taxe foncière',
+	copropriete: 'Copropriété',
 	assurance_pno: 'Assurance PNO',
 	frais_gestion: 'Frais de gestion',
-	travaux_amelioration: "Travaux d'am\u00e9lioration",
+	travaux_amelioration: "Travaux d'amélioration",
 	prime_assurance: "Prime d'assurance",
-	frais_procedure: 'Frais de proc\u00e9dure',
-	autre_deductible: 'Autre charge d\u00e9ductible',
+	frais_procedure: 'Frais de procédure',
+	autre_deductible: 'Autre charge déductible',
 	assurance: 'Assurance',
 	syndic: 'Syndic',
 	entretien: 'Entretien',
 	travaux: 'Travaux',
-	credit: 'Cr\u00e9dit',
+	credit: 'Crédit',
 	autre: 'Autre'
 };
 
@@ -136,7 +136,7 @@ function normalizeMachineToken(value: string | null | undefined) {
 		.trim()
 		.toLowerCase()
 		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '');
+		.replace(/[̀-ͯ]/g, '');
 }
 
 function toTitleCase(value: string) {

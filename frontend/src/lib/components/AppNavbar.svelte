@@ -139,7 +139,7 @@
 			let label = names[segment] ?? labelMap[segment];
 			// If the segment is a UUID with no mapped name, show a loading placeholder
 			if (!label) {
-				label = UUID_RE.test(segment) ? '\u2026' : segment;
+				label = UUID_RE.test(segment) ? '…' : segment;
 			}
 			crumbs.push({ label, href: currentPath });
 		}

@@ -37,8 +37,8 @@
 		{ id: 'profil', label: 'Profil', icon: UserIcon },
 		{ id: 'abonnement', label: 'Abonnement', icon: CreditCard },
 		{ id: 'notifications', label: 'Notifications', icon: Bell },
-		{ id: 'confidentialite', label: 'Confidentialit\u00e9', icon: Shield },
-		{ id: 'preferences', label: 'Pr\u00e9f\u00e9rences', icon: Settings }
+		{ id: 'confidentialite', label: 'Confidentialité', icon: Shield },
+		{ id: 'preferences', label: 'Préférences', icon: Settings }
 	];
 
 	let activeTab: TabId = $state('profil');
@@ -50,7 +50,7 @@
 
 	// --- Profile tab ---
 	const user = getContext<User>('user');
-	const email = user?.email || 'Compte non connect\u00e9';
+	const email = user?.email || 'Compte non connecté';
 
 	let newPassword = $state('');
 	let newPasswordConfirm = $state('');
@@ -69,7 +69,7 @@
 		}
 
 		if (newPassword.length < passwordMinLength) {
-			passwordError = `Le mot de passe doit contenir au moins ${passwordMinLength} caract\u00e8res.`;
+			passwordError = `Le mot de passe doit contenir au moins ${passwordMinLength} caractères.`;
 			return;
 		}
 
@@ -78,14 +78,14 @@
 		const { error } = await supabase.auth.updateUser({ password: newPassword });
 
 		if (error) {
-			passwordError = 'Erreur lors de la mise \u00e0 jour du mot de passe.';
+			passwordError = 'Erreur lors de la mise à jour du mot de passe.';
 		} else {
 			passwordSuccess = true;
 			newPassword = '';
 			newPasswordConfirm = '';
 			addToast({
-				title: 'Mot de passe mis \u00e0 jour',
-				description: 'Votre mot de passe a \u00e9t\u00e9 modifi\u00e9 avec succ\u00e8s.',
+				title: 'Mot de passe mis à jour',
+				description: 'Votre mot de passe a été modifié avec succès.',
 				variant: 'success'
 			});
 		}
@@ -99,7 +99,7 @@
 		{ value: '/scis', label: 'Portefeuille' },
 		{ value: '/exploitation', label: 'Exploitation' },
 		{ value: '/finances', label: 'Finances' },
-		{ value: '/settings', label: "Param\u00e8tres" }
+		{ value: '/settings', label: "Paramètres" }
 	];
 
 	let preferences: ApplicationPreferences = $state({ ...DEFAULT_APPLICATION_PREFERENCES });
@@ -108,8 +108,8 @@
 	function handleSavePreferences() {
 		saveApplicationPreferences(preferences);
 		addToast({
-			title: 'Param\u00e8tres enregistr\u00e9s',
-			description: "Les pr\u00e9f\u00e9rences ont \u00e9t\u00e9 mises \u00e0 jour sur ce navigateur.",
+			title: 'Paramètres enregistrés',
+			description: "Les préférences ont été mises à jour sur ce navigateur.",
 			variant: 'success'
 		});
 	}
@@ -123,8 +123,8 @@
 	let portalLoading = $state(false);
 
 	function getCapacityLabel(sub: SubscriptionEntitlements): string {
-		if (sub.max_scis == null) return 'SCI et biens illimit\u00e9s';
-		return `${sub.current_scis}/${sub.max_scis} SCI \u00b7 ${sub.current_biens}/${sub.max_biens} biens`;
+		if (sub.max_scis == null) return 'SCI et biens illimités';
+		return `${sub.current_scis}/${sub.max_scis} SCI · ${sub.current_biens}/${sub.max_biens} biens`;
 	}
 
 	async function openCustomerPortal() {
@@ -158,7 +158,7 @@
 				cancelStep = 0;
 				subscription = await fetchSubscriptionEntitlements();
 			} catch (err) {
-				cancelError = formatApiErrorMessage(err, 'Erreur lors de la r\u00e9siliation.');
+				cancelError = formatApiErrorMessage(err, 'Erreur lors de la résiliation.');
 				cancelStep = 1;
 			}
 		}
@@ -171,7 +171,7 @@
 		quittance_pending: 'Quittance en attente',
 		pno_expiring: 'PNO expirant',
 		new_loyer: 'Nouveau loyer',
-		new_associe: 'Nouvel associ\u00e9',
+		new_associe: 'Nouvel associé',
 		subscription_expiring: 'Abonnement expirant'
 	};
 
@@ -187,14 +187,14 @@
 			const result = await updateNotificationPreferences(notifPreferences);
 			notifPreferences = result.preferences;
 			addToast({
-				title: 'Notifications mises \u00e0 jour',
-				description: 'Vos pr\u00e9f\u00e9rences de notification ont \u00e9t\u00e9 enregistr\u00e9es.',
+				title: 'Notifications mises à jour',
+				description: 'Vos préférences de notification ont été enregistrées.',
 				variant: 'success'
 			});
 		} catch (error) {
 			notifError = formatApiErrorMessage(
 				error,
-				'Impossible de sauvegarder les pr\u00e9f\u00e9rences de notification.'
+				'Impossible de sauvegarder les préférences de notification.'
 			);
 		} finally {
 			notifSaving = false;
@@ -261,10 +261,10 @@
 			if (response.ok) {
 				dataSummary = await response.json();
 			} else {
-				privacyLoadError = 'Impossible de charger le r\u00e9sum\u00e9 des donn\u00e9es personnelles.';
+				privacyLoadError = 'Impossible de charger le résumé des données personnelles.';
 			}
 		} catch {
-			privacyLoadError = 'Erreur r\u00e9seau pendant le chargement des donn\u00e9es personnelles.';
+			privacyLoadError = 'Erreur réseau pendant le chargement des données personnelles.';
 		} finally {
 			privacyLoading = false;
 		}
@@ -285,20 +285,20 @@
 				if (data.export_url) {
 					window.open(data.export_url, '_blank', 'noopener,noreferrer');
 					addToast({
-						title: 'Export pr\u00eat. Le t\u00e9l\u00e9chargement a \u00e9t\u00e9 ouvert dans un nouvel onglet.',
+						title: 'Export prêt. Le téléchargement a été ouvert dans un nouvel onglet.',
 						variant: 'success'
 					});
 				} else {
 					addToast({
-						title: "Export cr\u00e9\u00e9, mais aucun lien de t\u00e9l\u00e9chargement n'a \u00e9t\u00e9 retourn\u00e9.",
+						title: "Export créé, mais aucun lien de téléchargement n'a été retourné.",
 						variant: 'error'
 					});
 				}
 			} else {
-				addToast({ title: "Erreur lors de l'export des donn\u00e9es", variant: 'error' });
+				addToast({ title: "Erreur lors de l'export des données", variant: 'error' });
 			}
 		} catch {
-			addToast({ title: 'Erreur r\u00e9seau', variant: 'error' });
+			addToast({ title: 'Erreur réseau', variant: 'error' });
 		} finally {
 			exportLoading = false;
 		}
@@ -322,7 +322,7 @@
 
 			if (response.ok) {
 				addToast({
-					title: 'Compte supprim\u00e9 avec succ\u00e8s. Redirection...',
+					title: 'Compte supprimé avec succès. Redirection...',
 					variant: 'success'
 				});
 				await supabase.auth.signOut();
@@ -331,7 +331,7 @@
 				addToast({ title: 'Erreur lors de la suppression du compte', variant: 'error' });
 			}
 		} catch {
-			addToast({ title: 'Erreur r\u00e9seau', variant: 'error' });
+			addToast({ title: 'Erreur réseau', variant: 'error' });
 		} finally {
 			deleteLoading = false;
 			showDeleteConfirm = false;
@@ -406,12 +406,12 @@
 				} else {
 					notifError = formatApiErrorMessage(
 						notifResult.reason,
-						'Impossible de charger les pr\u00e9f\u00e9rences de notification.'
+						'Impossible de charger les préférences de notification.'
 					);
 				}
 			})
 			.catch(() => {
-				notifError = 'Impossible de charger les pr\u00e9f\u00e9rences de notification.';
+				notifError = 'Impossible de charger les préférences de notification.';
 			})
 			.finally(() => {
 				subscriptionLoading = false;
@@ -428,24 +428,24 @@
 	});
 </script>
 
-<svelte:head><title>Param\u00e8tres | G\u00e9rerSCI</title></svelte:head>
+<svelte:head><title>Paramètres | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<!-- Page header -->
 	<header class="sci-page-header">
 		<p class="sci-eyebrow">Mon compte</p>
-		<h1 class="sci-page-title">Param\u00e8tres</h1>
+		<h1 class="sci-page-title">Paramètres</h1>
 		<p class="sci-page-subtitle">
-			G\u00e9rez votre profil, votre abonnement, vos notifications et vos donn\u00e9es personnelles.
+			Gérez votre profil, votre abonnement, vos notifications et vos données personnelles.
 		</p>
 	</header>
 
 	<!-- Tab bar -->
 	<nav
 		class="mt-4 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-		aria-label="Sections des param\u00e8tres"
+		aria-label="Sections des paramètres"
 	>
-		<div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Navigation param\u00e8tres">
+		<div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Navigation paramètres">
 			{#each tabs as tab (tab.id)}
 				<button
 					type="button"
@@ -473,8 +473,8 @@
 				<Card class="sci-section-card">
 					<CardHeader>
 						<div>
-							<CardTitle class="text-lg">Identit\u00e9</CardTitle>
-							<CardDescription>Adresse email de connexion et mode d'acc\u00e8s.</CardDescription>
+							<CardTitle class="text-lg">Identité</CardTitle>
+							<CardDescription>Adresse email de connexion et mode d'accès.</CardDescription>
 						</div>
 					</CardHeader>
 					<CardContent class="grid gap-4 pt-0 sm:grid-cols-2">
@@ -483,9 +483,9 @@
 							<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{email}</p>
 						</div>
 						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-							<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Mode d'acc\u00e8s</p>
+							<p class="text-xs font-semibold tracking-[0.15em] uppercase text-slate-500">Mode d'accès</p>
 							<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-								{user?.email ? 'Connexion par lien s\u00e9curis\u00e9' : 'Aucune session active'}
+								{user?.email ? 'Connexion par lien sécurisé' : 'Aucune session active'}
 							</p>
 						</div>
 					</CardContent>
@@ -495,8 +495,8 @@
 				<Card class="sci-section-card">
 					<CardHeader>
 						<div>
-							<CardTitle class="text-lg">S\u00e9curit\u00e9</CardTitle>
-							<CardDescription>Modifiez votre mot de passe pour s\u00e9curiser votre compte.</CardDescription>
+							<CardTitle class="text-lg">Sécurité</CardTitle>
+							<CardDescription>Modifiez votre mot de passe pour sécuriser votre compte.</CardDescription>
 						</div>
 					</CardHeader>
 					<CardContent class="pt-0">
@@ -506,7 +506,7 @@
 								<Input
 									type="password"
 									bind:value={newPassword}
-									placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+									placeholder="••••••••"
 									disabled={passwordLoading}
 									autocomplete="new-password"
 								/>
@@ -516,7 +516,7 @@
 								<Input
 									type="password"
 									bind:value={newPasswordConfirm}
-									placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+									placeholder="••••••••"
 									disabled={passwordLoading}
 									autocomplete="new-password"
 								/>
@@ -528,7 +528,7 @@
 
 							{#if passwordSuccess}
 								<p class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-									Mot de passe mis \u00e0 jour avec succ\u00e8s.
+									Mot de passe mis à jour avec succès.
 								</p>
 							{/if}
 
@@ -536,7 +536,7 @@
 								type="submit"
 								disabled={passwordLoading || !newPassword || !newPasswordConfirm || newPassword !== newPasswordConfirm || newPassword.length < passwordMinLength}
 							>
-								{passwordLoading ? 'Mise \u00e0 jour...' : 'Modifier le mot de passe'}
+								{passwordLoading ? 'Mise à jour...' : 'Modifier le mot de passe'}
 							</Button>
 						</form>
 					</CardContent>
@@ -594,7 +594,7 @@
 							<CardHeader>
 								<div>
 									<CardTitle class="text-lg">Actions</CardTitle>
-									<CardDescription>G\u00e9rez votre abonnement et votre facturation</CardDescription>
+									<CardDescription>Gérez votre abonnement et votre facturation</CardDescription>
 								</div>
 							</CardHeader>
 							<CardContent class="grid gap-3 pt-0">
@@ -611,11 +611,11 @@
 										disabled={portalLoading}
 									>
 										<CreditCard class="h-4 w-4" aria-hidden="true" />
-										{portalLoading ? 'Ouverture...' : 'G\u00e9rer la facturation (Stripe)'}
+										{portalLoading ? 'Ouverture...' : 'Gérer la facturation (Stripe)'}
 									</Button>
 								{/if}
 
-								<!-- R\u00e9siliation en 3 clics (loi 16 ao\u00fbt 2022) -->
+								<!-- Résiliation en 3 clics (loi 16 août 2022) -->
 								{#if subscription.is_active && subscription.status !== 'no_subscription'}
 									<hr class="my-2 border-slate-200 dark:border-slate-700" />
 
@@ -626,23 +626,23 @@
 											onclick={handleCancel}
 										>
 											<AlertTriangle class="h-4 w-4" aria-hidden="true" />
-											R\u00e9silier mon abonnement
+											Résilier mon abonnement
 										</Button>
 									{:else if cancelStep === 1}
 										<div class="rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/30">
 											<p class="text-sm font-medium text-rose-800 dark:text-rose-200">
-												Confirmez la r\u00e9siliation
+												Confirmez la résiliation
 											</p>
 											<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">
-												Votre abonnement restera actif jusqu'\u00e0 la fin de la p\u00e9riode en cours.
-												Vous conserverez l'acc\u00e8s \u00e0 toutes les fonctionnalit\u00e9s jusqu'\u00e0 cette date.
+												Votre abonnement restera actif jusqu'à la fin de la période en cours.
+												Vous conserverez l'accès à toutes les fonctionnalités jusqu'à cette date.
 											</p>
 											{#if cancelError}
 												<p class="mt-2 text-xs font-medium text-rose-700" role="alert">{cancelError}</p>
 											{/if}
 											<div class="mt-3 flex gap-2">
 												<Button variant="destructive" size="sm" onclick={handleCancel}>
-													Confirmer la r\u00e9siliation
+													Confirmer la résiliation
 												</Button>
 												<Button variant="outline" size="sm" onclick={() => { cancelStep = 0; cancelError = ''; }}>
 													Annuler
@@ -652,7 +652,7 @@
 									{:else}
 										<div class="flex items-center gap-2 text-sm text-slate-500">
 											<div class="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-rose-500"></div>
-											R\u00e9siliation en cours...
+											Résiliation en cours...
 										</div>
 									{/if}
 								{/if}
@@ -661,7 +661,7 @@
 					</div>
 				{:else}
 					<div class="sci-empty-state">
-						<p>Aucun abonnement actif. Choisissez un plan pour acc\u00e9der \u00e0 G\u00e9rerSCI.</p>
+						<p>Aucun abonnement actif. Choisissez un plan pour accéder à GérerSCI.</p>
 						<Button href="/pricing" class="mt-4">Choisir un plan</Button>
 					</div>
 				{/if}
@@ -672,7 +672,7 @@
 				<Card class="sci-section-card">
 					<CardHeader>
 						<div>
-							<CardTitle class="text-lg">Pr\u00e9f\u00e9rences de notification</CardTitle>
+							<CardTitle class="text-lg">Préférences de notification</CardTitle>
 							<CardDescription>Configurez les types de notifications que vous souhaitez recevoir par email et dans l'application.</CardDescription>
 						</div>
 					</CardHeader>
@@ -680,7 +680,7 @@
 						{#if notifLoading}
 							<div class="flex items-center justify-center py-8">
 								<div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-slate-100"></div>
-								<span class="ml-3 text-sm text-slate-500 dark:text-slate-400">Chargement des pr\u00e9f\u00e9rences...</span>
+								<span class="ml-3 text-sm text-slate-500 dark:text-slate-400">Chargement des préférences...</span>
 							</div>
 						{:else if notifError}
 							<p class="sci-inline-alert sci-inline-alert-error">{notifError}</p>
@@ -752,7 +752,7 @@
 					<Card class="sci-section-card">
 						<CardContent class="py-8">
 							<p class="sci-inline-alert sci-inline-alert-error">
-								{privacyLoadError || "Impossible de charger les donn\u00e9es personnelles. Rechargez la page."}
+								{privacyLoadError || "Impossible de charger les données personnelles. Rechargez la page."}
 							</p>
 						</CardContent>
 					</Card>
@@ -761,8 +761,8 @@
 					<Card class="sci-section-card">
 						<CardHeader>
 							<div>
-								<CardTitle class="text-lg">R\u00e9sum\u00e9 des donn\u00e9es</CardTitle>
-								<CardDescription>Vue d'ensemble des informations stock\u00e9es sur le compte connect\u00e9.</CardDescription>
+								<CardTitle class="text-lg">Résumé des données</CardTitle>
+								<CardDescription>Vue d'ensemble des informations stockées sur le compte connecté.</CardDescription>
 							</div>
 						</CardHeader>
 						<CardContent class="grid gap-4 pt-0 md:grid-cols-2">
@@ -771,20 +771,20 @@
 								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{dataSummary.email}</p>
 							</div>
 							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Compte cr\u00e9\u00e9 le</p>
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Compte créé le</p>
 								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(dataSummary.created_at)}</p>
 							</div>
 							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Derni\u00e8re connexion</p>
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Dernière connexion</p>
 								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDateTime(dataSummary.data_summary.last_sign_in)}</p>
 							</div>
 							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Donn\u00e9es stock\u00e9es</p>
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Données stockées</p>
 								<p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-									{dataSummary.data_summary.sci_count} SCI \u00b7
-									{dataSummary.data_summary.biens_count} biens \u00b7
-									{dataSummary.data_summary.loyers_count} loyers \u00b7
-									{dataSummary.data_summary.associes_count} associ\u00e9s
+									{dataSummary.data_summary.sci_count} SCI ·
+									{dataSummary.data_summary.biens_count} biens ·
+									{dataSummary.data_summary.loyers_count} loyers ·
+									{dataSummary.data_summary.associes_count} associés
 								</p>
 							</div>
 						</CardContent>
@@ -794,24 +794,24 @@
 					<Card class="sci-section-card">
 						<CardHeader>
 							<div>
-								<CardTitle class="text-lg">Export des donn\u00e9es (JSON)</CardTitle>
-								<CardDescription>Droit \u00e0 la portabilit\u00e9 (RGPD Art. 20). T\u00e9l\u00e9chargez une copie compl\u00e8te de vos donn\u00e9es.</CardDescription>
+								<CardTitle class="text-lg">Export des données (JSON)</CardTitle>
+								<CardDescription>Droit à la portabilité (RGPD Art. 20). Téléchargez une copie complète de vos données.</CardDescription>
 							</div>
 						</CardHeader>
 						<CardContent class="space-y-4 pt-0">
 							<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
 								<p class="text-sm text-slate-700 dark:text-slate-300">
-									L'export contient toutes les donn\u00e9es rattach\u00e9es au compte dans un fichier JSON structur\u00e9 :
+									L'export contient toutes les données rattachées au compte dans un fichier JSON structuré :
 								</p>
 								<ul class="mt-2 list-inside list-disc space-y-1 text-sm text-slate-600 dark:text-slate-400">
-									<li>Informations du compte (email, dates de cr\u00e9ation et connexion)</li>
-									<li>SCI et associ\u00e9s</li>
+									<li>Informations du compte (email, dates de création et connexion)</li>
+									<li>SCI et associés</li>
 									<li>Biens immobiliers</li>
-									<li>Loyers enregistr\u00e9s</li>
-									<li>Charges et donn\u00e9es fiscales</li>
+									<li>Loyers enregistrés</li>
+									<li>Charges et données fiscales</li>
 								</ul>
 								<p class="mt-3 text-xs text-slate-500 dark:text-slate-500">
-									Le lien de t\u00e9l\u00e9chargement est valide 30 minutes. L'export est limit\u00e9 \u00e0 3 demandes par heure.
+									Le lien de téléchargement est valide 30 minutes. L'export est limité à 3 demandes par heure.
 								</p>
 							</div>
 
@@ -825,7 +825,7 @@
 										Export en cours...
 									</span>
 								{:else}
-									T\u00e9l\u00e9charger mes donn\u00e9es (JSON)
+									Télécharger mes données (JSON)
 								{/if}
 							</Button>
 						</CardContent>
@@ -836,37 +836,37 @@
 						<CardHeader>
 							<div>
 								<CardTitle class="text-red-600 dark:text-red-400">Suppression du compte</CardTitle>
-								<CardDescription>Droit \u00e0 l'effacement (RGPD Art. 17). Cette action est d\u00e9finitive et irr\u00e9versible.</CardDescription>
+								<CardDescription>Droit à l'effacement (RGPD Art. 17). Cette action est définitive et irréversible.</CardDescription>
 							</div>
 						</CardHeader>
 						<CardContent class="space-y-4 pt-0">
 							<div class="rounded-2xl bg-red-50 p-4 dark:bg-red-900/20">
 								<p class="mb-2 text-sm font-semibold text-red-800 dark:text-red-300">
-									Attention : action irr\u00e9versible
+									Attention : action irréversible
 								</p>
 								<p class="text-sm text-red-700 dark:text-red-400">
-									La suppression du compte entra\u00eene l'effacement d\u00e9finitif de :
+									La suppression du compte entraîne l'effacement définitif de :
 								</p>
 								<ul class="mt-2 list-inside list-disc space-y-1 text-sm text-red-700 dark:text-red-400">
-									<li>Toutes les SCI ({dataSummary.data_summary.sci_count}) et leurs associ\u00e9s ({dataSummary.data_summary.associes_count})</li>
+									<li>Toutes les SCI ({dataSummary.data_summary.sci_count}) et leurs associés ({dataSummary.data_summary.associes_count})</li>
 									<li>Tous les biens immobiliers ({dataSummary.data_summary.biens_count})</li>
-									<li>Tous les loyers ({dataSummary.data_summary.loyers_count}), charges et donn\u00e9es fiscales</li>
-									<li>Tous les documents upload\u00e9s</li>
+									<li>Tous les loyers ({dataSummary.data_summary.loyers_count}), charges et données fiscales</li>
+									<li>Tous les documents uploadés</li>
 								</ul>
 								<p class="mt-3 text-xs text-red-600 dark:text-red-500">
-									Les donn\u00e9es de facturation Stripe sont anonymis\u00e9es (non supprim\u00e9es) pour respecter les obligations l\u00e9gales de conservation de 10 ans (Code G\u00e9n\u00e9ral des Imp\u00f4ts).
+									Les données de facturation Stripe sont anonymisées (non supprimées) pour respecter les obligations légales de conservation de 10 ans (Code Général des Impôts).
 								</p>
 							</div>
 
 							<Button variant="destructive" onclick={() => (showDeleteConfirm = true)}>
-								Supprimer d\u00e9finitivement mon compte
+								Supprimer définitivement mon compte
 							</Button>
 
 							<ConfirmDeleteModal
 								open={showDeleteConfirm}
 								entityName={dataSummary.email}
 								entityType="votre compte"
-								warningMessage="La suppression du compte entra\u00eene l'effacement d\u00e9finitif de toutes vos SCI ({dataSummary.data_summary.sci_count}), biens ({dataSummary.data_summary.biens_count}), loyers ({dataSummary.data_summary.loyers_count}), associ\u00e9s ({dataSummary.data_summary.associes_count}) et documents. Les donn\u00e9es de facturation Stripe sont anonymis\u00e9es. Cette action est irr\u00e9versible."
+								warningMessage="La suppression du compte entraîne l'effacement définitif de toutes vos SCI ({dataSummary.data_summary.sci_count}), biens ({dataSummary.data_summary.biens_count}), loyers ({dataSummary.data_summary.loyers_count}), associés ({dataSummary.data_summary.associes_count}) et documents. Les données de facturation Stripe sont anonymisées. Cette action est irréversible."
 								loading={deleteLoading}
 								onConfirm={deleteAccount}
 								onCancel={() => { showDeleteConfirm = false; deleteConfirmEmail = ''; }}
@@ -884,7 +884,7 @@
 								</a>
 							</div>
 							<div>
-								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Autorit\u00e9 de contr\u00f4le</p>
+								<p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Autorité de contrôle</p>
 								<a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" class="mt-1 text-cyan-600 underline-offset-4 hover:underline dark:text-cyan-300">
 									CNIL
 								</a>
@@ -899,13 +899,13 @@
 				<Card class="sci-section-card">
 					<CardHeader>
 						<div>
-							<CardTitle class="text-lg">Pr\u00e9f\u00e9rences d'affichage</CardTitle>
-							<CardDescription>R\u00e9glages propres au navigateur courant : page d'ouverture, densit\u00e9, th\u00e8me.</CardDescription>
+							<CardTitle class="text-lg">Préférences d'affichage</CardTitle>
+							<CardDescription>Réglages propres au navigateur courant : page d'ouverture, densité, thème.</CardDescription>
 						</div>
 					</CardHeader>
 					<CardContent class="space-y-6 pt-0">
 						<label class="sci-field" for="settings-landing-route">
-							<span class="sci-field-label">Page d'ouverture par d\u00e9faut</span>
+							<span class="sci-field-label">Page d'ouverture par défaut</span>
 							<select
 								id="settings-landing-route"
 								name="settings-landing-route"
@@ -919,7 +919,7 @@
 						</label>
 
 						<label class="sci-field" for="settings-density">
-							<span class="sci-field-label">Densit\u00e9 d'affichage</span>
+							<span class="sci-field-label">Densité d'affichage</span>
 							<select id="settings-density" name="settings-density" class="sci-select" bind:value={preferences.density}>
 								<option value="comfortable">Confortable</option>
 								<option value="compact">Compacte</option>
@@ -927,7 +927,7 @@
 						</label>
 
 						<label class="sci-field" for="settings-theme">
-							<span class="sci-field-label">Th\u00e8me</span>
+							<span class="sci-field-label">Thème</span>
 							<select
 								id="settings-theme"
 								name="settings-theme"
@@ -935,7 +935,7 @@
 								bind:value={currentTheme}
 								onchange={(event) => theme.set((event.currentTarget as HTMLSelectElement).value as ThemePreference)}
 							>
-								<option value="system">Syst\u00e8me</option>
+								<option value="system">Système</option>
 								<option value="light">Clair</option>
 								<option value="dark">Sombre</option>
 							</select>
@@ -945,10 +945,10 @@
 							<label class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
 								<div class="flex items-start justify-between gap-3">
 									<div>
-										<p class="font-semibold text-slate-900 dark:text-slate-100">Pr\u00e9visualisation PDF</p>
+										<p class="font-semibold text-slate-900 dark:text-slate-100">Prévisualisation PDF</p>
 										<p class="mt-1 text-slate-500 dark:text-slate-400">Affiche les quittances directement dans l'interface.</p>
 									</div>
-									<input type="checkbox" bind:checked={preferences.showPdfPreview} aria-label="Activer la pr\u00e9visualisation PDF" />
+									<input type="checkbox" bind:checked={preferences.showPdfPreview} aria-label="Activer la prévisualisation PDF" />
 								</div>
 							</label>
 
@@ -956,7 +956,7 @@
 								<div class="flex items-start justify-between gap-3">
 									<div>
 										<p class="font-semibold text-slate-900 dark:text-slate-100">Digest email</p>
-										<p class="mt-1 text-slate-500 dark:text-slate-400">Pr\u00e9f\u00e9rence de r\u00e9ception des rappels et synth\u00e8ses.</p>
+										<p class="mt-1 text-slate-500 dark:text-slate-400">Préférence de réception des rappels et synthèses.</p>
 									</div>
 									<input type="checkbox" bind:checked={preferences.emailDigestEnabled} aria-label="Activer le digest email" />
 								</div>
@@ -966,14 +966,14 @@
 								<div class="flex items-start justify-between gap-3">
 									<div>
 										<p class="font-semibold text-slate-900 dark:text-slate-100">Alertes de risque</p>
-										<p class="mt-1 text-slate-500 dark:text-slate-400">Priorise les retards et charges anormales dans les vues cl\u00e9s.</p>
+										<p class="mt-1 text-slate-500 dark:text-slate-400">Priorise les retards et charges anormales dans les vues clés.</p>
 									</div>
 									<input type="checkbox" bind:checked={preferences.riskAlertsEnabled} aria-label="Activer les alertes de risque" />
 								</div>
 							</label>
 						</div>
 
-						<Button onclick={handleSavePreferences}>Enregistrer les pr\u00e9f\u00e9rences</Button>
+						<Button onclick={handleSavePreferences}>Enregistrer les préférences</Button>
 					</CardContent>
 				</Card>
 			</div>

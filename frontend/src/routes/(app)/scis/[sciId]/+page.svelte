@@ -193,7 +193,7 @@
 			comptaData.totaux?.resultat.toFixed(2)
 		]);
 		const csvContent = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+		const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
@@ -324,7 +324,7 @@
 			String(sci.associes_count ?? sci.associes?.length ?? 0)
 		];
 		const csvContent = [headers.join(';'), row.join(';')].join('\n');
-		const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+		const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
@@ -952,7 +952,7 @@
 		open={showDeleteConfirm}
 		entityName={sci.nom}
 		entityType="cette SCI"
-		warningMessage="Cette action supprimera d\u00e9finitivement {biensCount} bien{biensCount > 1 ? 's' : ''}, {sci.associes_count ?? sci.associes?.length ?? 0} associ\u00e9{(sci.associes_count ?? sci.associes?.length ?? 0) > 1 ? 's' : ''}, {sci.loyers_count ?? 0} loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''}, {sci.charges_count ?? 0} charge{(sci.charges_count ?? 0) > 1 ? 's' : ''}, ainsi que tous les baux, documents et quittances associ\u00e9s. Cette action est irr\u00e9versible."
+		warningMessage="Cette action supprimera définitivement {biensCount} bien{biensCount > 1 ? 's' : ''}, {sci.associes_count ?? sci.associes?.length ?? 0} associé{(sci.associes_count ?? sci.associes?.length ?? 0) > 1 ? 's' : ''}, {sci.loyers_count ?? 0} loyer{(sci.loyers_count ?? 0) > 1 ? 's' : ''}, {sci.charges_count ?? 0} charge{(sci.charges_count ?? 0) > 1 ? 's' : ''}, ainsi que tous les baux, documents et quittances associés. Cette action est irréversible."
 		loading={deletingSci}
 		onConfirm={handleDeleteSci}
 		onCancel={() => { showDeleteConfirm = false; }}
