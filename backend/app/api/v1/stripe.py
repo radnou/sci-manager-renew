@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import stripe
@@ -17,6 +18,7 @@ from app.models.stripe import (
     CheckoutSessionCreateRequest,
     CheckoutSessionCreateResponse,
     GuestCheckoutRequest,
+    RefundResponse,
     SubscriptionEntitlementsResponse,
     StripeWebhookResponse,
 )
@@ -123,6 +125,42 @@ def _sync_subscription_deleted(subscription_data: dict[str, Any]) -> None:
     elif customer_id:
         query = query.eq("stripe_customer_id", customer_id)
     query.execute()
+
+
+def _is_event_already_processed(event_id: str) -> bool:
+    """Check if a Stripe webhook event was already processed (idempotency guard).
+
+    Uses the stripe_webhook_events table as a lightweight dedup store.
+    Returns True if the event was already processed, False otherwise.
+    On check failure (table missing, etc.), returns False to allow processing.
+    """
+    try:
+        client = get_supabase_service_client()
+        result = (
+            client.table("stripe_webhook_events")
+            .select("id")
+            .eq("event_id", event_id)
+            .limit(1)
+            .execute()
+        )
+        return bool(result.data)
+    except Exception:
+        # Table may not exist yet; allow processing and log warning
+        logger.warning("idempotency_check_failed", event_id=event_id, exc_info=True)
+        return False
+
+
+def _mark_event_processed(event_id: str, event_type: str) -> None:
+    """Record a Stripe event as processed for idempotency."""
+    try:
+        client = get_supabase_service_client()
+        client.table("stripe_webhook_events").insert({
+            "event_id": event_id,
+            "event_type": event_type,
+            "processed_at": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+    except Exception:
+        logger.warning("idempotency_mark_failed", event_id=event_id, exc_info=True)
 
 
 def _handle_event(event: Any) -> None:
@@ -511,7 +549,145 @@ async def stripe_webhook(request: Request) -> StripeWebhookResponse:
         logger.error("stripe_webhook_invalid_signature", error=str(exc))
         raise ValidationError("Invalid Stripe signature") from exc
 
-    logger.info("stripe_webhook_processing", event_type=event.get("type") if hasattr(event, "get") else None)
+    event_id = _to_str(event.get("id")) if hasattr(event, "get") else None
+    event_type = _to_str(event.get("type")) if hasattr(event, "get") else None
+    logger.info("stripe_webhook_processing", event_type=event_type, event_id=event_id)
+
+    # Idempotency guard: skip already-processed events (Stripe delivers at-least-once)
+    if event_id and _is_event_already_processed(event_id):
+        logger.info("stripe_webhook_duplicate_skipped", event_id=event_id, event_type=event_type)
+        return StripeWebhookResponse(status="already_processed")
+
     _handle_event(event)
-    logger.info("stripe_webhook_processed_successfully")
+
+    # Mark event as processed after successful handling
+    if event_id:
+        _mark_event_processed(event_id, event_type or "unknown")
+
+    logger.info("stripe_webhook_processed_successfully", event_id=event_id)
     return StripeWebhookResponse(status="success")
+
+
+@router.post("/refund", response_model=RefundResponse)
+@limiter.limit("2/day")
+async def request_refund(
+    request: Request,
+    user_id: str = Depends(get_current_user),
+) -> RefundResponse:
+    """Request a refund within the 30-day money-back guarantee period.
+
+    Per CGV art. L221-28, users can request a full refund within 30 days
+    of their first payment. The subscription is immediately cancelled
+    and access revoked.
+    """
+    del request
+    if not settings.feature_stripe_payments:
+        raise FeatureDisabledError(
+            "Les paiements Stripe sont désactivés.",
+            flag_name="feature_stripe_payments",
+        )
+
+    client = get_supabase_service_client()
+    result = (
+        client.table("subscriptions")
+        .select("stripe_subscription_id, stripe_customer_id, guarantee_expires_at, created_at, status, mode")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not result.data:
+        raise ValidationError("Aucun abonnement trouvé.")
+
+    sub_row = result.data[0]
+    sub_status = (sub_row.get("status") or "").lower()
+
+    if sub_status not in {"active", "paid"}:
+        raise ValidationError("Votre abonnement n'est pas actif. Remboursement impossible.")
+
+    # Check 30-day guarantee window
+    guarantee_expires_at = sub_row.get("guarantee_expires_at")
+    if guarantee_expires_at:
+        expiry = datetime.fromisoformat(str(guarantee_expires_at).replace("Z", "+00:00"))
+    else:
+        # Fallback: 30 days from subscription creation
+        created_at = sub_row.get("created_at")
+        if not created_at:
+            raise ValidationError("Impossible de déterminer la date de souscription.")
+        created = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+        expiry = created + timedelta(days=30)
+
+    now = datetime.now(timezone.utc)
+    if now > expiry:
+        days_ago = (now - expiry).days
+        raise ValidationError(
+            f"La période de garantie de 30 jours est expirée depuis {days_ago} jour(s). "
+            "Remboursement non disponible."
+        )
+
+    stripe.api_key = settings.stripe_secret_key
+    stripe_sub_id = sub_row.get("stripe_subscription_id")
+    stripe_customer_id = sub_row.get("stripe_customer_id")
+    checkout_mode = sub_row.get("mode")
+
+    # Find the latest invoice to refund
+    refund_id = None
+    try:
+        if checkout_mode == "payment":
+            # Fondateur (one-time payment): find payment intent via customer
+            if stripe_customer_id:
+                charges = stripe.Charge.list(customer=stripe_customer_id, limit=1)
+                if charges.data:
+                    refund = stripe.Refund.create(charge=charges.data[0].id)
+                    refund_id = refund.id
+                else:
+                    raise ExternalServiceError("Stripe", "Aucun paiement trouvé pour ce client.")
+            else:
+                raise ExternalServiceError("Stripe", "Identifiant client Stripe manquant.")
+        else:
+            # Subscription: refund latest invoice then cancel
+            if not stripe_sub_id:
+                raise ExternalServiceError("Stripe", "Identifiant abonnement Stripe manquant.")
+
+            invoices = stripe.Invoice.list(subscription=stripe_sub_id, limit=1, status="paid")
+            if invoices.data:
+                latest_invoice = invoices.data[0]
+                if latest_invoice.payment_intent:
+                    refund = stripe.Refund.create(payment_intent=latest_invoice.payment_intent)
+                    refund_id = refund.id
+                else:
+                    raise ExternalServiceError("Stripe", "Aucun paiement associé à la dernière facture.")
+            else:
+                raise ExternalServiceError("Stripe", "Aucune facture payée trouvée.")
+
+            # Cancel subscription immediately (not at period end)
+            stripe.Subscription.cancel(stripe_sub_id)
+
+    except stripe.error.StripeError as exc:
+        logger.error(
+            "stripe_refund_failed",
+            user_id=user_id,
+            stripe_sub_id=stripe_sub_id,
+            error=str(exc),
+            exc_info=True,
+        )
+        raise ExternalServiceError("Stripe", f"Remboursement échoué: {str(exc)}")
+
+    # Update subscription status in DB
+    client.table("subscriptions").update({
+        "status": "refunded",
+        "is_active": False,
+    }).eq("user_id", user_id).execute()
+
+    logger.info(
+        "refund_processed",
+        user_id=user_id,
+        refund_id=refund_id,
+        stripe_sub_id=stripe_sub_id,
+    )
+
+    return RefundResponse(
+        status="refunded",
+        message="Votre remboursement a été effectué. Votre abonnement est résilié.",
+        refund_id=refund_id,
+    )

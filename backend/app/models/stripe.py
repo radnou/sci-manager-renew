@@ -22,7 +22,13 @@ class GuestCheckoutRequest(BaseModel):
 
 
 class StripeWebhookResponse(BaseModel):
-    status: Literal["success", "ignored"]
+    status: Literal["success", "ignored", "already_processed"]
+
+
+class RefundResponse(BaseModel):
+    status: str
+    message: str
+    refund_id: str | None = None
 
 
 class SubscriptionEntitlementsResponse(BaseModel):

@@ -107,6 +107,8 @@ class FakeQuery:
         self._order_key: str | None = None
         self._order_desc: bool = False
         self._limit: int | None = None
+        self._range_start: int | None = None
+        self._range_end: int | None = None
         self.not_ = _FakeNotProxy(self)
 
     def select(self, *_args, **_kwargs) -> "FakeQuery":
@@ -171,6 +173,11 @@ class FakeQuery:
         self._order_desc = desc
         return self
 
+    def range(self, start: int, end: int) -> "FakeQuery":
+        self._range_start = start
+        self._range_end = end
+        return self
+
     def limit(self, count: int) -> "FakeQuery":
         self._limit = count
         return self
@@ -228,6 +235,8 @@ class FakeQuery:
                     key=lambda r: r.get(self._order_key, ""),
                     reverse=self._order_desc,
                 )
+            if self._range_start is not None and self._range_end is not None:
+                data = data[self._range_start : self._range_end + 1]
             if self._limit is not None:
                 data = data[: self._limit]
             return FakeResult(data=data)

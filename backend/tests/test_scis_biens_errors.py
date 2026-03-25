@@ -28,6 +28,7 @@ class ErrorQuery:
     def update(self, *a, **k): return self
     def delete(self, *a, **k): return self
     def order(self, *a, **k): return self
+    def range(self, *a, **k): return self
     def gte(self, *a, **k): return self
     def lte(self, *a, **k): return self
     def limit(self, *a, **k): return self
@@ -83,7 +84,7 @@ class TestListSciBiensError:
         request = _mock_request()
         with patch("app.api.v1.scis_biens._get_client", return_value=ErrorClient()):
             with pytest.raises(DatabaseError):
-                await list_sci_biens(SCI_UUID, request, MEMBERSHIP)
+                await list_sci_biens(SCI_UUID, request, MEMBERSHIP, page=1, page_size=50)
 
 
 # ---------------------------------------------------------------------------
@@ -155,9 +156,13 @@ async def test_list_endpoint_raises_on_db_error(func_name, table_name):
     func = getattr(mod, func_name)
     request = _mock_request()
 
+    # Functions with pagination params need page/page_size when called directly
+    paginated_funcs = {"list_bien_loyers", "list_bien_documents"}
+    kwargs = {"page": 1, "page_size": 50} if func_name in paginated_funcs else {}
+
     with patch("app.api.v1.scis_biens._get_client", return_value=_bien_ok_then_error()):
         with pytest.raises(DatabaseError):
-            await func(SCI_UUID, BIEN_UUID, request, MEMBERSHIP)
+            await func(SCI_UUID, BIEN_UUID, request, MEMBERSHIP, **kwargs)
 
 
 # ---------------------------------------------------------------------------

@@ -70,11 +70,18 @@ async def get_alertes(client, user_id: str) -> list[dict]:
 
     # --- Build lookup maps for SCI names and biens ---
     sci_names: dict[str, str] = {}
-    for sci_id in sci_ids:
-        result = client.table("sci").select("id,nom").eq("id", sci_id).execute()
-        if not getattr(result, "error", None) and result.data:
-            for row in result.data:
+    sci_query = client.table("sci").select("id,nom")
+    if hasattr(sci_query, "in_"):
+        sci_result = sci_query.in_("id", sci_ids).execute()
+        if not getattr(sci_result, "error", None) and sci_result.data:
+            for row in sci_result.data:
                 sci_names[str(row["id"])] = row.get("nom") or row.get("name", "")
+    else:
+        for sci_id in sci_ids:
+            result = client.table("sci").select("id,nom").eq("id", sci_id).execute()
+            if not getattr(result, "error", None) and result.data:
+                for row in result.data:
+                    sci_names[str(row["id"])] = row.get("nom") or row.get("name", "")
 
     all_biens = _query_in_sci_ids(client, "biens", "id,id_sci,adresse", sci_ids)
     biens_by_id: dict[str, dict] = {str(b["id"]): b for b in all_biens}
@@ -218,12 +225,18 @@ async def get_sci_cards(client, user_id: str) -> list[dict]:
     if not sci_ids:
         return []
 
-    # Fetch SCIs
+    # Fetch SCIs — single batch query
     scis_data: list[dict] = []
-    for sci_id in sci_ids:
-        result = client.table("sci").select("*").eq("id", sci_id).execute()
-        if not getattr(result, "error", None) and result.data:
-            scis_data.extend(result.data)
+    sci_query = client.table("sci").select("*")
+    if hasattr(sci_query, "in_"):
+        sci_result = sci_query.in_("id", sci_ids).execute()
+        if not getattr(sci_result, "error", None) and sci_result.data:
+            scis_data = sci_result.data
+    else:
+        for sci_id in sci_ids:
+            result = client.table("sci").select("*").eq("id", sci_id).execute()
+            if not getattr(result, "error", None) and result.data:
+                scis_data.extend(result.data)
 
     # Fetch biens and loyers for all SCIs at once
     all_biens = _query_in_sci_ids(client, "biens", "id,id_sci", sci_ids)

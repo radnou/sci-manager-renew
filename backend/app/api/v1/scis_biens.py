@@ -141,10 +141,20 @@ async def list_sci_biens(
     sci_id: UUID,
     request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(50, ge=1, le=100, description="Items per page"),
 ):
     """Liste les biens d'une SCI avec statut d'occupation."""
     client = _get_client(request)
-    result = client.table("biens").select("*").eq("id_sci", str(sci_id)).execute()
+    start = (page - 1) * page_size
+    end = start + page_size - 1
+    result = (
+        client.table("biens")
+        .select("*")
+        .eq("id_sci", str(sci_id))
+        .range(start, end)
+        .execute()
+    )
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
     biens = result.data or []
@@ -471,16 +481,21 @@ async def list_bien_loyers(
     bien_id: str,
     request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(50, ge=1, le=100, description="Items per page"),
 ):
     """Liste les loyers d'un bien."""
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
+    start = (page - 1) * page_size
+    end = start + page_size - 1
     result = (
         client.table("loyers")
         .select("*")
         .eq("id_bien", bien_id)
         .order("date_loyer", desc=True)
+        .range(start, end)
         .execute()
     )
     if getattr(result, "error", None):
@@ -1460,16 +1475,21 @@ async def list_bien_documents(
     bien_id: str,
     request: Request,
     membership: AssocieMembership = Depends(require_sci_membership),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(50, ge=1, le=100, description="Items per page"),
 ):
     """Liste les documents d'un bien."""
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
+    start = (page - 1) * page_size
+    end = start + page_size - 1
     result = (
         client.table("documents_bien")
         .select("*")
         .eq("id_bien", bien_id)
         .order("uploaded_at", desc=True)
+        .range(start, end)
         .execute()
     )
     if getattr(result, "error", None):

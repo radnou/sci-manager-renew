@@ -19,7 +19,9 @@
 		Briefcase,
 		CalendarClock,
 		ArrowLeftRight,
-		Gavel
+		Gavel,
+		Menu,
+		X
 	} from 'lucide-svelte';
 	import { fetchScis, type SCIOverview } from '$lib/api';
 	import { supabase } from '$lib/supabase';
@@ -37,10 +39,12 @@
 	let scis: SCIOverview[] = $state([]);
 	let sciSwitcherOpen: boolean = $state(false);
 	let accountMenuOpen: boolean = $state(false);
+	let mobileMenuOpen: boolean = $state(false);
 	let activeSciId: string | null = $state(null);
 	let scisLoaded: boolean = $state(false);
 	let accountMenuContainer = $state<HTMLDivElement | null>(null);
 	let sciSwitcherContainer = $state<HTMLDivElement | null>(null);
+	let mobileDrawerContainer = $state<HTMLDivElement | null>(null);
 
 	// Fetch SCIs once, refresh on /scis or /dashboard
 	$effect(() => {
@@ -76,6 +80,28 @@
 		document.addEventListener('mousedown', handleClick);
 		return () => document.removeEventListener('mousedown', handleClick);
 	});
+
+	// Lock body scroll when mobile menu is open
+	$effect(() => {
+		if (mobileMenuOpen) {
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = '';
+		}
+		return () => {
+			document.body.style.overflow = '';
+		};
+	});
+
+	// Close mobile menu on route change
+	$effect(() => {
+		page.url.pathname;
+		mobileMenuOpen = false;
+	});
+
+	function closeMobileMenu() {
+		mobileMenuOpen = false;
+	}
 
 	const activeSci = $derived(scis.find((s) => String(s.id) === String(activeSciId)) ?? null);
 
@@ -162,10 +188,26 @@
 			GérerSCI
 		</a>
 
-		<!-- Main nav links -->
+		<!-- Hamburger button (mobile only) -->
+		<button
+			type="button"
+			class="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+			onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+			aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+			aria-expanded={mobileMenuOpen}
+			aria-controls="mobile-drawer"
+		>
+			{#if mobileMenuOpen}
+				<X class="h-5 w-5" />
+			{:else}
+				<Menu class="h-5 w-5" />
+			{/if}
+		</button>
+
+		<!-- Main nav links (hidden on mobile) -->
 		<a
 			href="/dashboard"
-			class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {isActive('/dashboard')
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/dashboard')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -173,8 +215,8 @@
 			<span class="hidden sm:inline">Tableau de bord</span>
 		</a>
 
-		<!-- SCI Switcher -->
-		<div class="relative" bind:this={sciSwitcherContainer}>
+		<!-- SCI Switcher (hidden on mobile) -->
+		<div class="relative hidden md:block" bind:this={sciSwitcherContainer}>
 			<button
 				type="button"
 				onclick={() => (sciSwitcherOpen = !sciSwitcherOpen)}
@@ -228,7 +270,7 @@
 
 		<a
 			href="/exploitation"
-			class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {isActive('/exploitation')
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/exploitation')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -237,7 +279,7 @@
 		</a>
 		<a
 			href="/echeances"
-			class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {isActive('/echeances')
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/echeances')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -246,7 +288,7 @@
 		</a>
 		<a
 			href="/finances"
-			class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {isActive('/finances')
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/finances')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -260,7 +302,9 @@
 		<!-- Right side: utilities -->
 		<div class="flex items-center gap-1.5">
 			<NotificationCenter />
-			<ThemeToggle />
+			<div class="hidden md:block">
+				<ThemeToggle />
+			</div>
 
 			<!-- Account dropdown -->
 			<div class="relative ml-1" bind:this={accountMenuContainer}>
@@ -309,6 +353,163 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Mobile drawer overlay -->
+	{#if mobileMenuOpen}
+		<!-- Backdrop -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity md:hidden"
+			onclick={closeMobileMenu}
+			onkeydown={(e) => e.key === 'Escape' && closeMobileMenu()}
+		></div>
+
+		<!-- Drawer panel -->
+		<div
+			bind:this={mobileDrawerContainer}
+			id="mobile-drawer"
+			class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-xl md:hidden dark:border-slate-800 dark:bg-slate-950"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Menu de navigation"
+			style="animation: slideInLeft 200ms ease-out;"
+		>
+			<!-- Drawer header -->
+			<div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+				<a href="/dashboard" class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100" onclick={closeMobileMenu}>
+					GérerSCI
+				</a>
+				<button
+					type="button"
+					class="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+					onclick={closeMobileMenu}
+					aria-label="Fermer le menu"
+				>
+					<X class="h-5 w-5" />
+				</button>
+			</div>
+
+			<!-- Nav links -->
+			<div class="flex flex-1 flex-col gap-1 px-3 py-4">
+				<p class="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Navigation</p>
+				<a
+					href="/dashboard"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/dashboard')
+						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+					onclick={closeMobileMenu}
+				>
+					<LayoutDashboard class="h-4.5 w-4.5" />
+					Tableau de bord
+				</a>
+				<a
+					href="/exploitation"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/exploitation')
+						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+					onclick={closeMobileMenu}
+				>
+					<Briefcase class="h-4.5 w-4.5" />
+					Exploitation
+				</a>
+				<a
+					href="/echeances"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/echeances')
+						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+					onclick={closeMobileMenu}
+				>
+					<CalendarClock class="h-4.5 w-4.5" />
+					Échéances
+				</a>
+				<a
+					href="/finances"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/finances')
+						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+					onclick={closeMobileMenu}
+				>
+					<TrendingUp class="h-4.5 w-4.5" />
+					Finances
+				</a>
+
+				<!-- SCI Switcher in mobile -->
+				<div class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+					<p class="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Mes SCI</p>
+					{#if scis.length === 0}
+						<p class="px-3 py-2 text-xs text-slate-400 italic">Aucune SCI</p>
+					{/if}
+					{#each scis as sci (sci.id)}
+						<a
+							href={`/scis/${sci.id}`}
+							class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors {String(sci.id) === String(activeSciId)
+								? 'bg-blue-50 font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+								: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+							onclick={closeMobileMenu}
+						>
+							<Building2 class="h-4 w-4 flex-shrink-0 {String(sci.id) === String(activeSciId) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}" />
+							<span class="flex-1 truncate">{sci.nom}</span>
+							{#if String(sci.id) === String(activeSciId)}
+								<Check class="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+							{/if}
+						</a>
+					{/each}
+					<a
+						href="/scis"
+						class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+						onclick={closeMobileMenu}
+					>
+						Voir toutes les SCI
+					</a>
+				</div>
+
+				<!-- SCI sub-nav (when a SCI is active) -->
+				{#if activeSciId}
+					<div class="mt-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+						<p class="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">{activeSci?.nom ?? 'SCI'}</p>
+						{#each sciSubNav as subItem (subItem.suffix)}
+							{@const href = `/scis/${activeSciId}${subItem.suffix}`}
+							{@const active = subItem.suffix === '' ? isExactActive(href) : isActive(href)}
+							<a
+								{href}
+								class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors {active
+									? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+									: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+								onclick={closeMobileMenu}
+							>
+								<subItem.icon class="h-4 w-4" />
+								{subItem.label}
+							</a>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Drawer footer: account + theme -->
+			<div class="border-t border-slate-200 px-3 py-3 dark:border-slate-800">
+				<div class="mb-2 flex items-center justify-between px-2">
+					<span class="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email ?? ''}</span>
+					<ThemeToggle />
+				</div>
+				<a
+					href="/settings"
+					class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+					onclick={closeMobileMenu}
+				>
+					<Settings class="h-4 w-4" />
+					Paramètres
+				</a>
+				<button
+					type="button"
+					onclick={() => { closeMobileMenu(); handleLogout(); }}
+					class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+				>
+					<LogOut class="h-4 w-4" />
+					Déconnexion
+				</button>
+			</div>
+		</div>
+	{/if}
 
 	<!-- SCI Sub-nav + Breadcrumbs (merged into single bar when SCI is active) -->
 	{#if activeSciId}
@@ -395,3 +596,14 @@
 		</div>
 	{/if}
 </nav>
+
+<style>
+	@keyframes slideInLeft {
+		from {
+			transform: translateX(-100%);
+		}
+		to {
+			transform: translateX(0);
+		}
+	}
+</style>
