@@ -1,7 +1,12 @@
 const PROTECTED_ROUTE_PREFIXES = [
 	'/account',
 	'/settings',
-	'/onboarding'
+	'/onboarding',
+	'/dashboard',
+	'/scis',
+	'/finances',
+	'/exploitation',
+	'/echeances'
 	// '/admin' — excluded: admin panel has its own auth (X-Admin-Key header)
 ];
 

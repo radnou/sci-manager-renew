@@ -44,10 +44,10 @@ def _setup(fake_supabase):
 
 
 def test_upload_rejects_oversized_file(client, auth_headers, fake_supabase):
-    """Files over 10MB should be rejected."""
+    """Files over 20MB should be rejected."""
     _setup(fake_supabase)
 
-    large_content = b"x" * (10 * 1024 * 1024 + 1)
+    large_content = b"x" * (20 * 1024 * 1024 + 1)
 
     response = client.post(
         DOCS_URL,

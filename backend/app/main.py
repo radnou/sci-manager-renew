@@ -1,4 +1,5 @@
 import asyncio
+import hmac
 import json
 import os
 import signal
@@ -438,7 +439,7 @@ async def maintenance_middleware(
         if settings.beta_password:
             beta_cookie = request.cookies.get("beta_access")
             beta_header = request.headers.get("X-Beta-Password")
-            if beta_cookie == settings.beta_password or beta_header == settings.beta_password:
+            if (beta_cookie and hmac.compare_digest(beta_cookie, settings.beta_password)) or (beta_header and hmac.compare_digest(beta_header, settings.beta_password)):
                 return await call_next(request)
         return JSONResponse(
             status_code=503,

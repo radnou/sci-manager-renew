@@ -1214,7 +1214,7 @@ class TestValidateUpload:
 
     def test_oversized_file_raises(self):
         from app.api.v1.scis_biens import _validate_upload
-        big = b"x" * (10 * 1024 * 1024 + 1)
+        big = b"x" * (20 * 1024 * 1024 + 1)
         with pytest.raises(Exception, match="volumineux"):
             _validate_upload(big, "test.pdf")
 

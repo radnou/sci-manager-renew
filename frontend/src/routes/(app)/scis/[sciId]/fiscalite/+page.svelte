@@ -6,6 +6,7 @@
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale, User, Sparkles } from 'lucide-svelte';
+	import RoleGate from '$lib/components/RoleGate.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const subscription = getContext<{ plan_key: string; features: Record<string, boolean> } | null>('subscription');
@@ -536,7 +537,7 @@
 						{/each}
 					</div>
 				</div>
-			{/if}
+				{/if}
 		</div>
 	{/each}
 
@@ -551,7 +552,8 @@
 					Exercices fiscaux
 				</h2>
 			</div>
-			{#if isGerant && !upgradeRequired}
+			<RoleGate>
+				{#if !upgradeRequired}
 				<div class="flex items-center gap-2">
 					<button
 						onclick={handlePrefill}
@@ -574,6 +576,7 @@
 					</button>
 				</div>
 			{/if}
+			</RoleGate>
 		</div>
 
 		{#if showPrefillPreview && prefillResult}
@@ -799,9 +802,9 @@
 							>
 								Résultat fiscal
 							</th>
-							{#if isGerant}
+							<RoleGate>
 								<th class="pb-3 w-10"></th>
-							{/if}
+							</RoleGate>
 						</tr>
 					</thead>
 					<tbody>
@@ -821,7 +824,7 @@
 								>
 									{ex.resultat_fiscal != null ? formatEur(ex.resultat_fiscal) : '—'}
 								</td>
-								{#if isGerant}
+								<RoleGate>
 									<td class="py-3 text-right">
 										<button
 											onclick={() => handleDelete(ex)}
@@ -836,7 +839,7 @@
 											{/if}
 										</button>
 									</td>
-								{/if}
+								</RoleGate>
 							</tr>
 						{/each}
 					</tbody>

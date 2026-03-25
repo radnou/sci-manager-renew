@@ -55,7 +55,7 @@ def _reset_jwks_cache():
 
 @pytest.mark.asyncio
 async def test_decode_bearer_token_accepts_hs256():
-    token = jwt.encode({"sub": "user-hs"}, settings.supabase_jwt_secret, algorithm="HS256")
+    token = jwt.encode({"sub": "user-hs", "aud": "authenticated"}, settings.supabase_jwt_secret, algorithm="HS256")
 
     payload = await security._decode_bearer_token(token)
 
@@ -66,7 +66,7 @@ async def test_decode_bearer_token_accepts_hs256():
 async def test_decode_bearer_token_accepts_es256(monkeypatch):
     private_pem, jwk = _make_es256_keypair()
     token = jwt.encode(
-        {"sub": "user-es"},
+        {"sub": "user-es", "aud": "authenticated"},
         private_pem,
         algorithm="ES256",
         headers={"kid": jwk["kid"]},
@@ -86,7 +86,7 @@ async def test_decode_bearer_token_accepts_es256(monkeypatch):
 async def test_decode_bearer_token_rejects_missing_matching_key(monkeypatch):
     private_pem, jwk = _make_es256_keypair()
     token = jwt.encode(
-        {"sub": "user-es"},
+        {"sub": "user-es", "aud": "authenticated"},
         private_pem,
         algorithm="ES256",
         headers={"kid": jwk["kid"]},

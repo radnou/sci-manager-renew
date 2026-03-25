@@ -64,7 +64,7 @@ def _build_app():
 
 def _auth_headers(user_id: str = "user-123") -> dict[str, str]:
     token = jwt.encode(
-        {"sub": user_id, "role": "authenticated"},
+        {"sub": user_id, "role": "authenticated", "aud": "authenticated"},
         settings.supabase_jwt_secret,
         algorithm="HS256",
     )

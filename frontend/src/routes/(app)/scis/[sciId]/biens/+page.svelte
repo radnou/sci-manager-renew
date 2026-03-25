@@ -10,6 +10,7 @@
 	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
+	import RoleGate from '$lib/components/RoleGate.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -209,7 +210,7 @@
 					</div>
 				{/if}
 
-				{#if isGerant}
+				<RoleGate>
 					<button
 						onclick={() => showImportModal = true}
 						class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -235,7 +236,7 @@
 							<span class="text-xs">(Limite atteinte)</span>
 						</button>
 					{/if}
-				{/if}
+				</RoleGate>
 			</div>
 		</div>
 	</header>
@@ -359,7 +360,7 @@
 					{/if}
 
 					<!-- Actions (gérant only) -->
-					{#if isGerant}
+					<RoleGate>
 						<div class="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
 							<a
 								href={`/scis/${sciId}/biens/${bien.id}`}
@@ -388,7 +389,7 @@
 								Quittance
 							</a>
 						</div>
-					{/if}
+					</RoleGate>
 				</div>
 			{/each}
 		</div>
@@ -405,9 +406,9 @@
 						<th class="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Rendement</th>
 						<th class="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Cashflow/an</th>
 						<th class="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Statut</th>
-						{#if isGerant}
+						<RoleGate>
 							<th class="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</th>
-						{/if}
+						</RoleGate>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -469,7 +470,7 @@
 									{label}
 								</span>
 							</td>
-							{#if isGerant}
+							<RoleGate>
 								<td class="whitespace-nowrap px-4 py-3">
 									<div class="flex items-center gap-1">
 										<a
@@ -503,7 +504,7 @@
 										</a>
 									</div>
 								</td>
-							{/if}
+							</RoleGate>
 						</tr>
 					{/each}
 				</tbody>

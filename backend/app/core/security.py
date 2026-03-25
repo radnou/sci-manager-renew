@@ -77,7 +77,8 @@ async def _decode_bearer_token(token: str) -> dict:
             token,
             settings.supabase_jwt_secret,
             algorithms=["HS256"],
-            options={"verify_aud": False},
+            options={"verify_aud": True},
+            audience="authenticated",
         )
 
     if algorithm not in {"ES256", "RS256"}:
@@ -95,7 +96,8 @@ async def _decode_bearer_token(token: str) -> dict:
             token,
             public_key,
             algorithms=[algorithm],
-            options={"verify_aud": False},
+            options={"verify_aud": True},
+            audience="authenticated",
         )
 
     raise PyJWTError("No matching bearer token key")

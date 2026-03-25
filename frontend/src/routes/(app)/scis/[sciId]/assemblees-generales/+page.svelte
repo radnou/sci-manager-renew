@@ -13,6 +13,7 @@
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { CalendarDays, CheckCircle2, ClipboardList, FileText, Pencil, Plus, Trash2, Send, Copy, Download, X, Loader2 } from 'lucide-svelte';
+	import RoleGate from '$lib/components/RoleGate.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -315,7 +316,7 @@
 						Chaque AG garde son ordre du jour, ses notes de séance, ses résolutions et son lien de partage.
 					</p>
 				</div>
-				{#if isGerant}
+				<RoleGate>
 					<div class="flex items-center gap-2">
 						<button
 							type="button"
@@ -352,7 +353,7 @@
 							Planifier une AG
 						</button>
 					</div>
-				{/if}
+				</RoleGate>
 			</div>
 
 			{#if loading}
@@ -405,7 +406,7 @@
 									</div>
 								</div>
 
-								{#if isGerant}
+								<RoleGate>
 									<div class="flex items-center gap-2">
 										<button
 											type="button"
@@ -438,7 +439,7 @@
 											Convocation
 										</button>
 									</div>
-								{/if}
+								</RoleGate>
 							</div>
 
 							<div class="mt-5 grid gap-4 md:grid-cols-2">

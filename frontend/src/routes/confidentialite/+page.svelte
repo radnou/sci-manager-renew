@@ -203,6 +203,11 @@
 							<td class="py-2 pr-4">Hebergement du serveur</td>
 							<td class="py-2">France</td>
 						</tr>
+						<tr>
+							<td class="py-2 pr-4">Matomo (auto-hébergé)</td>
+							<td class="py-2 pr-4">Analyse d'audience et statistiques de navigation</td>
+							<td class="py-2">France (OVH, même serveur)</td>
+						</tr>
 					</tbody>
 				</table>
 			</div>

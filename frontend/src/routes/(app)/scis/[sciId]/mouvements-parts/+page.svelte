@@ -6,6 +6,7 @@
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { ArrowLeftRight, Plus, Trash2, Loader2, Calculator, CheckCircle2 } from 'lucide-svelte';
+	import RoleGate from '$lib/components/RoleGate.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 
@@ -154,7 +155,7 @@
 					Registre des mouvements
 				</h2>
 			</div>
-			{#if isGerant}
+			<RoleGate>
 				<button
 					onclick={() => {
 						showCreateForm = !showCreateForm;
@@ -164,7 +165,7 @@
 					<Plus class="h-4 w-4" />
 					Enregistrer un mouvement
 				</button>
-			{/if}
+			</RoleGate>
 		</div>
 
 		{#if showCreateForm}
@@ -326,9 +327,9 @@
 								class="pb-3 text-right text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
 								>Prix total</th
 							>
-							{#if isGerant}
+							<RoleGate>
 								<th class="pb-3 w-10"></th>
-							{/if}
+							</RoleGate>
 						</tr>
 					</thead>
 					<tbody>
@@ -362,7 +363,7 @@
 								<td class="py-3 text-right text-slate-700 dark:text-slate-300">
 									{formatEur(mv.prix_total)}
 								</td>
-								{#if isGerant}
+								<RoleGate>
 									<td class="py-3 text-right">
 										<button
 											onclick={() => handleDelete(mv)}
@@ -377,7 +378,7 @@
 											{/if}
 										</button>
 									</td>
-								{/if}
+								</RoleGate>
 							</tr>
 						{/each}
 					</tbody>

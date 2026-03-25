@@ -60,7 +60,7 @@ def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
 # Upload validation constants
 # ──────────────────────────────────────────────────────────────
 
-_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+_MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20 MB
 _ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "webp", "doc", "docx", "xls", "xlsx", "csv", "txt"}
 _MAGIC_BYTES = {
     b"%PDF": "pdf",

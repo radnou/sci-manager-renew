@@ -5,7 +5,7 @@ from app.core.config import settings
 
 def _auth_headers_for(user_id: str) -> dict[str, str]:
     token = jwt.encode(
-        {"sub": user_id, "role": "authenticated"},
+        {"sub": user_id, "role": "authenticated", "aud": "authenticated"},
         settings.supabase_jwt_secret,
         algorithm="HS256",
     )

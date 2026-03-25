@@ -7,6 +7,7 @@
 	import { FileText, Download, FolderOpen, Upload, Trash2, Loader2, Plus } from 'lucide-svelte';
 	import { announceFicheBienModal, subscribeExclusiveFicheBienModal } from '$lib/components/fiche-bien/modal-coordinator';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
+	import RoleGate from '$lib/components/RoleGate.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -181,7 +182,7 @@
 			<p class="text-sm text-slate-500 dark:text-slate-400">
 				Aucun bien rattaché à cette SCI pour le moment.
 			</p>
-			{#if isGerant}
+			<RoleGate>
 				<a
 					href={`/scis/${sciId}/biens`}
 					class="mt-4 inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
@@ -189,7 +190,7 @@
 					<Plus class="h-4 w-4" />
 					Ajouter un bien
 				</a>
-			{/if}
+			</RoleGate>
 		</div>
 	{:else if totalDocs === 0 && !isGerant}
 		<div
@@ -220,7 +221,7 @@
 									</span>
 								{/if}
 							</h2>
-							{#if isGerant}
+							<RoleGate>
 								<button
 									onclick={() => openUploadForm(group.bien.id!)}
 									class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -228,7 +229,7 @@
 									<Upload class="h-3.5 w-3.5" />
 									Ajouter
 								</button>
-							{/if}
+							</RoleGate>
 						</div>
 
 						{#if group.documents.length > 0}
@@ -262,7 +263,7 @@
 											<Download class="h-3 w-3" />
 											Ouvrir
 										</a>
-										{#if isGerant}
+										<RoleGate>
 											<button
 												onclick={() => requestDeleteDoc(group.bien.id!, doc)}
 												disabled={deletingDocId === doc.id}
@@ -275,7 +276,7 @@
 													<Trash2 class="h-3.5 w-3.5" />
 												{/if}
 											</button>
-										{/if}
+										</RoleGate>
 									</div>
 								</div>
 							{/each}

@@ -506,7 +506,7 @@ def free_plan(fake_supabase: FakeSupabaseClient):
 @pytest.fixture
 def auth_headers() -> dict[str, str]:
     token = jwt.encode(
-        {"sub": "user-123", "role": "authenticated"},
+        {"sub": "user-123", "role": "authenticated", "aud": "authenticated"},
         settings.supabase_jwt_secret,
         algorithm="HS256",
     )

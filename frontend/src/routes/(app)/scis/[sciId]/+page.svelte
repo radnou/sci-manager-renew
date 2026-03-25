@@ -8,6 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { addToast } from '$lib/components/ui/toast';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
+	import RoleGate from '$lib/components/RoleGate.svelte';
 	import { goto } from '$app/navigation';
 
 	const sci = getContext<SCIDetail>('sci');
@@ -457,7 +458,7 @@
 						{#if sci.statut === 'configuration'}À structurer{:else if sci.statut === 'mise_en_service'}Mise en service{:else}En exploitation{/if}
 					</span>
 				{/if}
-				{#if isGerant}
+				<RoleGate>
 					<a
 						href={`/scis/${sciId}/settings`}
 						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -503,7 +504,7 @@
 							</div>
 						{/if}
 					</div>
-				{/if}
+				</RoleGate>
 			</div>
 		</div>
 	</header>
