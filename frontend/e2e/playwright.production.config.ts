@@ -10,7 +10,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_BASE_URL || 'https://gerersci.fr',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: process.env.E2E_VIDEO === 'on' ? 'on' : 'retain-on-failure',
     trace: 'retain-on-failure',
     locale: 'fr-FR',
     timezoneId: 'Europe/Paris',
