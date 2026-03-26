@@ -799,6 +799,10 @@
 					<Download class="mr-2 h-4 w-4" />
 					{exportingLoyers ? 'Export en cours...' : 'Export Loyers (CSV)'}
 				</Button>
+				<Button href={`/bilans?scope=sci&scope_id=${sciId}`} variant="outline" class="justify-start" title="Bilan mensuel comptable de cette SCI">
+					<FileText class="mr-2 h-4 w-4" />
+					Bilan mensuel
+				</Button>
 			</div>
 		</div>
 	</div>

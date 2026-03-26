@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import type { BilanData, BilanSci, BilanBien, SCIOverview } from '$lib/api';
 	import { fetchBilan, fetchBilanPeriodes, downloadBilanPdf, fetchScis } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
@@ -23,11 +24,18 @@
 	let refreshing = $state(false);
 	let downloading = $state(false);
 
+	// Read URL query params for deep-linking: /bilans?scope=sci&scope_id=xxx&periode=2026-03
+	const urlScope = page.url.searchParams.get('scope');
+	const urlScopeId = page.url.searchParams.get('scope_id');
+	const urlPeriode = page.url.searchParams.get('periode');
+
 	// Filters
 	let periodes: string[] = $state([]);
-	let selectedPeriode = $state('');
-	let scope: 'portefeuille' | 'sci' | 'bien' = $state('portefeuille');
-	let scopeId: string | undefined = $state(undefined);
+	let selectedPeriode = $state(urlPeriode ?? '');
+	let scope: 'portefeuille' | 'sci' | 'bien' = $state(
+		(urlScope === 'sci' || urlScope === 'bien') ? urlScope : 'portefeuille'
+	);
+	let scopeId: string | undefined = $state(urlScopeId ?? undefined);
 	let scis: SCIOverview[] = $state([]);
 
 	// Collapsible state

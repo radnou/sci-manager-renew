@@ -196,6 +196,13 @@
 					<Pencil class="h-4 w-4" />
 					Modifier
 				</a>
+				<a
+					href={`/bilans?scope=sci&scope_id=${page.url.pathname.split('/')[2]}`}
+					class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+				>
+					<FileText class="h-4 w-4" />
+					Bilan
+				</a>
 				<button
 					onclick={onGenerateQuittance}
 					disabled={generatingQuittance}
