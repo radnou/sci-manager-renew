@@ -39,6 +39,7 @@ from app.api.v1 import (
     associes,
     auth,
     biens,
+    bilans,
     calendrier_fiscal,
     cerfa,
     charges,
@@ -72,6 +73,7 @@ from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
 from app.services.irl_service import check_irl_revisions
 from app.services.nurture_service import process_nurture_emails
+from app.services.bilan_mensuel_service import auto_generate_bilans
 from app.services.notification_cron import (
     check_bail_renewal,
     check_expiring_bails,
@@ -121,6 +123,10 @@ async def _notification_cron_loop():
             nurture_sent = await process_nurture_emails()
             if nurture_sent:
                 logger.info("nurture_emails_sent", count=nurture_sent)
+            # Task 7: Generate monthly bilans on the 2nd of each month
+            bilans_count = await auto_generate_bilans(client)
+            if bilans_count:
+                logger.info("bilans_mensuels_generated", count=bilans_count)
             logger.info("notification_cron_cycle_complete")
             await asyncio.sleep(86_400)  # 24h
         except asyncio.CancelledError:
@@ -597,4 +603,5 @@ app.include_router(echeances.router, prefix="/api/v1")
 app.include_router(import_csv.router, prefix="/api/v1")
 app.include_router(import_csv.templates_router, prefix="/api/v1")
 app.include_router(leads.router, prefix="/api/v1")
+app.include_router(bilans.router, prefix="/api/v1")
 app.include_router(admin.router)

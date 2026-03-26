@@ -4,6 +4,7 @@
 		LayoutDashboard,
 		Building2,
 		TrendingUp,
+		FileSpreadsheet,
 		Settings,
 		User,
 		LogOut,
@@ -137,6 +138,7 @@
 		dashboard: 'Tableau de bord',
 		scis: 'Portefeuille',
 		finances: 'Finances',
+		bilans: 'Bilans',
 		biens: 'Biens',
 		associes: 'Associés',
 		charges: 'Charges',
@@ -295,6 +297,15 @@
 			<TrendingUp class="h-4 w-4" />
 			<span class="hidden sm:inline">Finances</span>
 		</a>
+		<a
+			href="/bilans"
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/bilans')
+				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+		>
+			<FileSpreadsheet class="h-4 w-4" />
+			<span class="hidden sm:inline">Bilans</span>
+		</a>
 
 		<!-- Spacer -->
 		<div class="flex-1"></div>
@@ -431,6 +442,16 @@
 				>
 					<TrendingUp class="h-4.5 w-4.5" />
 					Finances
+				</a>
+				<a
+					href="/bilans"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/bilans')
+						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+					onclick={closeMobileMenu}
+				>
+					<FileSpreadsheet class="h-4.5 w-4.5" />
+					Bilans
 				</a>
 
 				<!-- SCI Switcher in mobile -->

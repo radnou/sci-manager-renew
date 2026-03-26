@@ -1,16 +1,22 @@
 -- Seed data for GererSCI local development & E2E testing
 
--- 1. Test user
+-- 1. Test user (all string columns must be '' not NULL for GoTrue compatibility)
 INSERT INTO auth.users (
   id, instance_id, email, encrypted_password, email_confirmed_at,
-  role, aud, created_at, updated_at, confirmation_token
+  role, aud, created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  phone, phone_change, raw_app_meta_data, raw_user_meta_data
 ) VALUES (
   '11111111-1111-1111-1111-111111111111',
   '00000000-0000-0000-0000-000000000000',
   'test@gerersci.fr',
   crypt('testpassword123', gen_salt('bf')),
   now(), 'authenticated', 'authenticated',
-  now() - interval '60 days', now(), ''
+  now() - interval '60 days', now(),
+  '', '', '', '',
+  '', '',
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"email":"test@gerersci.fr"}'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (

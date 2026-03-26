@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<p style="color:#0f172a;font-size:20px;font-weight:700;line-height:1.4;margin:0 0 8px 0;">Votre bilan mensuel est pr&ecirc;t</p>
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:0 0 24px 0;">Votre bilan pour <strong>{{ mois_label }}</strong> a &eacute;t&eacute; g&eacute;n&eacute;r&eacute; automatiquement.</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="padding:16px;background-color:#f8fafc;border-radius:8px;border-left:4px solid #0284c7;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td>
+            <p style="color:#64748b;font-size:13px;margin:0 0 2px 0;">P&eacute;riode</p>
+            <p style="color:#0f172a;font-size:14px;font-weight:600;margin:0;">{{ mois_label }}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="color:#334155;font-size:16px;line-height:1.6;margin:24px 0 0 0;">Consultez votre bilan d&eacute;taill&eacute; avec le r&eacute;sum&eacute; des revenus, charges et cashflow&nbsp;:</p>
+{% endblock %}

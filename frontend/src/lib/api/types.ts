@@ -920,3 +920,59 @@ export interface SinistreResult {
 	evenement: Record<string, unknown>;
 	assurance_pno: Record<string, unknown> | null;
 }
+
+// --- Bilans mensuels ---
+
+export type BilanLigne = {
+	date: string;
+	libelle: string;
+	entrees: number;
+	sorties: number;
+	solde: number;
+	type: 'loyer' | 'charge' | 'sous_total_bien' | 'sous_total_sci' | 'total';
+	statut?: LoyerStatus | string | null;
+};
+
+export type BilanBien = {
+	bien_id: EntityId;
+	adresse: string;
+	ville?: string | null;
+	lignes: BilanLigne[];
+	total_entrees: number;
+	total_sorties: number;
+	solde: number;
+};
+
+export type BilanSci = {
+	sci_id: EntityId;
+	sci_nom: string;
+	biens: BilanBien[];
+	total_entrees: number;
+	total_sorties: number;
+	solde: number;
+};
+
+export type BilanKpis = {
+	revenus_attendus: number;
+	revenus_encaisses: number;
+	charges_totales: number;
+	cashflow_net: number;
+	taux_recouvrement: number;
+	nb_biens: number;
+	nb_scis: number;
+};
+
+export type BilanData = {
+	periode: string;
+	scope: string;
+	scope_id?: string | null;
+	scis: BilanSci[];
+	total_entrees: number;
+	total_sorties: number;
+	solde: number;
+	kpis: BilanKpis;
+};
+
+export type BilanPeriodesResponse = {
+	periodes: string[];
+};
