@@ -10,7 +10,8 @@ import { test } from '../fixtures/auth.fixture';
  * Couverture: 44 pages / 100% des features visibles
  *
  * Usage:
- *   E2E_AUTH_TOKEN=<jwt> E2E_SCI_ID=<id> E2E_BIEN_ID=<id> \
+ *   E2E_EMAIL=radnoumane@gerersci.fr E2E_PASSWORD='GererSCI-Demo-2026!' \
+ *   E2E_SCI_ID=<id> E2E_BIEN_ID=<id> E2E_VIDEO=on \
  *   pnpm exec playwright test --config e2e/playwright.production.config.ts \
  *     e2e/production/video-walkthrough.spec.ts
  */
@@ -44,7 +45,8 @@ async function dismissCookies(page: import('@playwright/test').Page) {
 
 test.describe('Walkthrough vidéo complet', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('parcours complet — toutes les features', async ({ authedPage: page }) => {

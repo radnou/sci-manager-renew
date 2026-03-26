@@ -68,7 +68,8 @@ test.describe('M1 — Pages publiques', () => {
 
 test.describe('M2 — Dashboard', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('dashboard affiche KPIs et SCIs', async ({ authedPage: page }) => {
@@ -89,7 +90,8 @@ test.describe('M2 — Dashboard', () => {
 
 test.describe('M3 — Navigation SCI', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('liste des SCIs affiche 2 SCIs', async ({ authedPage: page }) => {
@@ -122,7 +124,8 @@ test.describe('M3 — Navigation SCI', () => {
 
 test.describe('M4 — Fiche Bien', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('fiche bien charge avec tous les onglets', async ({ authedPage: page }) => {
@@ -154,7 +157,8 @@ test.describe('M4 — Fiche Bien', () => {
 
 test.describe('M5 — Loyers', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('loyers affichent les données seedées', async ({ authedPage: page }) => {
@@ -173,7 +177,8 @@ test.describe('M5 — Loyers', () => {
 
 test.describe('M6 — Associés', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page associés affiche gérant et associé', async ({ authedPage: page }) => {
@@ -189,7 +194,8 @@ test.describe('M6 — Associés', () => {
 
 test.describe('M7 — Finances', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('finances consolidées chargent sans erreur', async ({ authedPage: page }) => {
@@ -209,7 +215,8 @@ test.describe('M7 — Finances', () => {
 
 test.describe('M8 — Bilans Mensuels', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page bilans charge et affiche les périodes', async ({ authedPage: page }) => {
@@ -237,7 +244,8 @@ test.describe('M8 — Bilans Mensuels', () => {
 
 test.describe('M9 — Notifications', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('dashboard charge et notification center existe', async ({ authedPage: page }) => {
@@ -253,7 +261,8 @@ test.describe('M9 — Notifications', () => {
 
 test.describe('M10 — Settings', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('settings page responds (may redirect with injected JWT)', async ({ authedPage: page }) => {
@@ -269,7 +278,8 @@ test.describe('M10 — Settings', () => {
 
 test.describe('M11 — Échéances', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page échéances charge', async ({ authedPage: page }) => {
@@ -286,7 +296,8 @@ test.describe('M11 — Échéances', () => {
 
 test.describe('M12 — Exploitation', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page exploitation charge', async ({ authedPage: page }) => {
@@ -302,7 +313,8 @@ test.describe('M12 — Exploitation', () => {
 
 test.describe('M13 — Mobile responsive', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page charge en viewport mobile', async ({ authedPage: page }) => {
@@ -321,7 +333,8 @@ test.describe('M13 — Mobile responsive', () => {
 
 test.describe('M14 — AG & Mouvements', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page AG charge', async ({ authedPage: page }) => {
@@ -343,7 +356,8 @@ test.describe('M14 — AG & Mouvements', () => {
 
 test.describe('M15 — Fiscalité', () => {
 	test.beforeEach(async () => {
-		test.skip(!process.env.E2E_AUTH_TOKEN, 'E2E_AUTH_TOKEN manquant');
+		const hasCredentials = (process.env.E2E_EMAIL && process.env.E2E_PASSWORD) || process.env.E2E_AUTH_TOKEN;
+		test.skip(!hasCredentials, 'E2E_EMAIL+E2E_PASSWORD ou E2E_AUTH_TOKEN manquant');
 	});
 
 	test('page fiscalité charge sans erreur', async ({ authedPage: page }) => {
