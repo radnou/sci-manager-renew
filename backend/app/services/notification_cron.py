@@ -231,12 +231,12 @@ async def check_bail_renewal(supabase_client) -> int:
         for bl in (bl_result.data or []):
             loc_result = (
                 supabase_client.table("locataires")
-                .select("nom, prenom")
+                .select("nom")
                 .eq("id", bl["id_locataire"])
                 .execute()
             )
             for loc in (loc_result.data or []):
-                locataire_names.append(f"{loc.get('prenom', '')} {loc.get('nom', '')}".strip())
+                locataire_names.append(loc.get("nom", "").strip())
 
         locataire_label = ", ".join(locataire_names) if locataire_names else "le locataire"
         adresse = bien.get("adresse", "un bien")

@@ -66,6 +66,16 @@ async def _check_supabase_storage() -> dict:
         }
 
 
+def _is_placeholder_stripe_key(key: str) -> bool:
+    """Detect fake/placeholder Stripe keys used in local development."""
+    if not key:
+        return True
+    # Common placeholder patterns: sk_test_fake..., sk_test_xxx, sk_test_placeholder
+    placeholder_markers = ("fake", "xxx", "placeholder", "dummy", "test_test", "000")
+    key_lower = key.lower()
+    return any(marker in key_lower for marker in placeholder_markers)
+
+
 async def _check_stripe() -> dict:
     if not settings.stripe_secret_key:
         return {"healthy": False, "error": "missing stripe secret key"}
@@ -77,6 +87,15 @@ async def _check_stripe() -> dict:
         mode = "live"
     else:
         return {"healthy": False, "error": "invalid stripe key format"}
+
+    # In dev with placeholder keys, skip price validation entirely
+    if _is_placeholder_stripe_key(settings.stripe_secret_key):
+        return {
+            "healthy": True,
+            "mode": mode,
+            "degraded": True,
+            "warning": "stripe price validation skipped (placeholder key detected)",
+        }
 
     configured_prices = OrderedDict(
         (

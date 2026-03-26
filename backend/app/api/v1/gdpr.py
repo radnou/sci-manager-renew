@@ -204,8 +204,29 @@ async def get_data_summary(
     try:
         client = get_supabase_user_client(request)
 
-        # Informations utilisateur
-        auth_user = client.auth.admin.get_user_by_id(user_id)
+        # Informations utilisateur — fallback to JWT info if GoTrue admin API fails
+        user_email = ""
+        user_created_at = ""
+        last_sign_in = ""
+        try:
+            auth_user = client.auth.admin.get_user_by_id(user_id)
+            user_email = str(auth_user.user.email or "")
+            user_created_at = str(auth_user.user.created_at or "")
+            last_sign_in = str(auth_user.user.last_sign_in_at or "")
+        except Exception as auth_err:
+            logger.warning(
+                "gdpr_gotrue_admin_fallback",
+                user_id=user_id,
+                error=str(auth_err),
+            )
+            # Fallback: extract email from JWT token (already validated by get_current_user)
+            try:
+                import jwt as pyjwt
+                token = request.headers.get("authorization", "").replace("Bearer ", "")
+                payload = pyjwt.decode(token, options={"verify_signature": False})
+                user_email = payload.get("email", "")
+            except Exception:
+                user_email = "unknown"
 
         # Compteurs
         associes_count = client.table("associes").select("id", count="exact").eq("user_id", user_id).execute()
@@ -223,15 +244,15 @@ async def get_data_summary(
 
         return DataSummaryResponse(
             user_id=user_id,
-            email=str(auth_user.user.email),
-            created_at=str(auth_user.user.created_at),
+            email=user_email,
+            created_at=user_created_at,
             data_summary={
                 "sci_count": len(sci_ids),
                 "biens_count": biens_count,
                 "loyers_count": loyers_count,
                 "associes_count": associes_count.count,
-                "account_created": str(auth_user.user.created_at),
-                "last_sign_in": str(auth_user.user.last_sign_in_at),
+                "account_created": user_created_at,
+                "last_sign_in": last_sign_in,
             },
         )
 
