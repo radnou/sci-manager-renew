@@ -3,6 +3,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { Building2, Home, FileText, Sparkles } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
+	import Celebration from '$lib/components/Celebration.svelte';
 	import {
 		createSci,
 		createBienForSci,
@@ -26,6 +27,7 @@
 	let error = $state('');
 	let batchProgress = $state(0);
 	let batchTotal = $state(0);
+	let showFinishCelebration = $state(false);
 
 	// Step 1: SCI
 	let sciNom = $state('');
@@ -250,6 +252,10 @@
 	}
 
 	async function handleFinish(destination: 'loyer' | 'dashboard') {
+		// Show celebration briefly before navigating
+		showFinishCelebration = true;
+		await new Promise((resolve) => setTimeout(resolve, 1500));
+
 		submitting = true;
 		error = '';
 		try {
@@ -842,6 +848,15 @@
 		</div>
 	{/if}
 </section>
+
+{#if showFinishCelebration}
+	<Celebration
+		type="confetti"
+		title="C'est parti !"
+		subtitle="Votre SCI est prête à être pilotée."
+		duration={1500}
+	/>
+{/if}
 
 <style>
 	@keyframes fadeInUp {
