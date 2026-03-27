@@ -152,8 +152,49 @@ async def generate_bilan_mensuel(client, user_id: str, periode: str) -> dict:
             if l.get("statut") in ("en_retard", "en_attente", "late", "pending")
         )
         charges_total = sum(c.get("montant") or 0 for c in b_charges)
-        cashflow = rev_encaisses - charges_total
 
+        total_entrees = round(rev_encaisses, 2)
+        total_sorties = round(charges_total, 2)
+        solde = round(rev_encaisses - charges_total, 2)
+
+        # Build BilanLigne[] from loyers and charges
+        lignes: list[dict] = []
+        for l in b_loyers:
+            loc_name = locataire_map.get(str(l.get("id_locataire", "")), "")
+            label = f"Loyer {loc_name}".strip() if loc_name else "Loyer"
+            montant = l.get("montant") or 0
+            statut = l.get("statut", "")
+            is_paid = statut in ("paye", "paid")
+            lignes.append({
+                "date": l.get("date_loyer", ""),
+                "libelle": label,
+                "entrees": round(montant, 2) if is_paid else 0,
+                "sorties": 0,
+                "solde": 0,  # computed after sorting
+                "type": "loyer",
+                "statut": statut,
+            })
+        for c in b_charges:
+            type_charge = c.get("type_charge", "Charge")
+            montant = c.get("montant") or 0
+            lignes.append({
+                "date": c.get("date_paiement", ""),
+                "libelle": f"Charge {type_charge}",
+                "entrees": 0,
+                "sorties": round(montant, 2),
+                "solde": 0,  # computed after sorting
+                "type": "charge",
+                "statut": None,
+            })
+
+        # Sort by date and compute running solde
+        lignes.sort(key=lambda x: x.get("date", ""))
+        running = 0.0
+        for ligne in lignes:
+            running += ligne["entrees"] - ligne["sorties"]
+            ligne["solde"] = round(running, 2)
+
+        # Keep legacy fields for PDF service compatibility
         loyers_detail = [
             {
                 "date": l.get("date_loyer", ""),
@@ -176,11 +217,16 @@ async def generate_bilan_mensuel(client, user_id: str, periode: str) -> dict:
             "bien_id": bid,
             "adresse": detail.get("adresse") or "",
             "ville": detail.get("ville") or "",
+            "lignes": lignes,
+            "total_entrees": total_entrees,
+            "total_sorties": total_sorties,
+            "solde": solde,
+            # Legacy fields kept for PDF service
             "revenus_attendus": round(rev_attendus, 2),
-            "revenus_encaisses": round(rev_encaisses, 2),
+            "revenus_encaisses": total_entrees,
             "impayes": round(impayes, 2),
-            "charges": round(charges_total, 2),
-            "cashflow_net": round(cashflow, 2),
+            "charges": total_sorties,
+            "cashflow_net": solde,
             "loyers": loyers_detail,
             "charges_detail": charges_detail,
         }
@@ -201,16 +247,24 @@ async def generate_bilan_mensuel(client, user_id: str, periode: str) -> dict:
         cashflow = rev_encaisses - charges_total
         taux = (rev_encaisses / rev_attendus * 100) if rev_attendus > 0 else 0
 
+        sci_total_entrees = round(rev_encaisses, 2)
+        sci_total_sorties = round(charges_total, 2)
+        sci_solde = round(cashflow, 2)
+
         scis_data.append({
             "sci_id": sci_id_str,
             "sci_nom": sci_map.get(sci_id_str, "?"),
-            "revenus_attendus": round(rev_attendus, 2),
-            "revenus_encaisses": round(rev_encaisses, 2),
-            "impayes": round(impayes, 2),
-            "charges": round(charges_total, 2),
-            "cashflow_net": round(cashflow, 2),
-            "taux_recouvrement": round(taux, 1),
             "biens": sci_biens,
+            "total_entrees": sci_total_entrees,
+            "total_sorties": sci_total_sorties,
+            "solde": sci_solde,
+            # Legacy fields kept for PDF service
+            "revenus_attendus": round(rev_attendus, 2),
+            "revenus_encaisses": sci_total_entrees,
+            "impayes": round(impayes, 2),
+            "charges": sci_total_sorties,
+            "cashflow_net": sci_solde,
+            "taux_recouvrement": round(taux, 1),
         })
 
     # --------------- Portfolio aggregate ---------------
@@ -221,20 +275,37 @@ async def generate_bilan_mensuel(client, user_id: str, periode: str) -> dict:
     p_cashflow = p_rev_encaisses - p_charges
     p_taux = (p_rev_encaisses / p_rev_attendus * 100) if p_rev_attendus > 0 else 0
 
+    p_total_entrees = round(p_rev_encaisses, 2)
+    p_total_sorties = round(p_charges, 2)
+    p_solde = round(p_cashflow, 2)
+
     return {
         "periode": periode,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "portefeuille": {
+        "scis": scis_data,
+        "total_entrees": p_total_entrees,
+        "total_sorties": p_total_sorties,
+        "solde": p_solde,
+        "kpis": {
             "revenus_attendus": round(p_rev_attendus, 2),
-            "revenus_encaisses": round(p_rev_encaisses, 2),
-            "impayes": round(p_impayes, 2),
-            "charges": round(p_charges, 2),
-            "cashflow_net": round(p_cashflow, 2),
+            "revenus_encaisses": p_total_entrees,
+            "charges_totales": p_total_sorties,
+            "cashflow_net": p_solde,
             "taux_recouvrement": round(p_taux, 1),
             "nb_biens": len(bien_ids),
             "nb_scis": len(sci_ids),
         },
-        "scis": scis_data,
+        # Legacy field kept for PDF service
+        "portefeuille": {
+            "revenus_attendus": round(p_rev_attendus, 2),
+            "revenus_encaisses": p_total_entrees,
+            "impayes": round(p_impayes, 2),
+            "charges": p_total_sorties,
+            "cashflow_net": p_solde,
+            "taux_recouvrement": round(p_taux, 1),
+            "nb_biens": len(bien_ids),
+            "nb_scis": len(sci_ids),
+        },
     }
 
 
@@ -521,6 +592,20 @@ def _empty_bilan(periode: str) -> dict:
     return {
         "periode": periode,
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "scis": [],
+        "total_entrees": 0,
+        "total_sorties": 0,
+        "solde": 0,
+        "kpis": {
+            "revenus_attendus": 0,
+            "revenus_encaisses": 0,
+            "charges_totales": 0,
+            "cashflow_net": 0,
+            "taux_recouvrement": 0,
+            "nb_biens": 0,
+            "nb_scis": 0,
+        },
+        # Legacy field kept for PDF service
         "portefeuille": {
             "revenus_attendus": 0,
             "revenus_encaisses": 0,
@@ -531,5 +616,4 @@ def _empty_bilan(periode: str) -> dict:
             "nb_biens": 0,
             "nb_scis": 0,
         },
-        "scis": [],
     }
