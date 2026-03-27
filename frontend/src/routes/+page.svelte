@@ -516,6 +516,41 @@
 	</section>
 
 	<!-- ============================================================ -->
+	<!-- COMMENT ÇA MARCHE -->
+	<!-- ============================================================ -->
+	<section id="comment-ca-marche" class="bg-white py-20 dark:bg-slate-900">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+			<div class="mb-12 text-center">
+				<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Simple</Badge>
+				<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
+					Comment ça marche — en 3 étapes
+				</h2>
+			</div>
+			<div class="grid gap-8 md:grid-cols-3">
+				{#each [
+					{ step: '①', title: 'Créez votre SCI', time: '2 minutes', description: "Nom, régime fiscal, c'est tout. GérerSCI crée votre espace de gestion.", image: '/images/showcase/dashboard-light.png', alt: 'Création de SCI' },
+					{ step: '②', title: 'Ajoutez vos biens et locataires', time: '5 minutes', description: 'Adresse, loyer, bail — on vous guide étape par étape.', image: '/images/showcase/fiche-identite.png', alt: 'Fiche bien' },
+					{ step: '③', title: 'Pilotez en 10 min/mois', time: 'Chaque mois', description: 'Quittances, alertes impayés, CERFA 2044 — tout est automatisé.', image: '/images/showcase/dashboard-light.png', alt: 'Tableau de bord' }
+				] as card, i}
+					<div class="group text-left">
+						<div class="rounded-xl border border-slate-200 bg-slate-50 p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 dark:border-slate-700 dark:bg-slate-800">
+							<div class="mb-4 flex items-center gap-3">
+								<span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{card.step}</span>
+								<span class="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-400">{card.time}</span>
+							</div>
+							<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{card.title}</h3>
+							<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">{card.description}</p>
+							<div class="mt-4 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+								<img src={card.image} alt={card.alt} class="w-full" loading="lazy" decoding="async" width="400" height="250" />
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================================================ -->
 	<!-- FEATURE SECTIONS -->
 	<!-- ============================================================ -->
 	{#each featureSections as feature, i}
