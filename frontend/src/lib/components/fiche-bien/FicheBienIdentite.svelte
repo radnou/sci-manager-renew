@@ -3,6 +3,7 @@
 	import { updateBien } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import FieldHint from '$lib/components/FieldHint.svelte';
 
 	interface Props {
 		bien: FicheBien;
@@ -63,6 +64,45 @@
 			saving = false;
 		}
 	}
+
+	const fieldHints: Record<string, string> = {
+		surface_m2: 'Obligatoire pour le bail et le calcul de la taxe foncière. Loi Boutin pour les locations.',
+		dpe_classe: 'Obligatoire dans toute annonce et bail depuis 2023. Les logements F et G sont progressivement interdits à la location.',
+		prix_acquisition: 'Nécessaire pour calculer votre rentabilité et la plus-value en cas de revente. Frais de notaire inclus.',
+		type_locatif: 'Détermine le régime fiscal applicable (micro-foncier vs réel) et les obligations déclaratives.',
+		type_bien: "Permet d'adapter les calculs de charges et les obligations réglementaires."
+	};
+
+	const completenessFields = ['adresse', 'ville', 'code_postal', 'type_bien', 'type_locatif', 'surface_m2', 'nb_pieces', 'dpe_classe', 'prix_acquisition', 'loyer_cc'];
+
+	const completeness = $derived.by(() => {
+		if (!bien) return { filled: 0, total: completenessFields.length, percent: 0, missing: [] as string[] };
+		let filled = 0;
+		const missing: string[] = [];
+		for (const f of completenessFields) {
+			const val = (bien as any)[f];
+			if (val !== null && val !== undefined && val !== '' && val !== 0) filled++;
+			else missing.push(f);
+		}
+		return { filled, total: completenessFields.length, percent: Math.round((filled / completenessFields.length) * 100), missing };
+	});
+
+	const completenessColor = $derived(completeness.percent >= 80 ? 'bg-emerald-500' : completeness.percent >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+
+	const completenessMessage = $derived.by(() => {
+		const m = completeness.missing;
+		if (m.length === 0) return '';
+		const labels: Record<string, string> = {
+			dpe_classe: 'DPE', prix_acquisition: "prix d'acquisition", surface_m2: 'surface',
+			type_locatif: 'type de location', type_bien: 'type de bien', loyer_cc: 'loyer',
+			nb_pieces: 'nombre de pièces', adresse: 'adresse', ville: 'ville', code_postal: 'code postal'
+		};
+		const top = m.slice(0, 2).map(f => labels[f] || f);
+		if (top.some(t => t === 'DPE' || t === "prix d'acquisition")) {
+			return `Complétez le ${top.join(' et le ')} pour débloquer le calcul de rentabilité.`;
+		}
+		return `Complétez le ${top.join(' et le ')} pour enrichir votre fiche.`;
+	});
 
 	const DPE_OPTIONS = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
 	const TYPE_OPTIONS: Array<{ value: string; label: string }> = [
@@ -136,6 +176,21 @@
 		{/if}
 	</div>
 
+	{#if completeness.percent < 100}
+		<div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+			<div class="flex items-center justify-between text-sm">
+				<span class="text-slate-600 dark:text-slate-400">Profil du bien : {completeness.filled}/{completeness.total} champs renseignés</span>
+				<span class="font-medium text-slate-700 dark:text-slate-300">{completeness.percent}%</span>
+			</div>
+			<div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+				<div class="h-full rounded-full transition-all duration-500 {completenessColor}" style="width: {completeness.percent}%"></div>
+			</div>
+			{#if completenessMessage}
+				<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">💡 {completenessMessage}</p>
+			{/if}
+		</div>
+	{/if}
+
 	{#if bien.photo_url}
 		<div class="mb-6">
 			<img
@@ -197,7 +252,7 @@
 			<!-- Type de bien -->
 			<div>
 				<label for="edit-type-bien" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
-					Type de bien
+					Type de bien <FieldHint text={fieldHints.type_bien} />
 				</label>
 				<select
 					id="edit-type-bien"
@@ -214,7 +269,7 @@
 			<!-- Type de location -->
 			<div>
 				<label for="edit-type" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
-					Type de location
+					Type de location <FieldHint text={fieldHints.type_locatif} />
 				</label>
 				<select
 					id="edit-type"
@@ -230,7 +285,7 @@
 			<!-- Surface -->
 			<div>
 				<label for="edit-surface" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
-					Surface (m²)
+					Surface (m²) <FieldHint text={fieldHints.surface_m2} />
 				</label>
 				<input
 					id="edit-surface"
@@ -260,7 +315,7 @@
 			<!-- DPE -->
 			<div>
 				<label for="edit-dpe" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
-					Classe DPE
+					Classe DPE <FieldHint text={fieldHints.dpe_classe} />
 				</label>
 				<select
 					id="edit-dpe"
@@ -276,7 +331,7 @@
 			<!-- Prix d'acquisition -->
 			<div>
 				<label for="edit-prix" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
-					Prix d'acquisition (€)
+					Prix d'acquisition (€) <FieldHint text={fieldHints.prix_acquisition} />
 				</label>
 				<input
 					id="edit-prix"
