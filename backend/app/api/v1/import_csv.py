@@ -8,11 +8,12 @@ import re
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from fastapi.responses import Response
 
 from app.core.exceptions import ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role
+from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
 
 router = APIRouter(prefix="/scis/{sci_id}/import", tags=["import"])
@@ -156,8 +157,10 @@ async def get_csv_template(template_type: str):
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/csv", status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
 async def import_csv(
     sci_id: UUID,
+    request: Request,
     type: str = Form(...),
     file: UploadFile = File(...),
     membership: AssocieMembership = Depends(require_gerant_role),

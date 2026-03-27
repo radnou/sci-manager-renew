@@ -6,15 +6,34 @@ from supabase import Client, ClientOptions, create_client
 from .config import settings
 
 
+def _default_client_options(**extra_headers: str) -> ClientOptions:
+    """Build ClientOptions with timeout from settings."""
+    timeout_sec = settings.supabase_request_timeout_seconds
+    headers = {k: v for k, v in extra_headers.items() if v}
+    return ClientOptions(
+        postgrest_client_timeout=timeout_sec,
+        storage_client_timeout=int(timeout_sec),
+        headers=headers,
+    )
+
+
 @lru_cache
 def get_supabase_anon_client() -> Client:
-    return create_client(settings.supabase_url, settings.supabase_anon_key)
+    return create_client(
+        settings.supabase_url,
+        settings.supabase_anon_key,
+        options=_default_client_options(),
+    )
 
 
 @lru_cache
 def get_supabase_service_client() -> Client:
     """Service-role client — bypasses RLS. Use ONLY for admin, webhooks, cron."""
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+    return create_client(
+        settings.supabase_url,
+        settings.supabase_service_role_key,
+        options=_default_client_options(),
+    )
 
 
 def get_supabase_user_client(request: Request) -> Client:
@@ -32,5 +51,5 @@ def get_supabase_user_client(request: Request) -> Client:
     return create_client(
         settings.supabase_url,
         settings.supabase_anon_key,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"}),
+        options=_default_client_options(Authorization=f"Bearer {token}"),
     )

@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
@@ -164,6 +165,7 @@ async def list_mouvements_parts(
 
 @router.post("", response_model=MouvementPartsResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=MouvementPartsResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_mouvement_parts(
     sci_id: UUID,
     payload: MouvementPartsCreate,
@@ -209,6 +211,7 @@ async def create_mouvement_parts(
 
 
 @router.delete("/{mouvement_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_mouvement_parts(
     sci_id: UUID,
     mouvement_id: UUID,

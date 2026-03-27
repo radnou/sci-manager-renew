@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
@@ -96,6 +97,7 @@ async def list_assemblees_generales(
 
 @router.post("", response_model=AGResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=AGResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_assemblee_generale(
     request: Request,
     sci_id: UUID,
@@ -134,6 +136,7 @@ async def create_assemblee_generale(
 
 
 @router.patch("/{ag_id}", response_model=AGResponse)
+@limiter.limit("30/minute")
 async def update_assemblee_generale(
     request: Request,
     sci_id: UUID,
@@ -177,6 +180,7 @@ async def update_assemblee_generale(
 
 
 @router.delete("/{ag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_assemblee_generale(
     request: Request,
     sci_id: UUID,
@@ -397,6 +401,7 @@ class ConvocationAGResponse(BaseModel):
 
 
 @router.post("/{ag_id}/convocation", response_model=ConvocationAGResponse)
+@limiter.limit("30/minute")
 async def generate_convocation_ag(
     request: Request,
     sci_id: UUID,
@@ -544,6 +549,7 @@ async def get_feuille_presence(
 
 
 @router.post("/{ag_id}/feuille-presence", response_model=PresenceUpdateResponse)
+@limiter.limit("30/minute")
 async def update_feuille_presence(
     request: Request,
     sci_id: UUID,

@@ -14,6 +14,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from app.core.config import settings
 from app.core.exceptions import FeatureDisabledError, ResourceNotFoundError, ValidationError
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_user_client
 from app.services.resume_fiscal_pdf_service import ResumeFiscalPdfService, Report2042PdfService
@@ -91,7 +92,9 @@ def _calculate_and_validate(sci_id: str, annee: int, client):
 
 
 @router.post("/2044")
+@limiter.limit("30/minute")
 async def generate_cerfa_2044(
+    request: Request,
     payload: Cerfa2044Request,
     user_id: str = Depends(get_current_user),
 ) -> dict[str, float | int | str]:
@@ -110,7 +113,9 @@ async def generate_cerfa_2044(
 
 
 @router.post("/2044/pdf")
+@limiter.limit("30/minute")
 async def generate_cerfa_2044_pdf(
+    request: Request,
     payload: Cerfa2044Request,
     user_id: str = Depends(get_current_user),
 ):

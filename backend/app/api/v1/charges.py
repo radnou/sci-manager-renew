@@ -10,6 +10,7 @@ from app.core.exceptions import (
     SCIManagerException,
     ValidationError,
 )
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
 from app.services.subscription_service import SubscriptionService
@@ -136,6 +137,7 @@ async def list_charges(
 
 @router.post("", response_model=ChargeResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ChargeResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_charge(payload: ChargeCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_charge", user_id=user_id, id_bien=payload.id_bien, type_charge=payload.type_charge)
 
@@ -165,6 +167,7 @@ async def create_charge(payload: ChargeCreate, request: Request, user_id: str = 
 
 
 @router.patch("/{charge_id}", response_model=ChargeResponse)
+@limiter.limit("30/minute")
 async def update_charge(charge_id: str, payload: ChargeUpdate, request: Request, user_id: str = Depends(get_current_user)):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
     logger.info("updating_charge", charge_id=charge_id, user_id=user_id, fields=list(update_payload.keys()))
@@ -198,6 +201,7 @@ async def update_charge(charge_id: str, payload: ChargeUpdate, request: Request,
 
 
 @router.delete("/{charge_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_charge(charge_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_charge", charge_id=charge_id, user_id=user_id)
 

@@ -4,6 +4,7 @@ import structlog
 from fastapi import APIRouter, Depends, Request, Response, status
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import AuthorizationError, DatabaseError, ResourceNotFoundError
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.biens import BienCreate, BienResponse, BienUpdate
 from app.services.sci_service import SCIService
@@ -77,6 +78,7 @@ async def list_biens(request: Request, id_sci: str | None = None, user_id: str =
 
 @router.post("", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien(payload: BienCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_bien", user_id=user_id, adresse=payload.adresse)
 
@@ -105,6 +107,7 @@ async def create_bien(payload: BienCreate, request: Request, user_id: str = Depe
 
 
 @router.patch("/{bien_id}", response_model=BienResponse)
+@limiter.limit("30/minute")
 async def update_bien(bien_id: str, payload: BienUpdate, request: Request, user_id: str = Depends(get_current_user)):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
 
@@ -150,6 +153,7 @@ async def update_bien(bien_id: str, payload: BienUpdate, request: Request, user_
 
 
 @router.delete("/{bien_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_bien(bien_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_bien", bien_id=bien_id, user_id=user_id)
 

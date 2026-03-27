@@ -4,6 +4,7 @@ import structlog
 from fastapi import APIRouter, Depends, Request
 from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.schemas.notification_preferences import (
     NotificationPreference,
@@ -75,6 +76,7 @@ async def get_notification_preferences(
 
 
 @router.put("/notification-preferences", response_model=NotificationPreferencesResponse)
+@limiter.limit("30/minute")
 async def update_notification_preferences(
     body: NotificationPreferencesUpdate,
     request: Request,

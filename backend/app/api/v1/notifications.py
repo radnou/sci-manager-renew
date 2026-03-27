@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel
 from app.core.supabase_client import get_supabase_user_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 
 logger = structlog.get_logger(__name__)
@@ -85,6 +86,7 @@ async def unread_count(request: Request, user_id: str = Depends(get_current_user
 
 
 @router.patch("/{notification_id}/read")
+@limiter.limit("30/minute")
 async def mark_as_read(
     notification_id: str,
     request: Request,
@@ -111,6 +113,7 @@ async def mark_as_read(
 
 
 @router.patch("/read-all")
+@limiter.limit("30/minute")
 async def mark_all_as_read(request: Request, user_id: str = Depends(get_current_user)):
     """Mark all notifications as read for the current user."""
     client = _get_client(request)

@@ -43,7 +43,7 @@ def _find_user_by_email(email: str) -> str | None:
             if getattr(user, "email", None) == email:
                 return str(user.id)
     except Exception:
-        pass
+        logger.warning("find_user_by_email_failed", email=email)
     return None
 
 

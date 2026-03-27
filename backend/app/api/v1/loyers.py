@@ -13,6 +13,7 @@ from app.core.exceptions import (
     SCIManagerException,
     ValidationError,
 )
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.loyers import LoyerCreate, LoyerResponse, LoyerUpdate
 
@@ -150,6 +151,7 @@ async def list_loyers(
 
 @router.post("", response_model=LoyerResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=LoyerResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_loyer(
     request: Request,
     payload: LoyerCreate,
@@ -195,6 +197,7 @@ async def create_loyer(
 
 
 @router.patch("/{loyer_id}", response_model=LoyerResponse)
+@limiter.limit("30/minute")
 async def update_loyer(loyer_id: str, payload: LoyerUpdate, request: Request, user_id: str = Depends(get_current_user)):
     update_payload = payload.model_dump(exclude_unset=True, mode="json")
 
@@ -236,6 +239,7 @@ async def update_loyer(loyer_id: str, payload: LoyerUpdate, request: Request, us
 
 
 @router.delete("/{loyer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_loyer(loyer_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_loyer", loyer_id=loyer_id, user_id=user_id)
     try:

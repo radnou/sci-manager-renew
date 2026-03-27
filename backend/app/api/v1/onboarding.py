@@ -8,9 +8,10 @@ POST /api/v1/onboarding/complete → mark onboarding as completed
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
 from app.services.associe_linking import link_user_to_pending_associes
@@ -127,7 +128,9 @@ async def get_onboarding_status(
 
 
 @router.post("/complete", response_model=OnboardingCompleteResponse)
+@limiter.limit("30/minute")
 async def complete_onboarding(
+    request: Request,
     user_id: str = Depends(get_current_user),
 ) -> OnboardingCompleteResponse:
     """Mark onboarding as completed for the user."""

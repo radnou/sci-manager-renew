@@ -12,6 +12,7 @@ from app.core.exceptions import (
     SCIManagerException,
     ValidationError,
 )
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.locataires import LocataireCreate, LocataireResponse, LocataireUpdate
 
@@ -150,6 +151,7 @@ async def list_locataires(
 
 @router.post("", response_model=LocataireResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=LocataireResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_locataire(payload: LocataireCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_locataire", user_id=user_id, bien_id=payload.id_bien, nom=payload.nom)
 
@@ -180,6 +182,7 @@ async def create_locataire(payload: LocataireCreate, request: Request, user_id: 
 
 
 @router.patch("/{locataire_id}", response_model=LocataireResponse)
+@limiter.limit("30/minute")
 async def update_locataire(
     locataire_id: str,
     payload: LocataireUpdate,
@@ -243,6 +246,7 @@ async def update_locataire(
 
 
 @router.delete("/{locataire_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_locataire(locataire_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_locataire", locataire_id=locataire_id, user_id=user_id)
 

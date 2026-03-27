@@ -172,6 +172,13 @@ async def lifespan(app: FastAPI):
                 version="1.0.0")
     shutdown_event.clear()
 
+    # Configure Stripe global timeout
+    import stripe
+    stripe.max_network_retries = 2
+    stripe.default_http_client = stripe.HTTPXClient(
+        timeout=settings.stripe_request_timeout_seconds,
+    )
+
     # Configurer les signal handlers pour graceful shutdown
     loop = asyncio.get_event_loop()
 

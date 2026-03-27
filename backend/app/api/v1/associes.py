@@ -10,6 +10,7 @@ from app.core.exceptions import (
     SCIManagerException,
     ValidationError,
 )
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.associes import AssocieCreate, AssocieResponse, AssocieUpdate
 
@@ -134,6 +135,7 @@ async def list_associes(
 
 @router.post("", response_model=AssocieResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=AssocieResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_associe(payload: AssocieCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_associe", user_id=user_id, id_sci=payload.id_sci, nom=payload.nom)
 
@@ -162,6 +164,7 @@ async def create_associe(payload: AssocieCreate, request: Request, user_id: str 
 
 
 @router.patch("/{associe_id}", response_model=AssocieResponse)
+@limiter.limit("30/minute")
 async def update_associe(
     associe_id: str,
     payload: AssocieUpdate,
@@ -207,6 +210,7 @@ async def update_associe(
 
 
 @router.delete("/{associe_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_associe(associe_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_associe", associe_id=associe_id, user_id=user_id)
 

@@ -155,7 +155,7 @@ async def export_user_data(
             ).execute()
         except Exception:
             # Ne pas bloquer l'export si le tracking metadata échoue.
-            pass
+            logger.warning("gdpr_export_metadata_insert_failed", user_id=user_id)
 
         await AuditLogger.log_gdpr_event(
             event="data_export",
@@ -330,9 +330,9 @@ async def delete_user_account(
                                 storage_path = str(doc_url).split(path_marker, 1)[1]
                                 client.storage.from_("documents").remove([storage_path])
                         except Exception:
-                            pass  # Best-effort storage cleanup
+                            logger.warning("gdpr_storage_file_cleanup_failed", doc_id=doc.get("id"))
             except Exception:
-                pass  # Don't block deletion if document cleanup fails
+                logger.warning("gdpr_document_cleanup_failed", user_id=user_id, bien_ids=bien_ids)
 
             # Documents
             client.table("documents_bien").delete().in_("id_bien", bien_ids).execute()

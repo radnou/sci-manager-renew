@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.core.exceptions import BusinessLogicError, DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.services.notification_service import create_notification_with_email
 
@@ -73,6 +74,7 @@ class DissolutionResponse(BaseModel):
 
 
 @router.post("/{sci_id}/dissoudre", response_model=DissolutionResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
 async def dissoudre_sci(
     sci_id: UUID,
     payload: DissolutionPayload,
@@ -167,6 +169,7 @@ class ChangerGerantResponse(BaseModel):
 
 
 @router.post("/{sci_id}/changer-gerant", response_model=ChangerGerantResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
 async def changer_gerant(
     sci_id: UUID,
     payload: ChangerGerantPayload,
@@ -257,6 +260,7 @@ class ModifierCapitalResponse(BaseModel):
 
 
 @router.post("/{sci_id}/modifier-capital", response_model=ModifierCapitalResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
 async def modifier_capital(
     sci_id: UUID,
     payload: ModifierCapitalPayload,
@@ -365,6 +369,7 @@ class CessionBienResponse(BaseModel):
     response_model=CessionBienResponse,
     status_code=status.HTTP_200_OK,
 )
+@limiter.limit("30/minute")
 async def ceder_bien(
     sci_id: UUID,
     bien_id: str,

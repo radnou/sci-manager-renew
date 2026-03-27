@@ -184,6 +184,21 @@ def _build_readiness_summary(checks: dict[str, dict]) -> tuple[str, int, dict[st
     }
 
 
+@router.get("/health/flags")
+async def feature_flags():
+    """Return current feature flag state for operational visibility."""
+    return {
+        "cerfa_generation": settings.feature_cerfa_generation,
+        "stripe_payments": settings.feature_stripe_payments,
+        "plan_entitlements_enforcement": settings.feature_plan_entitlements_enforcement,
+        "new_checkout_catalog": settings.feature_new_checkout_catalog,
+        "pdf_render_direct": settings.feature_pdf_render_direct,
+        "multi_sci_dashboard_v2": settings.feature_multi_sci_dashboard_v2,
+        "maintenance_mode": settings.maintenance_mode,
+        "environment": settings.app_env.value,
+    }
+
+
 @router.get("/health/live")
 async def liveness():
     return {"status": "alive"}

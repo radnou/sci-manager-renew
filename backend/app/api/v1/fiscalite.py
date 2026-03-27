@@ -10,6 +10,7 @@ from app.core.exceptions import (
     SCIManagerException,
     ValidationError,
 )
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.fiscalite import FiscaliteCreate, FiscaliteResponse, FiscaliteUpdate
 from app.services.subscription_service import SubscriptionService
@@ -126,6 +127,7 @@ async def list_fiscalite(
 
 @router.post("", response_model=FiscaliteResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=FiscaliteResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_fiscalite(payload: FiscaliteCreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_fiscalite", user_id=user_id, id_sci=payload.id_sci, annee=payload.annee)
 
@@ -158,6 +160,7 @@ async def create_fiscalite(payload: FiscaliteCreate, request: Request, user_id: 
 
 
 @router.patch("/{fiscalite_id}", response_model=FiscaliteResponse)
+@limiter.limit("30/minute")
 async def update_fiscalite(
     fiscalite_id: str,
     payload: FiscaliteUpdate,
@@ -203,6 +206,7 @@ async def update_fiscalite(
 
 
 @router.post("/prefill/{annee}", response_model=dict)
+@limiter.limit("30/minute")
 async def prefill_fiscalite_endpoint(
     annee: int,
     request: Request,
@@ -248,6 +252,7 @@ async def prefill_fiscalite_endpoint(
 
 
 @router.delete("/{fiscalite_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_fiscalite(fiscalite_id: str, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("deleting_fiscalite", fiscalite_id=fiscalite_id, user_id=user_id)
 

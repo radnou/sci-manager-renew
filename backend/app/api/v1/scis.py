@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.biens import BienResponse
 from app.models.loyers import LoyerResponse
@@ -266,6 +267,7 @@ async def get_sci_detail(sci_id: str, request: Request, user_id: str = Depends(g
 
 @router.post("", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_sci(payload: SCICreate, request: Request, user_id: str = Depends(get_current_user)):
     logger.info("creating_sci", user_id=user_id, nom=payload.nom)
 
@@ -336,6 +338,7 @@ async def _require_gerant_for_sci(sci_id: str, request: Request, user_id: str = 
 
 
 @router.patch("/{sci_id}", response_model=SCIResponse)
+@limiter.limit("30/minute")
 async def update_sci(
     sci_id: str,
     payload: SCIUpdate,
@@ -367,6 +370,7 @@ async def update_sci(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{sci_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_sci(
     sci_id: str,
     request: Request,
@@ -444,6 +448,7 @@ class InviteAssocieResponse(AssocieOverview):
 
 
 @router.post("/{sci_id}/associes", response_model=InviteAssocieResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def invite_sci_associe(
     sci_id: str,
     payload: InviteAssociePayload,

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.rate_limit import limiter
 from app.services.subscription_service import SubscriptionService
 from app.models.biens import BienCreate, BienResponse, BienUpdate
 from app.models.charges import ChargeCreate, ChargeResponse, ChargeUpdate
@@ -187,6 +188,7 @@ async def list_sci_biens(
 
 @router.post("", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_sci_bien(
     sci_id: UUID,
     payload: BienCreate,
@@ -417,6 +419,7 @@ async def get_fiche_bien(
 # ──────────────────────────────────────────────────────────────
 
 @router.patch("/{bien_id}", response_model=BienResponse)
+@limiter.limit("30/minute")
 async def update_sci_bien(
     sci_id: UUID,
     bien_id: str,
@@ -451,6 +454,7 @@ async def update_sci_bien(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_sci_bien(
     sci_id: UUID,
     bien_id: str,
@@ -509,6 +513,7 @@ async def list_bien_loyers(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/loyers", response_model=LoyerResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien_loyer(
     sci_id: UUID,
     bien_id: str,
@@ -598,6 +603,7 @@ async def list_bien_baux(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/baux", response_model=BailResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien_bail(
     sci_id: UUID,
     bien_id: str,
@@ -707,6 +713,7 @@ async def create_bien_bail(
 # ──────────────────────────────────────────────────────────────
 
 @router.patch("/{bien_id}/baux/{bail_id}", response_model=BailResponse)
+@limiter.limit("30/minute")
 async def update_bien_bail(
     sci_id: UUID,
     bien_id: str,
@@ -764,6 +771,7 @@ async def update_bien_bail(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/baux/{bail_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_bien_bail(
     sci_id: UUID,
     bien_id: str,
@@ -801,6 +809,7 @@ class BailCloturePayload(BaseModel):
 
 
 @router.post("/{bien_id}/baux/{bail_id}/cloturer", response_model=BailResponse)
+@limiter.limit("30/minute")
 async def cloturer_bail(
     sci_id: UUID,
     bien_id: str,
@@ -903,6 +912,7 @@ def _calculate_date_effet(date_notification: date, type_conge: str, type_locatif
 
 
 @router.post("/{bien_id}/baux/{bail_id}/conge", response_model=BailResponse)
+@limiter.limit("30/minute")
 async def conge_bail(
     sci_id: UUID,
     bien_id: str,
@@ -1020,6 +1030,7 @@ async def conge_bail(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/baux/{bail_id}/locataires", status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def attach_locataire_to_bail(
     sci_id: UUID,
     bien_id: str,
@@ -1058,6 +1069,7 @@ async def attach_locataire_to_bail(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/baux/{bail_id}/locataires/{locataire_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def detach_locataire_from_bail(
     sci_id: UUID,
     bien_id: str,
@@ -1148,6 +1160,7 @@ async def list_bien_charges(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/charges", response_model=ChargeResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien_charge(
     sci_id: UUID,
     bien_id: str,
@@ -1184,6 +1197,7 @@ async def create_bien_charge(
 # ──────────────────────────────────────────────────────────────
 
 @router.patch("/{bien_id}/charges/{charge_id}", response_model=ChargeResponse)
+@limiter.limit("30/minute")
 async def update_bien_charge(
     sci_id: UUID,
     bien_id: str,
@@ -1225,6 +1239,7 @@ async def update_bien_charge(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/charges/{charge_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_bien_charge(
     sci_id: UUID,
     bien_id: str,
@@ -1279,6 +1294,7 @@ async def list_bien_assurance_pno(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/assurance-pno", response_model=AssurancePnoResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien_assurance_pno(
     sci_id: UUID,
     bien_id: str,
@@ -1314,6 +1330,7 @@ async def create_bien_assurance_pno(
 # ──────────────────────────────────────────────────────────────
 
 @router.patch("/{bien_id}/assurance-pno/{pno_id}", response_model=AssurancePnoResponse)
+@limiter.limit("30/minute")
 async def update_bien_assurance_pno(
     sci_id: UUID,
     bien_id: str,
@@ -1355,6 +1372,7 @@ async def update_bien_assurance_pno(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/assurance-pno/{pno_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_bien_assurance_pno(
     sci_id: UUID,
     bien_id: str,
@@ -1409,6 +1427,7 @@ async def list_bien_frais_agence(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/frais-agence", response_model=FraisAgenceResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien_frais_agence(
     sci_id: UUID,
     bien_id: str,
@@ -1444,6 +1463,7 @@ async def create_bien_frais_agence(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/frais-agence/{frais_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_bien_frais_agence(
     sci_id: UUID,
     bien_id: str,
@@ -1503,6 +1523,7 @@ async def list_bien_documents(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/documents", response_model=DocumentBienResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def upload_document(
     sci_id: UUID,
     bien_id: str,
@@ -1573,6 +1594,7 @@ async def upload_document(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_document(
     sci_id: UUID,
     bien_id: str,
@@ -1669,6 +1691,7 @@ async def list_bien_evenements(
 # ──────────────────────────────────────────────────────────────
 
 @router.post("/{bien_id}/evenements", response_model=EvenementResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_bien_evenement(
     sci_id: UUID,
     bien_id: str,
@@ -1704,6 +1727,7 @@ async def create_bien_evenement(
 # ──────────────────────────────────────────────────────────────
 
 @router.patch("/{bien_id}/evenements/{event_id}", response_model=EvenementResponse)
+@limiter.limit("30/minute")
 async def update_bien_evenement(
     sci_id: UUID,
     bien_id: str,
@@ -1745,6 +1769,7 @@ async def update_bien_evenement(
 # ──────────────────────────────────────────────────────────────
 
 @router.delete("/{bien_id}/evenements/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def delete_bien_evenement(
     sci_id: UUID,
     bien_id: str,
@@ -1807,6 +1832,7 @@ class AvenantResponse(BaseModel):
 
 
 @router.post("/{bien_id}/baux/{bail_id}/avenant", response_model=AvenantResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def create_avenant(
     sci_id: UUID,
     bien_id: str,
@@ -1930,6 +1956,7 @@ class SinistreResponse(BaseModel):
 
 
 @router.post("/{bien_id}/sinistre", response_model=SinistreResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def declare_sinistre(
     sci_id: UUID,
     bien_id: str,

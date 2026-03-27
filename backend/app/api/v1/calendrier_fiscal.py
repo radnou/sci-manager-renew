@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from app.core.exceptions import DatabaseError, GererSCIException, ResourceNotFoundError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
@@ -185,6 +186,7 @@ async def get_calendrier_fiscal(
 
 
 @router.post("/{annee}/{key}/marquer-fait", response_model=MarquerFaitResponse)
+@limiter.limit("30/minute")
 async def marquer_echeance_faite(
     request: Request,
     sci_id: UUID,
