@@ -9,14 +9,14 @@
 		href="/"
 		class="mb-8 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 	>
-		&larr; Retour a l'accueil
+		&larr; Retour à l'accueil
 	</a>
 
 	<h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">
-		Politique de confidentialite
+		Politique de confidentialité
 	</h1>
 	<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-		Derniere mise a jour : 10 mars 2026
+		Dernière mise à jour : 10 mars 2026
 	</p>
 
 	<div class="mt-10 space-y-10 text-slate-700 dark:text-slate-300">
@@ -25,8 +25,8 @@
 				1. Responsable du traitement
 			</h2>
 			<p class="mt-3 text-sm">
-				Le responsable du traitement des donnees collectees sur le site GérerSCI est GérerSCI
-				(Radnoumane Mossabely, entrepreneur individuel), dont le siege social est situe a Paris, France.
+				Le responsable du traitement des données collectées sur le site GérerSCI est GérerSCI
+				(Radnoumane Mossabely, entrepreneur individuel), dont le siège social est situé à Paris, France.
 			</p>
 			<p class="mt-2 text-sm">
 				<strong>Contact DPO :</strong> dpo@gerersci.fr
@@ -35,48 +35,48 @@
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				2. Donnees collectees
+				2. Données collectées
 			</h2>
 			<p class="mt-3 text-sm">
-				Dans le cadre de l'utilisation du service GérerSCI, nous collectons les donnees
+				Dans le cadre de l'utilisation du service GérerSCI, nous collectons les données
 				suivantes :
 			</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>
-					<strong>Donnees d'identification :</strong> adresse email (utilisee pour l'authentification
+					<strong>Données d'identification :</strong> adresse email (utilisée pour l'authentification
 					par magic link)
 				</li>
 				<li>
-					<strong>Donnees relatives aux SCI :</strong> nom de la SCI, adresse du siege, numero SIRET,
-					informations sur les associes
+					<strong>Données relatives aux SCI :</strong> nom de la SCI, adresse du siège, numéro SIRET,
+					informations sur les associés
 				</li>
 				<li>
-					<strong>Donnees immobilieres :</strong> informations sur les biens (adresse, surface, type),
+					<strong>Données immobilières :</strong> informations sur les biens (adresse, surface, type),
 					locataires, loyers, charges
 				</li>
 				<li>
-					<strong>Donnees financieres :</strong> montants de loyers, charges, donnees fiscales (CERFA
-					2044), informations de paiement via Stripe (nous ne stockons pas les numeros de carte)
+					<strong>Données financières :</strong> montants de loyers, charges, données fiscales (CERFA
+					2044), informations de paiement via Stripe (nous ne stockons pas les numéros de carte)
 				</li>
 				<li>
-					<strong>Donnees techniques :</strong> adresse IP, type de navigateur, logs de connexion
+					<strong>Données techniques :</strong> adresse IP, type de navigateur, logs de connexion
 				</li>
 			</ul>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				3. Finalites du traitement
+				3. Finalités du traitement
 			</h2>
-			<p class="mt-3 text-sm">Vos donnees sont traitees pour les finalites suivantes :</p>
+			<p class="mt-3 text-sm">Vos données sont traitées pour les finalités suivantes :</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>Fourniture et gestion du service de gestion de SCI</li>
-				<li>Authentification et securisation de l'acces a votre compte</li>
-				<li>Generation de documents (quittances de loyer, declarations fiscales)</li>
+				<li>Authentification et sécurisation de l'accès à votre compte</li>
+				<li>Génération de documents (quittances de loyer, déclarations fiscales)</li>
 				<li>Gestion des abonnements et des paiements</li>
-				<li>Envoi de notifications relatives a votre compte et a vos SCI</li>
-				<li>Amelioration du service et correction de dysfonctionnements</li>
-				<li>Respect des obligations legales et reglementaires</li>
+				<li>Envoi de notifications relatives à votre compte et à vos SCI</li>
+				<li>Amélioration du service et correction de dysfonctionnements</li>
+				<li>Respect des obligations légales et réglementaires</li>
 			</ul>
 		</section>
 
@@ -85,45 +85,45 @@
 				4. Base juridique
 			</h2>
 			<p class="mt-3 text-sm">
-				Le traitement de vos donnees repose sur les bases juridiques suivantes :
+				Le traitement de vos données repose sur les bases juridiques suivantes :
 			</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>
-					<strong>Execution du contrat :</strong> le traitement est necessaire a la fourniture du service
+					<strong>Exécution du contrat :</strong> le traitement est nécessaire à la fourniture du service
 					GérerSCI auquel vous avez souscrit
 				</li>
 				<li>
 					<strong>Consentement :</strong> pour les cookies non essentiels et les communications marketing
 				</li>
 				<li>
-					<strong>Obligation legale :</strong> conservation des donnees de facturation conformement au
-					droit fiscal francais
+					<strong>Obligation légale :</strong> conservation des données de facturation conformément au
+					droit fiscal français
 				</li>
 				<li>
-					<strong>Interet legitime :</strong> amelioration du service et securite de la plateforme
+					<strong>Intérêt légitime :</strong> amélioration du service et sécurité de la plateforme
 				</li>
 			</ul>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				5. Duree de conservation
+				5. Durée de conservation
 			</h2>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>
-					<strong>Donnees du compte :</strong> conservees pendant toute la duree de votre inscription,
-					puis supprimees dans un delai de 30 jours apres la cloture du compte
+					<strong>Données du compte :</strong> conservées pendant toute la durée de votre inscription,
+					puis supprimées dans un délai de 30 jours après la clôture du compte
 				</li>
 				<li>
-					<strong>Donnees de facturation :</strong> conservees 10 ans conformement aux obligations
+					<strong>Données de facturation :</strong> conservées 10 ans conformément aux obligations
 					comptables et fiscales
 				</li>
 				<li>
-					<strong>Logs de connexion :</strong> conserves 12 mois conformement a la reglementation en
+					<strong>Logs de connexion :</strong> conservés 12 mois conformément à la réglementation en
 					vigueur
 				</li>
 				<li>
-					<strong>Cookies :</strong> duree maximale de 13 mois
+					<strong>Cookies :</strong> durée maximale de 13 mois
 				</li>
 			</ul>
 		</section>
@@ -133,36 +133,36 @@
 				6. Droits des utilisateurs
 			</h2>
 			<p class="mt-3 text-sm">
-				Conformement au RGPD (Reglement General sur la Protection des Donnees), vous disposez des
+				Conformément au RGPD (Règlement Général sur la Protection des Données), vous disposez des
 				droits suivants :
 			</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
-				<li><strong>Droit d'acces :</strong> obtenir une copie de vos donnees personnelles</li>
+				<li><strong>Droit d'accès :</strong> obtenir une copie de vos données personnelles</li>
 				<li>
-					<strong>Droit de rectification :</strong> corriger des donnees inexactes ou incompletes
+					<strong>Droit de rectification :</strong> corriger des données inexactes ou incomplètes
 				</li>
 				<li>
-					<strong>Droit a l'effacement :</strong> demander la suppression de vos donnees (dans les
-					limites legales)
+					<strong>Droit à l'effacement :</strong> demander la suppression de vos données (dans les
+					limites légales)
 				</li>
 				<li>
-					<strong>Droit a la portabilite :</strong> recevoir vos donnees dans un format structure et
+					<strong>Droit à la portabilité :</strong> recevoir vos données dans un format structuré et
 					lisible par machine
 				</li>
 				<li>
-					<strong>Droit d'opposition :</strong> vous opposer au traitement de vos donnees pour des
-					motifs legitimes
+					<strong>Droit d'opposition :</strong> vous opposer au traitement de vos données pour des
+					motifs légitimes
 				</li>
 				<li>
-					<strong>Droit a la limitation :</strong> demander la limitation du traitement de vos donnees
+					<strong>Droit à la limitation :</strong> demander la limitation du traitement de vos données
 				</li>
 			</ul>
 			<p class="mt-3 text-sm">
-				Pour exercer ces droits, contactez-nous a : <strong>dpo@gerersci.fr</strong>
+				Pour exercer ces droits, contactez-nous à : <strong>dpo@gerersci.fr</strong>
 			</p>
 			<p class="mt-2 text-sm">
-				Vous pouvez egalement introduire une reclamation aupres de la CNIL (Commission Nationale
-				de l'Informatique et des Libertes) : <a href="https://www.cnil.fr" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">www.cnil.fr</a>
+				Vous pouvez également introduire une réclamation auprès de la CNIL (Commission Nationale
+				de l'Informatique et des Libertés) : <a href="https://www.cnil.fr" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">www.cnil.fr</a>
 			</p>
 		</section>
 
@@ -178,14 +178,14 @@
 					<thead>
 						<tr class="border-b border-slate-200 dark:border-slate-700">
 							<th class="py-2 pr-4 text-left font-semibold text-slate-900 dark:text-slate-100">Sous-traitant</th>
-							<th class="py-2 pr-4 text-left font-semibold text-slate-900 dark:text-slate-100">Finalite</th>
+							<th class="py-2 pr-4 text-left font-semibold text-slate-900 dark:text-slate-100">Finalité</th>
 							<th class="py-2 text-left font-semibold text-slate-900 dark:text-slate-100">Localisation</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 						<tr>
 							<td class="py-2 pr-4">Supabase</td>
-							<td class="py-2 pr-4">Base de donnees et authentification</td>
+							<td class="py-2 pr-4">Base de données et authentification</td>
 							<td class="py-2">UE (Francfort)</td>
 						</tr>
 						<tr>
@@ -200,7 +200,7 @@
 						</tr>
 						<tr>
 							<td class="py-2 pr-4">OVH</td>
-							<td class="py-2 pr-4">Hebergement du serveur</td>
+							<td class="py-2 pr-4">Hébergement du serveur</td>
 							<td class="py-2">France</td>
 						</tr>
 						<tr>
@@ -218,28 +218,28 @@
 			<p class="mt-3 text-sm">Le site GérerSCI utilise les cookies suivants :</p>
 			<ul class="mt-3 list-inside list-disc space-y-2 text-sm">
 				<li>
-					<strong>Cookies essentiels :</strong> necessaires au fonctionnement du site (session
-					d'authentification, preferences de theme)
+					<strong>Cookies essentiels :</strong> nécessaires au fonctionnement du site (session
+					d'authentification, préférences de thème)
 				</li>
 				<li>
-					<strong>Cookies de mesure d'audience :</strong> analyse anonymisee de l'utilisation du
-					service (soumis a votre consentement)
+					<strong>Cookies de mesure d'audience :</strong> analyse anonymisée de l'utilisation du
+					service (soumis à votre consentement)
 				</li>
 			</ul>
 			<p class="mt-3 text-sm">
-				Vous pouvez gerer vos preferences de cookies a tout moment via le bandeau de
-				consentement ou les parametres de votre navigateur.
+				Vous pouvez gérer vos préférences de cookies à tout moment via le bandeau de
+				consentement ou les paramètres de votre navigateur.
 			</p>
 		</section>
 
 		<section>
 			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				9. Securite des donnees
+				9. Sécurité des données
 			</h2>
 			<p class="mt-3 text-sm">
-				Nous mettons en oeuvre des mesures techniques et organisationnelles appropriees pour
-				proteger vos donnees : chiffrement en transit (TLS) et au repos, controle d'acces par
-				Row-Level Security, journalisation des acces, sauvegardes regulieres.
+				Nous mettons en oeuvre des mesures techniques et organisationnelles appropriées pour
+				protéger vos données : chiffrement en transit (TLS) et au repos, contrôle d'accès par
+				Row-Level Security, journalisation des accès, sauvegardes régulières.
 			</p>
 		</section>
 	</div>

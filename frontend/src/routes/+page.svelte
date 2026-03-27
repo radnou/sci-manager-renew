@@ -112,46 +112,46 @@
 			description:
 				'Grille visuelle avec statut locatif, loyer mensuel et rendement brut. Ajoutez un bien en 30 secondes.',
 			image: '/images/showcase/biens-grid.png',
-			alt: 'Grille des biens immobiliers — statut Loue, loyer, rendement',
+			alt: 'Grille des biens immobiliers — statut Loué, loyer, rendement',
 			bullets: [
-				'Statut locatif en temps reel',
-				'Rendement brut calcule',
+				'Statut locatif en temps réel',
+				'Rendement brut calculé',
 				'Actions rapides : modifier, quittance'
 			]
 		},
 		{
-			eyebrow: 'Vision financiere',
-			title: 'Revenus, charges et cashflow consolides',
+			eyebrow: 'Vision financière',
+			title: 'Revenus, charges et cashflow consolidés',
 			description:
-				'Vue transversale de toutes vos SCI. Evolution mensuelle, repartition par SCI, export CSV en 1 clic.',
+				'Vue transversale de toutes vos SCI. Évolution mensuelle, répartition par SCI, export CSV en 1 clic.',
 			image: '/images/showcase/finances-consolidated.png',
-			alt: 'Vue financiere consolidee — revenus, charges, cashflow net',
-			bullets: ['Cashflow net par periode', 'Repartition par SCI', 'Export comptable CSV']
+			alt: 'Vue financière consolidée — revenus, charges, cashflow net',
+			bullets: ['Cashflow net par période', 'Répartition par SCI', 'Export comptable CSV']
 		},
 		{
 			eyebrow: 'Gouvernance',
-			title: 'Associes et parts sociales',
+			title: 'Associés et parts sociales',
 			description:
-				"Gerez vos associes, leurs parts et roles. Total automatique avec alerte si ≠ 100%.",
+				"Gérez vos associés, leurs parts et rôles. Total automatique avec alerte si ≠ 100%.",
 			image: '/images/showcase/fiche-identite.png',
-			alt: 'Page associes — parts sociales, roles, total 100%',
+			alt: 'Page associés — parts sociales, rôles, total 100%',
 			bullets: [
 				'Parts et pourcentages',
-				"Roles gerant / associe",
+				"Rôles gérant / associé",
 				'Invitation par email'
 			]
 		},
 		{
-			eyebrow: 'Fiscalite',
-			title: 'Generez votre resume fiscal en un clic',
+			eyebrow: 'Fiscalité',
+			title: 'Générez votre résumé fiscal en un clic',
 			description:
-				"Exercices fiscaux IR et IS, resultat fiscal calcule, bilan foncier PDF pret a telecharger.",
+				"Exercices fiscaux IR et IS, résultat fiscal calculé, bilan foncier PDF prêt à télécharger.",
 			image: '/images/showcase/loyers-with-button.png',
-			alt: 'Page fiscalite — exercices, resume fiscal, resultat fiscal',
+			alt: 'Page fiscalité — exercices, résumé fiscal, résultat fiscal',
 			bullets: [
-				'Regimes IR et IS',
-				'Resume fiscal PDF automatique',
-				'Resultat fiscal calcule'
+				'Régimes IR et IS',
+				'Résumé fiscal PDF automatique',
+				'Résultat fiscal calculé'
 			]
 		}
 	];
@@ -761,7 +761,7 @@
 								</li>
 							{/each}
 						</ul>
-						{#if feature.eyebrow === 'Fiscalite'}
+						{#if feature.eyebrow === 'Fiscalité'}
 							<a href="/simulateur-cerfa" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
 								Essayer le simulateur gratuit →
 							</a>

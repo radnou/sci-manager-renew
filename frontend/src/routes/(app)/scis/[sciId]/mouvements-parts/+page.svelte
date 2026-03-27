@@ -64,8 +64,8 @@
 				prix_total: newPrixTotal
 			});
 			addToast({
-				title: 'Mouvement enregistre',
-				description: 'Le mouvement de parts a ete cree.',
+				title: 'Mouvement enregistré',
+				description: 'Le mouvement de parts a été créé.',
 				variant: 'success'
 			});
 			showCreateForm = false;
@@ -74,7 +74,7 @@
 		} catch (err: any) {
 			addToast({
 				title: 'Erreur',
-				description: err?.message ?? 'Impossible de creer le mouvement.',
+				description: err?.message ?? 'Impossible de créer le mouvement.',
 				variant: 'error'
 			});
 		} finally {
@@ -88,8 +88,8 @@
 		try {
 			await deleteMouvementParts(sci.id, mouvement.id);
 			addToast({
-				title: 'Mouvement supprime',
-				description: 'Le mouvement a ete supprime.',
+				title: 'Mouvement supprimé',
+				description: 'Le mouvement a été supprimé.',
 				variant: 'success'
 			});
 			await loadData();
@@ -286,7 +286,7 @@
 					onclick={loadData}
 					class="mt-2 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400"
 				>
-					Reessayer
+					Réessayer
 				</button>
 			</div>
 		{:else if mouvements.length === 0}
@@ -295,7 +295,7 @@
 			>
 				<ArrowLeftRight class="mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
 				<p class="text-sm text-slate-500 dark:text-slate-400">
-					Aucun mouvement de parts enregistre.
+					Aucun mouvement de parts enregistré.
 				</p>
 			</div>
 		{:else}

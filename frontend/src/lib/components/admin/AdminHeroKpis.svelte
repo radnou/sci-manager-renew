@@ -36,7 +36,7 @@
 			label: 'North Star',
 			subtitle: 'SCIs actives sur 30j',
 			tooltip:
-				"Combien de SCI ont enregistre ≥1 loyer paye ces 30 derniers jours. C'est ta metrique #1 — si elle monte, ton produit cree de la valeur. Si elle stagne, concentre-toi sur l'activation.",
+				"Combien de SCI ont enregistré ≥1 loyer payé ces 30 derniers jours. C'est ta métrique #1 — si elle monte, ton produit crée de la valeur. Si elle stagne, concentre-toi sur l'activation.",
 			icon: Target,
 			color: 'indigo',
 			format: 'integer',
@@ -60,7 +60,7 @@
 			label: 'Activation',
 			subtitle: 'Inscrits → 1er loyer',
 			tooltip:
-				"% d'utilisateurs inscrits qui ont enregistre au moins 1 loyer. En dessous de 30%, ton onboarding a un probleme — simplifie le parcours.",
+				"% d'utilisateurs inscrits qui ont enregistré au moins 1 loyer. En dessous de 30%, ton onboarding a un problème — simplifie le parcours.",
 			icon: Zap,
 			color: 'sky',
 			format: 'percentage',
@@ -72,7 +72,7 @@
 			label: 'Churn 30j',
 			subtitle: 'Users perdus ce mois',
 			tooltip:
-				"% d'utilisateurs actifs le mois dernier qui ne le sont plus ce mois-ci. Au-dessus de 5%/mois, il y a une fuite a colmater — contacte les users perdus.",
+				"% d'utilisateurs actifs le mois dernier qui ne le sont plus ce mois-ci. Au-dessus de 5%/mois, il y a une fuite à colmater — contacte les users perdus.",
 			icon: UserMinus,
 			color: 'rose',
 			format: 'percentage',
@@ -84,7 +84,7 @@
 			label: 'Conversion',
 			subtitle: 'Free vers payant',
 			tooltip:
-				"% d'utilisateurs gratuits passes a un plan payant. Bon indicateur de la valeur percue et du positionnement de ton paywall.",
+				"% d'utilisateurs gratuits passés à un plan payant. Bon indicateur de la valeur perçue et du positionnement de ton paywall.",
 			icon: ArrowUpRight,
 			color: 'amber',
 			format: 'percentage',

@@ -68,7 +68,7 @@
     } catch (err: any) {
       addToast({
         title: 'Erreur',
-        description: err?.message ?? 'Impossible de telecharger le template.',
+        description: err?.message ?? 'Impossible de télécharger le template.',
         variant: 'error'
       });
     }

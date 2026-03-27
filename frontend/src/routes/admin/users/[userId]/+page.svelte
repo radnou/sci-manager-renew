@@ -71,7 +71,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ subject: emailSubject, message: emailBody })
 			});
-			actionMessage = `Email envoye a ${userData?.user?.email}`;
+			actionMessage = `Email envoyé à ${userData?.user?.email}`;
 			showEmailForm = false;
 			emailSubject = '';
 			emailBody = '';

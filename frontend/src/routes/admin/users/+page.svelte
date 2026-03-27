@@ -152,7 +152,7 @@
 					<th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Plan</th>
 					<th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">SCIs</th>
 					<th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Biens</th>
-					<th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Activite</th>
+					<th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Activité</th>
 					<th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Statut</th>
 				</tr>
 			</thead>

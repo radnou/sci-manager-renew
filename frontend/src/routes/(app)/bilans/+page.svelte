@@ -53,7 +53,7 @@
 				}
 			})
 			.catch((err: Error) => {
-				error = err?.message ?? 'Impossible de charger les periodes.';
+				error = err?.message ?? 'Impossible de charger les périodes.';
 				loading = false;
 			});
 	});
@@ -107,12 +107,12 @@
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
 			addToast({
-				title: 'PDF telecharge',
-				description: `Bilan ${formatPeriodeLabel(selectedPeriode)} exporte.`,
+				title: 'PDF téléchargé',
+				description: `Bilan ${formatPeriodeLabel(selectedPeriode)} exporté.`,
 				variant: 'success'
 			});
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : 'Impossible de telecharger le PDF.';
+			const msg = err instanceof Error ? err.message : 'Impossible de télécharger le PDF.';
 			addToast({ title: 'Erreur export', description: msg, variant: 'error' });
 		} finally {
 			downloading = false;
@@ -136,17 +136,17 @@
 		const [year, month] = p.split('-');
 		const months = [
 			'Janvier',
-			'Fevrier',
+			'Février',
 			'Mars',
 			'Avril',
 			'Mai',
 			'Juin',
 			'Juillet',
-			'Aout',
+			'Août',
 			'Septembre',
 			'Octobre',
 			'Novembre',
-			'Decembre'
+			'Décembre'
 		];
 		const idx = parseInt(month, 10) - 1;
 		return `${months[idx] ?? month} ${year}`;
@@ -175,11 +175,11 @@
 	}
 </script>
 
-<svelte:head><title>Bilans Mensuels | GererSCI</title></svelte:head>
+<svelte:head><title>Bilans Mensuels | GérerSCI</title></svelte:head>
 
 <section class="sci-page-shell">
 	<header class="sci-page-header">
-		<p class="sci-eyebrow">Comptabilite</p>
+		<p class="sci-eyebrow">Comptabilité</p>
 		<h1 class="sci-page-title">Bilans Mensuels</h1>
 	</header>
 
@@ -244,7 +244,7 @@
 				class="shrink-0"
 			>
 				<RefreshCw class="mr-2 h-4 w-4 {refreshing ? 'animate-spin' : ''}" />
-				{refreshing ? 'Actualisation...' : 'Rafraichir'}
+				{refreshing ? 'Actualisation...' : 'Rafraîchir'}
 			</Button>
 			<Button onclick={handleDownloadPdf} disabled={downloading || !data} variant="outline" class="shrink-0">
 				<Download class="mr-2 h-4 w-4" />
@@ -265,15 +265,15 @@
 				class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400"
 			>
 				<RefreshCw class="h-4 w-4" />
-				Reessayer
+				Réessayer
 			</button>
 		</div>
 	{:else if data && data.scis.length === 0}
 		<div class="mt-6">
 			<EmptyState
 				icon={FileSpreadsheet}
-				title="Aucune donnee pour cette periode"
-				description="Enregistrez des loyers et des charges sur vos biens pour voir apparaitre votre bilan mensuel."
+				title="Aucune donnée pour cette période"
+				description="Enregistrez des loyers et des charges sur vos biens pour voir apparaître votre bilan mensuel."
 				ctaText="Aller au dashboard"
 				ctaHref="/dashboard"
 			/>
@@ -293,11 +293,11 @@
 							>
 							<th
 								class="px-4 pb-3 pt-4 text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
-								>Libelle</th
+								>Libellé</th
 							>
 							<th
 								class="px-4 pb-3 pt-4 text-right text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
-								>Entrees</th
+								>Entrées</th
 							>
 							<th
 								class="px-4 pb-3 pt-4 text-right text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase"
@@ -525,7 +525,7 @@
 				<div class="flex items-center gap-2">
 					<TrendingUp class="h-5 w-5 text-emerald-500" />
 					<p class="text-xs font-medium text-slate-500 uppercase dark:text-slate-400">
-						Revenus encaisses
+						Revenus encaissés
 					</p>
 				</div>
 				<p class="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
