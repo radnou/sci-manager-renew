@@ -421,43 +421,49 @@
 		<div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="mx-auto max-w-3xl text-center">
 				<Badge variant="secondary" class="mb-6 px-3 py-1 text-sm font-medium">
-					Pour les gérants de SCI en France
+					Utilisé par des gérants de SCI partout en France
 				</Badge>
 				<h1
 					class="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
 				>
-					Votre SCI mérite mieux
+					Vos loyers encaissés.
 					<span
 						class="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent"
 					>
-						qu'un tableur Excel.
+						Votre fiscalité claire.
 					</span>
+					Votre SCI sous contrôle.
 				</h1>
 				<p class="mt-6 text-lg leading-8 text-slate-600 sm:text-xl dark:text-slate-400">
-					Gérez vos biens, vos locataires et votre fiscalité depuis un seul tableau de bord — en 10 minutes par mois.
+					Tout ce qu'il faut pour piloter votre SCI en 10 minutes par mois — biens, baux, quittances, CERFA 2044, le tout au même endroit.
 				</p>
 				<div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-					<a href="/pricing">
-						<Button
-							size="lg"
-							class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
-						>
-							Démarrer à partir de 19€/mois
-							<ArrowRight class="ml-2 h-5 w-5" />
-						</Button>
-					</a>
+					<Button
+						size="lg"
+						class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
+						onclick={() => document.getElementById('comment-ca-marche')?.scrollIntoView({ behavior: 'smooth' })}
+					>
+						Voir comment ça marche
+						<ArrowRight class="ml-2 h-5 w-5" />
+					</Button>
+					<Button
+						size="lg"
+						variant="outline"
+						class="px-8 text-lg font-semibold"
+						onclick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+					>
+						Comparer les plans
+					</Button>
 				</div>
 			</div>
 
 			<!-- Trust bar -->
 			<div class="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-				<span>Hébergé en UE</span>
+				<span>🇫🇷 Hébergé en France</span>
 				<span class="text-slate-300 dark:text-slate-600">·</span>
-				<span>RGPD</span>
+				<span>🔒 Conforme RGPD</span>
 				<span class="text-slate-300 dark:text-slate-600">·</span>
-				<span>Garanti 30 jours satisfait ou remboursé</span>
-				<span class="text-slate-300 dark:text-slate-600">·</span>
-				<span>Annulez à tout moment</span>
+				<span>💶 Satisfait ou remboursé 30j</span>
 			</div>
 		</div>
 	</section>
