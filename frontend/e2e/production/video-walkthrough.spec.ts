@@ -34,12 +34,24 @@ async function pause(page: import('@playwright/test').Page, ms = 1500) {
 	await page.waitForTimeout(ms);
 }
 
-// Helper: dismiss cookie banner if present
-async function dismissCookies(page: import('@playwright/test').Page) {
+// Helper: dismiss all overlays (cookie banner + onboarding tour)
+async function dismissOverlays(page: import('@playwright/test').Page) {
+	// Pre-set localStorage to prevent overlays on subsequent navigations
+	await page.evaluate(() => {
+		localStorage.setItem('gerersci_cookie_consent', 'all');
+		localStorage.setItem('gerersci_tour_completed', 'true');
+	});
+	// Dismiss cookie banner if already visible
 	const cookieBtn = page.getByRole('button', { name: /Tout accepter/i });
 	if (await cookieBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
 		await cookieBtn.click();
 		await page.waitForTimeout(500);
+	}
+	// Dismiss tour overlay if visible
+	const tourBtn = page.getByRole('button', { name: /Passer/i });
+	if (await tourBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+		await tourBtn.click();
+		await page.waitForTimeout(300);
 	}
 }
 
@@ -60,7 +72,7 @@ test.describe('Walkthrough vidéo complet', () => {
 		// 1.1 Landing page
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await dismissCookies(page);
+		await dismissOverlays(page);
 		await pause(page, 2000);
 
 		// Scroll landing page pour montrer le contenu

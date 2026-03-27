@@ -35,7 +35,7 @@ INSERT INTO subscriptions (
 ) VALUES (
   '00000000-0000-0000-0000-aab000000001',
   '11111111-1111-1111-1111-111111111111',
-  'cus_seed_test', 'sub_seed_test', 'price_pro_monthly',
+  'cus_seed_test', 'sub_seed_test', 'price_1TAyt3BCxd3SKdGJeNgk9G3E',
   'active', now() + interval '15 days', now() + interval '15 days', true,
   now() - interval '15 days'
 ) ON CONFLICT DO NOTHING;
