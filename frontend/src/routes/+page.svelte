@@ -40,6 +40,71 @@
 	let modalPlanPeriod = $state('');
 	let modalPlanFeatures = $state<string[]>([]);
 	let openFaqIndex = $state<number | null>(null);
+
+	// Step detail modal state
+	let stepModalOpen = $state(false);
+	let stepModalIndex = $state(0);
+
+	const howItWorksSteps = [
+		{
+			step: '①',
+			title: 'Créez votre SCI',
+			time: '2 minutes',
+			description: "Nom, régime fiscal, c'est tout. GérerSCI crée votre espace de gestion.",
+			imageLight: '/images/showcase/onboarding-step1.png',
+			imageDark: '/images/showcase/onboarding-step1-dark.png',
+			alt: 'Création de SCI',
+			details: {
+				heading: 'Création de votre SCI en 2 minutes',
+				bullets: [
+					'Renseignez le nom et le régime fiscal (IR ou IS)',
+					'SIREN, capital social, RCS — tout est optionnel au départ',
+					'Votre espace de gestion est créé instantanément',
+					'Ajoutez les informations légales quand vous le souhaitez'
+				],
+				tip: 'Astuce : vous pouvez gérer plusieurs SCI depuis le même compte.'
+			}
+		},
+		{
+			step: '②',
+			title: 'Ajoutez vos biens et locataires',
+			time: '5 minutes',
+			description: 'Adresse, loyer, bail — on vous guide étape par étape.',
+			imageLight: '/images/showcase/fiche-identite.png',
+			imageDark: '/images/showcase/fiche-identite-dark.png',
+			alt: 'Fiche bien',
+			details: {
+				heading: 'Chaque bien a sa fiche complète',
+				bullets: [
+					'Adresse, surface, DPE, type de location',
+					'Bail avec dates, loyer HC, charges locatives',
+					'Locataires rattachés automatiquement',
+					'Suivi des charges, assurance PNO, frais agence'
+				],
+				tip: 'Astuce : importez vos biens depuis un fichier CSV si vous en avez beaucoup.'
+			}
+		},
+		{
+			step: '③',
+			title: 'Pilotez en 10 min/mois',
+			time: 'Chaque mois',
+			description: 'Quittances, alertes impayés, CERFA 2044 — tout est automatisé.',
+			imageLight: '/images/showcase/dashboard-light.png',
+			imageDark: '/images/showcase/dashboard-dark.png',
+			alt: 'Tableau de bord',
+			details: {
+				heading: 'Votre tableau de bord fait le travail',
+				bullets: [
+					'Quittances PDF générées en 1 clic',
+					'Alertes automatiques sur les loyers en retard',
+					'CERFA 2044 pré-rempli à partir de vos données réelles',
+					'Vue financière consolidée multi-SCI',
+					'Bilan mensuel exportable en PDF'
+				],
+				tip: 'Astuce : configurez les alertes email pour ne rien oublier.'
+			}
+		}
+	];
 	const featureSections = [
 		{
 			eyebrow: 'Gestion des biens',
@@ -401,6 +466,10 @@
 </script>
 
 <svelte:window onkeydown={(e) => {
+	if (e.key === 'Escape' && stepModalOpen) {
+		stepModalOpen = false;
+		return;
+	}
 	if (!lightboxOpen) return;
 	if (e.key === 'Escape') closeLightbox();
 	if (e.key === 'ArrowRight') nextImage();
@@ -557,12 +626,8 @@
 				</h2>
 			</div>
 			<div class="grid gap-8 md:grid-cols-3">
-				{#each [
-					{ step: '①', title: 'Créez votre SCI', time: '2 minutes', description: "Nom, régime fiscal, c'est tout. GérerSCI crée votre espace de gestion.", imageLight: '/images/showcase/dashboard-light.png', imageDark: '/images/showcase/dashboard-dark.png', alt: 'Création de SCI' },
-					{ step: '②', title: 'Ajoutez vos biens et locataires', time: '5 minutes', description: 'Adresse, loyer, bail — on vous guide étape par étape.', imageLight: '/images/showcase/fiche-identite.png', imageDark: '/images/showcase/fiche-identite.png', alt: 'Fiche bien' },
-					{ step: '③', title: 'Pilotez en 10 min/mois', time: 'Chaque mois', description: 'Quittances, alertes impayés, CERFA 2044 — tout est automatisé.', imageLight: '/images/showcase/dashboard-light.png', imageDark: '/images/showcase/dashboard-dark.png', alt: 'Tableau de bord' }
-				] as card, i}
-					<div class="group text-left">
+				{#each howItWorksSteps as card, i}
+					<button class="group text-left cursor-pointer" onclick={() => { stepModalIndex = i; stepModalOpen = true; }}>
 						<div class="rounded-xl border border-slate-200 bg-slate-50 p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 dark:border-slate-700 dark:bg-slate-800">
 							<div class="mb-4 flex items-center gap-3">
 								<span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{card.step}</span>
@@ -574,10 +639,83 @@
 								<img src={card.imageLight} alt={card.alt} class="w-full dark:hidden" loading="lazy" decoding="async" width="400" height="250" />
 								<img src={card.imageDark} alt={card.alt} class="w-full hidden dark:block" loading="lazy" decoding="async" width="400" height="250" />
 							</div>
+							<p class="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Cliquez pour en savoir plus</p>
 						</div>
-					</div>
+					</button>
 				{/each}
 			</div>
+
+			<!-- Step detail modal -->
+			{#if stepModalOpen}
+				{@const step = howItWorksSteps[stepModalIndex]}
+				<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+					<button
+						class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+						onclick={() => { stepModalOpen = false; }}
+						aria-label="Fermer"
+					></button>
+					<div class="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-700 dark:bg-slate-900 step-modal-enter">
+						<!-- Image header -->
+						<div class="overflow-hidden rounded-t-2xl border-b border-slate-200 dark:border-slate-700">
+							<img src={step.imageLight} alt={step.alt} class="w-full dark:hidden" />
+							<img src={step.imageDark} alt={step.alt} class="hidden w-full dark:block" />
+						</div>
+						<!-- Content -->
+						<div class="p-6">
+							<div class="mb-4 flex items-center gap-3">
+								<span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{step.step}</span>
+								<div>
+									<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">{step.details.heading}</h3>
+									<span class="text-xs text-slate-500 dark:text-slate-400">{step.time}</span>
+								</div>
+							</div>
+							<ul class="mb-4 space-y-2">
+								{#each step.details.bullets as bullet}
+									<li class="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
+										<span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500"></span>
+										{bullet}
+									</li>
+								{/each}
+							</ul>
+							<p class="rounded-lg bg-blue-50 p-3 text-xs text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">
+								{step.details.tip}
+							</p>
+							<!-- Navigation -->
+							<div class="mt-4 flex items-center justify-between">
+								<button
+									class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 {stepModalIndex === 0 ? 'invisible' : ''}"
+									onclick={() => { stepModalIndex--; }}
+								>
+									&larr; Étape précédente
+								</button>
+								{#if stepModalIndex < howItWorksSteps.length - 1}
+									<button
+										class="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+										onclick={() => { stepModalIndex++; }}
+									>
+										Étape suivante &rarr;
+									</button>
+								{:else}
+									<button
+										class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+										onclick={() => { stepModalOpen = false; document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }}
+									>
+										Voir les plans &rarr;
+									</button>
+								{/if}
+							</div>
+						</div>
+						<!-- Close button -->
+						<button
+							class="absolute right-3 top-3 rounded-full bg-white/80 p-1.5 text-slate-500 hover:text-slate-700 backdrop-blur-sm dark:bg-slate-800/80 dark:text-slate-400"
+							onclick={() => { stepModalOpen = false; }}
+							aria-label="Fermer"
+						>
+							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+						</button>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</section>
 
@@ -1221,3 +1359,13 @@
 		</div>
 	{/if}
 </main>
+
+<style>
+	@keyframes scaleIn {
+		from { opacity: 0; transform: scale(0.95); }
+		to { opacity: 1; transform: scale(1); }
+	}
+	.step-modal-enter {
+		animation: scaleIn 0.2s ease-out;
+	}
+</style>
