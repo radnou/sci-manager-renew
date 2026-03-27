@@ -791,17 +791,44 @@
 
 			{:else if currentStep === 4}
 				<div class="text-center">
-					<div
-						class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900"
-					>
+					<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
 						<Sparkles class="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
 					</div>
-					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-						Tout est prêt !
+					<h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
+						Votre SCI « {sciNom} » est configurée !
 					</h2>
 					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-						Votre SCI est configurée. Enregistrez votre premier loyer ou accédez au tableau de bord.
+						Voici ce que GérerSCI a préparé pour vous :
 					</p>
+
+					<!-- KPI preview cards -->
+					<div class="mt-6 grid grid-cols-3 gap-3">
+						{#each [
+							{ label: 'Bien actif', value: '1', icon: '🏠' },
+							{ label: 'Bail en cours', value: '1', icon: '📄' },
+							{ label: 'Prochain loyer', value: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), icon: '📅' }
+						] as kpi, i}
+							<div
+								class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+								style="animation: fadeInUp 0.4s ease-out {i * 100}ms both"
+							>
+								<span class="text-2xl">{kpi.icon}</span>
+								<p class="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">{kpi.value}</p>
+								<p class="text-xs text-slate-500 dark:text-slate-400">{kpi.label}</p>
+							</div>
+						{/each}
+					</div>
+
+					<!-- Next actions -->
+					<div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left dark:border-slate-700 dark:bg-slate-800">
+						<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">💡 Prochaines actions suggérées :</p>
+						<ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+							<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> Enregistrer votre premier loyer (2 clics)</li>
+							<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> Générer votre première quittance PDF</li>
+							<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> Configurer les alertes de retard</li>
+						</ul>
+					</div>
+
 					<div class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
 						<Button onclick={() => handleFinish('loyer')} disabled={submitting}>
 							{submitting ? 'Finalisation...' : 'Enregistrer mon premier loyer →'}
@@ -810,11 +837,15 @@
 							Voir le tableau de bord
 						</Button>
 					</div>
-					<p class="mt-4 text-xs text-slate-400 dark:text-slate-500">
-						Vous pourrez configurer vos notifications depuis les paramètres.
-					</p>
 				</div>
 			{/if}
 		</div>
 	{/if}
 </section>
+
+<style>
+	@keyframes fadeInUp {
+		from { opacity: 0; transform: translateY(12px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+</style>
