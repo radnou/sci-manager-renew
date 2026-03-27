@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError, FeatureDisabledError, SCIManagerException, ValidationError
-from app.core.supabase_client import get_supabase_user_client
+from app.core.external_services import run_with_retry
+from app.core.supabase_client import get_supabase_service_client, get_supabase_user_client
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.quitus import PublicQuitusRequest, QuitusRequest, QuitusResponse
@@ -290,3 +291,119 @@ async def download_quitus(request: Request, filename: str, user_id: str = Depend
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
     )
+
+
+@router.post("/send-email/{filename}", status_code=200)
+@limiter.limit("10/minute")
+async def send_quittance_email(
+    request: Request,
+    filename: str,
+    bien_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Send a generated quittance PDF to the tenant by email."""
+    import base64
+
+    import resend
+    import structlog
+
+    logger = structlog.get_logger()
+
+    # Validate filename and verify ownership
+    safe_filename = _validate_filename(filename)
+    sci_id = _verify_bien_ownership(request, user_id, bien_id)
+
+    # Also verify filename belongs to this SCI
+    file_sci_id = _extract_quitus_sci_id(safe_filename)
+    if file_sci_id is not None and str(file_sci_id) != str(sci_id):
+        raise SCIManagerException(
+            "Cette quittance n'appartient pas à cette SCI.",
+            status_code=403,
+            code="access_denied",
+        )
+
+    SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
+
+    # Download PDF from storage
+    storage_path = f"quitus/{sci_id}/{safe_filename}"
+    try:
+        pdf_bytes = await storage_service.download_file(storage_path)
+    except Exception as exc:
+        if "not found" in str(exc).lower():
+            raise SCIManagerException(
+                "Quittance introuvable dans le stockage.",
+                status_code=404,
+                code="resource_not_found",
+            ) from exc
+        raise ExternalServiceError("Storage", "Failed to download quitus file") from exc
+
+    # Find active bail for this bien
+    client = get_supabase_user_client(request)
+    baux_resp = (
+        client.table("baux")
+        .select("id")
+        .eq("id_bien", bien_id)
+        .eq("statut", "en_cours")
+        .limit(1)
+        .execute()
+    )
+    if not baux_resp.data:
+        raise SCIManagerException(
+            "Aucun bail actif trouvé pour ce bien.",
+            status_code=404,
+            code="resource_not_found",
+        )
+
+    bail_id = str(baux_resp.data[0]["id"])
+
+    # Get locataires via bail_locataires junction table
+    loc_resp = (
+        client.table("bail_locataires")
+        .select("locataires(id, nom, email)")
+        .eq("id_bail", bail_id)
+        .execute()
+    )
+
+    tenant_email = None
+    tenant_name = None
+    for entry in loc_resp.data or []:
+        loc = entry.get("locataires")
+        if loc and loc.get("email"):
+            tenant_email = loc["email"]
+            tenant_name = loc.get("nom", "Locataire")
+            break
+
+    if not tenant_email:
+        raise ValidationError(
+            "Aucun email renseigné pour le locataire. "
+            "Ajoutez l'email dans l'onglet Bail."
+        )
+
+    # Send email via Resend with PDF attachment
+    resend.api_key = settings.resend_api_key
+    pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+
+    payload = {
+        "from": settings.resend_from_email,
+        "to": tenant_email,
+        "subject": f"Votre quittance de loyer — {safe_filename.replace('.pdf', '')}",
+        "html": (
+            f"<p>Bonjour {tenant_name},</p>"
+            f"<p>Veuillez trouver ci-joint votre quittance de loyer.</p>"
+            f"<p>Cordialement,<br>Votre gestionnaire SCI</p>"
+        ),
+        "attachments": [{"filename": safe_filename, "content": pdf_b64}],
+    }
+
+    try:
+        await run_with_retry(
+            operation="resend.send_quittance_to_tenant",
+            func=lambda: resend.Emails.send(payload),
+            context={"filename": safe_filename, "to": tenant_email},
+        )
+    except Exception as e:
+        logger.warning("quittance_email_failed", filename=safe_filename, error=str(e))
+        raise ExternalServiceError("Resend", f"Quittance email send failed: {str(e)}")
+
+    logger.info("quittance_email_sent", filename=safe_filename, to=tenant_email)
+    return {"message": f"Quittance envoyée à {tenant_email}"}
