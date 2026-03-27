@@ -445,6 +445,33 @@
 							onCaptured={() => (emailUnlocked = true)}
 						/>
 
+						<!-- Product bridge CTA -->
+						{#if emailUnlocked && loyersAnnuels > 0}
+							<div class="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-950/30">
+								<p class="text-sm font-medium text-blue-800 dark:text-blue-300">
+									📊 Ce calcul est une estimation simplifiée.
+								</p>
+								<p class="mt-2 text-sm text-blue-700 dark:text-blue-400">
+									Avec GérerSCI, le CERFA 2044 se pré-remplit automatiquement à partir de vos loyers
+									et charges réels — pas besoin de ressaisir.
+								</p>
+								<div class="mt-4 flex flex-col gap-3 sm:flex-row">
+									<a
+										href="/#comment-ca-marche"
+										class="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+									>
+										Voir comment ça marche →
+									</a>
+									<a
+										href="/#pricing"
+										class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+									>
+										Démarrer maintenant →
+									</a>
+								</div>
+							</div>
+						{/if}
+
 						<!-- CTA -->
 						<div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-700 dark:bg-slate-900">
 							<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
