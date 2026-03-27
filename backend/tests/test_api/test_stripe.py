@@ -7,7 +7,10 @@ from app.core.config import settings
 
 
 def test_create_checkout_session(client, auth_headers, monkeypatch):
-    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+    monkeypatch.setattr(
+        "app.api.v1.stripe.resolve_price_id_for_plan",
+        lambda plan_key, billing_period="month": "price_test",
+    )
 
     def fake_create(**kwargs):
         assert kwargs["line_items"][0]["price"] == "price_test"
@@ -283,7 +286,10 @@ def test_guest_checkout_rejects_invalid_billing_period(client):
 
 
 def test_guest_checkout_success(client, monkeypatch):
-    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+    monkeypatch.setattr(
+        "app.api.v1.stripe.resolve_price_id_for_plan",
+        lambda plan_key, billing_period="month": "price_test",
+    )
 
     def fake_create(**kwargs):
         assert kwargs["line_items"][0]["price"] == "price_test"

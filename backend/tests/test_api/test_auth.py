@@ -15,7 +15,11 @@ def test_activate_missing_session_id(client):
 
 
 def test_activate_invalid_session_id(client):
-    response = client.get("/api/v1/auth/activate?session_id=invalid")
+    with patch(
+        "stripe.checkout.Session.retrieve",
+        side_effect=stripe.error.InvalidRequestError("No such session", param="session_id"),
+    ):
+        response = client.get("/api/v1/auth/activate?session_id=invalid")
     assert response.status_code == 400
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import structlog
 
@@ -68,7 +68,7 @@ async def get_finances_overview(supabase_client, user_id: str, period_months: in
         }
 
     # 3. Get loyers within period
-    cutoff_date = (datetime.utcnow() - timedelta(days=period_months * 30)).strftime("%Y-%m-%d")
+    cutoff_date = (datetime.now(UTC) - timedelta(days=period_months * 30)).strftime("%Y-%m-%d")
 
     loyers_result = (
         supabase_client.table("loyers")
