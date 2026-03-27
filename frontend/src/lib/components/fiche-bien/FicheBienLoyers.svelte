@@ -12,6 +12,7 @@
 		type QuitusRequestPayload
 	} from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import Celebration from '$lib/components/Celebration.svelte';
 
 	interface Props {
 		loyers: Array<any>;
@@ -27,6 +28,7 @@
 
 	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh }: Props = $props();
 
+	let showCelebration = $state<{ type: 'checkmark' | 'badge' | 'confetti'; title: string; subtitle: string } | null>(null);
 	let showLoyerComposer = $state(false);
 	let savingLoyer = $state(false);
 	let payDateLoyerId: EntityId | null = $state(null);
@@ -67,6 +69,14 @@
 			};
 			await createLoyerForBien(sciId, bienId, data);
 			addToast({ title: 'Loyer enregistré', variant: 'success' });
+			if (!localStorage.getItem('milestone_first_loyer')) {
+				localStorage.setItem('milestone_first_loyer', 'true');
+				showCelebration = {
+					type: 'checkmark',
+					title: 'Premier loyer enregistré !',
+					subtitle: 'Votre suivi de trésorerie commence. GérerSCI calcule maintenant votre taux de recouvrement automatiquement.'
+				};
+			}
 			closeLoyerComposer();
 			onRefresh();
 		} catch (err: any) {
@@ -183,8 +193,17 @@
 			addToast({
 				title: 'Quittance générée',
 				description: `Quittance pour ${buildPeriodeLabel(loyer.date_loyer)} ouverte dans un nouvel onglet.`,
-				variant: 'success'
+				variant: 'success',
+				timeoutMs: 5000
 			});
+			if (!localStorage.getItem('milestone_first_quittance')) {
+				localStorage.setItem('milestone_first_quittance', 'true');
+				showCelebration = {
+					type: 'badge',
+					title: 'Quittance générée !',
+					subtitle: 'Vos locataires reçoivent un document professionnel conforme. Fini les modèles Word.'
+				};
+			}
 		} catch (err: any) {
 			const message = err?.message ?? 'Impossible de générer la quittance.';
 			addToast({
@@ -358,6 +377,9 @@
 							Statut
 						</th>
 						<th class="pb-3 pr-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+							Quittance
+						</th>
+						<th class="pb-3 pr-4 text-xs font-medium text-slate-500 dark:text-slate-400">
 							Date paiement
 						</th>
 						{#if isGerant}
@@ -382,6 +404,19 @@
 								<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {statut.class}">
 									{statut.label}
 								</span>
+							</td>
+							<td class="py-3 pr-4">
+								{#if loyer.statut === 'paye'}
+									<button
+										class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+										title="Générer la quittance"
+										onclick={() => handleGenerateQuittance(loyer)}
+									>
+										<FileText class="h-4 w-4" />
+									</button>
+								{:else}
+									<span class="text-slate-300 dark:text-slate-600">&mdash;</span>
+								{/if}
 							</td>
 							<td class="py-3 pr-4 text-slate-500 dark:text-slate-400">
 								{loyer.date_paiement ? formatFrDate(loyer.date_paiement) : '—'}
@@ -436,7 +471,7 @@
 						<td class="py-3 pr-4 font-semibold text-slate-900 dark:text-slate-100">
 							{formatEur(filteredLoyerTotal())}
 						</td>
-						<td colspan={isGerant ? 3 : 2}></td>
+						<td colspan={isGerant ? 4 : 3}></td>
 					</tr>
 				</tfoot>
 			</table>
@@ -444,3 +479,12 @@
 	{/if}
 
 </div>
+
+{#if showCelebration}
+	<Celebration
+		type={showCelebration.type}
+		title={showCelebration.title}
+		subtitle={showCelebration.subtitle}
+		onDismiss={() => { showCelebration = null; }}
+	/>
+{/if}
