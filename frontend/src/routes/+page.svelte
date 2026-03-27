@@ -22,6 +22,7 @@
 		Crown
 	} from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
+	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
 
 	onMount(async () => {
 		const session = await getCurrentSession();
@@ -32,6 +33,12 @@
 
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);
+	let modalOpen = $state(false);
+	let modalPlanKey = $state('');
+	let modalPlanName = $state('');
+	let modalPlanPrice = $state('');
+	let modalPlanPeriod = $state('');
+	let modalPlanFeatures = $state<string[]>([]);
 	let openFaqIndex = $state<number | null>(null);
 	const featureSections = [
 		{
@@ -127,6 +134,22 @@
 		} finally {
 			checkoutLoading = null;
 		}
+	}
+
+	function openCheckoutModal(planKey: string) {
+		const plan = plans.find((p: any) => p.key === planKey);
+		if (!plan) return;
+		modalPlanKey = planKey;
+		modalPlanName = plan.name;
+		modalPlanPrice = billingPeriod === 'month' ? `${plan.monthlyPrice}€` : `${plan.yearlyPrice}€`;
+		modalPlanPeriod = billingPeriod === 'month' ? '/mois' : '/an';
+		modalPlanFeatures = plan.features;
+		modalOpen = true;
+	}
+
+	function handleModalConfirm() {
+		modalOpen = false;
+		createGuestCheckout(modalPlanKey);
 	}
 
 	const studyReferences = [
@@ -842,7 +865,7 @@
 							variant={plan.popular ? 'default' : 'outline'}
 							size="lg"
 							disabled={checkoutLoading === plan.key}
-							onclick={() => createGuestCheckout(plan.key)}
+							onclick={() => openCheckoutModal(plan.key)}
 						>
 							{#if checkoutLoading === plan.key}
 								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -897,7 +920,7 @@
 							size="lg"
 							class="mt-4 w-full bg-amber-500 px-8 text-white hover:bg-amber-600"
 							disabled={checkoutLoading === 'lifetime'}
-							onclick={() => createGuestCheckout('lifetime')}
+							onclick={() => { modalPlanKey = 'lifetime'; modalPlanName = 'Fondateur'; modalPlanPrice = '500€'; modalPlanPeriod = ''; modalPlanFeatures = ['Tout Pilotage inclus — à vie', 'Ligne directe avec le fondateur', 'Accès beta aux nouvelles fonctionnalités']; modalOpen = true; }}
 						>
 							{#if checkoutLoading === 'lifetime'}
 								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -1128,6 +1151,17 @@
 			</div>
 		</div>
 	</section>
+
+	<CheckoutConfirmModal
+		open={modalOpen}
+		planName={modalPlanName}
+		planPrice={modalPlanPrice}
+		planPeriod={modalPlanPeriod}
+		planFeatures={modalPlanFeatures}
+		loading={checkoutLoading !== null}
+		onConfirm={handleModalConfirm}
+		onCancel={() => { modalOpen = false; }}
+	/>
 
 	<!-- ============================================================ -->
 	<!-- LIGHTBOX GALLERY -->
