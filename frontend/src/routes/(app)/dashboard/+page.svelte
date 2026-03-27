@@ -16,6 +16,7 @@
 	import DashboardActivity from '$lib/components/dashboard/DashboardActivity.svelte';
 	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
 	import OnboardingTour from '$lib/components/OnboardingTour.svelte';
+	import Celebration from '$lib/components/Celebration.svelte';
 
 	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
 
@@ -24,6 +25,7 @@
 
 	let loading = $state(true);
 	let errorMessage = $state('');
+	let showCelebration = $state(false);
 
 	let alertes = $state<DashboardAlerte[]>([]);
 	let kpis = $state<DashboardKpis>({
@@ -57,6 +59,14 @@
 			scis = data.scis ?? [];
 			activite = data.activite ?? [];
 			previousKpis = prevData?.kpis ?? null;
+
+			// Milestone 3: Dashboard Complete celebration
+			if (kpis.sci_count >= 1 && kpis.biens_count >= 1 && (kpis.taux_recouvrement > 0 || kpis.cashflow_net !== 0)) {
+				if (!localStorage.getItem('milestone_dashboard_complete')) {
+					localStorage.setItem('milestone_dashboard_complete', 'true');
+					showCelebration = true;
+				}
+			}
 		} catch (err) {
 			const message =
 				err instanceof Error ? err.message : 'Impossible de charger le tableau de bord.';
@@ -199,3 +209,12 @@
 </section>
 
 <OnboardingTour />
+
+{#if showCelebration}
+	<Celebration
+		type="confetti"
+		title="Votre SCI est 100% opérationnelle"
+		subtitle="Loyers, quittances, fiscalité — tout est en place. GérerSCI travaille pour vous."
+		onDismiss={() => { showCelebration = false; }}
+	/>
+{/if}
