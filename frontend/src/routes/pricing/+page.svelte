@@ -5,12 +5,18 @@
 	import { API_URL } from '$lib/api';
 	import { supabase } from '$lib/supabase';
 	import { addToast } from '$lib/components/ui/toast';
+	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
 
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);
 	let isAuthenticated = $state(false);
 	let checkoutError = $state<string | null>(null);
-	let consentRetractation = $state(false);
+	let modalOpen = $state(false);
+	let modalPlanKey = $state('');
+	let modalPlanName = $state('');
+	let modalPlanPrice = $state('');
+	let modalPlanPeriod = $state('');
+	let modalPlanFeatures = $state<string[]>([]);
 
 	$effect(() => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
@@ -74,6 +80,37 @@
 		} finally {
 			checkoutLoading = null;
 		}
+	}
+
+	function openCheckoutModal(planKey: string) {
+		const plan = plans.find((p) => p.key === planKey);
+		if (!plan) {
+			// Handle lifetime separately
+			if (planKey === 'lifetime') {
+				modalPlanKey = 'lifetime';
+				modalPlanName = 'Fondateur';
+				modalPlanPrice = '500€';
+				modalPlanPeriod = ' unique';
+				modalPlanFeatures = [
+					'Tout Pilotage inclus — à vie',
+					'Ligne directe avec le fondateur',
+					'Accès beta aux nouvelles fonctionnalités'
+				];
+				modalOpen = true;
+			}
+			return;
+		}
+		modalPlanKey = planKey;
+		modalPlanName = plan.name;
+		modalPlanPrice = billingPeriod === 'month' ? `${plan.monthlyPrice}€` : `${plan.yearlyPrice}€`;
+		modalPlanPeriod = billingPeriod === 'month' ? '/mois' : '/an';
+		modalPlanFeatures = plan.features;
+		modalOpen = true;
+	}
+
+	function handleModalConfirm() {
+		modalOpen = false;
+		handlePlanClick(modalPlanKey, null);
 	}
 
 	const plans = [
@@ -192,19 +229,19 @@
 				</div>
 			{/if}
 
-			<label class="mx-auto mt-6 flex max-w-2xl cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-blue-600">
-				<input
-					type="checkbox"
-					bind:checked={consentRetractation}
-					class="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
-				/>
-				<span>
-					Conformément à l'article L221-28 du Code de la consommation, je souhaite accéder
-					immédiatement au Service et je reconnais expressément <strong>renoncer à mon droit
-					de rétractation de 14 jours</strong>. Je bénéficie de la
-					<a href="/cgv#garantie" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">garantie satisfait ou remboursé de 30 jours</a>.
-				</span>
-			</label>
+			</div>
+
+		<div class="mx-auto mt-10 mb-10 max-w-2xl rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-950/30">
+			<p class="mb-3 text-sm font-semibold text-blue-800 dark:text-blue-300">Ce que GérerSCI remplace :</p>
+			<ul class="space-y-2">
+				{#each ['Suivi des loyers et alertes impayés automatiques', 'Génération de quittances PDF en 1 clic', 'Pré-remplissage CERFA 2044 automatique', 'Vue financière consolidée multi-SCI'] as item}
+					<li class="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+						<Check class="h-4 w-4 flex-shrink-0 text-blue-500" />
+						{item}
+					</li>
+				{/each}
+			</ul>
+			<p class="mt-3 text-xs text-blue-600 dark:text-blue-500">→ En moyenne, ça remplace 150€/mois de tableurs, erreurs et temps perdu.</p>
 		</div>
 
 		<div class="grid gap-8 md:grid-cols-2">
@@ -267,8 +304,8 @@
 							: ''}"
 						variant={plan.popular ? 'default' : 'outline'}
 						size="lg"
-						disabled={checkoutLoading === plan.key || !consentRetractation}
-						onclick={() => handlePlanClick(plan.key, plan.href)}
+						disabled={checkoutLoading === plan.key}
+						onclick={() => openCheckoutModal(plan.key)}
 					>
 						{#if checkoutLoading === plan.key}
 							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -322,8 +359,8 @@
 					<Button
 						size="lg"
 						class="mt-4 w-full bg-amber-500 px-8 text-white hover:bg-amber-600"
-						disabled={checkoutLoading === 'lifetime' || !consentRetractation}
-						onclick={() => handlePlanClick('lifetime', null)}
+						disabled={checkoutLoading === 'lifetime'}
+						onclick={() => openCheckoutModal('lifetime')}
 					>
 						{#if checkoutLoading === 'lifetime'}
 							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -364,4 +401,15 @@
 			{/if}
 		</div>
 	</div>
+
+	<CheckoutConfirmModal
+		open={modalOpen}
+		planName={modalPlanName}
+		planPrice={modalPlanPrice}
+		planPeriod={modalPlanPeriod}
+		planFeatures={modalPlanFeatures}
+		loading={checkoutLoading !== null}
+		onConfirm={handleModalConfirm}
+		onCancel={() => { modalOpen = false; }}
+	/>
 </section>
