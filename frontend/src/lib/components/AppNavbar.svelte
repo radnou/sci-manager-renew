@@ -46,6 +46,7 @@
 	let accountMenuContainer = $state<HTMLDivElement | null>(null);
 	let sciSwitcherContainer = $state<HTMLDivElement | null>(null);
 	let mobileDrawerContainer = $state<HTMLDivElement | null>(null);
+	let loggingOut = $state(false);
 
 	// Fetch SCIs once, refresh on /scis or /dashboard
 	$effect(() => {
@@ -125,12 +126,16 @@
 	}
 
 	async function handleLogout() {
+		loggingOut = true;
+		accountMenuOpen = false;
 		try {
 			await supabase.auth.signOut();
 		} catch {
 			// Supabase may throw if session already expired
 		}
-		window.location.href = '/login';
+		// Brief visual feedback before redirect
+		await new Promise((r) => setTimeout(r, 500));
+		window.location.href = '/';
 	}
 
 	// Breadcrumbs
@@ -349,15 +354,22 @@
 							Paramètres
 						</a>
 						<div class="border-t border-slate-100 pt-1 dark:border-slate-800">
-							<button
-								type="button"
-								role="menuitem"
-								onclick={handleLogout}
-								class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-							>
-								<LogOut class="h-3.5 w-3.5" />
-								Déconnexion
-							</button>
+							{#if loggingOut}
+								<span class="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+									<LogOut class="h-3.5 w-3.5 animate-pulse" />
+									Déconnexion en cours…
+								</span>
+							{:else}
+								<button
+									type="button"
+									role="menuitem"
+									onclick={handleLogout}
+									class="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+								>
+									<LogOut class="h-3.5 w-3.5" />
+									Déconnexion
+								</button>
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -520,14 +532,21 @@
 					<Settings class="h-4 w-4" />
 					Paramètres
 				</a>
-				<button
-					type="button"
-					onclick={() => { closeMobileMenu(); handleLogout(); }}
-					class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-				>
-					<LogOut class="h-4 w-4" />
-					Déconnexion
-				</button>
+				{#if loggingOut}
+					<span class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+						<LogOut class="h-4 w-4 animate-pulse" />
+						Déconnexion en cours…
+					</span>
+				{:else}
+					<button
+						type="button"
+						onclick={() => { closeMobileMenu(); handleLogout(); }}
+						class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+					>
+						<LogOut class="h-4 w-4" />
+						Déconnexion
+					</button>
+				{/if}
 			</div>
 		</div>
 	{/if}

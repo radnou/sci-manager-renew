@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, onNavigate } from '$app/navigation';
 	import type { User } from '@supabase/supabase-js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -34,6 +34,20 @@
 	let mobileMenuOpen = $state(false);
 	let simulateursOpen = $state(false);
 	let previousPath = page.url.pathname;
+
+	// Smooth page transitions via View Transitions API (Chrome/Edge/Safari)
+	// Falls back gracefully to instant navigation in unsupported browsers
+	onNavigate((navigation) => {
+		// @ts-ignore - View Transitions API not yet in all TS libs
+		if (!document.startViewTransition) return;
+		return new Promise((resolve) => {
+			// @ts-ignore
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	// Track page views on SvelteKit client-side navigation
 	afterNavigate(() => {
@@ -74,7 +88,9 @@
 		clearFakeSession();
 		user = null;
 		mobileMenuOpen = false;
-		goto('/login', { replaceState: true });
+		// Brief visual feedback then redirect to home
+		await new Promise((r) => setTimeout(r, 500));
+		window.location.href = '/';
 	}
 
 	$effect(() => {
@@ -432,3 +448,27 @@
 	<CookieConsent />
 	<OfflineBanner />
 </div>
+
+<style>
+	/* View Transitions API — smooth page-to-page fade */
+	@keyframes fade-in {
+		from { opacity: 0; }
+	}
+	@keyframes fade-out {
+		to { opacity: 0; }
+	}
+	:global(::view-transition-old(root)) {
+		animation: 150ms ease-out fade-out;
+	}
+	:global(::view-transition-new(root)) {
+		animation: 150ms ease-out fade-in;
+	}
+
+	/* Respect reduced motion preference */
+	@media (prefers-reduced-motion: reduce) {
+		:global(::view-transition-old(root)),
+		:global(::view-transition-new(root)) {
+			animation: none;
+		}
+	}
+</style>
