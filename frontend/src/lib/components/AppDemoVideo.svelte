@@ -3,7 +3,7 @@
 
 	/**
 	 * Animated app showcase: screenshots cycle with sequential annotation tooltips.
-	 * No fake cursor — just clean tooltips that guide the eye to key features.
+	 * Accepts an activeScene prop for external navigation (e.g. step cards).
 	 */
 
 	interface Annotation {
@@ -27,61 +27,52 @@
 			imageLight: '/images/showcase/dashboard-light.png',
 			imageDark: '/images/showcase/dashboard-dark.png',
 			alt: 'Tableau de bord',
-			label: 'Tableau de bord',
+			label: '① Créez votre SCI — 2 minutes',
 			annotations: [
-				{ text: '2 SCI actives · 4 biens gérés', x: 22, y: 35 },
-				{ text: 'Recouvrement 100%', x: 58, y: 35 },
-				{ text: 'Cashflow net : 64 900 €', x: 82, y: 35 },
+				{ text: 'Nom, régime fiscal, SIREN', x: 30, y: 22 },
+				{ text: '2 SCI actives', x: 18, y: 38 },
+				{ text: '4 biens gérés', x: 40, y: 38 },
+				{ text: 'Recouvrement 100%', x: 58, y: 38 },
+				{ text: 'Cashflow 64 900 €', x: 82, y: 38 },
 			],
-			readDuration: 2000,
+			readDuration: 1800,
 		},
 		{
 			imageLight: '/images/showcase/biens-grid.png',
 			imageDark: '/images/showcase/biens-grid-dark.png',
 			alt: 'Grille des biens',
-			label: 'Gestion des biens',
+			label: '② Ajoutez vos biens — 5 minutes',
 			annotations: [
-				{ text: 'Statut locatif en temps réel', x: 35, y: 30 },
-				{ text: 'Loyer et rendement par bien', x: 35, y: 42 },
-				{ text: 'Quittance en 1 clic', x: 35, y: 53 },
+				{ text: '45 av. Jean Jaurès — Lyon', x: 30, y: 30 },
+				{ text: 'Location nue · 1 250 €/mois', x: 30, y: 38 },
+				{ text: 'Rendement brut calculé', x: 30, y: 45 },
+				{ text: 'Modifier · Quittance', x: 30, y: 53 },
+				{ text: '22 rue Victor Hugo', x: 65, y: 30 },
 			],
-			readDuration: 2000,
-		},
-		{
-			imageLight: '/images/showcase/loyers-with-button.png',
-			imageDark: '/images/showcase/loyers-with-button-dark.png',
-			alt: 'Suivi des loyers',
-			label: 'Suivi des loyers',
-			annotations: [
-				{ text: 'Historique mensuel complet', x: 40, y: 32 },
-				{ text: 'Alertes impayés automatiques', x: 40, y: 44 },
-			],
-			readDuration: 2500,
+			readDuration: 1800,
 		},
 		{
 			imageLight: '/images/showcase/finances-consolidated.png',
 			imageDark: '/images/showcase/finances-consolidated-dark.png',
-			alt: 'Vue financière consolidée',
-			label: 'Vue financière',
+			alt: 'Vue financière',
+			label: '③ Pilotez en 10 min/mois',
 			annotations: [
-				{ text: 'Revenus : 64 900 € · Charges : 11 900 €', x: 45, y: 30 },
-				{ text: 'Cashflow net multi-SCI : 53 000 €', x: 75, y: 30 },
-				{ text: 'Évolution mensuelle', x: 30, y: 58 },
+				{ text: 'Revenus : 64 900 €', x: 22, y: 33 },
+				{ text: 'Charges : 11 900 €', x: 50, y: 33 },
+				{ text: 'Cashflow net : 53 000 €', x: 78, y: 33 },
+				{ text: 'Recouvrement 100%', x: 50, y: 47 },
+				{ text: 'Évolution mensuelle', x: 35, y: 60 },
 			],
-			readDuration: 2000,
-		},
-		{
-			imageLight: '/images/showcase/fiche-identite.png',
-			imageDark: '/images/showcase/fiche-identite-dark.png',
-			alt: 'Fiche détaillée',
-			label: 'Gouvernance',
-			annotations: [
-				{ text: 'Gérant · Associés · Parts sociales', x: 40, y: 34 },
-				{ text: 'Total vérifié à 100%', x: 30, y: 55 },
-			],
-			readDuration: 2500,
+			readDuration: 1800,
 		},
 	];
+
+	interface Props {
+		activeScene?: number;
+		onSceneChange?: (index: number) => void;
+	}
+
+	let { activeScene = 0, onSceneChange }: Props = $props();
 
 	let currentScene = $state(0);
 	let activeAnnotationIndex = $state(-1);
@@ -134,6 +125,7 @@
 		if (!destroyed) {
 			const next = (sceneIndex + 1) % scenes.length;
 			currentScene = next;
+			onSceneChange?.(next);
 			playScene(next);
 		}
 	}
@@ -141,8 +133,16 @@
 	function goToScene(index: number) {
 		clearTimers();
 		currentScene = index;
+		onSceneChange?.(index);
 		playScene(index);
 	}
+
+	// React to external activeScene changes
+	$effect(() => {
+		if (activeScene !== currentScene) {
+			goToScene(activeScene);
+		}
+	});
 
 	onMount(() => {
 		playScene(0);
@@ -233,19 +233,6 @@
 				{scenes[currentScene]?.label}
 			</span>
 		</div>
-	</div>
-
-	<!-- Progress dots -->
-	<div class="flex justify-center gap-1.5 bg-slate-50 py-2.5 dark:bg-slate-900">
-		{#each scenes as _, i}
-			<button
-				class="h-1.5 rounded-full transition-all duration-300 {currentScene === i
-					? 'w-6 bg-blue-500'
-					: 'w-1.5 bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500'}"
-				onclick={() => goToScene(i)}
-				aria-label="Scène {i + 1}"
-			></button>
-		{/each}
 	</div>
 </div>
 
