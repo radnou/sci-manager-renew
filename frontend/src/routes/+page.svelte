@@ -45,64 +45,17 @@
 
 	// Demo video scene sync
 	let demoScene = $state(0);
-	const featureSections = [
-		{
-			eyebrow: 'Gestion des biens',
-			title: "Vos biens en un coup d'oeil",
-			description:
-				'Grille visuelle avec statut locatif, loyer mensuel et rendement brut. Ajoutez un bien en 30 secondes.',
-			image: '/images/showcase/biens-grid.png',
-			alt: 'Grille des biens immobiliers — statut Loué, loyer, rendement',
-			bullets: [
-				'Statut locatif en temps réel',
-				'Rendement brut calculé',
-				'Actions rapides : modifier, quittance'
-			]
-		},
-		{
-			eyebrow: 'Vision financière',
-			title: 'Revenus, charges et cashflow consolidés',
-			description:
-				'Vue transversale de toutes vos SCI. Évolution mensuelle, répartition par SCI, export CSV en 1 clic.',
-			image: '/images/showcase/finances-consolidated.png',
-			alt: 'Vue financière consolidée — revenus, charges, cashflow net',
-			bullets: ['Cashflow net par période', 'Répartition par SCI', 'Export comptable CSV']
-		},
-		{
-			eyebrow: 'Gouvernance',
-			title: 'Associés et parts sociales',
-			description:
-				"Gérez vos associés, leurs parts et rôles. Total automatique avec alerte si ≠ 100%.",
-			image: '/images/showcase/fiche-identite.png',
-			alt: 'Page associés — parts sociales, rôles, total 100%',
-			bullets: [
-				'Parts et pourcentages',
-				"Rôles gérant / associé",
-				'Invitation par email'
-			]
-		},
-		{
-			eyebrow: 'Fiscalité',
-			title: 'Générez votre résumé fiscal en un clic',
-			description:
-				"Exercices fiscaux IR et IS, résultat fiscal calculé, bilan foncier PDF prêt à télécharger.",
-			image: '/images/showcase/loyers-with-button.png',
-			alt: 'Page fiscalité — exercices, résumé fiscal, résultat fiscal',
-			bullets: [
-				'Régimes IR et IS',
-				'Résumé fiscal PDF automatique',
-				'Résultat fiscal calculé'
-			]
-		}
-	];
-
 	// Lightbox state
 	let lightboxOpen = $state(false);
 	let lightboxIndex = $state(0);
 
 	const allImages = [
-		{ src: '/images/showcase/dashboard-light.png', title: 'Dashboard' },
-		...featureSections.map((f) => ({ src: f.image, title: f.eyebrow }))
+		{ src: '/images/showcase/dashboard-light.png', title: 'Tableau de bord' },
+		{ src: '/images/showcase/biens-grid.png', title: 'Grille des biens' },
+		{ src: '/images/showcase/loyers-with-button.png', title: 'Suivi des loyers' },
+		{ src: '/images/showcase/fiche-identite.png', title: 'Associés' },
+		{ src: '/images/showcase/finances-consolidated.png', title: 'Vue financière' },
+		{ src: '/images/showcase/onboarding-step1.png', title: 'Onboarding' },
 	];
 
 	function openLightbox(index: number) {
@@ -549,69 +502,17 @@
 		</div>
 	</section>
 
-	<!-- ============================================================ -->
-	<!-- FEATURE SECTIONS -->
-	<!-- ============================================================ -->
-	{#each featureSections as feature, i}
-		<section class="py-16 {i % 2 === 0 ? 'bg-slate-50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-950'}">
-			<div class="mx-auto max-w-6xl px-6">
-				<div class="grid lg:grid-cols-2 gap-12 items-center {i % 2 !== 0 ? 'lg:grid-flow-col-dense' : ''}">
-					<!-- Image -->
-					<div class="{i % 2 !== 0 ? 'lg:col-start-2' : ''}">
-						<button onclick={() => openLightbox(i + 1)} class="block w-full cursor-zoom-in group">
-							<div class="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.02] group-hover:border-sky-300 dark:group-hover:border-sky-600">
-								<!-- Browser bar mini -->
-								<div class="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-									<div class="w-2 h-2 rounded-full bg-red-400"></div>
-									<div class="w-2 h-2 rounded-full bg-amber-400"></div>
-									<div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-								</div>
-								<img
-									src={feature.image}
-									alt={feature.alt}
-									class="w-full"
-									loading="lazy"
-									decoding="async"
-									width="1440"
-									height="900"
-								/>
-							</div>
-						</button>
-					</div>
-					<!-- Text -->
-					<div class="{i % 2 !== 0 ? 'lg:col-start-1' : ''}">
-						<span class="text-sm font-semibold text-sky-600 dark:text-sky-400">{feature.eyebrow}</span>
-						<h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{feature.title}</h3>
-						<p class="mt-3 text-slate-600 dark:text-slate-400 leading-relaxed">{feature.description}</p>
-						<ul class="mt-4 space-y-2">
-							{#each feature.bullets as bullet}
-								<li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-									<Check class="h-4 w-4 flex-shrink-0 text-emerald-500" />
-									{bullet}
-								</li>
-							{/each}
-						</ul>
-						{#if feature.eyebrow === 'Fiscalité'}
-							<a href="/simulateur-cerfa" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
-								Essayer le simulateur gratuit →
-							</a>
-							<p class="mt-3 text-xs text-slate-400 dark:text-slate-500 italic">
-								Les calculs sont fournis à titre indicatif. Nous recommandons une vérification par votre expert-comptable avant déclaration.
-							</p>
-							<a href="/mentions-legales" class="text-xs text-sky-500 hover:text-sky-600 underline underline-offset-2">
-								En savoir plus sur notre méthodologie de calcul
-							</a>
-						{/if}
-						{#if feature.eyebrow === 'Gestion des biens'}
-							<a href="/generateur-quittance" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
-								Générer une quittance gratuitement →
-							</a>
-						{/if}
-					</div>
-				</div>
-			</div>
-		</section>
-	{/each}
+	<!-- Lead magnet links (moved from removed feature sections) -->
+	<section class="bg-slate-50 py-8 dark:bg-slate-900/50">
+		<div class="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-6 px-6">
+			<a href="/simulateur-cerfa" class="inline-flex items-center gap-2 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+				Essayer le simulateur CERFA 2044 gratuit →
+			</a>
+			<a href="/generateur-quittance" class="inline-flex items-center gap-2 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+				Générer une quittance gratuitement →
+			</a>
+		</div>
+	</section>
 
 	<!-- ============================================================ -->
 	<!-- TARGET AUDIENCE -->
