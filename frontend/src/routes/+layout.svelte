@@ -6,6 +6,7 @@
 	import { page } from '$app/state';
 	import { Menu, X } from 'lucide-svelte';
 	import { initMatomo, trackPageView } from '$lib/matomo';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 	import { supabase } from '$lib/supabase';
 	import {
 		clearFakeSession,
@@ -84,6 +85,7 @@
 	});
 
 	async function handleLogout() {
+		trackEvent(EVENTS.LOGOUT);
 		await supabase.auth.signOut();
 		clearFakeSession();
 		user = null;

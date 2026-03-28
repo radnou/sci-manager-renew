@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { seedDemo } from '$lib/api';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	let currentStep = $state(0);
 	let factIndex = $state(0);
@@ -25,6 +26,7 @@
 	const totalDuration = steps.reduce((s, step) => s + step.duration, 0);
 
 	onMount(() => {
+		trackEvent(EVENTS.DEMO_SEED_START);
 		// Launch API call immediately (runs in background)
 		const seedPromise = seedDemo().catch((err) => {
 			console.error('Demo seed failed:', err);
@@ -54,6 +56,7 @@
 			clearInterval(factTimer);
 			progress = 100;
 			await seedPromise;
+			trackEvent(EVENTS.DEMO_SEED_COMPLETE);
 			// Small delay for 100% to render
 			setTimeout(() => {
 				goto('/dashboard', { replaceState: true });

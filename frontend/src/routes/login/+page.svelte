@@ -14,6 +14,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { addToast } from '$lib/components/ui/toast';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	type LoginMode = 'password' | 'magic-link';
 
@@ -31,6 +32,7 @@
 	}
 
 	async function handlePasswordLogin() {
+		trackEvent(EVENTS.LOGIN_START, { mode: 'password' });
 		errorMessage = '';
 		isLoading = true;
 
@@ -45,6 +47,7 @@
 					? 'Email ou mot de passe incorrect.'
 					: formatApiErrorMessage(error, 'Erreur de connexion.');
 		} else {
+			trackEvent(EVENTS.LOGIN_SUCCESS);
 			goto(getRedirectTarget(), { replaceState: true });
 			return;
 		}
@@ -53,6 +56,7 @@
 	}
 
 	async function handleMagicLink() {
+		trackEvent(EVENTS.LOGIN_START, { mode: 'magic-link' });
 		errorMessage = '';
 		isLoading = true;
 

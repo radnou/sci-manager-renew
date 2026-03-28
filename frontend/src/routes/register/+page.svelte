@@ -13,6 +13,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { addToast } from '$lib/components/ui/toast';
 	import { formatApiErrorMessage } from '$lib/high-value/presentation';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	let email = $state('');
 	let password = $state('');
@@ -56,6 +57,7 @@
 		}
 
 		isLoading = true;
+		trackEvent(EVENTS.REGISTER_START);
 
 		const { error } = await supabase.auth.signUp({
 			email,
@@ -72,6 +74,7 @@
 				errorMessage = formatApiErrorMessage(error, "Erreur lors de l'inscription.");
 			}
 		} else {
+			trackEvent(EVENTS.REGISTER_SUCCESS);
 			showConfirmEmail = true;
 			addToast({
 				title: 'Inscription réussie',

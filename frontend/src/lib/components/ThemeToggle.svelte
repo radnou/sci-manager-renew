@@ -3,6 +3,7 @@
 	import { theme } from '$lib/stores/theme';
 	import { Button } from '$lib/components/ui/button';
 	import { LaptopMinimal, Moon, Sun } from 'lucide-svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	let currentTheme = $state<'system' | 'light' | 'dark'>('system');
 	const unsubscribe = theme.subscribe(value => {
@@ -13,6 +14,7 @@
 
 	function handleToggle() {
 		theme.toggle();
+		trackEvent(EVENTS.THEME_TOGGLE, { theme: currentTheme });
 	}
 
 	const themeMeta = $derived.by(() => {

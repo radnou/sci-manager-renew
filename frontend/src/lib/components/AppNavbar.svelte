@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 	import {
 		LayoutDashboard,
 		Building2,
@@ -126,6 +127,7 @@
 	}
 
 	async function handleLogout() {
+		trackEvent(EVENTS.LOGOUT);
 		loggingOut = true;
 		accountMenuOpen = false;
 		try {

@@ -3,6 +3,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import EmailCapture from '$lib/components/EmailCapture.svelte';
 	import { ArrowRight, Calculator, TrendingDown, TrendingUp, Info } from 'lucide-svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	// Form state
 	let loyersAnnuels = $state(0);
@@ -73,6 +74,9 @@
 		resultTimeout = setTimeout(() => {
 			resultChanged = false;
 		}, 300);
+		if (loyersAnnuels > 0) {
+			trackEvent(EVENTS.SIMULATEUR_CERFA_CALCULATE, { regime });
+		}
 	});
 </script>
 

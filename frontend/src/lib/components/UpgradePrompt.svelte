@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Lock, Check, X } from 'lucide-svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	let { open, action, onClose }: { open: boolean; action: string; onClose: () => void } = $props();
 
@@ -56,7 +57,7 @@
 
 			<div class="flex items-center gap-3">
 				<Button variant="outline" onclick={onClose} class="flex-1">Plus tard</Button>
-				<Button href="/pricing" class="flex-1">Voir les plans →</Button>
+				<Button href="/pricing" onclick={() => trackEvent(EVENTS.DEMO_UPGRADE_PROMPT, { action })} class="flex-1">Voir les plans →</Button>
 			</div>
 		</div>
 	</div>

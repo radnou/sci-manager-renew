@@ -23,6 +23,7 @@
 	} from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
 	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	onMount(async () => {
 		const session = await getCurrentSession();
@@ -166,6 +167,7 @@
 	];
 
 	function openLightbox(index: number) {
+		trackEvent(EVENTS.LANDING_LIGHTBOX_OPEN, { image: index });
 		lightboxIndex = index;
 		lightboxOpen = true;
 	}
@@ -202,6 +204,7 @@
 	}
 
 	function openCheckoutModal(planKey: string) {
+		trackEvent(EVENTS.LANDING_PLAN_SELECT, { plan: planKey });
 		const plan = plans.find((p: any) => p.key === planKey);
 		if (!plan) return;
 		modalPlanKey = planKey;
@@ -540,7 +543,7 @@
 					<Button
 						size="lg"
 						class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
-						onclick={() => document.getElementById('comment-ca-marche')?.scrollIntoView({ behavior: 'smooth' })}
+						onclick={() => { trackEvent(EVENTS.LANDING_CTA_CLICK, { cta: 'comment_ca_marche' }); document.getElementById('comment-ca-marche')?.scrollIntoView({ behavior: 'smooth' }); }}
 					>
 						Voir comment ça marche
 						<ArrowRight class="ml-2 h-5 w-5" />
@@ -549,7 +552,7 @@
 						size="lg"
 						variant="outline"
 						class="px-8 text-lg font-semibold"
-						onclick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+						onclick={() => { trackEvent(EVENTS.LANDING_CTA_CLICK, { cta: 'comparer_plans' }); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }}
 					>
 						Comparer les plans
 					</Button>
@@ -627,7 +630,7 @@
 			</div>
 			<div class="grid gap-8 md:grid-cols-3">
 				{#each howItWorksSteps as card, i}
-					<button class="group text-left cursor-pointer" onclick={() => { stepModalIndex = i; stepModalOpen = true; }}>
+					<button class="group text-left cursor-pointer" onclick={() => { stepModalIndex = i; stepModalOpen = true; trackEvent(EVENTS.LANDING_STEP_MODAL_OPEN, { step: i + 1 }); }}>
 						<div class="rounded-xl border border-slate-200 bg-slate-50 p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 dark:border-slate-700 dark:bg-slate-800">
 							<div class="mb-4 flex items-center gap-3">
 								<span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{card.step}</span>
@@ -1236,7 +1239,7 @@
 						<button
 							class="flex w-full items-center justify-between rounded-2xl px-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
 							aria-expanded={openFaqIndex === i}
-							onclick={() => (openFaqIndex = openFaqIndex === i ? null : i)}
+							onclick={() => { if (openFaqIndex !== i) trackEvent(EVENTS.LANDING_FAQ_OPEN, { question: i }); openFaqIndex = openFaqIndex === i ? null : i; }}
 						>
 							<span class="pr-4 text-base font-semibold text-slate-900 dark:text-slate-100">
 								{item.question}

@@ -6,6 +6,7 @@
 	import { supabase } from '$lib/supabase';
 	import { addToast } from '$lib/components/ui/toast';
 	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	let billingPeriod = $state<'month' | 'year'>('month');
 	let checkoutLoading = $state<string | null>(null);
@@ -83,6 +84,7 @@
 	}
 
 	function openCheckoutModal(planKey: string) {
+		trackEvent(EVENTS.PRICING_PLAN_SELECT, { plan: planKey });
 		const plan = plans.find((p) => p.key === planKey);
 		if (!plan) {
 			// Handle lifetime separately
@@ -206,7 +208,7 @@
 					'month'
 						? 'bg-blue-600 text-white shadow-sm'
 						: 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'}"
-					onclick={() => (billingPeriod = 'month')}
+					onclick={() => { billingPeriod = 'month'; trackEvent(EVENTS.BILLING_TOGGLE, { period: 'month' }); }}
 				>
 					Mensuel
 				</button>
@@ -215,7 +217,7 @@
 					'year'
 						? 'bg-blue-600 text-white shadow-sm'
 						: 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'}"
-					onclick={() => (billingPeriod = 'year')}
+					onclick={() => { billingPeriod = 'year'; trackEvent(EVENTS.BILLING_TOGGLE, { period: 'year' }); }}
 				>
 					Annuel
 					<span class="ml-1 text-xs font-normal opacity-80">2 mois offerts</span>

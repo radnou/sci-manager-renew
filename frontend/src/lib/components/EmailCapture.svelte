@@ -3,6 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { addToast } from '$lib/components/ui/toast';
 	import { Mail, Check } from 'lucide-svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	interface Props {
 		source: string;
@@ -42,6 +43,7 @@
 			});
 			if (!res.ok) throw new Error('Erreur');
 			captured = true;
+			trackEvent(EVENTS.SIMULATEUR_EMAIL_CAPTURE, { source });
 			onCaptured?.(email);
 		} catch {
 			addToast({ title: 'Erreur lors de l\'envoi', variant: 'error' });
