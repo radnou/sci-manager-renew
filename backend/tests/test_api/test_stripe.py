@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import pytest
 import stripe
 
 from app.api.v1 import stripe as stripe_api
@@ -107,7 +108,8 @@ def test_webhook_invalid_payload(client, monkeypatch):
     assert "Invalid Stripe payload" in response.json()["error"]
 
 
-def test_handle_event_checkout_completed_syncs_active(monkeypatch):
+@pytest.mark.asyncio
+async def test_handle_event_checkout_completed_syncs_active(monkeypatch):
     captured = {}
 
     def fake_sync(session_data, status_value, **_kwargs):
@@ -116,7 +118,7 @@ def test_handle_event_checkout_completed_syncs_active(monkeypatch):
 
     monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
 
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "checkout.session.completed",
             "data": {"object": {"payment_status": "paid", "client_reference_id": "user-1"}},
@@ -126,14 +128,15 @@ def test_handle_event_checkout_completed_syncs_active(monkeypatch):
     assert captured["session_data"]["client_reference_id"] == "user-1"
 
 
-def test_handle_event_subscription_deleted(monkeypatch):
+@pytest.mark.asyncio
+async def test_handle_event_subscription_deleted(monkeypatch):
     captured = {}
 
     def fake_sync_deleted(subscription_data):
         captured["subscription_data"] = subscription_data
 
     monkeypatch.setattr(stripe_api, "_sync_subscription_deleted", fake_sync_deleted)
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "customer.subscription.deleted",
             "data": {"object": {"id": "sub_123", "customer": "cus_123"}},
@@ -142,7 +145,8 @@ def test_handle_event_subscription_deleted(monkeypatch):
     assert captured["subscription_data"]["id"] == "sub_123"
 
 
-def test_handle_event_subscription_updated(monkeypatch):
+@pytest.mark.asyncio
+async def test_handle_event_subscription_updated(monkeypatch):
     captured = {}
 
     def fake_sync(session_data, status_value, **_kwargs):
@@ -150,7 +154,7 @@ def test_handle_event_subscription_updated(monkeypatch):
         captured["status_value"] = status_value
 
     monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "customer.subscription.updated",
             "data": {
@@ -321,7 +325,8 @@ def test_guest_checkout_feature_disabled(client, monkeypatch):
     assert response.json()["code"] == "feature_disabled"
 
 
-def test_webhook_guest_checkout_creates_user(monkeypatch):
+@pytest.mark.asyncio
+async def test_webhook_guest_checkout_creates_user(monkeypatch):
     """checkout.session.completed with no client_reference_id triggers user creation."""
     from app.api.v1.stripe import _find_user_by_email, _create_or_get_user, _update_subscription_metadata
 
@@ -348,7 +353,7 @@ def test_webhook_guest_checkout_creates_user(monkeypatch):
     monkeypatch.setattr(stripe_api, "_create_or_get_user", fake_create_or_get)
     monkeypatch.setattr(stripe_api, "_update_subscription_metadata", fake_update_metadata)
 
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "checkout.session.completed",
             "data": {
@@ -371,7 +376,8 @@ def test_webhook_guest_checkout_creates_user(monkeypatch):
     assert captured["metadata_update"]["plan_key"] == "starter"
 
 
-def test_webhook_guest_checkout_no_email_returns_early(monkeypatch):
+@pytest.mark.asyncio
+async def test_webhook_guest_checkout_no_email_returns_early(monkeypatch):
     """Guest checkout without email should return without syncing."""
     captured = {}
 
@@ -380,7 +386,7 @@ def test_webhook_guest_checkout_no_email_returns_early(monkeypatch):
 
     monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
 
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "checkout.session.completed",
             "data": {
@@ -396,7 +402,8 @@ def test_webhook_guest_checkout_no_email_returns_early(monkeypatch):
     assert "called" not in captured
 
 
-def test_webhook_subscription_updated_fallback_resolution(monkeypatch):
+@pytest.mark.asyncio
+async def test_webhook_subscription_updated_fallback_resolution(monkeypatch):
     """subscription.updated with no metadata.user_id resolves via stripe_customer_id."""
     captured = {}
 
@@ -425,7 +432,7 @@ def test_webhook_subscription_updated_fallback_resolution(monkeypatch):
     monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
     monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
 
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "customer.subscription.updated",
             "data": {
@@ -681,7 +688,8 @@ def test_sync_subscription_deleted_no_ids_returns_early(monkeypatch):
     assert not called["sync"]
 
 
-def test_handle_event_unknown_type(monkeypatch):
+@pytest.mark.asyncio
+async def test_handle_event_unknown_type(monkeypatch):
     """_handle_event ignores unknown event types."""
     captured = {}
 
@@ -690,11 +698,12 @@ def test_handle_event_unknown_type(monkeypatch):
 
     monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
 
-    stripe_api._handle_event({"type": "charge.refunded", "data": {"object": {}}})
+    await stripe_api._handle_event({"type": "charge.refunded", "data": {"object": {}}})
     assert "called" not in captured
 
 
-def test_handle_event_non_dict_obj(monkeypatch):
+@pytest.mark.asyncio
+async def test_handle_event_non_dict_obj(monkeypatch):
     """_handle_event handles dict-like object via dict() conversion."""
     captured = {}
 
@@ -720,7 +729,7 @@ def test_handle_event_non_dict_obj(monkeypatch):
         def __getitem__(self, key):
             return self._data[key]
 
-    stripe_api._handle_event(
+    await stripe_api._handle_event(
         {
             "type": "checkout.session.completed",
             "data": {"object": DictLikeObj()},
