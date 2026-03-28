@@ -572,7 +572,11 @@ class QuitusService:
             )
 
         text.textLine(f"Le paiement concerne le bien situé {property_label}.")
-        text.textLine(f"Date de paiement : {_fmt_date_fr(paiement_date)}.")
+        mode_label = getattr(payload, "mode_paiement", None)
+        if mode_label:
+            text.textLine(f"Date de paiement : {_fmt_date_fr(paiement_date)} — Mode : {mode_label}.")
+        else:
+            text.textLine(f"Date de paiement : {_fmt_date_fr(paiement_date)}.")
         text.textLine("")
         text.textLine(f"Document établi le {issue_date_str}.")
         pdf.drawText(text)

@@ -23,6 +23,7 @@ class PublicQuitusRequest(BaseModel):
     charges_locatives: float = Field(default=0, ge=0)
     montant_paye: float = Field(gt=0)
     date_paiement: str = Field(min_length=10, max_length=10)
+    mode_paiement: str = Field(default="virement", max_length=30)
 
 
 class QuitusResponse(BaseModel):

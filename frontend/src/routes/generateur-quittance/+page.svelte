@@ -2,7 +2,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import EmailCapture from '$lib/components/EmailCapture.svelte';
-	import { ArrowRight, FileText, Download } from 'lucide-svelte';
+	import { ArrowRight, FileText, Download, ChevronDown, CheckCircle } from 'lucide-svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	// Form state
 	let nomProprietaire = $state('');
@@ -14,6 +15,7 @@
 	let charges = $state(0);
 	let montantPaye = $state(0);
 	let datePaiement = $state(new Date().toISOString().split('T')[0]);
+	let modePaiement = $state('virement');
 
 	// Derived
 	const totalDu = $derived(loyerHC + charges);
@@ -30,9 +32,13 @@
 
 	// Download state
 	let downloading = $state(false);
+	let downloaded = $state(false);
 
 	// Email gate: download blocked until email captured
 	let emailUnlocked = $state(false);
+
+	// FAQ state
+	let openFaq = $state<number | null>(null);
 
 	// Currency formatter
 	function formatCurrency(value: number): string {
@@ -59,6 +65,31 @@
 		return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 	}
 
+	const modePaiementOptions = [
+		{ value: 'virement', label: 'Virement bancaire' },
+		{ value: 'cheque', label: 'Chèque' },
+		{ value: 'especes', label: 'Espèces' },
+		{ value: 'prelevement', label: 'Prélèvement automatique' }
+	];
+
+	const faqs = [
+		{
+			question: 'La quittance est-elle conforme ?',
+			answer:
+				'Oui. Cette quittance est conforme aux articles 21 et 22 de la loi n\u00B0 89-462 du 6 juillet 1989. Elle mentionne le nom du locataire, la période, le loyer, les charges et le montant total.'
+		},
+		{
+			question: 'Dois-je fournir une quittance ?',
+			answer:
+				'Oui. Le bailleur est tenu de remettre gratuitement une quittance au locataire qui en fait la demande (article 21 de la loi du 6 juillet 1989). Ce document est indispensable pour le locataire comme justificatif de domicile.'
+		},
+		{
+			question: 'Puis-je automatiser mes quittances ?',
+			answer:
+				'Oui. Avec GérerSCI, les quittances sont générées automatiquement chaque mois à partir de vos loyers et charges réels. Plus besoin de ressaisir les informations manuellement.'
+		}
+	];
+
 	async function downloadPDF() {
 		if (!isFormValid) return;
 		downloading = true;
@@ -76,7 +107,8 @@
 						loyer_hc: loyerHC,
 						charges_locatives: charges,
 						montant_paye: montantPaye,
-						date_paiement: datePaiement
+						date_paiement: datePaiement,
+						mode_paiement: modePaiement
 					})
 				}
 			);
@@ -88,11 +120,17 @@
 			a.download = `quittance-${periode.replace(/\s+/g, '-').toLowerCase()}.pdf`;
 			a.click();
 			URL.revokeObjectURL(url);
+			downloaded = true;
+			trackEvent(EVENTS.QUITTANCE_GENERATE, { source: 'public' });
 		} catch {
 			alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
 		} finally {
 			downloading = false;
 		}
+	}
+
+	function toggleFaq(index: number) {
+		openFaq = openFaq === index ? null : index;
 	}
 </script>
 
@@ -100,7 +138,11 @@
 	<title>Générateur de quittance de loyer gratuit — GérerSCI</title>
 	<meta
 		name="description"
-		content="Générez gratuitement une quittance de loyer conforme en PDF. Sans inscription, en 2 minutes. Outil gratuit pour propriétaires et SCI."
+		content="Générez gratuitement une quittance de loyer conforme en PDF. Modèle gratuit, sans inscription, en 30 secondes. Outil pour propriétaires et SCI."
+	/>
+	<meta
+		name="keywords"
+		content="quittance de loyer, modèle gratuit, quittance PDF, quittance locataire, propriétaire, SCI"
 	/>
 	<link rel="canonical" href="https://gerersci.fr/generateur-quittance" />
 	<meta property="og:title" content="Générateur de quittance de loyer gratuit — GérerSCI" />
@@ -113,25 +155,26 @@
 </svelte:head>
 
 <main class="min-h-screen bg-slate-50 dark:bg-slate-950">
-	<!-- Header -->
+	<!-- Hero -->
 	<section class="relative overflow-hidden bg-white py-16 sm:py-20 dark:bg-slate-900">
 		<div
 			class="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-50/80 via-transparent to-cyan-50/60 dark:from-blue-950/30 dark:to-cyan-950/20"
 		></div>
 		<div class="relative mx-auto max-w-4xl px-4 text-center sm:px-6">
 			<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">
-				Gratuit &middot; Sans inscription
+				Outil gratuit
 			</Badge>
 			<h1
 				class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white"
 			>
-				Générateur de
+				Générez votre
 				<span class="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
 					quittance de loyer
 				</span>
+				en 30 secondes
 			</h1>
 			<p class="mt-4 text-lg text-slate-600 dark:text-slate-400">
-				Créez une quittance de loyer conforme en PDF, gratuitement, en 2 minutes.
+				Conforme, professionnelle, téléchargeable en PDF. Gratuit et sans inscription.
 			</p>
 		</div>
 	</section>
@@ -155,7 +198,7 @@
 								for="nom-proprietaire"
 								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 							>
-								Nom du propriétaire ou de la SCI
+								Nom du bailleur (propriétaire ou SCI) <span class="text-rose-500">*</span>
 							</label>
 							<input
 								id="nom-proprietaire"
@@ -172,7 +215,7 @@
 								for="adresse-bien"
 								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 							>
-								Adresse du bien loué
+								Adresse du bien loué <span class="text-rose-500">*</span>
 							</label>
 							<input
 								id="adresse-bien"
@@ -189,7 +232,7 @@
 								for="nom-locataire"
 								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 							>
-								Nom du locataire
+								Nom du locataire <span class="text-rose-500">*</span>
 							</label>
 							<input
 								id="nom-locataire"
@@ -203,11 +246,12 @@
 						<!-- Période -->
 						<div class="mb-6">
 							<span class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-								Période
+								Période <span class="text-rose-500">*</span>
 							</span>
 							<div class="flex gap-3">
 								<select
 									bind:value={mois}
+									aria-label="Mois"
 									class="h-12 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-400"
 								>
 									<option value={1}>Janvier</option>
@@ -225,6 +269,7 @@
 								</select>
 								<select
 									bind:value={annee}
+									aria-label="Année"
 									class="h-12 w-32 rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-400"
 								>
 									{#each Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i) as y}
@@ -240,7 +285,7 @@
 								for="loyer-hc"
 								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 							>
-								Montant du loyer hors charges
+								Montant du loyer hors charges <span class="text-rose-500">*</span>
 							</label>
 							<div class="relative">
 								<input
@@ -292,7 +337,7 @@
 								for="montant-paye"
 								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 							>
-								Montant total payé par le locataire
+								Montant total payé par le locataire <span class="text-rose-500">*</span>
 							</label>
 							<div class="relative">
 								<input
@@ -318,7 +363,7 @@
 								for="date-paiement"
 								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 							>
-								Date de paiement
+								Date de paiement <span class="text-rose-500">*</span>
 							</label>
 							<input
 								id="date-paiement"
@@ -326,6 +371,25 @@
 								bind:value={datePaiement}
 								class="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-400"
 							/>
+						</div>
+
+						<!-- Mode de paiement -->
+						<div class="mb-6">
+							<label
+								for="mode-paiement"
+								class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
+							>
+								Mode de paiement
+							</label>
+							<select
+								id="mode-paiement"
+								bind:value={modePaiement}
+								class="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-400"
+							>
+								{#each modePaiementOptions as opt}
+									<option value={opt.value}>{opt.label}</option>
+								{/each}
+							</select>
 						</div>
 					</div>
 				</div>
@@ -353,7 +417,7 @@
 							<!-- Header -->
 							<div class="mb-4 rounded-lg bg-slate-800 p-3 text-white dark:bg-slate-700">
 								<p class="text-sm font-bold">
-									{nomProprietaire || 'Nom du propriétaire / SCI'}
+									{nomProprietaire || 'Nom du bailleur'}
 								</p>
 								<p class="mt-1 text-xs text-slate-300">QUITTANCE DE LOYER</p>
 							</div>
@@ -363,7 +427,7 @@
 								<div class="flex justify-between">
 									<span class="text-slate-500 dark:text-slate-400">Locataire</span>
 									<span class="font-medium text-slate-900 dark:text-slate-100">
-										{nomLocataire || '—'}
+										{nomLocataire || '\u2014'}
 									</span>
 								</div>
 								<div class="flex justify-between">
@@ -371,7 +435,7 @@
 									<span
 										class="max-w-[180px] truncate text-right font-medium text-slate-900 dark:text-slate-100"
 									>
-										{adresseBien || '—'}
+										{adresseBien || '\u2014'}
 									</span>
 								</div>
 								<div class="flex justify-between">
@@ -417,9 +481,12 @@
 								</div>
 							</div>
 
-							<!-- Date -->
-							<div class="text-right text-xs text-slate-400 dark:text-slate-500">
-								Payé le {datePaiement ? formatDateFr(datePaiement) : '—'}
+							<!-- Date + mode -->
+							<div class="flex justify-between text-xs text-slate-400 dark:text-slate-500">
+								<span>
+									{modePaiementOptions.find((o) => o.value === modePaiement)?.label || ''}
+								</span>
+								<span>Payé le {datePaiement ? formatDateFr(datePaiement) : '\u2014'}</span>
 							</div>
 						</div>
 
@@ -442,7 +509,7 @@
 							<EmailCapture
 								source="generateur-quittance"
 								title="Téléchargez votre quittance PDF"
-								description="Entrez votre email pour débloquer le téléchargement. Un lien vous sera envoyé par email."
+								description="Entrez votre email pour débloquer le téléchargement."
 								buttonText="Débloquer le PDF"
 								context={{
 									periode,
@@ -454,6 +521,39 @@
 							/>
 						{/if}
 
+						<!-- Product bridge (after download) -->
+						{#if downloaded}
+							<div
+								class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-950/30"
+							>
+								<div class="mb-3 flex items-center gap-2">
+									<CheckCircle class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+									<p class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+										Votre quittance est prête !
+									</p>
+								</div>
+								<p class="mb-4 text-sm text-emerald-700 dark:text-emerald-300">
+									Avec GérerSCI, les quittances sont générées automatiquement
+									à partir de vos loyers réels. Plus de saisie manuelle.
+								</p>
+								<div class="flex flex-col gap-2 sm:flex-row">
+									<a
+										href="/pricing"
+										class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+									>
+										Découvrir GérerSCI
+										<ArrowRight class="h-4 w-4" />
+									</a>
+									<a
+										href="/#comment-ca-marche"
+										class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-800"
+									>
+										Voir la démonstration
+									</a>
+								</div>
+							</div>
+						{/if}
+
 						<!-- CTA -->
 						<div
 							class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-5 text-center dark:border-slate-700 dark:bg-slate-900"
@@ -463,7 +563,7 @@
 							</p>
 							<a href="/pricing">
 								<Button size="lg" class="w-full bg-blue-600 text-white hover:bg-blue-700">
-									Démarrer à 19€/mois
+									Démarrer à 19&euro;/mois
 									<ArrowRight class="ml-2 h-4 w-4" />
 								</Button>
 							</a>
@@ -477,14 +577,58 @@
 		</div>
 	</section>
 
+	<!-- FAQ -->
+	<section class="py-12 sm:py-16">
+		<div class="mx-auto max-w-3xl px-4 sm:px-6">
+			<h2 class="mb-8 text-center text-2xl font-bold text-slate-900 dark:text-white">
+				Questions fréquentes
+			</h2>
+			<div class="space-y-3">
+				{#each faqs as faq, i}
+					<div
+						class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+					>
+						<button
+							class="flex w-full items-center justify-between px-6 py-4 text-left"
+							onclick={() => toggleFaq(i)}
+							aria-expanded={openFaq === i}
+						>
+							<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+								{faq.question}
+							</span>
+							<ChevronDown
+								class="h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 {openFaq === i ? 'rotate-180' : ''}"
+							/>
+						</button>
+						{#if openFaq === i}
+							<div class="border-t border-slate-100 px-6 pb-4 pt-3 dark:border-slate-700">
+								<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+									{faq.answer}
+									{#if i === 2}
+										<a
+											href="/pricing"
+											class="ml-1 font-medium text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+										>
+											Découvrir GérerSCI
+										</a>
+									{/if}
+								</p>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</div>
+	</section>
+
 	<!-- Disclaimer -->
 	<section class="pb-12">
 		<div class="mx-auto max-w-6xl px-4 sm:px-6">
 			<p class="text-center text-xs text-slate-400 dark:text-slate-500">
 				Cette quittance est générée à titre indicatif conformément à l'article 21 de la loi
-				n° 89-462 du 6 juillet 1989. Le bailleur est tenu de transmettre gratuitement la
-				quittance au locataire qui en fait la demande. Ce document ne constitue pas un conseil
-				juridique. Consultez un professionnel pour toute question.
+				n° 89-462 du 6 juillet 1989 et à l'article 1366 du Code civil. Le bailleur est tenu de
+				transmettre gratuitement la quittance au locataire qui en fait la demande. Ce document ne
+				constitue pas un conseil juridique.
 			</p>
 		</div>
 	</section>
