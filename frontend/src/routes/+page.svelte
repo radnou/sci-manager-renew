@@ -522,21 +522,22 @@
 				<AppDemoVideo activeScene={demoScene} onSceneChange={(i) => { demoScene = i; }} />
 			</div>
 
-			<!-- Step navigation cards (replace dots) -->
+			<!-- Step navigation cards -->
 			<div class="mt-8 grid gap-4 md:grid-cols-3">
 				{#each [
-					{ step: '①', title: 'Créez votre SCI', time: '2 minutes', desc: "Nom, régime fiscal, c'est tout." },
-					{ step: '②', title: 'Ajoutez vos biens', time: '5 minutes', desc: 'Adresse, loyer, bail — on vous guide.' },
-					{ step: '③', title: 'Pilotez chaque mois', time: '10 min/mois', desc: 'Quittances, alertes, CERFA — automatisé.' }
+					{ step: '①', title: 'Créez votre SCI', time: '2 minutes', desc: "Nom, régime fiscal, c'est tout.", sceneStart: 0, sceneEnd: 0 },
+					{ step: '②', title: 'Ajoutez vos biens', time: '5 minutes', desc: 'Biens, loyers, associés — on vous guide.', sceneStart: 1, sceneEnd: 3 },
+					{ step: '③', title: 'Pilotez chaque mois', time: '10 min/mois', desc: 'Finances, KPIs, alertes — automatisé.', sceneStart: 4, sceneEnd: 5 }
 				] as card, i}
+					{@const isActive = demoScene >= card.sceneStart && demoScene <= card.sceneEnd}
 					<button
-						class="rounded-xl border p-4 text-left transition-all duration-200 {demoScene === i
+						class="rounded-xl border p-4 text-left transition-all duration-200 {isActive
 							? 'border-blue-500 bg-blue-50 shadow-md dark:border-blue-400 dark:bg-blue-950/30'
 							: 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600'}"
-						onclick={() => { demoScene = i; trackEvent(EVENTS.LANDING_STEP_MODAL_OPEN, { step: i + 1 }); }}
+						onclick={() => { demoScene = card.sceneStart; trackEvent(EVENTS.LANDING_STEP_MODAL_OPEN, { step: i + 1 }); }}
 					>
 						<div class="flex items-center gap-3">
-							<span class="flex h-9 w-9 items-center justify-center rounded-full text-base font-bold {demoScene === i ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400'}">{card.step}</span>
+							<span class="flex h-9 w-9 items-center justify-center rounded-full text-base font-bold {isActive ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400'}">{card.step}</span>
 							<div>
 								<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{card.title}</p>
 								<p class="text-xs text-slate-500 dark:text-slate-400">{card.time} · {card.desc}</p>

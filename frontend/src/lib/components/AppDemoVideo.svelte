@@ -24,46 +24,64 @@
 
 	const scenes: Scene[] = [
 		{
-			imageLight: '/images/showcase/dashboard-light.png',
-			imageDark: '/images/showcase/dashboard-dark.png',
-			alt: 'Tableau de bord',
-			label: '① Créez votre SCI — 2 minutes',
+			imageLight: '/images/showcase/onboarding-step1.png',
+			imageDark: '/images/showcase/onboarding-step1-dark.png',
+			alt: 'Création de SCI',
+			label: '① Créez votre SCI',
 			annotations: [
-				{ text: 'Nom, régime fiscal, SIREN', x: 30, y: 22 },
-				{ text: '2 SCI actives', x: 18, y: 38 },
-				{ text: '4 biens gérés', x: 40, y: 38 },
-				{ text: 'Recouvrement 100%', x: 58, y: 38 },
-				{ text: 'Cashflow 64 900 €', x: 82, y: 38 },
+				{ text: 'Nom, régime fiscal — 2 minutes', x: 50, y: 35 },
 			],
-			readDuration: 1800,
+			readDuration: 3000,
 		},
 		{
 			imageLight: '/images/showcase/biens-grid.png',
 			imageDark: '/images/showcase/biens-grid-dark.png',
 			alt: 'Grille des biens',
-			label: '② Ajoutez vos biens — 5 minutes',
+			label: '② Ajoutez vos biens',
 			annotations: [
-				{ text: '45 av. Jean Jaurès — Lyon', x: 30, y: 30 },
-				{ text: 'Location nue · 1 250 €/mois', x: 30, y: 38 },
-				{ text: 'Rendement brut calculé', x: 30, y: 45 },
-				{ text: 'Modifier · Quittance', x: 30, y: 53 },
-				{ text: '22 rue Victor Hugo', x: 65, y: 30 },
+				{ text: 'Loyer, rendement et statut locatif par bien', x: 42, y: 30 },
 			],
-			readDuration: 1800,
+			readDuration: 3000,
+		},
+		{
+			imageLight: '/images/showcase/loyers-with-button.png',
+			imageDark: '/images/showcase/loyers-with-button-dark.png',
+			alt: 'Suivi des loyers',
+			label: '② Suivi des loyers',
+			annotations: [
+				{ text: 'Historique et alertes impayés automatiques', x: 45, y: 35 },
+			],
+			readDuration: 3000,
+		},
+		{
+			imageLight: '/images/showcase/fiche-identite.png',
+			imageDark: '/images/showcase/fiche-identite-dark.png',
+			alt: 'Associés et parts',
+			label: '② Gouvernance',
+			annotations: [
+				{ text: 'Associés, parts sociales et rôles', x: 40, y: 35 },
+			],
+			readDuration: 3000,
 		},
 		{
 			imageLight: '/images/showcase/finances-consolidated.png',
 			imageDark: '/images/showcase/finances-consolidated-dark.png',
 			alt: 'Vue financière',
-			label: '③ Pilotez en 10 min/mois',
+			label: '③ Pilotez chaque mois',
 			annotations: [
-				{ text: 'Revenus : 64 900 €', x: 22, y: 33 },
-				{ text: 'Charges : 11 900 €', x: 50, y: 33 },
-				{ text: 'Cashflow net : 53 000 €', x: 78, y: 33 },
-				{ text: 'Recouvrement 100%', x: 50, y: 47 },
-				{ text: 'Évolution mensuelle', x: 35, y: 60 },
+				{ text: 'Revenus, charges et cashflow consolidés', x: 50, y: 30 },
 			],
-			readDuration: 1800,
+			readDuration: 3000,
+		},
+		{
+			imageLight: '/images/showcase/dashboard-light.png',
+			imageDark: '/images/showcase/dashboard-dark.png',
+			alt: 'Tableau de bord',
+			label: '③ Tableau de bord',
+			annotations: [
+				{ text: 'KPIs, alertes et activité en un coup d\'oeil', x: 50, y: 32 },
+			],
+			readDuration: 3000,
 		},
 	];
 
