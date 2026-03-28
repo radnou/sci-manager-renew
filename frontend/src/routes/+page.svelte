@@ -70,8 +70,8 @@
 			title: 'Ajoutez vos biens et locataires',
 			time: '5 minutes',
 			description: 'Adresse, loyer, bail — on vous guide étape par étape.',
-			imageLight: '/images/showcase/fiche-identite.png',
-			imageDark: '/images/showcase/fiche-identite-dark.png',
+			imageLight: '/images/showcase/biens-grid.png',
+			imageDark: '/images/showcase/biens-grid-dark.png',
 			alt: 'Fiche bien',
 			details: {
 				heading: 'Chaque bien a sa fiche complète',

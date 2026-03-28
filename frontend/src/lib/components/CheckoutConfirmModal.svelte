@@ -132,7 +132,7 @@
 					{/each}
 					{#if extraCount > 0}
 						<li class="text-sm text-slate-400 dark:text-slate-500 pl-6">
-							+ {extraCount} autre{extraCount > 1 ? 's' : ''} fonctionnalit{extraCount > 1 ? 'es' : 'e'}
+							+ {extraCount} autre{extraCount > 1 ? 's' : ''} fonctionnalité{extraCount > 1 ? 's' : ''}
 						</li>
 					{/if}
 				</ul>
