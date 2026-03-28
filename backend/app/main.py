@@ -74,6 +74,7 @@ from app.core.rate_limit import limiter
 from app.core.supabase_client import get_supabase_service_client
 from app.services.irl_service import check_irl_revisions
 from app.services.nurture_service import process_nurture_emails
+from app.services.signup_nurture_service import check_and_send_signup_nurture_emails
 from app.services.bilan_mensuel_service import auto_generate_bilans
 from app.services.notification_cron import (
     check_bail_renewal,
@@ -124,7 +125,11 @@ async def _notification_cron_loop():
             nurture_sent = await process_nurture_emails()
             if nurture_sent:
                 logger.info("nurture_emails_sent", count=nurture_sent)
-            # Task 7: Generate monthly bilans on the 2nd of each month
+            # Task 7: Signup nurture email sequence (day 1, 3, 7)
+            signup_nurture_sent = await check_and_send_signup_nurture_emails()
+            if signup_nurture_sent:
+                logger.info("signup_nurture_emails_sent", count=signup_nurture_sent)
+            # Task 8: Generate monthly bilans on the 2nd of each month
             bilans_count = await auto_generate_bilans(client)
             if bilans_count:
                 logger.info("bilans_mensuels_generated", count=bilans_count)
