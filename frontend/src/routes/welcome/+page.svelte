@@ -1,240 +1,123 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
-	import { supabase } from '$lib/supabase';
-	import { API_URL } from '$lib/api';
-	import { Button } from '$lib/components/ui/button';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card';
-	import { Input } from '$lib/components/ui/input';
-	import { addToast } from '$lib/components/ui/toast';
+	import { seedDemo } from '$lib/api';
 
-	type WelcomeStep = 'activating' | 'set-password' | 'error';
+	let currentStep = $state(0);
+	let factIndex = $state(0);
+	let progress = $state(0);
+	let error = $state('');
 
-	let step = $state<WelcomeStep>('activating');
-	let errorMessage = $state('');
-	let planKey = $state('');
-	let password = $state('');
-	let passwordConfirm = $state('');
-	let isLoading = $state(false);
+	const steps = [
+		{ text: 'Création de votre espace de gestion', duration: 1500 },
+		{ text: 'Chargement des données de démonstration', duration: 2000 },
+		{ text: 'Calcul de vos indicateurs financiers', duration: 2000 },
+		{ text: 'Préparation de votre tableau de bord', duration: 1500 },
+	];
 
-	const passwordMinLength = 8;
+	const facts = [
+		'Un loyer impayé non détecté coûte en moyenne 800€ au propriétaire.',
+		'Les gestionnaires digitalisés réduisent leurs impayés de 63%.',
+		'GérerSCI pré-remplit votre CERFA 2044 automatiquement.',
+		'72% des gestionnaires constatent une amélioration en 12 mois.',
+	];
 
-	let passwordMismatch = $derived(
-		passwordConfirm.length > 0 && password !== passwordConfirm
-	);
+	const totalDuration = steps.reduce((s, step) => s + step.duration, 0);
 
-	let passwordTooShort = $derived(
-		password.length > 0 && password.length < passwordMinLength
-	);
-
-	const planLabels: Record<string, string> = {
-		starter: 'Gestion',
-		pro: 'Pilotage',
-		fondateur: 'Fondateur'
-	};
-
-	onMount(async () => {
-		const sessionId = page.url.searchParams.get('session_id');
-
-		if (!sessionId) {
-			// If user is already authenticated, redirect to dashboard
-			const {
-				data: { session }
-			} = await supabase.auth.getSession();
-			if (session) {
-				goto('/dashboard', { replaceState: true });
-				return;
-			}
-			errorMessage = 'Lien invalide : aucun identifiant de session.';
-			step = 'error';
-			return;
-		}
-
-		try {
-			const res = await fetch(
-				`${API_URL}/api/v1/auth/activate?session_id=${encodeURIComponent(sessionId)}`
-			);
-			const data = await res.json();
-
-			if (!res.ok) {
-				// Never expose raw backend errors to users
-				errorMessage =
-					res.status === 429
-						? 'Trop de tentatives. Veuillez patienter quelques minutes.'
-						: "Votre paiement a bien été reçu. L'activation de votre compte est en cours — veuillez réessayer dans quelques instants.";
-				step = 'error';
-				return;
-			}
-
-			planKey = data.plan_key || '';
-
-			// Exchange token_hash for a Supabase session via verifyOtp
-			const { error: otpError } = await supabase.auth.verifyOtp({
-				token_hash: data.token_hash,
-				type: 'magiclink'
-			});
-
-			if (otpError) {
-				errorMessage = "Erreur d'authentification. Veuillez réessayer ou contacter le support.";
-				step = 'error';
-				return;
-			}
-
-			step = 'set-password';
-		} catch {
-			errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
-			step = 'error';
-		}
-	});
-
-	async function handleSetPassword(event: SubmitEvent) {
-		event.preventDefault();
-		errorMessage = '';
-
-		if (password !== passwordConfirm) {
-			errorMessage = 'Les mots de passe ne correspondent pas.';
-			return;
-		}
-
-		if (password.length < passwordMinLength) {
-			errorMessage = `Le mot de passe doit contenir au moins ${passwordMinLength} caractères.`;
-			return;
-		}
-
-		isLoading = true;
-
-		const { error } = await supabase.auth.updateUser({ password });
-
-		if (error) {
-			errorMessage = 'Erreur lors de la définition du mot de passe. Veuillez réessayer.';
-			isLoading = false;
-			return;
-		}
-
-		addToast({
-			title: 'Bienvenue !',
-			description: `Votre compte ${planLabels[planKey] || planKey} est activé.`,
-			variant: 'success'
+	onMount(() => {
+		// Launch API call immediately (runs in background)
+		const seedPromise = seedDemo().catch((err) => {
+			console.error('Demo seed failed:', err);
+			error = err?.message || 'Erreur lors du chargement des données.';
 		});
 
-		goto('/onboarding', { replaceState: true });
-	}
+		// Animate steps on fixed timer (independent of API)
+		let elapsed = 0;
+		for (let i = 0; i < steps.length; i++) {
+			setTimeout(() => { currentStep = i + 1; }, elapsed);
+			elapsed += steps[i].duration;
+		}
+
+		// Progress bar animation
+		const interval = setInterval(() => {
+			progress = Math.min(progress + 1.5, 100);
+		}, totalDuration / 67);
+
+		// Rotate facts
+		const factTimer = setInterval(() => {
+			factIndex = (factIndex + 1) % facts.length;
+		}, 2500);
+
+		// Redirect after animation completes (wait for API too)
+		setTimeout(async () => {
+			clearInterval(interval);
+			clearInterval(factTimer);
+			progress = 100;
+			await seedPromise;
+			// Small delay for 100% to render
+			setTimeout(() => {
+				goto('/dashboard', { replaceState: true });
+			}, 300);
+		}, totalDuration);
+	});
 </script>
 
-<svelte:head>
-	<title>Bienvenue — GérerSCI</title>
-</svelte:head>
+<svelte:head><title>Bienvenue | GérerSCI</title></svelte:head>
 
-<section class="sci-page-shell">
-	<div class="mx-auto mt-6 w-full max-w-md">
-		{#if step === 'activating'}
-			<Card class="sci-section-card">
-				<CardHeader>
-					<p class="sci-eyebrow">Activation en cours</p>
-					<CardTitle class="text-2xl">Préparation de votre espace</CardTitle>
-					<CardDescription>Veuillez patienter quelques instants...</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div class="flex items-center justify-center py-8">
-						<div
-							class="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"
-						></div>
-					</div>
-				</CardContent>
-			</Card>
-		{:else if step === 'set-password'}
-			<Card class="sci-section-card">
-				<CardHeader>
-					<p class="sci-eyebrow">Plan {planLabels[planKey] || planKey} activé</p>
-					<CardTitle class="text-2xl">Définissez votre mot de passe</CardTitle>
-					<CardDescription>
-						Choisissez un mot de passe pour accéder à votre espace de gestion.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form class="space-y-4" onsubmit={handleSetPassword}>
-						<label class="sci-field">
-							<span class="sci-field-label">Mot de passe</span>
-							<Input
-								type="password"
-								bind:value={password}
-								required
-								minlength={passwordMinLength}
-								placeholder="••••••••"
-								disabled={isLoading}
-								autocomplete="new-password"
-							/>
-							{#if passwordTooShort}
-								<span class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-									{passwordMinLength} caractères minimum
-								</span>
-							{/if}
-						</label>
+<div class="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+	<div class="w-full max-w-md px-6 text-center">
+		<!-- Logo -->
+		<h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+			GérerSCI
+		</h1>
+		<p class="mb-8 text-sm text-slate-600 dark:text-slate-400">
+			Bienvenue ! Nous préparons votre espace.
+		</p>
 
-						<label class="sci-field">
-							<span class="sci-field-label">Confirmer le mot de passe</span>
-							<Input
-								type="password"
-								bind:value={passwordConfirm}
-								required
-								minlength={passwordMinLength}
-								placeholder="••••••••"
-								disabled={isLoading}
-								autocomplete="new-password"
-							/>
-							{#if passwordMismatch}
-								<span class="mt-1 text-xs text-red-600 dark:text-red-400">
-									Les mots de passe ne correspondent pas
-								</span>
-							{/if}
-						</label>
+		<!-- Steps -->
+		<div class="mb-8 space-y-3 text-left">
+			{#each steps as step, i}
+				<div class="flex items-center gap-3 text-sm transition-opacity duration-300 {i < currentStep ? 'opacity-100' : i === currentStep ? 'opacity-70' : 'opacity-30'}">
+					{#if i < currentStep}
+						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs">✓</span>
+					{:else if i === currentStep}
+						<span class="flex h-6 w-6 items-center justify-center">
+							<span class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400"></span>
+						</span>
+					{:else}
+						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-slate-400 text-xs dark:bg-slate-800 dark:text-slate-600">
+							{i + 1}
+						</span>
+					{/if}
+					<span class="text-slate-700 dark:text-slate-300 {i < currentStep ? 'text-emerald-700 dark:text-emerald-400' : ''}">
+						{step.text}
+					</span>
+				</div>
+			{/each}
+		</div>
 
-						{#if errorMessage}
-							<p
-								role="alert"
-								class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
-							>
-								{errorMessage}
-							</p>
-						{/if}
+		<!-- Progress bar -->
+		<div class="mb-6 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+			<div
+				class="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-200"
+				style="width: {progress}%"
+			></div>
+		</div>
 
-						<Button
-							type="submit"
-							class="w-full"
-							disabled={isLoading || !password || !passwordConfirm || passwordMismatch || passwordTooShort}
-						>
-							{isLoading ? 'Activation...' : 'Activer mon compte'}
-						</Button>
-					</form>
-				</CardContent>
-			</Card>
-		{:else}
-			<Card class="sci-section-card">
-				<CardHeader>
-					<p class="sci-eyebrow">Activation en attente</p>
-					<CardTitle class="text-2xl">Encore un instant</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p
-						class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
-					>
-						{errorMessage}
-					</p>
+		<!-- Rotating facts -->
+		<div class="min-h-[3rem] text-sm text-slate-500 dark:text-slate-400" style="animation: fadeIn 0.3s ease-out">
+			<p>{facts[factIndex]}</p>
+		</div>
 
-					<div class="space-y-3">
-						<Button onclick={() => window.location.reload()} class="w-full">Réessayer</Button>
-						<Button href="/login" variant="outline" class="w-full">Se connecter</Button>
-						<Button href="/pricing" variant="ghost" class="w-full text-slate-500">Voir les offres</Button>
-					</div>
-				</CardContent>
-			</Card>
+		{#if error}
+			<p class="mt-4 text-xs text-rose-500">{error}</p>
 		{/if}
 	</div>
-</section>
+</div>
+
+<style>
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+</style>
