@@ -25,14 +25,18 @@
 		steps: Step[];
 	}
 
+	// Positions calibrated against actual screenshot content (% of image area)
+	// Dashboard: navbar ~10%, breadcrumb ~15%, title ~20%, alert ~30%, KPIs ~40-50%, SCI cards ~60-70%, activity ~78-90%
+	// Finances: navbar ~8%, breadcrumb ~12%, title ~18%, period toggle ~25%, KPIs row1 ~35-42%, KPIs row2 ~48-55%, chart ~62-90%
+	// Biens: navbar ~8%, tabs ~15%, title ~22%, cards ~40-70%
 	const scenes: Scene[] = [
 		{
 			imageLight: '/images/showcase/dashboard-light.png',
 			imageDark: '/images/showcase/dashboard-dark.png',
 			alt: 'Tableau de bord',
 			steps: [
-				{ targetX: 22, targetY: 22, tooltip: '2 SCI · 4 biens · 100% recouvrement', moveDuration: 1000, readDuration: 2000 },
-				{ targetX: 72, targetY: 22, tooltip: 'Cashflow net consolidé : 64 900 €', moveDuration: 800, readDuration: 2000 }
+				{ targetX: 18, targetY: 46, tooltip: 'SCI actives et biens gérés en un coup d\'oeil', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 82, targetY: 46, tooltip: 'Cashflow net : 64 900 € consolidé', moveDuration: 900, readDuration: 2200 }
 			]
 		},
 		{
@@ -40,8 +44,8 @@
 			imageDark: '/images/showcase/biens-grid-dark.png',
 			alt: 'Grille des biens',
 			steps: [
-				{ targetX: 22, targetY: 52, tooltip: 'Statut locatif en temps réel', moveDuration: 1000, readDuration: 2000 },
-				{ targetX: 58, targetY: 62, tooltip: 'Rendement brut calculé', moveDuration: 800, readDuration: 2000 }
+				{ targetX: 30, targetY: 42, tooltip: 'Statut locatif et loyer mensuel', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 30, targetY: 58, tooltip: 'Rendement brut et cashflow calculés', moveDuration: 700, readDuration: 2200 }
 			]
 		},
 		{
@@ -49,8 +53,8 @@
 			imageDark: '/images/showcase/loyers-with-button-dark.png',
 			alt: 'Suivi des loyers',
 			steps: [
-				{ targetX: 30, targetY: 52, tooltip: 'Loyer en retard détecté automatiquement', moveDuration: 1000, readDuration: 2000 },
-				{ targetX: 72, targetY: 68, tooltip: 'Générer quittance en 1 clic', moveDuration: 900, readDuration: 2000 }
+				{ targetX: 35, targetY: 48, tooltip: 'Loyer en retard détecté automatiquement', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 78, targetY: 48, tooltip: 'Quittance PDF en 1 clic', moveDuration: 800, readDuration: 2200 }
 			]
 		},
 		{
@@ -58,8 +62,8 @@
 			imageDark: '/images/showcase/finances-consolidated-dark.png',
 			alt: 'Vue financière consolidée',
 			steps: [
-				{ targetX: 35, targetY: 45, tooltip: 'Revenus vs charges par mois', moveDuration: 1000, readDuration: 2000 },
-				{ targetX: 62, targetY: 58, tooltip: 'Cashflow net multi-SCI', moveDuration: 800, readDuration: 2000 }
+				{ targetX: 25, targetY: 38, tooltip: 'Revenus locatifs consolidés', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 75, targetY: 38, tooltip: 'Cashflow net : 53 000 €', moveDuration: 800, readDuration: 2200 }
 			]
 		},
 		{
@@ -67,8 +71,8 @@
 			imageDark: '/images/showcase/fiche-identite-dark.png',
 			alt: 'Fiche bien détaillée',
 			steps: [
-				{ targetX: 28, targetY: 48, tooltip: 'DPE, surface, loyer, bail — tout en un', moveDuration: 1000, readDuration: 2000 },
-				{ targetX: 55, targetY: 28, tooltip: '9 onglets de gestion complète', moveDuration: 800, readDuration: 2000 }
+				{ targetX: 30, targetY: 42, tooltip: 'Répartition des parts sociales', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 30, targetY: 72, tooltip: 'Total vérifié automatiquement à 100%', moveDuration: 700, readDuration: 2200 }
 			]
 		}
 	];
@@ -247,7 +251,7 @@
 		{#if activeTooltip}
 			<div
 				class="pointer-events-none absolute z-30 -translate-x-1/2 tooltip-enter"
-				style="left: {activeTooltip.x}%; top: {Math.max(activeTooltip.y - 8, 4)}%"
+				style="left: {activeTooltip.x}%; top: {Math.max(activeTooltip.y - 12, 2)}%"
 			>
 				<div
 					class="whitespace-nowrap rounded-full bg-slate-900/90 px-4 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-sm dark:bg-white/90 dark:text-slate-900"
