@@ -38,8 +38,8 @@
 			imageDark: '/images/showcase/dashboard-dark.png',
 			alt: 'Tableau de bord',
 			steps: [
-				{ targetX: 18, targetY: 34, tooltip: 'SCI actives et biens gérés en un coup d\'oeil', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 82, targetY: 34, tooltip: 'Cashflow net consolidé : 64 900 €', moveDuration: 900, readDuration: 2200 }
+				{ targetX: 18, targetY: 38, tooltip: 'SCI actives et biens gérés en un coup d\'oeil', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 82, targetY: 38, tooltip: 'Cashflow net consolidé : 64 900 €', moveDuration: 900, readDuration: 2200 }
 			]
 		},
 		{
@@ -47,8 +47,8 @@
 			imageDark: '/images/showcase/biens-grid-dark.png',
 			alt: 'Grille des biens',
 			steps: [
-				{ targetX: 28, targetY: 28, tooltip: 'Statut locatif et loyer mensuel', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 28, targetY: 40, tooltip: 'Rendement brut et cashflow calculés', moveDuration: 700, readDuration: 2200 }
+				{ targetX: 28, targetY: 32, tooltip: 'Statut locatif et loyer mensuel', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 28, targetY: 43, tooltip: 'Rendement brut et cashflow calculés', moveDuration: 700, readDuration: 2200 }
 			]
 		},
 		{
@@ -56,8 +56,8 @@
 			imageDark: '/images/showcase/loyers-with-button-dark.png',
 			alt: 'Suivi des loyers',
 			steps: [
-				{ targetX: 30, targetY: 34, tooltip: 'Loyer en retard détecté automatiquement', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 78, targetY: 34, tooltip: 'Quittance PDF en 1 clic', moveDuration: 800, readDuration: 2200 }
+				{ targetX: 30, targetY: 38, tooltip: 'Loyer en retard détecté automatiquement', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 78, targetY: 38, tooltip: 'Quittance PDF en 1 clic', moveDuration: 800, readDuration: 2200 }
 			]
 		},
 		{
@@ -65,8 +65,8 @@
 			imageDark: '/images/showcase/finances-consolidated-dark.png',
 			alt: 'Vue financière consolidée',
 			steps: [
-				{ targetX: 22, targetY: 29, tooltip: 'Revenus locatifs consolidés', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 75, targetY: 29, tooltip: 'Cashflow net : 53 000 €', moveDuration: 800, readDuration: 2200 }
+				{ targetX: 22, targetY: 33, tooltip: 'Revenus locatifs consolidés', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 75, targetY: 33, tooltip: 'Cashflow net : 53 000 €', moveDuration: 800, readDuration: 2200 }
 			]
 		},
 		{
@@ -74,8 +74,8 @@
 			imageDark: '/images/showcase/fiche-identite-dark.png',
 			alt: 'Fiche bien détaillée',
 			steps: [
-				{ targetX: 30, targetY: 32, tooltip: 'Répartition des parts sociales', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 30, targetY: 54, tooltip: 'Total vérifié automatiquement à 100%', moveDuration: 700, readDuration: 2200 }
+				{ targetX: 30, targetY: 36, tooltip: 'Répartition des parts sociales', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 30, targetY: 56, tooltip: 'Total vérifié automatiquement à 100%', moveDuration: 700, readDuration: 2200 }
 			]
 		}
 	];
