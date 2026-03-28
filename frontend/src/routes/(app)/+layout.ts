@@ -14,13 +14,17 @@ export const load: LayoutLoad = async ({ url }) => {
 	try {
 		const subscription = await fetchSubscriptionEntitlements();
 
-		// Paywall: redirect if no active subscription (unless already on pricing-related page)
+		// Paywall bypass for demo users
 		if (!subscription.is_active) {
-			throw redirect(302, '/pricing');
+			// Demo mode: redirect to /welcome if not yet seeded
+			if (!subscription.demo_seeded && !url.pathname.startsWith('/welcome')) {
+				throw redirect(302, '/welcome');
+			}
+			// If demo_seeded=true, let them through (DemoBanner + LockedAction handle restrictions)
 		}
 
-		// Onboarding: redirect if not completed (unless already on onboarding page)
-		if (!subscription.onboarding_completed && !url.pathname.startsWith('/onboarding')) {
+		// Only redirect to onboarding if user has an active subscription (not demo)
+		if (subscription.is_active && !subscription.onboarding_completed && !url.pathname.startsWith('/onboarding')) {
 			throw redirect(302, '/onboarding');
 		}
 
