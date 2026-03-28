@@ -1,17 +1,52 @@
 -- 025_demo_data_support.sql
 -- Add is_demo flag to entity tables for demo data lifecycle management
+-- Each ALTER is wrapped to skip gracefully if table doesn't exist
 
-ALTER TABLE sci ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE biens ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE baux ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE loyers ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE charges ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE locataires ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE assurance_pno ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
-ALTER TABLE associes ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+DO $$ BEGIN
+  ALTER TABLE sci ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE biens ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE baux ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE loyers ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE charges ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE locataires ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE assurance_pno ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE associes ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
 -- Flag on subscriptions to track if demo has been seeded
-ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS demo_seeded BOOLEAN DEFAULT FALSE;
+DO $$ BEGIN
+  ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS demo_seeded BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
 -- Partial indexes for fast cleanup (only index demo=true rows)
 CREATE INDEX IF NOT EXISTS idx_sci_is_demo ON sci(is_demo) WHERE is_demo = TRUE;
