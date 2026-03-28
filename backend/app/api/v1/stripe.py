@@ -163,7 +163,7 @@ def _mark_event_processed(event_id: str, event_type: str) -> None:
         logger.warning("idempotency_mark_failed", event_id=event_id, exc_info=True)
 
 
-def _handle_event(event: Any) -> None:
+async def _handle_event(event: Any) -> None:
     event_type = _to_str(event.get("type")) if hasattr(event, "get") else None
     event_data = event.get("data", {}) if hasattr(event, "get") else {}
     obj = event_data.get("object", {}) if isinstance(event_data, dict) else {}
@@ -204,6 +204,16 @@ def _handle_event(event: Any) -> None:
                 status_value,
                 plan_key=plan_key,
             )
+
+        # Clean up demo data now that user has paid
+        try:
+            from app.services.demo_service import cleanup_demo_data
+            service_client = get_supabase_service_client()
+            await cleanup_demo_data(service_client, user_id)
+            logger.info("demo_cleanup_after_checkout", user_id=user_id)
+        except Exception:
+            logger.warning("demo_cleanup_failed_after_checkout", user_id=user_id, exc_info=True)
+
         return
 
     if event_type == "customer.subscription.deleted":
@@ -273,19 +283,22 @@ async def get_subscription(user_id: str = Depends(get_current_user)) -> Subscrip
     logger.info("fetching_subscription_entitlements", user_id=user_id)
     summary = SubscriptionService.get_subscription_summary(user_id)
 
-    # Load onboarding_completed from subscriptions table
+    # Load onboarding_completed and demo_seeded from subscriptions table
     client = get_supabase_service_client()
     result = (
         client.table("subscriptions")
-        .select("onboarding_completed")
+        .select("onboarding_completed, demo_seeded")
         .eq("user_id", user_id)
         .execute()
     )
     onboarding_completed = False
+    demo_seeded = False
     if result.data:
         onboarding_completed = bool(result.data[0].get("onboarding_completed", False))
+        demo_seeded = bool(result.data[0].get("demo_seeded", False))
 
     summary["onboarding_completed"] = onboarding_completed
+    summary["demo_seeded"] = demo_seeded
     return SubscriptionEntitlementsResponse(**summary)
 
 
@@ -558,7 +571,7 @@ async def stripe_webhook(request: Request) -> StripeWebhookResponse:
         logger.info("stripe_webhook_duplicate_skipped", event_id=event_id, event_type=event_type)
         return StripeWebhookResponse(status="already_processed")
 
-    _handle_event(event)
+    await _handle_event(event)
 
     # Mark event as processed after successful handling
     if event_id:

@@ -48,4 +48,5 @@ class SubscriptionEntitlementsResponse(BaseModel):
     over_limit: bool = False
     features: dict[str, Any] = Field(default_factory=dict)
     onboarding_completed: bool = False
+    demo_seeded: bool = False
     current_period_end: str | None = None

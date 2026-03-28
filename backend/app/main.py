@@ -45,6 +45,7 @@ from app.api.v1 import (
     charges,
     comptabilite,
     dashboard,
+    demo,
     echeances,
     export,
     files,
@@ -611,4 +612,5 @@ app.include_router(import_csv.router, prefix="/api/v1")
 app.include_router(import_csv.templates_router, prefix="/api/v1")
 app.include_router(leads.router, prefix="/api/v1")
 app.include_router(bilans.router, prefix="/api/v1")
+app.include_router(demo.router, prefix="/api/v1")
 app.include_router(admin.router)
