@@ -111,11 +111,12 @@
 		activeTooltip = null;
 		showClick = false;
 
-		// Start cursor at center
+		// Start cursor near the first target (not center — avoids visible long travel)
 		cursorMoving = false;
-		cursorX = 50;
-		cursorY = 50;
-		await delay(100);
+		const firstStep = scene.steps[0];
+		cursorX = firstStep.targetX + 8;
+		cursorY = firstStep.targetY + 10;
+		await delay(50);
 
 		for (const step of scene.steps) {
 			if (destroyed) return;
