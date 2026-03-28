@@ -25,18 +25,21 @@
 		steps: Step[];
 	}
 
-	// Positions calibrated against actual screenshot content (% of image area)
-	// Dashboard: navbar ~10%, breadcrumb ~15%, title ~20%, alert ~30%, KPIs ~40-50%, SCI cards ~60-70%, activity ~78-90%
-	// Finances: navbar ~8%, breadcrumb ~12%, title ~18%, period toggle ~25%, KPIs row1 ~35-42%, KPIs row2 ~48-55%, chart ~62-90%
-	// Biens: navbar ~8%, tabs ~15%, title ~22%, cards ~40-70%
+	// Positions measured from actual screenshots (% of image area, excluding browser chrome)
+	// MEASUREMENT METHOD: screenshots are 1440x900. Browser chrome is separate div.
+	// Dashboard: navbar 0-7%, breadcrumb 8-11%, title 12-20%, alert 22-27%, KPIs 30-38%, MES SCI 40%, SCI cards 44-54%, activity 58-78%
+	// Biens: navbar 0-7%, tabs 8-12%, title 14-20%, cards 24-52%, empty 54-100%
+	// Loyers: navbar 0-7%, tabs 8-12%, title 14-20%, table header 22-26%, rows 28-60%
+	// Finances: navbar 0-7%, breadcrumb 8-11%, title 12-17%, toggle 19-22%, KPIs-row1 24-34%, KPIs-row2 36-46%, chart 50-90%
+	// Fiche: navbar 0-7%, tabs 8-12%, title 14-20%, rows 24-52%, total bar 54-58%
 	const scenes: Scene[] = [
 		{
 			imageLight: '/images/showcase/dashboard-light.png',
 			imageDark: '/images/showcase/dashboard-dark.png',
 			alt: 'Tableau de bord',
 			steps: [
-				{ targetX: 18, targetY: 46, tooltip: 'SCI actives et biens gérés en un coup d\'oeil', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 82, targetY: 46, tooltip: 'Cashflow net : 64 900 € consolidé', moveDuration: 900, readDuration: 2200 }
+				{ targetX: 18, targetY: 34, tooltip: 'SCI actives et biens gérés en un coup d\'oeil', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 82, targetY: 34, tooltip: 'Cashflow net consolidé : 64 900 €', moveDuration: 900, readDuration: 2200 }
 			]
 		},
 		{
@@ -44,8 +47,8 @@
 			imageDark: '/images/showcase/biens-grid-dark.png',
 			alt: 'Grille des biens',
 			steps: [
-				{ targetX: 30, targetY: 42, tooltip: 'Statut locatif et loyer mensuel', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 30, targetY: 58, tooltip: 'Rendement brut et cashflow calculés', moveDuration: 700, readDuration: 2200 }
+				{ targetX: 28, targetY: 28, tooltip: 'Statut locatif et loyer mensuel', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 28, targetY: 40, tooltip: 'Rendement brut et cashflow calculés', moveDuration: 700, readDuration: 2200 }
 			]
 		},
 		{
@@ -53,8 +56,8 @@
 			imageDark: '/images/showcase/loyers-with-button-dark.png',
 			alt: 'Suivi des loyers',
 			steps: [
-				{ targetX: 35, targetY: 48, tooltip: 'Loyer en retard détecté automatiquement', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 78, targetY: 48, tooltip: 'Quittance PDF en 1 clic', moveDuration: 800, readDuration: 2200 }
+				{ targetX: 30, targetY: 34, tooltip: 'Loyer en retard détecté automatiquement', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 78, targetY: 34, tooltip: 'Quittance PDF en 1 clic', moveDuration: 800, readDuration: 2200 }
 			]
 		},
 		{
@@ -62,8 +65,8 @@
 			imageDark: '/images/showcase/finances-consolidated-dark.png',
 			alt: 'Vue financière consolidée',
 			steps: [
-				{ targetX: 25, targetY: 38, tooltip: 'Revenus locatifs consolidés', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 75, targetY: 38, tooltip: 'Cashflow net : 53 000 €', moveDuration: 800, readDuration: 2200 }
+				{ targetX: 22, targetY: 29, tooltip: 'Revenus locatifs consolidés', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 75, targetY: 29, tooltip: 'Cashflow net : 53 000 €', moveDuration: 800, readDuration: 2200 }
 			]
 		},
 		{
@@ -71,8 +74,8 @@
 			imageDark: '/images/showcase/fiche-identite-dark.png',
 			alt: 'Fiche bien détaillée',
 			steps: [
-				{ targetX: 30, targetY: 42, tooltip: 'Répartition des parts sociales', moveDuration: 1000, readDuration: 2200 },
-				{ targetX: 30, targetY: 72, tooltip: 'Total vérifié automatiquement à 100%', moveDuration: 700, readDuration: 2200 }
+				{ targetX: 30, targetY: 32, tooltip: 'Répartition des parts sociales', moveDuration: 1000, readDuration: 2200 },
+				{ targetX: 30, targetY: 54, tooltip: 'Total vérifié automatiquement à 100%', moveDuration: 700, readDuration: 2200 }
 			]
 		}
 	];
