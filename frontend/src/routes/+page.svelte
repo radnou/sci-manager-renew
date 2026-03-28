@@ -23,6 +23,7 @@
 	} from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
 	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
+	import AppDemoVideo from '$lib/components/AppDemoVideo.svelte';
 	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	onMount(async () => {
@@ -571,49 +572,11 @@
 	</section>
 
 	<!-- ============================================================ -->
-	<!-- HERO SCREENSHOT -->
+	<!-- DEMO VIDEO -->
 	<!-- ============================================================ -->
-	<section class="py-16 bg-white dark:bg-slate-950">
-		<div class="mx-auto max-w-6xl px-6">
-			<div class="relative mx-auto">
-				<!-- Browser frame -->
-				<div class="rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
-					<!-- Browser bar -->
-					<div class="flex items-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-						<div class="flex gap-1.5">
-							<div class="w-3 h-3 rounded-full bg-red-400"></div>
-							<div class="w-3 h-3 rounded-full bg-amber-400"></div>
-							<div class="w-3 h-3 rounded-full bg-emerald-400"></div>
-						</div>
-						<div class="flex-1 mx-4">
-							<div class="bg-white dark:bg-slate-700 rounded-md px-3 py-1 text-xs text-slate-400 text-center">
-								gerersci.fr/dashboard
-							</div>
-						</div>
-					</div>
-					<!-- Screenshot -->
-					<button onclick={() => openLightbox(0)} class="block w-full cursor-zoom-in transition-transform duration-300 hover:scale-[1.02]">
-						<img
-							src="/images/showcase/dashboard-light.png"
-							alt="Dashboard GérerSCI — 2 SCI, 4 biens, 100% recouvrement, 64 900EUR cashflow"
-							class="w-full block dark:hidden"
-							fetchpriority="high"
-							decoding="async"
-							width="1440"
-							height="900"
-						/>
-						<img
-							src="/images/showcase/dashboard-dark.png"
-							alt="Dashboard GérerSCI en mode sombre"
-							class="w-full hidden dark:block"
-							fetchpriority="high"
-							decoding="async"
-							width="1440"
-							height="900"
-						/>
-					</button>
-				</div>
-			</div>
+	<section class="bg-gradient-to-b from-blue-50/50 to-white py-8 dark:from-slate-900 dark:to-slate-950">
+		<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+			<AppDemoVideo />
 		</div>
 	</section>
 
