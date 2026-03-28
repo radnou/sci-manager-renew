@@ -14,3 +14,4 @@ export * from './dashboard';
 export * from './admin';
 export * from './import-export';
 export * from './bilans';
+export * from './demo';

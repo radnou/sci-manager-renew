@@ -332,6 +332,7 @@ export type SubscriptionEntitlements = {
 	over_limit: boolean;
 	features: Record<string, boolean>;
 	onboarding_completed: boolean;
+	demo_seeded?: boolean;
 };
 
 export interface Cerfa2044Request {
