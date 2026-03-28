@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { Plus, FileText, Check, Loader2, X, Filter } from 'lucide-svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 	import DatePopover from '$lib/components/ui/DatePopover.svelte';
 	import {
 		createLoyerForBien,
@@ -24,9 +25,10 @@
 		adresseBien?: string;
 		villeBien?: string;
 		onRefresh: () => void;
+		isDemo?: boolean;
 	}
 
-	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh }: Props = $props();
+	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh, isDemo = false }: Props = $props();
 
 	let showCelebration = $state<{ type: 'checkmark' | 'badge' | 'confetti'; title: string; subtitle: string } | null>(null);
 	let showLoyerComposer = $state(false);
@@ -222,13 +224,15 @@
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Loyers</h2>
 		{#if isGerant}
 			{#if !showLoyerComposer}
-				<button
-					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={openLoyerComposer}
-				>
-					<Plus class="h-4 w-4" />
-					Enregistrer un loyer
-				</button>
+				<LockedAction {isDemo} action="enregistrer un loyer">
+					<button
+						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+						onclick={openLoyerComposer}
+					>
+						<Plus class="h-4 w-4" />
+						Enregistrer un loyer
+					</button>
+				</LockedAction>
 			{/if}
 		{/if}
 	</div>
@@ -443,20 +447,22 @@
 												{/if}
 											</div>
 										{/if}
-										<button
-											onclick={() => handleGenerateQuittance(loyer)}
-											disabled={isGenerating}
-											class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-											title="Générer la quittance"
-										>
-											{#if isGenerating}
-												<Loader2 class="h-3 w-3 animate-spin" />
-												Génération…
-											{:else}
-												<FileText class="h-3 w-3" />
-												Quittance
-											{/if}
-										</button>
+										<LockedAction {isDemo} action="générer une quittance">
+											<button
+												onclick={() => handleGenerateQuittance(loyer)}
+												disabled={isGenerating}
+												class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+												title="Générer la quittance"
+											>
+												{#if isGenerating}
+													<Loader2 class="h-3 w-3 animate-spin" />
+													Génération…
+												{:else}
+													<FileText class="h-3 w-3" />
+													Quittance
+												{/if}
+											</button>
+										</LockedAction>
 									</div>
 								</td>
 							{/if}

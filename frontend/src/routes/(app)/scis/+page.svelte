@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import { Building2, Plus, Landmark, ArrowUpRight } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { fetchScis, fetchSubscriptionEntitlements, type SCIOverview, type SubscriptionEntitlements } from '$lib/api';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import SciModal from '$lib/components/fiche-bien/modals/SciModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
+	import LockedAction from '$lib/components/LockedAction.svelte';
+
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	let showSciModal = $state(false);
 	let scis = $state<SCIOverview[]>([]);
@@ -53,16 +57,18 @@
 		<p class="sci-eyebrow">Gestion</p>
 		<div class="flex items-center justify-between">
 			<h1 class="sci-page-title">Mes SCI</h1>
-			{#if canCreateSci}
-				<Button onclick={() => showSciModal = true} size="sm">
-					<Plus class="mr-1 h-4 w-4" /> Nouvelle SCI
-				</Button>
-			{:else}
-				<Button onclick={handleNewSciClick} size="sm" variant="outline" class="opacity-75">
-					<Plus class="mr-1 h-4 w-4" /> Nouvelle SCI
-					<span class="ml-1 text-xs">(Limite atteinte)</span>
-				</Button>
-			{/if}
+			<LockedAction {isDemo} action="créer une SCI">
+				{#if canCreateSci}
+					<Button onclick={() => showSciModal = true} size="sm">
+						<Plus class="mr-1 h-4 w-4" /> Nouvelle SCI
+					</Button>
+				{:else}
+					<Button onclick={handleNewSciClick} size="sm" variant="outline" class="opacity-75">
+						<Plus class="mr-1 h-4 w-4" /> Nouvelle SCI
+						<span class="ml-1 text-xs">(Limite atteinte)</span>
+					</Button>
+				{/if}
+			</LockedAction>
 		</div>
 		{#if !canCreateSci && entitlements}
 			<div class="mt-3 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/30">

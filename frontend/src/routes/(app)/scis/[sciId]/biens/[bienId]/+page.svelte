@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onMount, getContext } from 'svelte';
-	import type { SCIDetail, FicheBien } from '$lib/api';
+	import type { SCIDetail, FicheBien, SubscriptionEntitlements } from '$lib/api';
 	import { breadcrumbNames } from '$lib/stores/breadcrumb-names';
 	import { fetchFicheBien, renderQuitus, type QuitusRequestPayload } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
@@ -19,6 +19,8 @@
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	let sciId = $derived(page.params.sciId!);
 	let bienId = $derived(page.params.bienId!);
@@ -194,7 +196,7 @@
 		<div class="sci-stagger mt-6">
 			{#if activeSection === 'identite'}
 			<div id="section-identite" role="tabpanel" aria-label="Identité">
-				<FicheBienIdentite {bien} {isGerant} onRefresh={loadFicheBien} />
+				<FicheBienIdentite {bien} {isGerant} {isDemo} onRefresh={loadFicheBien} />
 			</div>
 			{:else if activeSection === 'bail'}
 			<div id="section-bail" role="tabpanel" aria-label="Bail">
@@ -212,6 +214,7 @@
 					adresseBien={bien.adresse}
 					villeBien={bien.ville}
 					onRefresh={loadFicheBien}
+					{isDemo}
 				/>
 			</div>
 			{:else if activeSection === 'charges'}
@@ -222,6 +225,7 @@
 					sciId={sciId}
 					bienId={String(bien.id)}
 					onRefresh={loadFicheBien}
+					{isDemo}
 				/>
 			</div>
 			{:else if activeSection === 'pno'}
@@ -255,6 +259,7 @@
 					{isGerant}
 					sciId={sciId}
 					bienId={String(bien.id)}
+					{isDemo}
 				/>
 			</div>
 			{:else if activeSection === 'evenements'}

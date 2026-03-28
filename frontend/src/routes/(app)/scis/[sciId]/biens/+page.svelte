@@ -11,8 +11,11 @@
 	import { addToast } from '$lib/components/ui/toast';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 	const sciId = getContext<string>('sciId');
 	const userRole = getContext<string>('userRole');
 
@@ -211,31 +214,35 @@
 				{/if}
 
 				<RoleGate>
-					<button
-						onclick={() => showImportModal = true}
-						class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-					>
-						<Upload class="h-4 w-4" />
-						Importer (CSV)
-					</button>
-					{#if canCreateBien}
+					<LockedAction {isDemo} action="importer des biens">
 						<button
-							onclick={() => showBienModal = true}
-							class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+							onclick={() => showImportModal = true}
+							class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 						>
-							<Plus class="h-4 w-4" />
-							Ajouter un bien
+							<Upload class="h-4 w-4" />
+							Importer (CSV)
 						</button>
-					{:else}
-						<button
-							onclick={handleNewBienClick}
-							class="inline-flex items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 opacity-75 transition-colors hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-950/50"
-						>
-							<Plus class="h-4 w-4" />
-							Ajouter un bien
-							<span class="text-xs">(Limite atteinte)</span>
-						</button>
-					{/if}
+					</LockedAction>
+					<LockedAction {isDemo} action="ajouter un bien">
+						{#if canCreateBien}
+							<button
+								onclick={() => showBienModal = true}
+								class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+							>
+								<Plus class="h-4 w-4" />
+								Ajouter un bien
+							</button>
+						{:else}
+							<button
+								onclick={handleNewBienClick}
+								class="inline-flex items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 opacity-75 transition-colors hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-950/50"
+							>
+								<Plus class="h-4 w-4" />
+								Ajouter un bien
+								<span class="text-xs">(Limite atteinte)</span>
+							</button>
+						{/if}
+					</LockedAction>
 				</RoleGate>
 			</div>
 		</div>

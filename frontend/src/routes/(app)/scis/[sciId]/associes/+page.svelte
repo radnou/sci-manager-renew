@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { getContext } from 'svelte';
-	import type { SCIDetail, Associe } from '$lib/api';
+	import type { SCIDetail, Associe, SubscriptionEntitlements } from '$lib/api';
 	import { fetchSciAssociesList, deleteAssocie } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 	import { UserPlus, Pencil, Trash2, Loader2 } from 'lucide-svelte';
 	import AssocieModal from '$lib/components/fiche-bien/modals/AssocieModal.svelte';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	let sciId = $derived(page.params.sciId!);
 	let isGerant = $derived(userRole === 'gerant');
@@ -89,13 +92,15 @@
 		<div class="flex items-center justify-between">
 			<h1 class="sci-page-title">Associés</h1>
 			{#if isGerant}
-				<button
-					onclick={() => { editingAssocie = null; showAssocieModal = true; }}
-					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-				>
-					<UserPlus class="h-4 w-4" />
-					Ajouter un associé
-				</button>
+				<LockedAction {isDemo} action="ajouter un associé">
+					<button
+						onclick={() => { editingAssocie = null; showAssocieModal = true; }}
+						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+					>
+						<UserPlus class="h-4 w-4" />
+						Ajouter un associé
+					</button>
+				</LockedAction>
 			{/if}
 		</div>
 	</header>

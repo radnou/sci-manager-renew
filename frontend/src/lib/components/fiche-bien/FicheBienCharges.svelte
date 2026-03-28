@@ -5,6 +5,7 @@
 	import { Plus, Trash2, X, Filter } from 'lucide-svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { CHARGE_TYPE_OPTIONS } from '$lib/high-value/charges';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 
 	interface Props {
 		charges: any[];
@@ -12,9 +13,10 @@
 		sciId: string;
 		bienId: string | number;
 		onRefresh: () => void;
+		isDemo?: boolean;
 	}
 
-	let { charges, isGerant, sciId, bienId, onRefresh }: Props = $props();
+	let { charges, isGerant, sciId, bienId, onRefresh, isDemo = false }: Props = $props();
 
 	let showChargeComposer = $state(false);
 	let chargeSaving = $state(false);
@@ -119,18 +121,20 @@
 		<div class="mb-4 flex items-center justify-between">
 			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Charges</h2>
 			{#if isGerant}
-				<button
-					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-					onclick={showChargeComposer ? closeChargeComposer : openChargeComposer}
-				>
-					{#if showChargeComposer}
-						<X class="h-4 w-4" />
-						Fermer
-					{:else}
-						<Plus class="h-4 w-4" />
-						Ajouter une charge
-					{/if}
-				</button>
+				<LockedAction {isDemo} action="ajouter une charge">
+					<button
+						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+						onclick={showChargeComposer ? closeChargeComposer : openChargeComposer}
+					>
+						{#if showChargeComposer}
+							<X class="h-4 w-4" />
+							Fermer
+						{:else}
+							<Plus class="h-4 w-4" />
+							Ajouter une charge
+						{/if}
+					</button>
+				</LockedAction>
 			{/if}
 		</div>
 

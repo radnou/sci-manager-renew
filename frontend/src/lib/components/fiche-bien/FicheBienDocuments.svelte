@@ -4,6 +4,7 @@
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { FileText, Upload, Trash2, Download } from 'lucide-svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 	import {
 		announceFicheBienModal,
 		subscribeExclusiveFicheBienModal
@@ -14,9 +15,10 @@
 		isGerant: boolean;
 		sciId: string;
 		bienId: string | number;
+		isDemo?: boolean;
 	}
 
-	let { documents, isGerant, sciId, bienId }: Props = $props();
+	let { documents, isGerant, sciId, bienId, isDemo = false }: Props = $props();
 
 	let showUploadForm = $state(false);
 	let uploadNom = $state('');
@@ -134,13 +136,15 @@
 			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Documents</h2>
 		</div>
 		{#if isGerant}
-			<button
-				onclick={toggleUploadForm}
-				class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-			>
-				<Upload class="h-4 w-4" />
-				Ajouter
-			</button>
+			<LockedAction {isDemo} action="uploader un document">
+				<button
+					onclick={toggleUploadForm}
+					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+				>
+					<Upload class="h-4 w-4" />
+					Ajouter
+				</button>
+			</LockedAction>
 		{/if}
 	</div>
 

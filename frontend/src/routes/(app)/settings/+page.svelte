@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { getContext } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { User } from '@supabase/supabase-js';
 	import {
@@ -29,6 +28,10 @@
 	import { theme, type ThemePreference } from '$lib/stores/theme';
 	import { User as UserIcon, CreditCard, Bell, Shield, Settings, ExternalLink, AlertTriangle } from 'lucide-svelte';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
+
+	const subscriptionCtx = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscriptionCtx?.is_active;
 
 	// --- Tab management ---
 	type TabId = 'profil' | 'abonnement' | 'notifications' | 'confidentialite' | 'preferences';
@@ -735,9 +738,11 @@
 							</div>
 
 							<div class="flex items-center gap-3 pt-2">
-								<Button onclick={handleNotifSave} disabled={notifSaving}>
-									{notifSaving ? 'Enregistrement...' : 'Enregistrer les notifications'}
-								</Button>
+								<LockedAction {isDemo} action="configurer les notifications">
+									<Button onclick={handleNotifSave} disabled={notifSaving}>
+										{notifSaving ? 'Enregistrement...' : 'Enregistrer les notifications'}
+									</Button>
+								</LockedAction>
 							</div>
 						{/if}
 					</CardContent>

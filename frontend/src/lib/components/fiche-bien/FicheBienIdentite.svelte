@@ -4,14 +4,16 @@
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import FieldHint from '$lib/components/FieldHint.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 
 	interface Props {
 		bien: FicheBien;
 		isGerant: boolean;
 		onRefresh?: () => void;
+		isDemo?: boolean;
 	}
 
-	let { bien, isGerant, onRefresh }: Props = $props();
+	let { bien, isGerant, onRefresh, isDemo = false }: Props = $props();
 
 	let editing = $state(false);
 	let saving = $state(false);
@@ -155,24 +157,26 @@
 	<div class="mb-4 flex items-center justify-between">
 		<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Identité du bien</h2>
 		{#if isGerant}
-			<div class="flex items-center gap-2">
-				{#if editing}
+			<LockedAction {isDemo} action="modifier ce bien">
+				<div class="flex items-center gap-2">
+					{#if editing}
+						<button
+							onclick={handleSave}
+							disabled={saving}
+							class="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+						>
+							{saving ? 'Enregistrement…' : 'Enregistrer'}
+						</button>
+					{/if}
 					<button
-						onclick={handleSave}
+						onclick={toggleEdit}
 						disabled={saving}
-						class="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+						class="text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
 					>
-						{saving ? 'Enregistrement…' : 'Enregistrer'}
+						{editing ? 'Annuler' : 'Modifier'}
 					</button>
-				{/if}
-				<button
-					onclick={toggleEdit}
-					disabled={saving}
-					class="text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
-				>
-					{editing ? 'Annuler' : 'Modifier'}
-				</button>
-			</div>
+				</div>
+			</LockedAction>
 		{/if}
 	</div>
 
