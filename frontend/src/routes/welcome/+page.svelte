@@ -73,8 +73,11 @@
 		<h1 class="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
 			GérerSCI
 		</h1>
-		<p class="mb-8 text-sm text-slate-600 dark:text-slate-400">
-			Bienvenue ! Nous préparons votre espace.
+		<p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+			Bienvenue ! Nous chargeons des données de démonstration pour que vous puissiez explorer l'application.
+		</p>
+		<p class="mb-8 text-xs text-slate-400 dark:text-slate-500">
+			Elles seront remplacées par vos vraies données après souscription.
 		</p>
 
 		<!-- Steps -->
