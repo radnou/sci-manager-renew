@@ -546,13 +546,17 @@ async def add_security_headers(request: Request, call_next):
 
     # Content Security Policy (CSP)
     matomo_url = os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr")
+    # In development, allow connect to backend on different port
+    dev_connect = ""
+    if settings.app_env != Environment.PRODUCTION:
+        dev_connect = "http://localhost:8001 http://127.0.0.1:8001 http://localhost:8000 http://127.0.0.1:8000 ws://localhost:5173 "
     csp_policy = (
         "default-src 'self'; "
         f"script-src 'self' https://js.stripe.com {matomo_url}; "
         "style-src 'self' 'unsafe-inline'; "  # Tailwind nécessite unsafe-inline
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "
-        f"connect-src 'self' {settings.supabase_url} https://api.stripe.com {matomo_url}; "
+        f"connect-src 'self' {dev_connect}{settings.supabase_url} https://api.stripe.com {matomo_url}; "
         "frame-src https://js.stripe.com; "
         "object-src 'none'; "
         "base-uri 'self'; "
