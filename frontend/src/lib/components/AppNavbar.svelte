@@ -21,6 +21,7 @@
 		Briefcase,
 		CalendarClock,
 		ArrowLeftRight,
+		ArrowLeft,
 		Gavel,
 		Menu,
 		X
@@ -42,6 +43,7 @@
 	let sciSwitcherOpen: boolean = $state(false);
 	let accountMenuOpen: boolean = $state(false);
 	let mobileMenuOpen: boolean = $state(false);
+	let pilotageOpen: boolean = $state(false);
 	let activeSciId: string | null = $state(null);
 	let scisLoaded: boolean = $state(false);
 	let accountMenuContainer = $state<HTMLDivElement | null>(null);
@@ -78,6 +80,9 @@
 			}
 			if (sciSwitcherContainer && !sciSwitcherContainer.contains(e.target as Node)) {
 				sciSwitcherOpen = false;
+			}
+			if (pilotageOpen && !(e.target as HTMLElement).closest('#pilotage-dropdown')) {
+				pilotageOpen = false;
 			}
 		};
 		document.addEventListener('mousedown', handleClick);
@@ -278,24 +283,6 @@
 		</div>
 
 		<a
-			href="/exploitation"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/exploitation')
-				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-		>
-			<Briefcase class="h-4 w-4" />
-			<span>Exploitation</span>
-		</a>
-		<a
-			href="/echeances"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/echeances')
-				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-		>
-			<CalendarClock class="h-4 w-4" />
-			<span>Échéances</span>
-		</a>
-		<a
 			href="/finances"
 			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/finances')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
@@ -304,15 +291,34 @@
 			<TrendingUp class="h-4 w-4" />
 			<span class="hidden sm:inline">Finances</span>
 		</a>
-		<a
-			href="/bilans"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/bilans')
-				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-		>
-			<FileSpreadsheet class="h-4 w-4" />
-			<span class="hidden sm:inline">Bilans</span>
-		</a>
+
+		<!-- Pilotage dropdown -->
+		<div class="relative hidden md:block" id="pilotage-dropdown">
+			<button
+				type="button"
+				class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {pilotageOpen || isActive('/exploitation') || isActive('/echeances') || isActive('/bilans')
+					? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
+					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+				onclick={() => { pilotageOpen = !pilotageOpen; }}
+			>
+				<Briefcase class="h-4 w-4" />
+				<span>Pilotage</span>
+				<ChevronDown class="h-3.5 w-3.5 transition-transform {pilotageOpen ? 'rotate-180' : ''}" />
+			</button>
+			{#if pilotageOpen}
+				<div class="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+					<a href="/exploitation" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors {isActive('/exploitation') ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'}" onclick={() => { pilotageOpen = false; }}>
+						<Briefcase class="h-4 w-4" /> Exploitation
+					</a>
+					<a href="/echeances" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors {isActive('/echeances') ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'}" onclick={() => { pilotageOpen = false; }}>
+						<CalendarClock class="h-4 w-4" /> Échéances
+					</a>
+					<a href="/bilans" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors {isActive('/bilans') ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'}" onclick={() => { pilotageOpen = false; }}>
+						<FileSpreadsheet class="h-4 w-4" /> Bilans mensuels
+					</a>
+				</div>
+			{/if}
+		</div>
 
 		<!-- Spacer -->
 		<div class="flex-1"></div>
@@ -428,26 +434,6 @@
 					Tableau de bord
 				</a>
 				<a
-					href="/exploitation"
-					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/exploitation')
-						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-					onclick={closeMobileMenu}
-				>
-					<Briefcase class="h-4.5 w-4.5" />
-					Exploitation
-				</a>
-				<a
-					href="/echeances"
-					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/echeances')
-						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-					onclick={closeMobileMenu}
-				>
-					<CalendarClock class="h-4.5 w-4.5" />
-					Échéances
-				</a>
-				<a
 					href="/finances"
 					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/finances')
 						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
@@ -457,16 +443,41 @@
 					<TrendingUp class="h-4.5 w-4.5" />
 					Finances
 				</a>
-				<a
-					href="/bilans"
-					class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/bilans')
-						? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-						: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
-					onclick={closeMobileMenu}
-				>
-					<FileSpreadsheet class="h-4.5 w-4.5" />
-					Bilans
-				</a>
+
+				<!-- Pilotage section (mobile) -->
+				<div class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+					<p class="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pilotage</p>
+					<a
+						href="/exploitation"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/exploitation')
+							? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+							: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+						onclick={closeMobileMenu}
+					>
+						<Briefcase class="h-4.5 w-4.5" />
+						Exploitation
+					</a>
+					<a
+						href="/echeances"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/echeances')
+							? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+							: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+						onclick={closeMobileMenu}
+					>
+						<CalendarClock class="h-4.5 w-4.5" />
+						Échéances
+					</a>
+					<a
+						href="/bilans"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors {isActive('/bilans')
+							? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+							: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
+						onclick={closeMobileMenu}
+					>
+						<FileSpreadsheet class="h-4.5 w-4.5" />
+						Bilans mensuels
+					</a>
+				</div>
 
 				<!-- SCI Switcher in mobile -->
 				<div class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -555,7 +566,7 @@
 
 	<!-- SCI Sub-nav + Breadcrumbs (merged into single bar when SCI is active) -->
 	{#if activeSciId}
-		<div class="border-t border-slate-100 dark:border-slate-800">
+		<div class="border-b border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
 			<div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 overflow-x-auto px-4 md:px-8">
 				<!-- SCI tabs -->
 				<div class="flex items-center gap-0.5">
@@ -579,7 +590,18 @@
 				<!-- Inline breadcrumbs (right side) -->
 				{#if breadcrumbs.length > 2}
 					<nav aria-label="Fil d'Ariane" class="hidden items-center md:flex">
-						<ol class="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+						<ol class="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-500">
+							{#if breadcrumbs.length > 3}
+								<li>
+									<a
+										href={breadcrumbs[breadcrumbs.length - 2]?.href ?? '/dashboard'}
+										class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
+										aria-label="Retour"
+									>
+										<ArrowLeft class="h-3.5 w-3.5" />
+									</a>
+								</li>
+							{/if}
 							{#each breadcrumbs.slice(2) as crumb, index (crumb.href)}
 								{#if index > 0}
 									<li><ChevronRight class="h-3 w-3 text-slate-300 dark:text-slate-600" /></li>
@@ -590,7 +612,7 @@
 									{:else}
 										<a
 											href={crumb.href}
-											class="truncate rounded px-1 py-0.5 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
+											class="truncate rounded px-1 py-0.5 font-medium transition-colors hover:text-slate-700 dark:hover:text-slate-200"
 										>
 											{crumb.label}
 										</a>
@@ -604,13 +626,22 @@
 		</div>
 	{:else if breadcrumbs.length > 0}
 		<!-- Standalone breadcrumbs (no SCI context) -->
-		<div class="border-t border-slate-100 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40">
+		<div class="border-b border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
 			<nav
 				aria-label="Fil d'Ariane"
 				class="mx-auto flex w-full max-w-7xl items-center px-4 py-1.5 md:px-8"
 			>
 				<ol class="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
 					<li class="flex items-center gap-1">
+						{#if breadcrumbs.length > 1}
+							<a
+								href={breadcrumbs[breadcrumbs.length - 2]?.href ?? '/dashboard'}
+								class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-slate-200/60 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+								aria-label="Retour"
+							>
+								<ArrowLeft class="h-3.5 w-3.5" />
+							</a>
+						{/if}
 						<a
 							href="/dashboard"
 							class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-slate-200/60 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
@@ -626,7 +657,7 @@
 							{:else}
 								<a
 									href={crumb.href}
-									class="truncate rounded px-1.5 py-0.5 transition-colors hover:bg-slate-200/60 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+									class="truncate rounded px-1.5 py-0.5 font-medium transition-colors hover:bg-slate-200/60 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
 								>
 									{crumb.label}
 								</a>
