@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import {
 		Card,
 		CardContent,
@@ -22,13 +23,13 @@
 	let errorMessage = $state('');
 	let showConfirmEmail = $state(false);
 
-	const planLabels: Record<string, string> = {
-		starter: 'Gestion (19€/mois)',
-		pro: 'Fiscal (39€/mois)',
-		lifetime: 'Lifetime',
+	const planLabels: Record<string, { name: string; features: string }> = {
+		starter: { name: 'Gestion', features: '1 SCI, 5 biens, quittances PDF, CERFA 2044' },
+		pro: { name: 'Pilotage', features: 'SCI illimitées, CERFA 2044, fiscalité complète' },
+		lifetime: { name: 'Fondateur', features: 'Tout Pilotage inclus — à vie' },
 	};
 	const selectedPlan = $derived($page.url?.searchParams.get('plan') ?? null);
-	const planLabel = $derived(selectedPlan ? planLabels[selectedPlan] ?? selectedPlan : null);
+	const planLabel = $derived(selectedPlan ? planLabels[selectedPlan] ?? null : null);
 
 	const passwordMinLength = 8;
 
@@ -97,15 +98,19 @@
 	<div class="mx-auto mt-6 w-full max-w-md">
 		<Card class="sci-section-card">
 			<CardHeader>
-				<p class="sci-eyebrow">{planLabel ? `Plan ${planLabel}` : 'Créer un compte'}</p>
-				<CardTitle class="text-2xl">Créer un compte</CardTitle>
-				<CardDescription>
-					{#if planLabel}
-						Créez votre compte pour activer le plan {planLabel}.
-					{:else}
-						Créez votre compte pour accéder à GérerSCI. Choisissez votre plan après inscription.
-					{/if}
-				</CardDescription>
+				{#if selectedPlan && planLabel}
+					<Badge variant="secondary" class="mb-2 w-fit text-xs">Accès gratuit — aucune carte bancaire requise</Badge>
+					<CardTitle class="text-2xl">Voyez ce que donnerait votre SCI dans un vrai cockpit de gestion.</CardTitle>
+					<CardDescription>
+						Données de démo pré-remplies. Zéro carte bancaire. 2 minutes pour comprendre.
+					</CardDescription>
+				{:else}
+					<p class="sci-eyebrow">Créer un compte</p>
+					<CardTitle class="text-2xl">Créez votre compte</CardTitle>
+					<CardDescription>
+						Explorez GérerSCI avec des données de démonstration.
+					</CardDescription>
+				{/if}
 			</CardHeader>
 			<CardContent>
 				{#if showConfirmEmail}
@@ -202,6 +207,20 @@
 							{isLoading ? 'Inscription en cours...' : "S'inscrire"}
 						</Button>
 					</form>
+
+					{#if selectedPlan && planLabels[selectedPlan]}
+						<div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm dark:border-blue-800 dark:bg-blue-950/30">
+							<p class="font-medium text-blue-800 dark:text-blue-300">
+								Plan retenu : {planLabels[selectedPlan].name}
+							</p>
+							<p class="mt-1 text-blue-600 dark:text-blue-400">
+								{planLabels[selectedPlan].features}
+							</p>
+							<p class="mt-1 text-xs text-blue-500 dark:text-blue-500">
+								Activable après exploration. Annulable sous 30 jours.
+							</p>
+						</div>
+					{/if}
 
 					<p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
 						Déjà un compte ?
