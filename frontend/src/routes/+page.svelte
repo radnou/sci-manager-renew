@@ -22,6 +22,7 @@
 		Crown
 	} from 'lucide-svelte';
 	import { API_URL } from '$lib/api';
+	import { supabase } from '$lib/supabase';
 	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
 	import AppDemoVideo from '$lib/components/AppDemoVideo.svelte';
 	import { trackEvent, EVENTS } from '$lib/analytics';
@@ -95,8 +96,16 @@
 		}
 	}
 
-	function openCheckoutModal(planKey: string) {
+	async function openCheckoutModal(planKey: string) {
 		trackEvent(EVENTS.LANDING_PLAN_SELECT, { plan: planKey });
+
+		// Anonymous → redirect to register
+		const { data: { session } } = await supabase.auth.getSession();
+		if (!session) {
+			goto(`/register?plan=${planKey}`);
+			return;
+		}
+
 		const plan = plans.find((p: any) => p.key === planKey);
 		if (!plan) return;
 		modalPlanKey = planKey;
@@ -797,7 +806,7 @@
 							size="lg"
 							class="mt-4 w-full bg-amber-500 px-8 text-white hover:bg-amber-600"
 							disabled={checkoutLoading === 'lifetime'}
-							onclick={() => { modalPlanKey = 'lifetime'; modalPlanName = 'Fondateur'; modalPlanPrice = '500€'; modalPlanPeriod = ''; modalPlanFeatures = ['Tout Pilotage inclus — à vie', 'Ligne directe avec le fondateur', 'Accès beta aux nouvelles fonctionnalités']; modalOpen = true; }}
+							onclick={async () => { const { data: { session } } = await supabase.auth.getSession(); if (!session) { goto('/register?plan=lifetime'); return; } modalPlanKey = 'lifetime'; modalPlanName = 'Fondateur'; modalPlanPrice = '500€'; modalPlanPeriod = ''; modalPlanFeatures = ['Tout Pilotage inclus — à vie', 'Ligne directe avec le fondateur', 'Accès beta aux nouvelles fonctionnalités']; modalOpen = true; }}
 						>
 							{#if checkoutLoading === 'lifetime'}
 								<Loader2 class="mr-2 h-4 w-4 animate-spin" />

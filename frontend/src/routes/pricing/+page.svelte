@@ -85,6 +85,13 @@
 
 	function openCheckoutModal(planKey: string) {
 		trackEvent(EVENTS.PRICING_PLAN_SELECT, { plan: planKey });
+
+		// Anonymous → redirect to register
+		if (!isAuthenticated) {
+			window.location.href = `/register?plan=${planKey}`;
+			return;
+		}
+
 		const plan = plans.find((p) => p.key === planKey);
 		if (!plan) {
 			// Handle lifetime separately
