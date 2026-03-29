@@ -347,6 +347,18 @@ async def get_fiche_bien(
     if not getattr(frais_result, "error", None):
         frais_agence = frais_result.data or []
 
+    # Crédits immobiliers
+    credits_result = (
+        client.table("credits_immobiliers")
+        .select("*")
+        .eq("id_bien", bien_id)
+        .order("date_debut", desc=True)
+        .execute()
+    )
+    credits_immobiliers = []
+    if not getattr(credits_result, "error", None):
+        credits_immobiliers = credits_result.data or []
+
     # Documents
     docs_result = (
         client.table("documents_bien")
@@ -409,6 +421,7 @@ async def get_fiche_bien(
         charges_list=charges_list,
         assurance_pno=assurance_pno,
         frais_agence=frais_agence,
+        credits_immobiliers=credits_immobiliers,
         documents=documents,
         rentabilite=RentabiliteCalculee(**rentabilite),
     )
@@ -1123,6 +1136,44 @@ async def get_regularisation(
         result = calculate_regularisation(client, bail_id, annee)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+    return result
+
+
+class RegularisationConfirmPayload(BaseModel):
+    annee: int
+    notes: str | None = None
+
+
+@router.post("/{bien_id}/baux/{bail_id}/regularisation", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+async def confirm_regularisation_endpoint(
+    sci_id: UUID,
+    bien_id: str,
+    bail_id: str,
+    payload: RegularisationConfirmPayload,
+    request: Request,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Confirme et persiste la regularisation annuelle (gerant uniquement)."""
+    from app.services.regularisation_service import confirm_regularisation
+
+    logger.info("confirming_regularisation", bail_id=bail_id, annee=payload.annee)
+
+    client = _get_client(request)
+    _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
+
+    write_client = _get_write_client()
+    try:
+        result = confirm_regularisation(
+            write_client,
+            bien_id=bien_id,
+            bail_id=bail_id,
+            annee=payload.annee,
+            notes=payload.notes,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
     return result
 

@@ -12,10 +12,11 @@
 	import FicheBienCharges from '$lib/components/fiche-bien/FicheBienCharges.svelte';
 	import FicheBienPno from '$lib/components/fiche-bien/FicheBienPno.svelte';
 	import FicheBienAgence from '$lib/components/fiche-bien/FicheBienAgence.svelte';
+	import FicheBienCredit from '$lib/components/fiche-bien/FicheBienCredit.svelte';
 	import FicheBienRentabilite from '$lib/components/fiche-bien/FicheBienRentabilite.svelte';
 	import FicheBienDocuments from '$lib/components/fiche-bien/FicheBienDocuments.svelte';
 	import FicheBienEvenements from '$lib/components/fiche-bien/FicheBienEvenements.svelte';
-	import { Home, FileSignature, Receipt, Wallet, Shield, Building2, TrendingUp, FolderOpen, CalendarClock } from 'lucide-svelte';
+	import { Home, FileSignature, Receipt, Wallet, Shield, Building2, Landmark, TrendingUp, FolderOpen, CalendarClock } from 'lucide-svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -226,6 +227,7 @@
 					bienId={String(bien.id)}
 					onRefresh={loadFicheBien}
 					{isDemo}
+					activeBailId={bien.bail_actif?.id ? String(bien.bail_actif.id) : null}
 				/>
 			</div>
 			{:else if activeSection === 'pno'}

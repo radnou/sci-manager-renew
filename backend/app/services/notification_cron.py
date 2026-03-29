@@ -433,6 +433,94 @@ async def check_recurring_charges(supabase_client) -> int:
     return created_count
 
 
+async def check_regularisation_charges_reminder(supabase_client) -> int:
+    """In January, remind landlords to regularize charges for the previous year.
+
+    Loi ALUR art. 23 — obligation de régularisation annuelle.
+    Checks all active baux and notifies if no confirmed regularisation
+    exists for the previous calendar year.
+    """
+    today = date.today()
+
+    # Only run in January
+    if today.month != 1:
+        return 0
+
+    previous_year = today.year - 1
+    notified = 0
+
+    # Fetch all active baux
+    result = (
+        supabase_client.table("baux")
+        .select("id, id_bien, charges_locatives, biens(id_sci, adresse, ville)")
+        .eq("statut", "en_cours")
+        .execute()
+    )
+
+    for bail in result.data or []:
+        charges_locatives = float(bail.get("charges_locatives") or 0)
+        if charges_locatives <= 0:
+            continue
+
+        bien = bail.get("biens") or {}
+        sci_id = bien.get("id_sci")
+        if not sci_id:
+            continue
+
+        id_bien = bail.get("id_bien")
+        bail_id = bail.get("id")
+
+        # Check if a confirmed regularisation already exists for previous year
+        existing = (
+            supabase_client.table("regularisations_charges")
+            .select("id")
+            .eq("id_bien", id_bien)
+            .eq("id_bail", bail_id)
+            .eq("annee", previous_year)
+            .eq("statut", "confirme")
+            .execute()
+        )
+        if existing.data:
+            continue
+
+        adresse = bien.get("adresse", "un bien")
+
+        owners = (
+            supabase_client.table("associes")
+            .select("user_id")
+            .eq("id_sci", sci_id)
+            .not_.is_("user_id", "null")
+            .execute()
+        )
+
+        for owner in owners.data or []:
+            created = await create_notification_with_email(
+                supabase_client,
+                user_id=owner["user_id"],
+                notification_type="regularisation_charges",
+                data={
+                    "title": f"Régularisation des charges {previous_year} — {adresse}",
+                    "message": (
+                        f"La régularisation annuelle des charges pour {adresse} "
+                        f"(année {previous_year}) n'a pas encore été effectuée. "
+                        f"Obligation légale (loi ALUR art. 23)."
+                    ),
+                    "metadata": {
+                        "bail_id": bail_id,
+                        "bien_id": id_bien,
+                        "bien_adresse": adresse,
+                        "annee": previous_year,
+                        "dedup_key": f"regularisation_{bail_id}_{previous_year}",
+                    },
+                },
+            )
+            if created:
+                notified += 1
+
+    logger.info("check_regularisation_charges_reminder_complete", notified=notified)
+    return notified
+
+
 async def check_expiring_bails(supabase_client) -> int:
     """Find baux expiring within 90 days and notify the owner."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d")

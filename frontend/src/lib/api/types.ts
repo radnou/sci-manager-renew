@@ -532,6 +532,48 @@ export type FraisCreate = {
 	description?: string;
 };
 
+export type CreditImmobilierEmbed = {
+	id: number | string;
+	banque: string;
+	numero_contrat: string | null;
+	montant_emprunte: number;
+	taux_nominal: number;
+	taux_assurance: number;
+	duree_mois: number;
+	date_debut: string;
+	mensualite: number;
+	capital_restant_du: number | null;
+	type_credit: string;
+	statut: string;
+};
+
+export type CreditCreate = {
+	banque: string;
+	numero_contrat?: string;
+	montant_emprunte: number;
+	taux_nominal: number;
+	taux_assurance?: number;
+	duree_mois: number;
+	date_debut: string;
+	mensualite: number;
+	capital_restant_du?: number;
+	type_credit?: string;
+	statut?: string;
+	notes?: string;
+};
+
+export type CreditUpdate = Partial<CreditCreate>;
+
+export type AmortissementRow = {
+	mois: number;
+	date: string;
+	mensualite: number;
+	capital: number;
+	interets: number;
+	assurance: number;
+	capital_restant: number;
+};
+
 export type InviteAssociePayload = {
 	nom: string;
 	email?: string | null;
@@ -599,6 +641,7 @@ export type FicheBien = {
 	charges_list: ChargeEmbed[];
 	assurance_pno: AssurancePnoEmbed | null;
 	frais_agence: FraisAgenceEmbed[];
+	credits_immobiliers: CreditImmobilierEmbed[];
 	documents: DocumentBienEmbed[];
 	rentabilite: RentabiliteCalculee;
 };

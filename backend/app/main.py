@@ -44,6 +44,7 @@ from app.api.v1 import (
     cerfa,
     charges,
     comptabilite,
+    credits,
     dashboard,
     demo,
     echeances,
@@ -85,6 +86,7 @@ from app.services.notification_cron import (
     check_monthly_loyer_generation,
     check_pending_quittances,
     check_recurring_charges,
+    check_regularisation_charges_reminder,
 )
 
 # Configurer logging au démarrage
@@ -121,6 +123,8 @@ async def _notification_cron_loop():
             await check_bail_renewal(client)
             # Task 5: Auto-generate recurring charges (quarterly)
             await check_recurring_charges(client)
+            # Task 9: Regularisation charges reminder (January)
+            await check_regularisation_charges_reminder(client)
             # Task 6: Lead nurture email sequence
             nurture_sent = await process_nurture_emails()
             if nurture_sent:
@@ -621,5 +625,6 @@ app.include_router(import_csv.router, prefix="/api/v1")
 app.include_router(import_csv.templates_router, prefix="/api/v1")
 app.include_router(leads.router, prefix="/api/v1")
 app.include_router(bilans.router, prefix="/api/v1")
+app.include_router(credits.router, prefix="/api/v1")
 app.include_router(demo.router, prefix="/api/v1")
 app.include_router(admin.router)

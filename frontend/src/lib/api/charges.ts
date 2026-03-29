@@ -5,7 +5,8 @@ import type {
 	ChargeUpdatePayload,
 	ChargeEmbed,
 	ChargeCreate,
-	RegularisationResult
+	RegularisationResult,
+	RegularisationSaved
 } from './types';
 
 export function fetchCharges(sciId?: EntityId) {
@@ -54,6 +55,23 @@ export async function deleteChargeForBien(
 
 export function fetchRegularisation(sciId: string, bienId: string, bailId: string, annee: number) {
 	return apiFetch<RegularisationResult>(
-		`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/regularisation?annee=${annee}`
+		`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/regularisation/${annee}`
+	);
+}
+
+export function confirmRegularisation(
+	sciId: string,
+	bienId: string,
+	bailId: string,
+	annee: number,
+	notes?: string
+) {
+	return apiFetch<RegularisationSaved>(
+		`/api/v1/scis/${sciId}/biens/${bienId}/baux/${bailId}/regularisation`,
+		{
+			method: 'POST',
+			body: JSON.stringify({ annee, notes }),
+			headers: { 'Content-Type': 'application/json' }
+		}
 	);
 }
