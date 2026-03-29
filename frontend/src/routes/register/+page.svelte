@@ -151,7 +151,7 @@
 								autocomplete="new-password"
 							/>
 							{#if passwordTooShort}
-								<span class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+								<span role="alert" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
 									{passwordMinLength} caractères minimum
 								</span>
 							{/if}
@@ -169,7 +169,7 @@
 								autocomplete="new-password"
 							/>
 							{#if passwordMismatch}
-								<span class="mt-1 text-xs text-red-600 dark:text-red-400">
+								<span role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
 									Les mots de passe ne correspondent pas
 								</span>
 							{/if}

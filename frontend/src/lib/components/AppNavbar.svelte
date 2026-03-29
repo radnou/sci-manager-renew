@@ -197,7 +197,7 @@
 		<!-- Logo -->
 		<a
 			href="/dashboard"
-			class="mr-4 text-lg font-bold tracking-tight text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
+			class="mr-4 text-lg font-bold tracking-tight text-slate-900 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-slate-100 dark:hover:text-blue-400"
 		>
 			GérerSCI
 		</a>
@@ -205,7 +205,7 @@
 		<!-- Hamburger button (mobile only) -->
 		<button
 			type="button"
-			class="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+			class="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
 			onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
 			aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
 			aria-expanded={mobileMenuOpen}
@@ -221,7 +221,7 @@
 		<!-- Main nav links (hidden on mobile) -->
 		<a
 			href="/dashboard"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/dashboard')
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:flex {isActive('/dashboard')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -234,7 +234,7 @@
 			<button
 				type="button"
 				onclick={() => (sciSwitcherOpen = !sciSwitcherOpen)}
-				class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {activeSciId
+				class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 {activeSciId
 					? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
 					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 				aria-haspopup="listbox"
@@ -284,7 +284,7 @@
 
 		<a
 			href="/finances"
-			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors md:flex {isActive('/finances')
+			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:flex {isActive('/finances')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 		>
@@ -296,7 +296,7 @@
 		<div class="relative hidden md:block" id="pilotage-dropdown">
 			<button
 				type="button"
-				class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {pilotageOpen || isActive('/exploitation') || isActive('/echeances') || isActive('/bilans')
+				class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 {pilotageOpen || isActive('/exploitation') || isActive('/echeances') || isActive('/bilans')
 					? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
 					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 				onclick={() => { pilotageOpen = !pilotageOpen; }}
@@ -335,7 +335,7 @@
 				<button
 					type="button"
 					onclick={() => (accountMenuOpen = !accountMenuOpen)}
-					class="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+					class="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:hover:bg-slate-800"
 					aria-haspopup="menu"
 					aria-expanded={accountMenuOpen}
 				>
