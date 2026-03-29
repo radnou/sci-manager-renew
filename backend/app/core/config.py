@@ -172,6 +172,7 @@ class Settings(BaseSettings):
                 "STRIPE_WEBHOOK_SECRET": self.stripe_webhook_secret,
                 "RESEND_API_KEY": self.resend_api_key,
                 "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+                "SUPABASE_JWT_SECRET": self.supabase_jwt_secret,
             }
 
             for secret_name, secret_value in secrets_to_check.items():

@@ -303,17 +303,32 @@ async def delete_user_account(
         associes_rows = associes_response.data or []
         sci_ids = [a["id_sci"] for a in associes_rows if a.get("id_sci")]
 
-        bien_ids = []
-        if sci_ids:
-            biens_response = client.table("biens").select("id").in_("id_sci", sci_ids).execute()
-            bien_rows = biens_response.data or []
-            bien_ids = [b["id"] for b in bien_rows if b.get("id")]
-
         # 2. Suppression en cascade (dans l'ordre inverse des dépendances)
 
         # User-level tables first (no FK dependency on biens/sci)
         client.table("notifications").delete().eq("user_id", user_id).execute()
         client.table("notification_preferences").delete().eq("user_id", user_id).execute()
+
+        # Separate SCIs into exclusive (only this user) vs shared (other associes exist)
+        exclusive_sci_ids = []
+        shared_sci_ids = []
+        for sci_id in sci_ids:
+            other_assoc = client.table("associes").select("id").eq("id_sci", sci_id).neq("user_id", user_id).execute()
+            if other_assoc.data:
+                shared_sci_ids.append(sci_id)
+            else:
+                exclusive_sci_ids.append(sci_id)
+
+        # For shared SCIs, only remove the user's associe record (don't delete SCI data)
+        for sci_id in shared_sci_ids:
+            client.table("associes").delete().eq("id_sci", sci_id).eq("user_id", user_id).execute()
+
+        # For exclusive SCIs, full cascade delete
+        bien_ids = []
+        if exclusive_sci_ids:
+            biens_response = client.table("biens").select("id").in_("id_sci", exclusive_sci_ids).execute()
+            bien_rows = biens_response.data or []
+            bien_ids = [b["id"] for b in bien_rows if b.get("id")]
 
         if bien_ids:
             # Clean up storage files for documents before deleting records
@@ -345,14 +360,15 @@ async def delete_user_account(
             # Charges
             client.table("charges").delete().in_("id_bien", bien_ids).execute()
 
-        if sci_ids:
+        if exclusive_sci_ids:
             # Biens
-            client.table("biens").delete().in_("id_sci", sci_ids).execute()
+            client.table("biens").delete().in_("id_sci", exclusive_sci_ids).execute()
             # Données fiscales
-            client.table("fiscalite").delete().in_("id_sci", sci_ids).execute()
+            client.table("fiscalite").delete().in_("id_sci", exclusive_sci_ids).execute()
 
-        # Associés
-        client.table("associes").delete().eq("user_id", user_id).execute()
+        # Associés (only for exclusive SCIs — shared ones already handled above)
+        if exclusive_sci_ids:
+            client.table("associes").delete().eq("user_id", user_id).in_("id_sci", exclusive_sci_ids).execute()
 
         # 3. ANONYMISER (pas supprimer) les données de facturation Stripe
         # Les données de facturation doivent être conservées 10 ans (Code Général des Impôts)

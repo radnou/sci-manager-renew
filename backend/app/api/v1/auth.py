@@ -21,6 +21,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 logger = structlog.get_logger(__name__)
 
 
+def _mask_email(email: str) -> str:
+    """Mask email for safe logging — e.g. j***n@example.com"""
+    parts = email.split("@")
+    if len(parts) != 2:
+        return "***"
+    local = parts[0]
+    masked = local[0] + "***" + (local[-1] if len(local) > 1 else "")
+    return f"{masked}@{parts[1]}"
+
+
 class MagicLinkRequest(BaseModel):
     email: EmailStr
 
@@ -73,7 +83,7 @@ async def activate_session(
 
     # 4. Fallback: create user if webhook hasn't processed yet
     if not user_id:
-        logger.warning("activate_user_not_found_creating", email=email, session_id=session_id)
+        logger.warning("activate_user_not_found_creating", email=_mask_email(email), session_id=session_id)
         user_id = _create_or_get_user(email)
 
     if not user_id:
@@ -111,7 +121,7 @@ async def activate_session(
     except Exception as exc:
         logger.warning(
             "activation_welcome_email_failed",
-            email=email,
+            email=_mask_email(email),
             session_id=session_id,
             error=str(exc),
         )
@@ -131,7 +141,7 @@ async def forgot_password(request: Request, payload: ForgotPasswordRequest) -> M
     Always returns success to prevent email enumeration.
     """
     del request  # required by limiter but unused
-    logger.info("forgot_password_requested", email=payload.email)
+    logger.info("forgot_password_requested", email=_mask_email(payload.email))
     try:
         client = get_supabase_service_client()
         client.auth.reset_password_email(
@@ -139,7 +149,7 @@ async def forgot_password(request: Request, payload: ForgotPasswordRequest) -> M
             {"redirect_to": f"{settings.frontend_url}/reset-password"},
         )
     except Exception as e:
-        logger.error("forgot_password_error", email=payload.email, error=str(e))
+        logger.error("forgot_password_error", email=_mask_email(payload.email), error=str(e))
     # Always return success to avoid email enumeration
     return MagicLinkResponse(
         success=True,
@@ -153,16 +163,16 @@ async def send_magic_link(request: Request, payload: MagicLinkRequest) -> MagicL
     """
     Send magic link to user email for password-less authentication
     """
-    logger.info("sending_magic_link", email=payload.email)
+    logger.info("sending_magic_link", email=_mask_email(payload.email))
     try:
         # Send via Supabase Auth OTP
         result = await magic_link_service.send_magic_link(payload.email)
 
         if not result["success"]:
-            logger.warning("magic_link_send_failed", email=payload.email, reason=result["message"])
+            logger.warning("magic_link_send_failed", email=_mask_email(payload.email), reason=result["message"])
             raise ValidationError(result["message"])
 
-        logger.info("magic_link_sent", email=payload.email)
+        logger.info("magic_link_sent", email=_mask_email(payload.email))
         return MagicLinkResponse(
             success=True,
             message=f"Magic link sent to {payload.email}. Check your email.",
@@ -170,7 +180,7 @@ async def send_magic_link(request: Request, payload: MagicLinkRequest) -> MagicL
     except (ValidationError, AuthenticationError, ExternalServiceError):
         raise
     except Exception as e:
-        logger.error("magic_link_send_error", email=payload.email, error=str(e))
+        logger.error("magic_link_send_error", email=_mask_email(payload.email), error=str(e))
         raise ExternalServiceError("Supabase Auth", "Failed to send magic link")
 
 

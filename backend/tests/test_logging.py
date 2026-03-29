@@ -285,11 +285,11 @@ def test_send_magic_link_logs_operation():
         calls = mock_logger.info.call_args_list
         sending_call = next((c for c in calls if c[0][0] == "sending_magic_link"), None)
         assert sending_call is not None
-        assert sending_call[1]["email"] == "test@example.com"
+        assert sending_call[1]["email"] == "t***t@example.com"
 
         sent_call = next((c for c in calls if c[0][0] == "magic_link_sent"), None)
         assert sent_call is not None
-        assert sent_call[1]["email"] == "test@example.com"
+        assert sent_call[1]["email"] == "t***t@example.com"
 
 
 def test_update_bien_logs_operation():

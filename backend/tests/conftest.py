@@ -101,6 +101,7 @@ class FakeQuery:
         self._lt_filters: list[tuple[str, str]] = []
         self._is_filters: list[tuple[str, str]] = []
         self._not_is_filters: list[tuple[str, str]] = []
+        self._neq_filters: list[tuple[str, str]] = []
         self._operation = "select"
         self._payload: list[dict] = []
         self._update_payload: dict = {}
@@ -142,6 +143,10 @@ class FakeQuery:
 
     def eq(self, key: str, value: object) -> "FakeQuery":
         self._filters.append((key, str(value)))
+        return self
+
+    def neq(self, key: str, value: object) -> "FakeQuery":
+        self._neq_filters.append((key, str(value)))
         return self
 
     def in_(self, key: str, values: list[object]) -> "FakeQuery":
@@ -189,6 +194,9 @@ class FakeQuery:
     def _matches(self, row: dict) -> bool:
         for key, value in self._filters:
             if str(row.get(key)) != value:
+                return False
+        for key, value in self._neq_filters:
+            if str(row.get(key)) == value:
                 return False
         for key, values in self._in_filters:
             if str(row.get(key)) not in values:
