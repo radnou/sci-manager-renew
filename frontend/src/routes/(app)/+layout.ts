@@ -34,7 +34,11 @@ export const load: LayoutLoad = async ({ url }) => {
 		if (err && typeof err === 'object' && 'status' in err) {
 			throw err;
 		}
-		// API error — assume unpaid, redirect to pricing (payment-first model)
+		// API error — redirect to welcome for demo flow (if not already there)
+		if (!url.pathname.startsWith('/welcome')) {
+			throw redirect(302, '/welcome');
+		}
+		// Fallback: pricing
 		throw redirect(302, '/pricing');
 	}
 };
