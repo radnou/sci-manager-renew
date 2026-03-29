@@ -24,7 +24,7 @@
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 	let showCheckEmail = $state(false);
-	const isDevMode = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
+	const isDevMode = import.meta.env.DEV;
 
 	function getRedirectTarget(): string {
 		const next = page.url.searchParams.get('next');

@@ -1,6 +1,11 @@
 import { getCurrentSession } from '$lib/auth/session';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+// In development with Vite proxy, use relative path (empty string) to avoid CORS.
+// The Vite dev server proxies /api/* to the backend.
+// In production, VITE_API_URL is empty/unset and API calls go to the same origin.
+export const API_URL = import.meta.env.PROD
+	? (import.meta.env.VITE_API_URL || '')
+	: '';
 
 export class ApiError extends Error {
 	constructor(
