@@ -14,6 +14,7 @@
 	} from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import Celebration from '$lib/components/Celebration.svelte';
+	import DemoConversionPrompt from '$lib/components/DemoConversionPrompt.svelte';
 
 	interface Props {
 		loyers: Array<any>;
@@ -31,6 +32,8 @@
 	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh, isDemo = false }: Props = $props();
 
 	let showCelebration = $state<{ type: 'checkmark' | 'badge' | 'confetti'; title: string; subtitle: string } | null>(null);
+	let showConversionPrompt = $state(false);
+	let conversionMessage = $state('');
 	let showLoyerComposer = $state(false);
 	let savingLoyer = $state(false);
 	let payDateLoyerId: EntityId | null = $state(null);
@@ -205,6 +208,13 @@
 					title: 'Quittance générée !',
 					subtitle: 'Vos locataires reçoivent un document professionnel conforme. Fini les modèles Word.'
 				};
+			}
+			if (isDemo) {
+				const dismissed = localStorage.getItem('demo_prompt_dismissed');
+				if (!dismissed || Date.now() - parseInt(dismissed) > 600000) {
+					conversionMessage = 'Cette quittance a été générée avec des données de démonstration.';
+					showConversionPrompt = true;
+				}
 			}
 		} catch (err: any) {
 			const message = err?.message ?? 'Impossible de générer la quittance.';
@@ -494,3 +504,9 @@
 		onDismiss={() => { showCelebration = null; }}
 	/>
 {/if}
+
+<DemoConversionPrompt
+	message={conversionMessage}
+	open={showConversionPrompt}
+	onClose={() => { showConversionPrompt = false; }}
+/>
