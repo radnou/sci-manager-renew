@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Building2 } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 	import type { SCICard } from '$lib/api';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 
@@ -88,6 +89,21 @@
 								style="width: {Math.min(sci.recouvrement, 100)}%"
 							></div>
 						</div>
+					</div>
+
+					<!-- Quick access to biens -->
+					<div class="mt-3 border-t border-slate-100 pt-2 dark:border-slate-800">
+						<button
+							type="button"
+							class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+							onclick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								goto(`/scis/${sci.id}/biens`);
+							}}
+						>
+							Voir les {sci.biens_count} bien{sci.biens_count > 1 ? 's' : ''} &rarr;
+						</button>
 					</div>
 				</div>
 			</a>
