@@ -3,6 +3,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import EmailCapture from '$lib/components/EmailCapture.svelte';
 	import { ArrowRight, FileText, Download, ChevronDown, CheckCircle } from 'lucide-svelte';
+	import { addToast } from '$lib/components/ui/toast';
 	import { trackEvent, EVENTS } from '$lib/analytics';
 
 	// Form state
@@ -123,7 +124,7 @@
 			downloaded = true;
 			trackEvent(EVENTS.QUITTANCE_GENERATE, { source: 'public' });
 		} catch {
-			alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
+			addToast({ title: 'Erreur', description: 'Erreur lors de la génération du PDF. Veuillez réessayer.', variant: 'error' });
 		} finally {
 			downloading = false;
 		}

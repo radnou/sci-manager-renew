@@ -407,6 +407,17 @@
 		}))
 	})}</script>`}
 	<link rel="alternate" hreflang="fr" href="https://gerersci.fr/" />
+	<meta property="og:title" content="GérerSCI — Gestion simplifiée de vos SCI" />
+	<meta property="og:description" content="Pilotez vos SCI en 10 minutes par mois. Biens, baux, quittances, CERFA 2044, le tout au même endroit." />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://gerersci.fr" />
+	<meta property="og:image" content="https://gerersci.fr/images/showcase/dashboard-light.png" />
+	<meta property="og:locale" content="fr_FR" />
+	<meta property="og:site_name" content="GérerSCI" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="GérerSCI — Gestion simplifiée de vos SCI" />
+	<meta name="twitter:description" content="Pilotez vos SCI en 10 minutes par mois." />
+	<meta name="twitter:image" content="https://gerersci.fr/images/showcase/dashboard-light.png" />
 </svelte:head>
 
 <main class="min-h-screen bg-slate-50 dark:bg-slate-950">

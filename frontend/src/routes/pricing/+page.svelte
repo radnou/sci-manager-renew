@@ -192,7 +192,11 @@
 		content="Comparez les offres GérerSCI : Gestion (19€/mois) et Pilotage (39€/mois). Garanti 30 jours satisfait ou remboursé."
 	/>
 	<link rel="canonical" href="https://gerersci.fr/pricing" />
+	<meta property="og:title" content="Tarifs — GérerSCI" />
+	<meta property="og:description" content="Gestion 19€/mois, Pilotage 39€/mois. Garanti 30 jours satisfait ou remboursé." />
+	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://gerersci.fr/pricing" />
+	<meta property="og:image" content="https://gerersci.fr/images/showcase/dashboard-light.png" />
 </svelte:head>
 
 <section class="bg-slate-50 py-20 dark:bg-slate-950">
