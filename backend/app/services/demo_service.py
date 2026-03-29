@@ -42,7 +42,7 @@ async def seed_demo_data(client, user_id: str) -> dict:
     client.table("sci").insert({
         "id": sci_id,
         "nom": "SCI Résidence Belleville",
-        "siren": "823456789",
+        "siren": None,  # No SIREN for demo data (avoids unique constraint conflicts)
         "regime_fiscal": "IR",
         "capital_social": 150000,
         "forme_juridique": "SCI",
@@ -58,7 +58,8 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "nom": "Gérant Démonstration",
         "email": "demo@gerersci.fr",
         "role": "gerant",
-        "parts": 100,
+        "part": 100,
+        "nb_parts": 1000,
         "is_demo": True,
     }).execute()
 
@@ -105,8 +106,7 @@ async def seed_demo_data(client, user_id: str) -> dict:
     client.table("locataires").insert({
         "id": loc1_id,
         "id_bien": bien1_id,
-        "nom": "Lefèvre",
-        "prenom": "Marie",
+        "nom": "Marie Lefèvre",
         "email": "marie.lefevre@demo.gerersci.fr",
         "telephone": "06 12 34 56 78",
         "date_debut": _month_ago(8),
@@ -118,8 +118,7 @@ async def seed_demo_data(client, user_id: str) -> dict:
     client.table("locataires").insert({
         "id": loc2_id,
         "id_bien": bien2_id,
-        "nom": "Durand",
-        "prenom": "Thomas",
+        "nom": "Thomas Durand",
         "email": "thomas.durand@demo.gerersci.fr",
         "telephone": "07 98 76 54 32",
         "date_debut": _month_ago(3),
@@ -229,14 +228,13 @@ async def seed_demo_data(client, user_id: str) -> dict:
     }).execute()
 
     # --- Assurance PNO (Bien 1) ---
-    client.table("assurance_pno").insert({
+    client.table("assurances_pno").insert({
         "id": str(uuid.uuid4()),
         "id_bien": bien1_id,
-        "assureur": "AXA",
+        "compagnie": "AXA",
         "numero_contrat": "PNO-DEMO-2025-001",
-        "prime_annuelle": 180,
-        "date_debut": _month_ago(12),
-        "date_fin": _next_month_first(),
+        "montant_annuel": 180,
+        "date_echeance": _next_month_first(),
         "is_demo": True,
     }).execute()
 
@@ -305,7 +303,7 @@ async def cleanup_demo_data(client, user_id: str) -> int:
         deleted += len(r.data or [])
 
         # Assurance PNO
-        r = client.table("assurance_pno").delete().in_("id_bien", bien_ids).eq("is_demo", True).execute()
+        r = client.table("assurances_pno").delete().in_("id_bien", bien_ids).eq("is_demo", True).execute()
         deleted += len(r.data or [])
 
         # Bail_locataires (via baux)

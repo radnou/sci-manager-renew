@@ -16,7 +16,7 @@ router = APIRouter(prefix="/demo", tags=["demo"])
 
 
 @router.post("/seed", status_code=201)
-@limiter.limit("1/hour")
+@limiter.limit("10/hour")
 async def seed_demo(request: Request, user=Depends(get_current_user)):
     """Seed demo data for a new user. Only works once (idempotent)."""
     client = get_supabase_service_client()
@@ -25,7 +25,7 @@ async def seed_demo(request: Request, user=Depends(get_current_user)):
     sub_res = (
         client.table("subscriptions")
         .select("demo_seeded, status")
-        .eq("user_id", user["sub"])
+        .eq("user_id", user)
         .execute()
     )
     if sub_res.data:
@@ -35,7 +35,7 @@ async def seed_demo(request: Request, user=Depends(get_current_user)):
         if sub.get("status") in ("active", "paid"):
             return {"message": "Abonnement actif — pas de données demo nécessaires.", "already_seeded": False}
 
-    result = await seed_demo_data(client, user["sub"])
+    result = await seed_demo_data(client, user)
     return {"message": "Données de démonstration chargées avec succès.", "sci_id": result["sci_id"]}
 
 
@@ -44,5 +44,5 @@ async def seed_demo(request: Request, user=Depends(get_current_user)):
 async def cleanup_demo(request: Request, user=Depends(get_current_user)):
     """Remove all demo data for the current user."""
     client = get_supabase_service_client()
-    deleted = await cleanup_demo_data(client, user["sub"])
+    deleted = await cleanup_demo_data(client, user)
     return {"message": f"{deleted} enregistrements de démonstration supprimés.", "deleted": deleted}
