@@ -46,6 +46,7 @@
 		{ id: 'charges', label: 'Charges', icon: Wallet },
 		{ id: 'pno', label: 'Assurance PNO', icon: Shield },
 		{ id: 'agence', label: 'Agence', icon: Building2 },
+		{ id: 'credit', label: 'Crédit', icon: Landmark },
 		{ id: 'rentabilite', label: 'Rentabilité', icon: TrendingUp },
 		{ id: 'documents', label: 'Documents', icon: FolderOpen },
 		{ id: 'evenements', label: 'Événements', icon: CalendarClock }
@@ -248,6 +249,17 @@
 					sciId={sciId}
 					bienId={String(bien.id)}
 					onRefresh={loadFicheBien}
+				/>
+			</div>
+			{:else if activeSection === 'credit'}
+			<div id="section-credit" role="tabpanel" aria-label="Crédit">
+				<FicheBienCredit
+					credits={bien.credits_immobiliers ?? []}
+					{isGerant}
+					sciId={sciId}
+					bienId={String(bien.id)}
+					onRefresh={loadFicheBien}
+					{isDemo}
 				/>
 			</div>
 			{:else if activeSection === 'rentabilite'}

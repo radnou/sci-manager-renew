@@ -13,6 +13,10 @@ import type {
 	PnoUpdate,
 	FraisAgenceEmbed,
 	FraisCreate,
+	CreditImmobilierEmbed,
+	CreditCreate,
+	CreditUpdate,
+	AmortissementRow,
 	Evenement,
 	EvenementCreatePayload,
 	ObligationsData,
@@ -256,6 +260,63 @@ export async function deleteFraisForBien(
 	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/frais-agence/${fraisId}`, {
 		method: 'DELETE'
 	});
+}
+
+// ── Credits immobiliers ──────────────────────────────────────
+
+export async function fetchCredits(
+	sciId: EntityId,
+	bienId: EntityId
+): Promise<CreditImmobilierEmbed[]> {
+	return apiFetch<CreditImmobilierEmbed[]>(`/api/v1/scis/${sciId}/biens/${bienId}/credits`);
+}
+
+export async function createCredit(
+	sciId: EntityId,
+	bienId: EntityId,
+	data: CreditCreate
+): Promise<CreditImmobilierEmbed> {
+	return apiFetch<CreditImmobilierEmbed>(`/api/v1/scis/${sciId}/biens/${bienId}/credits`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
+
+export async function updateCredit(
+	sciId: EntityId,
+	bienId: EntityId,
+	creditId: EntityId,
+	data: CreditUpdate
+): Promise<CreditImmobilierEmbed> {
+	return apiFetch<CreditImmobilierEmbed>(
+		`/api/v1/scis/${sciId}/biens/${bienId}/credits/${creditId}`,
+		{
+			method: 'PATCH',
+			body: JSON.stringify(data),
+			headers: { 'Content-Type': 'application/json' }
+		}
+	);
+}
+
+export async function deleteCredit(
+	sciId: EntityId,
+	bienId: EntityId,
+	creditId: EntityId
+): Promise<void> {
+	return apiFetch<void>(`/api/v1/scis/${sciId}/biens/${bienId}/credits/${creditId}`, {
+		method: 'DELETE'
+	});
+}
+
+export async function fetchAmortissement(
+	sciId: EntityId,
+	bienId: EntityId,
+	creditId: EntityId
+): Promise<AmortissementRow[]> {
+	return apiFetch<AmortissementRow[]>(
+		`/api/v1/scis/${sciId}/biens/${bienId}/credits/${creditId}/amortissement`
+	);
 }
 
 export function exportBiensCsv(sciId?: EntityId): Promise<Blob> {

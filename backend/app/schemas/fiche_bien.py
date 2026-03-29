@@ -49,6 +49,21 @@ class RentabiliteCalculee(BaseModel):
     cashflow_annuel: float = 0
 
 
+class CreditImmobilierEmbed(BaseModel):
+    id: str | int
+    banque: str
+    numero_contrat: Optional[str] = None
+    montant_emprunte: float
+    taux_nominal: float
+    taux_assurance: float = 0
+    duree_mois: int
+    date_debut: date
+    mensualite: float
+    capital_restant_du: Optional[float] = None
+    type_credit: str = "amortissable"
+    statut: str = "en_cours"
+
+
 class FicheBienResponse(BaseModel):
     id: str | int
     id_sci: str | int
@@ -70,5 +85,6 @@ class FicheBienResponse(BaseModel):
     charges_list: list[dict] = []
     assurance_pno: Optional[AssurancePnoEmbed] = None
     frais_agence: list[FraisAgenceEmbed] = []
+    credits_immobiliers: list[CreditImmobilierEmbed] = []
     documents: list[DocumentBienEmbed] = []
     rentabilite: RentabiliteCalculee = RentabiliteCalculee()
