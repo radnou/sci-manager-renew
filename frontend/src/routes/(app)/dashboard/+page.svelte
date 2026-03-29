@@ -60,11 +60,12 @@
 			activite = data.activite ?? [];
 			previousKpis = prevData?.kpis ?? null;
 
-			// Milestone 3: Dashboard Complete celebration
+			// Milestone 3: Dashboard Complete celebration (delayed to avoid overlap with onboarding tour)
 			if (kpis.sci_count >= 1 && kpis.biens_count >= 1 && (kpis.taux_recouvrement > 0 || kpis.cashflow_net !== 0)) {
 				if (!localStorage.getItem('milestone_dashboard_complete')) {
 					localStorage.setItem('milestone_dashboard_complete', 'true');
-					showCelebration = true;
+					// Delay 3s so the onboarding tour modal is visible first
+					setTimeout(() => { showCelebration = true; }, 3000);
 				}
 			}
 		} catch (err) {
