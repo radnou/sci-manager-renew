@@ -14,6 +14,9 @@ class BailCreate(BaseModel):
     depot_garantie: float = Field(default=0, ge=0)
     indice_irl_reference: Optional[str] = Field(default="IRL", max_length=50)
     locataire_ids: list[str] = []
+    etat_lieux_entree: Optional[date] = None
+    etat_lieux_entree_document_url: Optional[str] = None
+    etat_lieux_entree_notes: Optional[str] = None
 
     @model_validator(mode='after')
     def check_dates(self):
@@ -29,6 +32,9 @@ class BailUpdate(BaseModel):
     depot_garantie: Optional[float] = Field(default=None, ge=0)
     statut: Optional[str] = Field(default=None, max_length=30)
     indice_irl_reference: Optional[str] = Field(default=None, max_length=50)
+    etat_lieux_entree: Optional[date] = None
+    etat_lieux_entree_document_url: Optional[str] = None
+    etat_lieux_entree_notes: Optional[str] = None
 
 
 class BailResponse(BaseModel):
@@ -41,6 +47,9 @@ class BailResponse(BaseModel):
     depot_garantie: float = 0
     indice_irl_reference: Optional[str] = None
     statut: str = "en_cours"
+    etat_lieux_entree: Optional[date] = None
+    etat_lieux_entree_document_url: Optional[str] = None
+    etat_lieux_entree_notes: Optional[str] = None
     date_conge: Optional[date] = None
     motif_conge: Optional[str] = None
     type_conge: Optional[str] = None

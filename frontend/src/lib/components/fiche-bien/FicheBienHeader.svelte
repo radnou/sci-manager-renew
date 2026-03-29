@@ -99,6 +99,7 @@
 				bail: toItem(raw.bail, 'Bail'),
 				locataire: toItem(raw.locataire, 'Locataire'),
 				depot_garantie: toItem(raw.depot_garantie, 'Dépôt'),
+				edl_entree: toItem(raw.edl_entree, 'EDL'),
 			} as any;
 		} catch {
 			obligations = null;
@@ -127,7 +128,7 @@
 
 	const obligationsList = $derived(
 		obligations
-			? [obligations.pno, obligations.dpe, obligations.bail, obligations.locataire, obligations.depot_garantie].filter(Boolean)
+			? [obligations.pno, obligations.dpe, obligations.bail, obligations.locataire, obligations.depot_garantie, obligations.edl_entree].filter(Boolean)
 			: []
 	);
 
@@ -254,7 +255,7 @@
 					aria-expanded={showObligationsPopover}
 					aria-label="Obligations du bien"
 				>
-					{#each [obligations.pno, obligations.dpe, obligations.bail] as ob}
+					{#each [obligations.pno, obligations.dpe, obligations.bail, obligations.edl_entree].filter(Boolean) as ob}
 						<span class="inline-flex rounded-full px-1.5 py-0.5 text-xs {statusBadge[ob.status]}">
 							{statusEmoji(ob.status)} {ob.label}
 						</span>

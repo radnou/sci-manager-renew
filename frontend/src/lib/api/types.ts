@@ -464,6 +464,9 @@ export type BailEmbed = {
 	depot_garantie: number;
 	revision_indice: string | null;
 	statut: string;
+	etat_lieux_entree: string | null;
+	etat_lieux_entree_document_url: string | null;
+	etat_lieux_entree_notes: string | null;
 	locataires: Array<{
 		id: number;
 		nom: string;
@@ -552,6 +555,9 @@ export type BailCreate = {
 	charges_locatives?: number;
 	depot_garantie?: number;
 	revision_indice?: string;
+	etat_lieux_entree?: string;
+	etat_lieux_entree_document_url?: string;
+	etat_lieux_entree_notes?: string;
 };
 
 export type BailUpdate = Partial<BailCreate>;
@@ -791,6 +797,7 @@ export type ObligationsData = {
 	bail: ObligationItem;
 	locataire: ObligationItem;
 	depot_garantie: ObligationItem;
+	edl_entree: ObligationItem;
 };
 
 export type Echeance = {
@@ -836,10 +843,30 @@ export interface CongeBailPayload {
 }
 
 export interface RegularisationResult {
+	bail_id: string;
+	bien_id: string;
 	annee: number;
 	provisions_annuelles: number;
 	charges_reelles: number;
 	solde: number;
+	sens: 'trop_percu' | 'complement_du' | 'equilibre';
+	saved: RegularisationSaved | null;
+}
+
+export interface RegularisationSaved {
+	id: string;
+	id_bien: string;
+	id_bail: string;
+	annee: number;
+	total_provisions: number;
+	total_charges_reelles: number;
+	solde: number;
+	sens: string;
+	statut: string;
+	date_regularisation: string | null;
+	notes: string | null;
+	created_at: string;
+	updated_at: string;
 }
 
 export interface AgModele {

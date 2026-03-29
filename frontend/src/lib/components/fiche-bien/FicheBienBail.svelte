@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { BailEmbed, LoyerEmbed, CongeType, RegularisationResult, AvenantBailPayload } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { updateLocataire, cloturerBail, donnerConge, fetchRegularisation, creerAvenant, type ClotureBailPayload } from '$lib/api';
+	import { updateLocataire, cloturerBail, donnerConge, fetchRegularisation, confirmRegularisation, creerAvenant, updateBail, type ClotureBailPayload } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
-	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock, AlertTriangle, RefreshCw, Calculator, FileSignature, Loader2 } from 'lucide-svelte';
+	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock, AlertTriangle, RefreshCw, Calculator, FileSignature, Loader2, ClipboardCheck, Upload, FileText } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
 	import {
 		announceFicheBienModal,
@@ -211,6 +211,8 @@
 	let regularisationAnnee = $state(new Date().getFullYear() - 1);
 	let regularisationLoading = $state(false);
 	let regularisationResult = $state<RegularisationResult | null>(null);
+	let regularisationConfirming = $state(false);
+	let regularisationNotes = $state('');
 
 	async function handleRegularisation() {
 		if (!bail) return;
@@ -227,6 +229,28 @@
 			addToast({ title: 'Erreur lors du calcul de la régularisation', variant: 'error' });
 		} finally {
 			regularisationLoading = false;
+		}
+	}
+
+	async function handleConfirmRegularisation() {
+		if (!bail || !regularisationResult) return;
+		regularisationConfirming = true;
+		try {
+			await confirmRegularisation(
+				sciId,
+				String(bienId),
+				String(bail.id),
+				regularisationAnnee,
+				regularisationNotes || undefined
+			);
+			addToast({ title: 'Régularisation confirmée', variant: 'success' });
+			// Refresh to show saved status
+			await handleRegularisation();
+			regularisationNotes = '';
+		} catch {
+			addToast({ title: 'Erreur lors de la confirmation', variant: 'error' });
+		} finally {
+			regularisationConfirming = false;
 		}
 	}
 
@@ -315,6 +339,36 @@
 			addToast({ title: 'Erreur', description: 'Impossible de créer l\'avenant.', variant: 'error' });
 		} finally {
 			avenantSaving = false;
+		}
+	}
+
+	// ── État des lieux d'entrée ─────────────────────────
+	let showEdlForm = $state(false);
+	let edlSaving = $state(false);
+	let edlDate = $state('');
+	let edlNotes = $state('');
+
+	function openEdlForm() {
+		edlDate = bail?.etat_lieux_entree ?? new Date().toISOString().split('T')[0];
+		edlNotes = bail?.etat_lieux_entree_notes ?? '';
+		showEdlForm = true;
+	}
+
+	async function saveEdl() {
+		if (!bail || !edlDate) return;
+		edlSaving = true;
+		try {
+			await updateBail(sciId, String(bienId), String(bail.id), {
+				etat_lieux_entree: edlDate,
+				etat_lieux_entree_notes: edlNotes || undefined
+			});
+			addToast({ title: 'État des lieux enregistré', variant: 'success' });
+			showEdlForm = false;
+			onRefresh();
+		} catch {
+			addToast({ title: 'Erreur', description: 'Impossible d\'enregistrer l\'état des lieux.', variant: 'error' });
+		} finally {
+			edlSaving = false;
 		}
 	}
 </script>
@@ -946,6 +1000,116 @@
 					<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
 						{bail.revision_indice}
 					</p>
+				</div>
+			{/if}
+
+			<!-- État des lieux d'entrée -->
+			{#if bail.statut === 'en_cours'}
+				<div>
+					<div class="flex items-center justify-between">
+						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
+							État des lieux d'entrée
+						</p>
+						{#if isGerant}
+							<button
+								onclick={openEdlForm}
+								class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+							>
+								{#if bail.etat_lieux_entree}
+									<Pencil class="h-3.5 w-3.5" />
+									Modifier
+								{:else}
+									<ClipboardCheck class="h-3.5 w-3.5" />
+									Renseigner
+								{/if}
+							</button>
+						{/if}
+					</div>
+
+					{#if !bail.etat_lieux_entree && !showEdlForm}
+						<div class="mt-2 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-800/50 dark:bg-amber-900/10">
+							<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+							<div>
+								<p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+									État des lieux d'entrée non renseigné
+								</p>
+								<p class="mt-1 text-xs text-amber-700 dark:text-amber-300">
+									Obligatoire pour tout bail d'habitation (loi ALUR art. 3-2).
+								</p>
+							</div>
+						</div>
+					{:else if bail.etat_lieux_entree && !showEdlForm}
+						<div class="mt-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+							<div class="flex items-start gap-3">
+								<ClipboardCheck class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+								<div class="min-w-0 flex-1">
+									<p class="text-sm font-medium text-slate-900 dark:text-slate-100">
+										Réalisé le {formatFrDate(bail.etat_lieux_entree)}
+									</p>
+									{#if bail.etat_lieux_entree_notes}
+										<p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+											{bail.etat_lieux_entree_notes}
+										</p>
+									{/if}
+									{#if bail.etat_lieux_entree_document_url}
+										<a
+											href={bail.etat_lieux_entree_document_url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+										>
+											<FileText class="h-3.5 w-3.5" />
+											Voir le document
+										</a>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{/if}
+
+					{#if showEdlForm}
+						<div class="mt-2 rounded-xl border border-sky-200 bg-sky-50/50 p-5 dark:border-sky-800/50 dark:bg-sky-950/20">
+							<h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+								<ClipboardCheck class="h-4 w-4 text-sky-500" />
+								État des lieux d'entrée
+							</h3>
+							<div class="grid gap-4 sm:grid-cols-2">
+								<label class="block">
+									<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Date de réalisation</span>
+									<input
+										type="date"
+										bind:value={edlDate}
+										class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+									/>
+								</label>
+							</div>
+							<label class="mt-4 block">
+								<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Notes (optionnel)</span>
+								<textarea
+									bind:value={edlNotes}
+									rows="2"
+									placeholder="Ex: RAS, quelques traces d'usure dans le salon..."
+									class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+								></textarea>
+							</label>
+							<div class="mt-4 flex justify-end gap-2">
+								<button
+									onclick={() => { showEdlForm = false; }}
+									class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+								>
+									Annuler
+								</button>
+								<button
+									onclick={saveEdl}
+									disabled={edlSaving || !edlDate}
+									class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+								>
+									{#if edlSaving}<Loader2 class="h-3.5 w-3.5 animate-spin" />{/if}
+									Enregistrer
+								</button>
+							</div>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>

@@ -87,7 +87,7 @@ def get_obligations(client, bien_id: str) -> dict:
     # 3. Bail actif
     bail_result = (
         client.table("baux")
-        .select("id, date_debut, date_fin, depot_garantie")
+        .select("id, date_debut, date_fin, depot_garantie, etat_lieux_entree")
         .eq("id_bien", bien_id)
         .eq("statut", "en_cours")
         .limit(1)
@@ -151,12 +151,24 @@ def get_obligations(client, bien_id: str) -> dict:
                     "detail": f"{label} : réalisé le {diag_date_str} — expiré",
                 }
 
+    # 7. État des lieux d'entrée (loi ALUR art. 3-2)
+    edl_valid = False
+    edl_detail = "Aucun bail actif"
+    if bail_id:
+        edl_date = bail_data.get("etat_lieux_entree")
+        if edl_date:
+            edl_valid = True
+            edl_detail = f"Réalisé le {edl_date}"
+        else:
+            edl_detail = "Non renseigné — obligatoire (loi ALUR art. 3-2)"
+
     return {
         "pno": {"valid": pno_valid, "detail": pno_detail},
         "dpe": {"valid": dpe_valid, "detail": dpe_detail},
         "bail": {"valid": bail_valid, "detail": bail_detail},
         "locataire": {"valid": locataire_valid, "detail": locataire_detail},
         "depot_garantie": {"valid": depot_valid, "detail": depot_detail},
+        "edl_entree": {"valid": edl_valid, "detail": edl_detail},
         "diagnostics": diagnostics,
     }
 
