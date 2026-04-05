@@ -178,7 +178,9 @@ PLAN_CATALOG: dict[PlanKey, PlanEntitlements] = {
     ),
 }
 
-def get_plan(plan_key: PlanKey | str) -> PlanEntitlements:
+def get_plan(plan_key: PlanKey | str | None) -> PlanEntitlements:
+    if plan_key is None:
+        return PLAN_CATALOG[PlanKey.FREE]
     normalized = plan_key if isinstance(plan_key, PlanKey) else PlanKey(str(plan_key))
     if normalized == PlanKey.LIFETIME:
         normalized = PlanKey.PRO

@@ -7,9 +7,11 @@
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { FileText, Calculator, Download, Plus, Trash2, Loader2, ChevronDown, ChevronUp, TrendingDown, Scale, User, Sparkles } from 'lucide-svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
-	const subscription = getContext<{ plan_key: string; features: Record<string, boolean> } | null>('subscription');
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !(subscription as any)?.is_active;
 
 	let exercices: Fiscalite[] = $state([]);
 	let loading = $state(true);
@@ -372,38 +374,40 @@
 								)}
 							</span>
 						</div>
-						<div class="flex items-center gap-2">
-							<button
-								class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
-								disabled={loadingResumeFiscal === ex.annee}
-								onclick={() => handleLoadResumeFiscal(ex.annee)}
-							>
-								<Scale class="h-3.5 w-3.5" />
-								{#if loadingResumeFiscal === ex.annee}
-									Chargement…
-								{:else if resumeFiscalData.has(ex.annee)}
-									Analyse affichée
-								{:else}
-									Analyser
-								{/if}
-							</button>
-							<button
-								class="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-400 dark:hover:bg-slate-800"
-								disabled={generatingResume === ex.annee}
-								onclick={() => handleDownloadResumeFiscal(ex.annee)}
-							>
-								<FileText class="h-3.5 w-3.5" />
-								{generatingResume === ex.annee ? 'Génération…' : 'Résumé détaillé'}
-							</button>
-							<button
-								class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
-								disabled={generatingCerfa}
-								onclick={() => handleGenerateCerfa(ex)}
-							>
-								<Download class="h-3.5 w-3.5" />
-								{generatingCerfa ? 'Génération…' : 'Résumé fiscal PDF'}
-							</button>
-						</div>
+						<LockedAction {isDemo} action="exporter les documents fiscaux">
+							<div class="flex items-center gap-2">
+								<button
+									class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+									disabled={loadingResumeFiscal === ex.annee}
+									onclick={() => handleLoadResumeFiscal(ex.annee)}
+								>
+									<Scale class="h-3.5 w-3.5" />
+									{#if loadingResumeFiscal === ex.annee}
+										Chargement…
+									{:else if resumeFiscalData.has(ex.annee)}
+										Analyse affichée
+									{:else}
+										Analyser
+									{/if}
+								</button>
+								<button
+									class="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-400 dark:hover:bg-slate-800"
+									disabled={generatingResume === ex.annee}
+									onclick={() => handleDownloadResumeFiscal(ex.annee)}
+								>
+									<FileText class="h-3.5 w-3.5" />
+									{generatingResume === ex.annee ? 'Génération…' : 'Résumé détaillé'}
+								</button>
+								<button
+									class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+									disabled={generatingCerfa}
+									onclick={() => handleGenerateCerfa(ex)}
+								>
+									<Download class="h-3.5 w-3.5" />
+									{generatingCerfa ? 'Génération…' : 'Résumé fiscal PDF'}
+								</button>
+							</div>
+						</LockedAction>
 					</div>
 				{/each}
 			</div>
@@ -553,29 +557,31 @@
 				</h2>
 			</div>
 			<RoleGate>
-				{#if !upgradeRequired}
-				<div class="flex items-center gap-2">
-					<button
-						onclick={handlePrefill}
-						disabled={prefilling}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
-					>
-						{#if prefilling}
-							<Loader2 class="h-4 w-4 animate-spin" />
-						{:else}
-							<Sparkles class="h-4 w-4" />
-						{/if}
-						Pré-remplir
-					</button>
-					<button
-						onclick={() => { showCreateForm = !showCreateForm; }}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-					>
-						<Plus class="h-4 w-4" />
-						Ajouter
-					</button>
-				</div>
-			{/if}
+				<LockedAction {isDemo} action="gérer la fiscalité">
+					{#if !upgradeRequired}
+					<div class="flex items-center gap-2">
+						<button
+							onclick={handlePrefill}
+							disabled={prefilling}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+						>
+							{#if prefilling}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								<Sparkles class="h-4 w-4" />
+							{/if}
+							Pré-remplir
+						</button>
+						<button
+							onclick={() => { showCreateForm = !showCreateForm; }}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							<Plus class="h-4 w-4" />
+							Ajouter
+						</button>
+					</div>
+				{/if}
+				</LockedAction>
 			</RoleGate>
 		</div>
 

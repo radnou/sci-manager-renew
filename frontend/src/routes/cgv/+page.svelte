@@ -58,22 +58,22 @@
 					</thead>
 					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 						<tr>
-							<td class="py-2 pr-4"><strong>Essentiel</strong></td>
-							<td class="py-2 pr-4">Gratuit</td>
-							<td class="py-2 pr-4">-</td>
-							<td class="py-2">Gratuit</td>
-						</tr>
-						<tr>
 							<td class="py-2 pr-4"><strong>Gestion</strong></td>
 							<td class="py-2 pr-4">19,00 EUR</td>
 							<td class="py-2 pr-4">3,80 EUR</td>
 							<td class="py-2">22,80 EUR</td>
 						</tr>
 						<tr>
-							<td class="py-2 pr-4"><strong>Fiscal</strong></td>
+							<td class="py-2 pr-4"><strong>Pilotage</strong></td>
 							<td class="py-2 pr-4">39,00 EUR</td>
 							<td class="py-2 pr-4">7,80 EUR</td>
 							<td class="py-2">46,80 EUR</td>
+						</tr>
+						<tr>
+							<td class="py-2 pr-4"><strong>Fondateur</strong></td>
+							<td class="py-2 pr-4">500,00 EUR</td>
+							<td class="py-2 pr-4">100,00 EUR</td>
+							<td class="py-2">600,00 EUR</td>
 						</tr>
 					</tbody>
 				</table>
@@ -95,15 +95,15 @@
 					<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 						<tr>
 							<td class="py-2 pr-4"><strong>Gestion</strong></td>
-							<td class="py-2 pr-4">180,00 EUR</td>
-							<td class="py-2 pr-4">36,00 EUR</td>
-							<td class="py-2">216,00 EUR</td>
+							<td class="py-2 pr-4">190,00 EUR</td>
+							<td class="py-2 pr-4">38,00 EUR</td>
+							<td class="py-2">228,00 EUR</td>
 						</tr>
 						<tr>
-							<td class="py-2 pr-4"><strong>Fiscal</strong></td>
-							<td class="py-2 pr-4">348,00 EUR</td>
-							<td class="py-2 pr-4">69,60 EUR</td>
-							<td class="py-2">417,60 EUR</td>
+							<td class="py-2 pr-4"><strong>Pilotage</strong></td>
+							<td class="py-2 pr-4">390,00 EUR</td>
+							<td class="py-2 pr-4">78,00 EUR</td>
+							<td class="py-2">468,00 EUR</td>
 						</tr>
 					</tbody>
 				</table>

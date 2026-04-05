@@ -66,6 +66,13 @@ def test_fondateur_plan():
     assert plan.rentabilite_enabled is True
 
 
+def test_get_plan_none_returns_free():
+    """When plan_key is None (new user, no subscription resolved yet), fall back to FREE."""
+    plan = get_plan(None)
+    assert plan.plan_key == PlanKey.FREE
+    assert plan.max_scis == 0
+
+
 def test_lifetime_grandfathered_to_pro():
     plan = get_plan(PlanKey.LIFETIME)
     assert plan.plan_key == PlanKey.PRO

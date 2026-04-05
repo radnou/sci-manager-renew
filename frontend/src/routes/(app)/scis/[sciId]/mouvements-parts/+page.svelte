@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail } from '$lib/api';
+	import type { SCIDetail, SubscriptionEntitlements } from '$lib/api';
 	import { fetchMouvementsParts, createMouvementParts, deleteMouvementParts, simulerDroitsCession } from '$lib/api';
 	import type { SimulationCessionResult } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { ArrowLeftRight, Plus, Trash2, Loader2, Calculator, CheckCircle2 } from 'lucide-svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	let mouvements: any[] = $state([]);
 	let loading = $state(true);
@@ -156,15 +159,17 @@
 				</h2>
 			</div>
 			<RoleGate>
-				<button
-					onclick={() => {
-						showCreateForm = !showCreateForm;
-					}}
-					class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-				>
-					<Plus class="h-4 w-4" />
-					Enregistrer un mouvement
-				</button>
+				<LockedAction {isDemo} action="enregistrer un mouvement de parts">
+					<button
+						onclick={() => {
+							showCreateForm = !showCreateForm;
+						}}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+					>
+						<Plus class="h-4 w-4" />
+						Enregistrer un mouvement
+					</button>
+				</LockedAction>
 			</RoleGate>
 		</div>
 
@@ -365,18 +370,20 @@
 								</td>
 								<RoleGate>
 									<td class="py-3 text-right">
-										<button
-											onclick={() => handleDelete(mv)}
-											disabled={deletingId === String(mv.id)}
-											class="text-slate-400 transition-colors hover:text-rose-600 disabled:opacity-50 dark:hover:text-rose-400"
-											title="Supprimer ce mouvement"
-										>
-											{#if deletingId === String(mv.id)}
-												<Loader2 class="h-4 w-4 animate-spin" />
-											{:else}
-												<Trash2 class="h-4 w-4" />
-											{/if}
-										</button>
+										<LockedAction {isDemo} action="supprimer un mouvement de parts">
+											<button
+												onclick={() => handleDelete(mv)}
+												disabled={deletingId === String(mv.id)}
+												class="text-slate-400 transition-colors hover:text-rose-600 disabled:opacity-50 dark:hover:text-rose-400"
+												title="Supprimer ce mouvement"
+											>
+												{#if deletingId === String(mv.id)}
+													<Loader2 class="h-4 w-4 animate-spin" />
+												{:else}
+													<Trash2 class="h-4 w-4" />
+												{/if}
+											</button>
+										</LockedAction>
 									</td>
 								</RoleGate>
 							</tr>

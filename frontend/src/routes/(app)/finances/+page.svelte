@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { FinancesData } from '$lib/api';
+	import { getContext } from 'svelte';
+	import type { FinancesData, SubscriptionEntitlements } from '$lib/api';
 	import { fetchFinances, exportLoyersCsv } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import {
@@ -14,7 +15,11 @@
 	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 	import { addToast } from '$lib/components/ui/toast';
+
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	let data: FinancesData | null = $state(null);
 	let loading = $state(true);
@@ -93,10 +98,12 @@
 				</button>
 			{/each}
 		</div>
-		<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="shrink-0">
-			<Download class="mr-2 h-4 w-4" />
-			{exportingLoyers ? 'Export...' : 'Exporter les loyers (CSV)'}
-		</Button>
+		<LockedAction {isDemo} action="exporter les loyers en CSV">
+			<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="shrink-0">
+				<Download class="mr-2 h-4 w-4" />
+				{exportingLoyers ? 'Export...' : 'Exporter les loyers (CSV)'}
+			</Button>
+		</LockedAction>
 	</div>
 
 	{#if loading}

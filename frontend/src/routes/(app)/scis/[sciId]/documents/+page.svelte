@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { SCIDetail, DocumentBienEmbed, Bien, SciDocumentItem } from '$lib/api';
+	import type { SCIDetail, DocumentBienEmbed, Bien, SciDocumentItem, SubscriptionEntitlements } from '$lib/api';
 	import { fetchSciDocuments, uploadDocumentBien, deleteDocumentBien, fetchSciBiens } from '$lib/api';
 	import { formatFrDate } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast';
@@ -8,6 +8,10 @@
 	import { announceFicheBienModal, subscribeExclusiveFicheBienModal } from '$lib/components/fiche-bien/modal-coordinator';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
+
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
@@ -222,13 +226,15 @@
 								{/if}
 							</h2>
 							<RoleGate>
-								<button
-									onclick={() => openUploadForm(group.bien.id!)}
-									class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-								>
-									<Upload class="h-3.5 w-3.5" />
-									Ajouter
-								</button>
+								<LockedAction {isDemo} action="ajouter un document">
+									<button
+										onclick={() => openUploadForm(group.bien.id!)}
+										class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+									>
+										<Upload class="h-3.5 w-3.5" />
+										Ajouter
+									</button>
+								</LockedAction>
 							</RoleGate>
 						</div>
 

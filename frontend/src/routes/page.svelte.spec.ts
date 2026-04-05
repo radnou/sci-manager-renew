@@ -9,12 +9,12 @@ describe('/+page.svelte', () => {
 
 		const heading = page.getByRole('heading', { level: 1 });
 		await expect.element(heading).toBeInTheDocument();
-		await expect.element(heading).toHaveTextContent(/Votre SCI mérite mieux/);
-		await expect.element(
-			page.getByRole('link', { name: /Démarrer maintenant/ })
-		).toHaveAttribute('href', '/pricing');
-		await expect.element(
-			page.getByRole('link', { name: /Démarrer à 19€/ })
-		).toHaveAttribute('href', '#pricing');
+		await expect.element(heading).toHaveTextContent(/Votre SCI sous contrôle/);
+		await expect
+			.element(page.getByRole('link', { name: /Démarrer maintenant/ }))
+			.toHaveAttribute('href', '/pricing');
+		await expect
+			.element(page.getByRole('link', { name: /Comparer les plans/ }))
+			.toHaveAttribute('href', '#pricing');
 	});
 });

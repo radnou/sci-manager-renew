@@ -460,10 +460,10 @@
 		to { opacity: 0; }
 	}
 	:global(::view-transition-old(root)) {
-		animation: 150ms ease-out fade-out;
+		animation: 250ms ease-out fade-out;
 	}
 	:global(::view-transition-new(root)) {
-		animation: 150ms ease-out fade-in;
+		animation: 250ms ease-in fade-in;
 	}
 
 	/* Respect reduced motion preference */

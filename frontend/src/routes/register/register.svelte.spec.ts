@@ -39,10 +39,12 @@ describe('/register/+page.svelte', () => {
 	it('should have links to CGU and privacy policy', async () => {
 		render(Page);
 
-		const cguLink = page.getByRole('link', { name: /CGU/ });
-		await expect.element(cguLink).toHaveAttribute('href', '/cgu');
+		// The form consent checkbox contains a CGU link
+		const cguLinks = page.getByRole('link', { name: /CGU/ });
+		await expect.element(cguLinks.first()).toHaveAttribute('href', '/cgu');
 
-		const privacyLink = page.getByRole('link', { name: /politique de confidentialité/ });
-		await expect.element(privacyLink).toHaveAttribute('href', '/confidentialite');
+		// The form consent checkbox contains a privacy policy link
+		const privacyLinks = page.getByRole('link', { name: /politique de confidentialité/ });
+		await expect.element(privacyLinks.first()).toHaveAttribute('href', '/confidentialite');
 	});
 });

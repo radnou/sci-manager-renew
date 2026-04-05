@@ -83,6 +83,27 @@ export async function getCurrentSession(): Promise<Session | null> {
 		data: { session }
 	} = await supabase.auth.getSession();
 
+	// If session is null, Supabase may still be restoring from storage.
+	// Wait briefly for INITIAL_SESSION event before giving up.
+	if (!session && browser) {
+		return new Promise<Session | null>((resolve) => {
+			const timeout = setTimeout(() => {
+				sub.unsubscribe();
+				resolve(null);
+			}, 1500);
+
+			const {
+				data: { subscription: sub }
+			} = supabase.auth.onAuthStateChange((event, s) => {
+				if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+					clearTimeout(timeout);
+					sub.unsubscribe();
+					resolve(s);
+				}
+			});
+		});
+	}
+
 	return session;
 }
 

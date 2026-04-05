@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { AssembleeGenerale, AssembleeGeneraleInput, SCIDetail } from '$lib/api';
+	import type { AssembleeGenerale, AssembleeGeneraleInput, SCIDetail, SubscriptionEntitlements } from '$lib/api';
 	import {
 		createAssembleeGenerale,
 		deleteAssembleeGenerale,
@@ -14,6 +14,10 @@
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { CalendarDays, CheckCircle2, ClipboardList, FileText, Pencil, Plus, Trash2, Send, Copy, Download, X, Loader2 } from 'lucide-svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
+
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	const sci = getContext<SCIDetail>('sci');
 	const userRole = getContext<string>('userRole');
@@ -317,42 +321,44 @@
 					</p>
 				</div>
 				<RoleGate>
-					<div class="flex items-center gap-2">
-						<button
-							type="button"
-							class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
-							onclick={() => loadModele('ago_approbation_comptes')}
-							disabled={loadingModele === 'ago_approbation_comptes'}
-						>
-							{#if loadingModele === 'ago_approbation_comptes'}
-								<Loader2 class="h-4 w-4 animate-spin" />
-							{:else}
-								<ClipboardList class="h-4 w-4" />
-							{/if}
-							Nouvelle AGO
-						</button>
-						<button
-							type="button"
-							class="inline-flex items-center gap-2 rounded-xl border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/30"
-							onclick={() => loadModele('age_modification_statuts')}
-							disabled={loadingModele === 'age_modification_statuts'}
-						>
-							{#if loadingModele === 'age_modification_statuts'}
-								<Loader2 class="h-4 w-4 animate-spin" />
-							{:else}
-								<FileText class="h-4 w-4" />
-							{/if}
-							Nouvelle AGE
-						</button>
-						<button
-							type="button"
-							class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
-							onclick={openCreateEditor}
-						>
-							<Plus class="h-4 w-4" />
-							Planifier une AG
-						</button>
-					</div>
+					<LockedAction {isDemo} action="gérer les assemblées générales">
+						<div class="flex items-center gap-2">
+							<button
+								type="button"
+								class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+								onclick={() => loadModele('ago_approbation_comptes')}
+								disabled={loadingModele === 'ago_approbation_comptes'}
+							>
+								{#if loadingModele === 'ago_approbation_comptes'}
+									<Loader2 class="h-4 w-4 animate-spin" />
+								{:else}
+									<ClipboardList class="h-4 w-4" />
+								{/if}
+								Nouvelle AGO
+							</button>
+							<button
+								type="button"
+								class="inline-flex items-center gap-2 rounded-xl border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/30"
+								onclick={() => loadModele('age_modification_statuts')}
+								disabled={loadingModele === 'age_modification_statuts'}
+							>
+								{#if loadingModele === 'age_modification_statuts'}
+									<Loader2 class="h-4 w-4 animate-spin" />
+								{:else}
+									<FileText class="h-4 w-4" />
+								{/if}
+								Nouvelle AGE
+							</button>
+							<button
+								type="button"
+								class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+								onclick={openCreateEditor}
+							>
+								<Plus class="h-4 w-4" />
+								Planifier une AG
+							</button>
+						</div>
+					</LockedAction>
 				</RoleGate>
 			</div>
 
@@ -407,24 +413,25 @@
 								</div>
 
 								<RoleGate>
-									<div class="flex items-center gap-2">
-										<button
-											type="button"
-											class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
-											onclick={() => openEditEditor(ag)}
-										>
-											<Pencil class="h-4 w-4" />
-											Modifier
-										</button>
-										<button
-											type="button"
-											class="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:border-rose-900 dark:text-rose-300 dark:hover:bg-rose-950/40"
-											disabled={deletingId === String(ag.id)}
-											onclick={() => handleDelete(ag)}
-										>
-											<Trash2 class="h-4 w-4" />
-											Supprimer
-										</button>
+									<LockedAction {isDemo} action="modifier une assemblée générale">
+										<div class="flex items-center gap-2">
+											<button
+												type="button"
+												class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+												onclick={() => openEditEditor(ag)}
+											>
+												<Pencil class="h-4 w-4" />
+												Modifier
+											</button>
+											<button
+												type="button"
+												class="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:border-rose-900 dark:text-rose-300 dark:hover:bg-rose-950/40"
+												disabled={deletingId === String(ag.id)}
+												onclick={() => handleDelete(ag)}
+											>
+												<Trash2 class="h-4 w-4" />
+												Supprimer
+											</button>
 										<button
 											type="button"
 											class="inline-flex items-center gap-2 rounded-xl border border-sky-200 px-3 py-2 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-50 disabled:opacity-50 dark:border-sky-800 dark:text-sky-300 dark:hover:bg-sky-950/30"
@@ -439,6 +446,7 @@
 											Convocation
 										</button>
 									</div>
+								</LockedAction>
 								</RoleGate>
 							</div>
 

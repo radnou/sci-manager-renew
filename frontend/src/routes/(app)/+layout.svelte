@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { setContext } from 'svelte';
 	import { page } from '$app/stores';
+	import { fade } from 'svelte/transition';
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
 	import DemoBanner from '$lib/components/DemoBanner.svelte';
 	import DemoConversionPrompt from '$lib/components/DemoConversionPrompt.svelte';
@@ -38,9 +39,32 @@
 	<DemoBanner />
 {/if}
 
-<main class="pb-12">
-	{@render props.children()}
-</main>
+{#key $page.url.pathname}
+	<main class="pb-12 app-page-enter">
+		{@render props.children()}
+	</main>
+{/key}
+
+<style>
+	@keyframes page-enter {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.app-page-enter {
+		animation: page-enter 280ms ease-out;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.app-page-enter {
+			animation: none;
+		}
+	}
+</style>
 
 {#if showConversionPrompt}
 	<DemoConversionPrompt

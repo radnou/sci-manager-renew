@@ -243,7 +243,7 @@
 
 			<!-- Actions -->
 			<div class="flex items-center justify-between gap-3 px-6 pb-6 pt-5">
-				<Button variant="ghost" onclick={close} class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+				<Button variant="ghost" onclick={dismiss} class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
 					Passer
 				</Button>
 

@@ -248,7 +248,14 @@ describe('api helpers', () => {
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(
-				new Response(JSON.stringify({ filename: 'q.pdf', pdf_url: '/api/v1/quitus/files/q.pdf', size_bytes: 42 }), { status: 200 })
+				new Response(
+					JSON.stringify({
+						filename: 'q.pdf',
+						pdf_url: '/api/v1/quitus/files/q.pdf',
+						size_bytes: 42
+					}),
+					{ status: 200 }
+				)
 			);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -283,7 +290,9 @@ describe('api helpers', () => {
 		const payload = { plan_key: 'starter' as const, mode: 'subscription' as const };
 		const fetchMock = vi
 			.fn()
-			.mockResolvedValue(new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 }));
+			.mockResolvedValue(
+				new Response(JSON.stringify({ url: 'https://checkout.test' }), { status: 200 })
+			);
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createCheckoutSession(payload)).resolves.toEqual({ url: 'https://checkout.test' });
@@ -358,15 +367,13 @@ describe('api helpers', () => {
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(downloadQuitus('/api/v1/quitus/files/missing.pdf')).rejects.toThrowError(
-			/API error: 404/
+			/Not Found/
 		);
 	});
 
 	it('continues without auth header when session lookup throws', async () => {
 		getCurrentSessionMock.mockRejectedValue(new Error('session unavailable'));
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchScis()).resolves.toEqual([]);
@@ -396,9 +403,7 @@ describe('api helpers', () => {
 	});
 
 	it('fetchFiscalite appends sci filter when provided', async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchFiscalite('sci-1')).resolves.toEqual([]);
@@ -453,7 +458,13 @@ describe('api helpers', () => {
 
 	it('updateCharge patches JSON body', async () => {
 		const payload = { montant: 600 };
-		const updated = { id: 'ch-1', id_bien: 'bien-1', type_charge: 'travaux', montant: 600, date_paiement: '2026-03-01' };
+		const updated = {
+			id: 'ch-1',
+			id_bien: 'bien-1',
+			type_charge: 'travaux',
+			montant: 600,
+			date_paiement: '2026-03-01'
+		};
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
@@ -522,7 +533,17 @@ describe('api helpers', () => {
 	});
 
 	it('fetchNotifications returns parsed payload', async () => {
-		const payload = [{ id: 'n-1', type: 'info', title: 'Test', message: 'Hello', metadata: {}, read_at: null, created_at: '2026-03-01' }];
+		const payload = [
+			{
+				id: 'n-1',
+				type: 'info',
+				title: 'Test',
+				message: 'Hello',
+				metadata: {},
+				read_at: null,
+				created_at: '2026-03-01'
+			}
+		];
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
@@ -534,9 +555,7 @@ describe('api helpers', () => {
 	});
 
 	it('fetchNotifications passes unread filter', async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchNotifications(true)).resolves.toEqual([]);
@@ -557,7 +576,15 @@ describe('api helpers', () => {
 	});
 
 	it('markNotificationRead patches notification', async () => {
-		const payload = { id: 'n-1', type: 'info', title: 'Test', message: 'Hello', metadata: {}, read_at: '2026-03-10', created_at: '2026-03-01' };
+		const payload = {
+			id: 'n-1',
+			type: 'info',
+			title: 'Test',
+			message: 'Hello',
+			metadata: {},
+			read_at: '2026-03-10',
+			created_at: '2026-03-01'
+		};
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
@@ -618,8 +645,16 @@ describe('api helpers', () => {
 	// --- Sprint 2-7: Onboarding ---
 
 	it('fetchOnboardingStatus returns onboarding state', async () => {
-		const payload = { completed: false, sci_created: true, bien_created: false, bail_created: false, notifications_set: false };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			completed: false,
+			sci_created: true,
+			bien_created: false,
+			bail_created: false,
+			notifications_set: false
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchOnboardingStatus()).resolves.toEqual(payload);
@@ -629,7 +664,9 @@ describe('api helpers', () => {
 
 	it('completeOnboarding posts to complete endpoint', async () => {
 		const payload = { completed: true };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(completeOnboarding()).resolves.toEqual(payload);
@@ -641,8 +678,15 @@ describe('api helpers', () => {
 	// --- Sprint 2: Dashboard ---
 
 	it('fetchDashboard returns dashboard data', async () => {
-		const payload = { alertes: [], kpis: { sci_count: 1, biens_count: 2, taux_recouvrement: 95, cashflow_net: 800 }, scis: [], activite: [] };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			alertes: [],
+			kpis: { sci_count: 1, biens_count: 2, taux_recouvrement: 95, cashflow_net: 800 },
+			scis: [],
+			activite: []
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchDashboard()).resolves.toEqual(payload);
@@ -654,7 +698,9 @@ describe('api helpers', () => {
 
 	it('fetchSciBiens returns biens for a SCI', async () => {
 		const payload = [{ id: 1, adresse: '1 rue Test' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchSciBiens('sci-1')).resolves.toEqual(payload);
@@ -664,7 +710,9 @@ describe('api helpers', () => {
 
 	it('fetchSciAssocies returns associes for a SCI', async () => {
 		const payload = [{ id: 'a-1', nom: 'Test', part: 100, role: 'gerant' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchSciAssocies('sci-1')).resolves.toEqual(payload);
@@ -673,8 +721,15 @@ describe('api helpers', () => {
 	});
 
 	it('fetchFicheBien returns full fiche bien', async () => {
-		const payload = { id: 1, adresse: '1 rue Test', bail_actif: null, rentabilite: { brute: 6, nette: 4, cashflow_mensuel: 300, cashflow_annuel: 3600 } };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			id: 1,
+			adresse: '1 rue Test',
+			bail_actif: null,
+			rentabilite: { brute: 6, nette: 4, cashflow_mensuel: 300, cashflow_annuel: 3600 }
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchFicheBien('sci-1', 'bien-1')).resolves.toEqual(payload);
@@ -684,7 +739,9 @@ describe('api helpers', () => {
 
 	it('fetchSciBiensList returns biens list', async () => {
 		const payload = [{ id: 1 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchSciBiensList('sci-1')).resolves.toEqual(payload);
@@ -693,9 +750,20 @@ describe('api helpers', () => {
 	});
 
 	it('createBienForSci posts JSON body', async () => {
-		const data = { id_sci: 'sci-1', adresse: '5 rue Neuve', ville: 'Paris', code_postal: '75001', type_locatif: 'nu' as const, loyer_cc: 800, charges: 100, tmi: 30 };
+		const data = {
+			id_sci: 'sci-1',
+			adresse: '5 rue Neuve',
+			ville: 'Paris',
+			code_postal: '75001',
+			type_locatif: 'nu' as const,
+			loyer_cc: 800,
+			charges: 100,
+			tmi: 30
+		};
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createBienForSci('sci-1', data)).resolves.toEqual(created);
@@ -705,9 +773,16 @@ describe('api helpers', () => {
 	});
 
 	it('createLoyerForBien posts JSON body', async () => {
-		const data = { id_bien: 'bien-1' as const, montant: 1000, date_loyer: '2026-03-01', statut: 'paye' as const };
+		const data = {
+			id_bien: 'bien-1' as const,
+			montant: 1000,
+			date_loyer: '2026-03-01',
+			statut: 'paye' as const
+		};
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createLoyerForBien('sci-1', 'bien-1', data)).resolves.toEqual(created);
@@ -720,7 +795,9 @@ describe('api helpers', () => {
 
 	it('fetchBienBaux returns baux list', async () => {
 		const payload = [{ id: 1, date_debut: '2025-01-01' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBienBaux('sci-1', 'bien-1')).resolves.toEqual(payload);
@@ -731,7 +808,9 @@ describe('api helpers', () => {
 	it('createBail posts JSON body', async () => {
 		const data = { date_debut: '2025-01-01', loyer_hc: 800 };
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createBail('sci-1', 'bien-1', data)).resolves.toEqual(created);
@@ -743,7 +822,9 @@ describe('api helpers', () => {
 	it('updateBail patches JSON body', async () => {
 		const data = { loyer_hc: 900 };
 		const updated = { id: 1, date_debut: '2025-01-01', ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(updateBail('sci-1', 'bien-1', 1, data)).resolves.toEqual(updated);
@@ -764,7 +845,9 @@ describe('api helpers', () => {
 
 	it('attachLocataireToBail posts locataire id', async () => {
 		const created = { bail_id: 1, locataire_id: 5 };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(attachLocataireToBail('sci-1', 'bien-1', 1, 5)).resolves.toEqual(created);
@@ -787,7 +870,9 @@ describe('api helpers', () => {
 
 	it('fetchBienCharges returns charges for a bien', async () => {
 		const payload = [{ id: 1, type_charge: 'copropriete', montant: 200 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBienCharges('sci-1', 'bien-1')).resolves.toEqual(payload);
@@ -797,7 +882,9 @@ describe('api helpers', () => {
 
 	it('fetchBienPno returns PNO data', async () => {
 		const payload = [{ id: 1, assureur: 'AXA', prime_annuelle: 360 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBienPno('sci-1', 'bien-1')).resolves.toEqual(payload);
@@ -807,7 +894,9 @@ describe('api helpers', () => {
 
 	it('fetchBienFraisAgence returns agency fees', async () => {
 		const payload = [{ id: 1, type_frais: 'gestion', montant: 100 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBienFraisAgence('sci-1', 'bien-1')).resolves.toEqual(payload);
@@ -817,7 +906,9 @@ describe('api helpers', () => {
 
 	it('fetchSciAssociesList returns associes for a SCI', async () => {
 		const payload = [{ id: 'a-1', nom: 'Test', part: 100 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchSciAssociesList('sci-1')).resolves.toEqual(payload);
@@ -828,8 +919,12 @@ describe('api helpers', () => {
 	// --- Sprint 6: Notification Preferences ---
 
 	it('fetchNotificationPreferences returns preferences', async () => {
-		const payload = { preferences: [{ type: 'late_payment', email_enabled: true, in_app_enabled: true }] };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			preferences: [{ type: 'late_payment', email_enabled: true, in_app_enabled: true }]
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchNotificationPreferences()).resolves.toEqual(payload);
@@ -840,7 +935,9 @@ describe('api helpers', () => {
 	it('updateNotificationPreferences sends PUT', async () => {
 		const prefs = [{ type: 'late_payment', email_enabled: false, in_app_enabled: true }];
 		const payload = { preferences: prefs };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(updateNotificationPreferences(prefs)).resolves.toEqual(payload);
@@ -852,8 +949,19 @@ describe('api helpers', () => {
 	// --- Sprint 7: Finances ---
 
 	it('fetchFinances returns finances overview', async () => {
-		const payload = { revenus_total: 12000, charges_total: 3000, cashflow_net: 9000, taux_recouvrement: 95, patrimoine_total: 200000, rentabilite_moyenne: 6, evolution_mensuelle: [], repartition_sci: [] };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			revenus_total: 12000,
+			charges_total: 3000,
+			cashflow_net: 9000,
+			taux_recouvrement: 95,
+			patrimoine_total: 200000,
+			rentabilite_moyenne: 6,
+			evolution_mensuelle: [],
+			repartition_sci: []
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchFinances()).resolves.toEqual(payload);
@@ -862,8 +970,19 @@ describe('api helpers', () => {
 	});
 
 	it('fetchFinances passes period parameter', async () => {
-		const payload = { revenus_total: 6000, charges_total: 1500, cashflow_net: 4500, taux_recouvrement: 90, patrimoine_total: 200000, rentabilite_moyenne: 5, evolution_mensuelle: [], repartition_sci: [] };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			revenus_total: 6000,
+			charges_total: 1500,
+			cashflow_net: 4500,
+			taux_recouvrement: 90,
+			patrimoine_total: 200000,
+			rentabilite_moyenne: 5,
+			evolution_mensuelle: [],
+			repartition_sci: []
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchFinances('6m')).resolves.toEqual(payload);
@@ -874,8 +993,18 @@ describe('api helpers', () => {
 	// --- Sprint 7: Documents ---
 
 	it('fetchBienDocuments returns documents list', async () => {
-		const payload = [{ id: 1, nom: 'bail.pdf', categorie: 'bail', url: '/files/bail.pdf', created_at: '2026-03-01' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = [
+			{
+				id: 1,
+				nom: 'bail.pdf',
+				categorie: 'bail',
+				url: '/files/bail.pdf',
+				created_at: '2026-03-01'
+			}
+		];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchBienDocuments('sci-1', 'bien-1')).resolves.toEqual(payload);
@@ -951,8 +1080,14 @@ describe('api helpers', () => {
 	// --- GDPR ---
 
 	it('fetchDataSummary returns data summary', async () => {
-		const payload = { tables: { sci: 2, biens: 5, loyers: 20 }, total_records: 27, storage_used_bytes: 1024 };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			tables: { sci: 2, biens: 5, loyers: 20 },
+			total_records: 27,
+			storage_used_bytes: 1024
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchDataSummary()).resolves.toEqual(payload);
@@ -961,8 +1096,13 @@ describe('api helpers', () => {
 	});
 
 	it('exportUserData returns data export response', async () => {
-		const payload = { download_url: '/api/v1/gdpr/download/export-123.zip', expires_at: '2026-03-12T00:00:00Z' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = {
+			download_url: '/api/v1/gdpr/download/export-123.zip',
+			expires_at: '2026-03-12T00:00:00Z'
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(exportUserData()).resolves.toEqual(payload);
@@ -972,7 +1112,9 @@ describe('api helpers', () => {
 
 	it('deleteAccount sends DELETE request', async () => {
 		const payload = { success: true, message: 'Account deleted' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(deleteAccount()).resolves.toEqual(payload);
@@ -985,7 +1127,9 @@ describe('api helpers', () => {
 
 	it('fetchAssocies returns parsed payload without filter', async () => {
 		const payload = [{ id: 'a-1', nom: 'Test', part: 50, role: 'gerant' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchAssocies()).resolves.toEqual(payload);
@@ -1006,7 +1150,9 @@ describe('api helpers', () => {
 
 	it('fetchCharges returns parsed payload without filter', async () => {
 		const payload = [{ id: 'ch-1', type_charge: 'copropriete', montant: 200 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchCharges()).resolves.toEqual(payload);
@@ -1028,7 +1174,9 @@ describe('api helpers', () => {
 	it('createLocataire posts JSON body', async () => {
 		const data = { id_bien: 'bien-1' as const, nom: 'Jean Dupont', date_debut: '2026-01-01' };
 		const created = { id: 'loc-1', ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createLocataire(data)).resolves.toEqual(created);
@@ -1043,7 +1191,9 @@ describe('api helpers', () => {
 	it('createChargeForBien posts JSON body', async () => {
 		const data = { type_charge: 'copropriete', montant: 250, date_paiement: '2026-03-01' };
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createChargeForBien('sci-1', 'bien-1', data)).resolves.toEqual(created);
@@ -1067,7 +1217,9 @@ describe('api helpers', () => {
 	it('createPnoForBien posts JSON body', async () => {
 		const data = { assureur: 'AXA', prime_annuelle: 360, date_debut: '2026-01-01' };
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createPnoForBien('sci-1', 'bien-1', data)).resolves.toEqual(created);
@@ -1079,7 +1231,9 @@ describe('api helpers', () => {
 	it('updatePnoForBien patches JSON body', async () => {
 		const data = { prime_annuelle: 400 };
 		const updated = { id: 1, assureur: 'AXA', prime_annuelle: 400, date_debut: '2026-01-01' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(updatePnoForBien('sci-1', 'bien-1', 1, data)).resolves.toEqual(updated);
@@ -1103,7 +1257,9 @@ describe('api helpers', () => {
 	it('createFraisForBien posts JSON body', async () => {
 		const data = { type_frais: 'gestion', montant: 150, date_frais: '2026-03-01' };
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createFraisForBien('sci-1', 'bien-1', data)).resolves.toEqual(created);
@@ -1127,7 +1283,9 @@ describe('api helpers', () => {
 	it('inviteAssocie posts JSON body and returns associe with email_sent', async () => {
 		const data = { nom: 'Marie Martin', email: 'marie@test.fr', part: 30, role: 'associe' };
 		const created = { id: 1, ...data, email_sent: true };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(inviteAssocie('sci-1', data)).resolves.toEqual(created);
@@ -1142,7 +1300,9 @@ describe('api helpers', () => {
 	it('updateSci patches JSON body', async () => {
 		const data = { nom: 'SCI Renamed', regime_fiscal: 'IS' as const };
 		const updated = { id: 'sci-1', ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(updateSci('sci-1', data)).resolves.toEqual(updated);
@@ -1165,8 +1325,12 @@ describe('api helpers', () => {
 	// --- SCI Documents ---
 
 	it('fetchSciDocuments returns documents list', async () => {
-		const payload = [{ id: 1, id_bien: 'bien-1', nom: 'bail.pdf', categorie: 'bail', url: '/files/bail.pdf' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const payload = [
+			{ id: 1, id_bien: 'bien-1', nom: 'bail.pdf', categorie: 'bail', url: '/files/bail.pdf' }
+		];
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchSciDocuments('sci-1')).resolves.toEqual(payload);
@@ -1177,12 +1341,22 @@ describe('api helpers', () => {
 	// --- Upload Document Bien (FormData) ---
 
 	it('uploadDocumentBien posts FormData', async () => {
-		const created = { id: 1, nom: 'bail.pdf', categorie: 'bail', url: '/files/bail.pdf', created_at: '2026-03-01' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const created = {
+			id: 1,
+			nom: 'bail.pdf',
+			categorie: 'bail',
+			url: '/files/bail.pdf',
+			created_at: '2026-03-01'
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		const file = new File(['content'], 'bail.pdf', { type: 'application/pdf' });
-		await expect(uploadDocumentBien('sci-1', 'bien-1', file, 'bail.pdf', 'bail')).resolves.toEqual(created);
+		await expect(uploadDocumentBien('sci-1', 'bien-1', file, 'bail.pdf', 'bail')).resolves.toEqual(
+			created
+		);
 		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(`${API_URL}/api/v1/scis/sci-1/biens/bien-1/documents`);
 		expect(options.method).toBe('POST');
@@ -1224,8 +1398,17 @@ describe('api helpers', () => {
 
 	it('generateCerfa2044 posts JSON payload', async () => {
 		const payload = { annee: 2025, total_revenus: 24000, total_charges: 6000 };
-		const response = { status: 'ok', annee: 2025, total_revenus: 24000, total_charges: 6000, resultat_fiscal: 18000, formulaire: '2044' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 200 }));
+		const response = {
+			status: 'ok',
+			annee: 2025,
+			total_revenus: 24000,
+			total_charges: 6000,
+			resultat_fiscal: 18000,
+			formulaire: '2044'
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(response), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(generateCerfa2044(payload)).resolves.toEqual(response);
@@ -1239,18 +1422,24 @@ describe('api helpers', () => {
 
 	it('uploadQuitusFile posts file path', async () => {
 		const payload = { success: true, url: '/files/quitus.pdf', message: 'Uploaded' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(uploadQuitusFile('/tmp/quitus.pdf')).resolves.toEqual(payload);
 		const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`${API_URL}/api/v1/files/upload-quitus?file_path=${encodeURIComponent('/tmp/quitus.pdf')}`);
+		expect(url).toBe(
+			`${API_URL}/api/v1/files/upload-quitus?file_path=${encodeURIComponent('/tmp/quitus.pdf')}`
+		);
 		expect(options.method).toBe('POST');
 	});
 
 	it('downloadFile returns download response', async () => {
 		const payload = { success: true, url: 'https://storage.test/file.pdf' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(downloadFile('quitus/file.pdf')).resolves.toEqual(payload);
@@ -1260,7 +1449,9 @@ describe('api helpers', () => {
 
 	it('deleteFile sends DELETE request', async () => {
 		const payload = { success: true, message: 'Deleted' };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(deleteFile('quitus/file.pdf')).resolves.toEqual(payload);
@@ -1271,7 +1462,9 @@ describe('api helpers', () => {
 
 	it('listFiles returns file list', async () => {
 		const payload = { success: true, files: [{ name: 'file.pdf' }] };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(listFiles('quitus')).resolves.toEqual(payload);
@@ -1283,7 +1476,9 @@ describe('api helpers', () => {
 
 	it('fetchMouvementsParts returns mouvements list', async () => {
 		const payload = [{ id: 1, type: 'cession', nb_parts: 10 }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchMouvementsParts('sci-1')).resolves.toEqual(payload);
@@ -1294,7 +1489,9 @@ describe('api helpers', () => {
 	it('createMouvementParts posts JSON body', async () => {
 		const data = { type: 'cession', nb_parts: 10, cedant_id: 1, cessionnaire_id: 2 };
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createMouvementParts('sci-1', data)).resolves.toEqual(created);
@@ -1318,7 +1515,9 @@ describe('api helpers', () => {
 
 	it('fetchAssembleesGenerales returns AG list', async () => {
 		const payload = [{ id: 1, date: '2026-01-15', type: 'ordinaire' }];
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(fetchAssembleesGenerales('sci-1')).resolves.toEqual(payload);
@@ -1335,7 +1534,9 @@ describe('api helpers', () => {
 			resolutions: 'Approbation des comptes'
 		};
 		const created = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(createAssembleeGenerale('sci-1', data)).resolves.toEqual(created);
@@ -1354,7 +1555,9 @@ describe('api helpers', () => {
 			notes: 'Vote reporte'
 		};
 		const updated = { id: 1, ...data };
-		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(updateAssembleeGenerale('sci-1', 1, data)).resolves.toEqual(updated);

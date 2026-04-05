@@ -131,8 +131,8 @@ class SubscriptionService:
         )
 
         return {
-            "plan_key": row.get("plan_key", PlanKey.FREE.value),
-            "plan_name": row.get("plan_name") or get_plan(row.get("plan_key", PlanKey.FREE.value)).display_name,
+            "plan_key": row.get("plan_key") or PlanKey.FREE.value,
+            "plan_name": row.get("plan_name") or get_plan(row.get("plan_key") or PlanKey.FREE.value).display_name,
             "status": row.get("status", "free"),
             "mode": row.get("mode", "subscription"),
             "is_active": bool(row.get("is_active", False)),
@@ -140,7 +140,7 @@ class SubscriptionService:
             "entitlements_version": row.get("entitlements_version", 1),
             "max_scis": max_scis,
             "max_biens": max_biens,
-            "features": row.get("features") or get_plan(row.get("plan_key", PlanKey.FREE.value)).features_payload(),
+            "features": row.get("features") or get_plan(row.get("plan_key") or PlanKey.FREE.value).features_payload(),
             "current_scis": current_scis,
             "current_biens": current_biens,
             "remaining_scis": remaining_scis,

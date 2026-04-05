@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { page } from '$app/state';
-	import type { BilanData, BilanSci, BilanBien, SCIOverview } from '$lib/api';
-	import { fetchBilan, fetchBilanPeriodes, downloadBilanPdf, fetchScis } from '$lib/api';
+	import type { BilanData, BilanSci, BilanBien, SCIOverview, SubscriptionEntitlements } from '$lib/api';
+	import { fetchBilan, fetchBilanPeriodes, downloadBilanPdf, fetchScis, PaywallError } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import {
 		FileSpreadsheet,
@@ -16,11 +17,17 @@
 	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
 	import { addToast } from '$lib/components/ui/toast';
+
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	let data: BilanData | null = $state(null);
 	let loading = $state(true);
 	let error: string | null = $state(null);
+	let showPaywall = $state(false);
 	let refreshing = $state(false);
 	let downloading = $state(false);
 
@@ -52,8 +59,13 @@
 					selectedPeriode = p[0];
 				}
 			})
-			.catch((err: Error) => {
-				error = err?.message ?? 'Impossible de charger les périodes.';
+			.catch((err: unknown) => {
+				if (err instanceof PaywallError) {
+					showPaywall = true;
+					loading = false;
+					return;
+				}
+				error = err instanceof Error ? err.message : 'Impossible de charger les périodes.';
 				loading = false;
 			});
 	});
@@ -85,6 +97,12 @@
 				}
 			}
 		} catch (err: unknown) {
+			if (err instanceof PaywallError) {
+				showPaywall = true;
+				loading = false;
+				refreshing = false;
+				return;
+			}
 			const msg = err instanceof Error ? err.message : 'Impossible de charger le bilan.';
 			error = msg;
 			data = null;
@@ -246,14 +264,26 @@
 				<RefreshCw class="mr-2 h-4 w-4 {refreshing ? 'animate-spin' : ''}" />
 				{refreshing ? 'Actualisation...' : 'Rafraîchir'}
 			</Button>
-			<Button onclick={handleDownloadPdf} disabled={downloading || !data} variant="outline" class="shrink-0">
-				<Download class="mr-2 h-4 w-4" />
-				{downloading ? 'Export...' : 'PDF'}
-			</Button>
+			<LockedAction {isDemo} action="exporter le bilan PDF">
+				<Button onclick={handleDownloadPdf} disabled={downloading || !data} variant="outline" class="shrink-0">
+					<Download class="mr-2 h-4 w-4" />
+					{downloading ? 'Export...' : 'PDF'}
+				</Button>
+			</LockedAction>
 		</div>
 	</div>
 
-	{#if loading}
+	<UpgradePrompt open={showPaywall} action="accéder aux bilans mensuels" onClose={() => (showPaywall = false)} />
+
+	{#if showPaywall}
+		<EmptyState
+			icon={FileSpreadsheet}
+			title="Fonctionnalité réservée aux abonnés"
+			description="Les bilans mensuels détaillés sont disponibles avec un abonnement GérerSCI."
+			ctaText="Voir les plans"
+			ctaHref="/pricing"
+		/>
+	{:else if loading}
 		<div class="sci-loading" aria-label="Chargement"></div>
 	{:else if error}
 		<div

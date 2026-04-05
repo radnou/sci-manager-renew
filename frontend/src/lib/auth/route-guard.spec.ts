@@ -13,9 +13,10 @@ describe('route guard helpers', () => {
 			expect(isProtectedRoute('/account')).toBe(true);
 			expect(isProtectedRoute('/account/privacy')).toBe(true);
 			expect(isProtectedRoute('/settings')).toBe(true);
-			expect(isProtectedRoute('/admin')).toBe(true);
-			expect(isProtectedRoute('/admin/users')).toBe(true);
 			expect(isProtectedRoute('/onboarding')).toBe(true);
+			expect(isProtectedRoute('/dashboard')).toBe(true);
+			expect(isProtectedRoute('/scis')).toBe(true);
+			expect(isProtectedRoute('/finances')).toBe(true);
 		});
 
 		it('does not mark public routes as protected', () => {
@@ -31,9 +32,9 @@ describe('route guard helpers', () => {
 			expect(isProtectedRoute('/success')).toBe(false);
 		});
 
-		it('app routes are protected by (app) layout, not route-guard', () => {
-			expect(isProtectedRoute('/dashboard')).toBe(false);
-			expect(isProtectedRoute('/scis')).toBe(false);
+		it('admin routes use their own auth, not route-guard', () => {
+			expect(isProtectedRoute('/admin')).toBe(false);
+			expect(isProtectedRoute('/admin/users')).toBe(false);
 		});
 	});
 

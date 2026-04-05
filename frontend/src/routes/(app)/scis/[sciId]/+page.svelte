@@ -9,11 +9,15 @@
 	import { addToast } from '$lib/components/ui/toast';
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
+	import LockedAction from '$lib/components/LockedAction.svelte';
+	import type { SubscriptionEntitlements } from '$lib/api';
 	import { goto } from '$app/navigation';
 
 	const sci = getContext<SCIDetail>('sci');
 	const sciId = getContext<string>('sciId');
 	const userRole = getContext<string>('userRole');
+	const subscription = getContext<SubscriptionEntitlements>('subscription');
+	const isDemo = !subscription?.is_active;
 
 	// svelte-ignore state_referenced_locally
 	let biensCount = $state(sci.biens_count ?? sci.biens?.length ?? 0);
@@ -459,30 +463,35 @@
 					</span>
 				{/if}
 				<RoleGate>
-					<a
-						href={`/scis/${sciId}/settings`}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-					>
-						<Pencil class="h-3.5 w-3.5" />
-						Modifier
-					</a>
-					<button
-						onclick={() => { showDeleteConfirm = true; }}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-800 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/30"
-						title="Supprimer la SCI"
-					>
-						<Trash2 class="h-3.5 w-3.5" />
-						Supprimer
-					</button>
-					<!-- Gestion dropdown -->
-					<div class="relative">
-						<button
-							onclick={() => { showGestionMenu = !showGestionMenu; }}
+					<LockedAction {isDemo} action="modifier la SCI">
+						<a
+							href={`/scis/${sciId}/settings`}
 							class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
-							Gestion
-							<ChevronDown class="h-3.5 w-3.5" />
+							<Pencil class="h-3.5 w-3.5" />
+							Modifier
+						</a>
+					</LockedAction>
+					<LockedAction {isDemo} action="supprimer la SCI">
+						<button
+							onclick={() => { showDeleteConfirm = true; }}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-800 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/30"
+							title="Supprimer la SCI"
+						>
+							<Trash2 class="h-3.5 w-3.5" />
+							Supprimer
 						</button>
+					</LockedAction>
+					<!-- Gestion dropdown -->
+					<LockedAction {isDemo} action="gérer la SCI">
+						<div class="relative">
+							<button
+								onclick={() => { showGestionMenu = !showGestionMenu; }}
+								class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+							>
+								Gestion
+								<ChevronDown class="h-3.5 w-3.5" />
+							</button>
 						{#if showGestionMenu}
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -504,6 +513,7 @@
 							</div>
 						{/if}
 					</div>
+					</LockedAction>
 				</RoleGate>
 			</div>
 		</div>
@@ -786,24 +796,26 @@
 		<div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
 			<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Exports</h2>
 			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Télécharger les données de cette SCI au format CSV.</p>
-			<div class="mt-4 grid gap-3">
-				<Button onclick={handleExportSci} variant="outline" class="justify-start" title="Exporte les informations générales de la SCI (nom, SIREN, régime fiscal, associés, capital)">
-					<Download class="mr-2 h-4 w-4" />
-					Export SCI (CSV)
-				</Button>
-				<Button onclick={handleExportBiens} disabled={exportingBiens} variant="outline" class="justify-start" title="Exporte la liste des biens immobiliers (adresse, type, surface, loyer)">
-					<Download class="mr-2 h-4 w-4" />
-					{exportingBiens ? 'Export en cours...' : 'Export Biens (CSV)'}
-				</Button>
-				<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="justify-start" title="Exporte l'historique des loyers (montant, statut, date de paiement)">
-					<Download class="mr-2 h-4 w-4" />
-					{exportingLoyers ? 'Export en cours...' : 'Export Loyers (CSV)'}
-				</Button>
-				<Button href={`/bilans?scope=sci&scope_id=${sciId}`} variant="outline" class="justify-start" title="Bilan mensuel comptable de cette SCI">
-					<FileText class="mr-2 h-4 w-4" />
-					Bilan mensuel
-				</Button>
-			</div>
+			<LockedAction {isDemo} action="exporter les données CSV">
+				<div class="mt-4 grid gap-3">
+					<Button onclick={handleExportSci} variant="outline" class="justify-start" title="Exporte les informations générales de la SCI (nom, SIREN, régime fiscal, associés, capital)">
+						<Download class="mr-2 h-4 w-4" />
+						Export SCI (CSV)
+					</Button>
+					<Button onclick={handleExportBiens} disabled={exportingBiens} variant="outline" class="justify-start" title="Exporte la liste des biens immobiliers (adresse, type, surface, loyer)">
+						<Download class="mr-2 h-4 w-4" />
+						{exportingBiens ? 'Export en cours...' : 'Export Biens (CSV)'}
+					</Button>
+					<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="justify-start" title="Exporte l'historique des loyers (montant, statut, date de paiement)">
+						<Download class="mr-2 h-4 w-4" />
+						{exportingLoyers ? 'Export en cours...' : 'Export Loyers (CSV)'}
+					</Button>
+					<Button href={`/bilans?scope=sci&scope_id=${sciId}`} variant="outline" class="justify-start" title="Bilan mensuel comptable de cette SCI">
+						<FileText class="mr-2 h-4 w-4" />
+						Bilan mensuel
+					</Button>
+				</div>
+			</LockedAction>
 		</div>
 	</div>
 

@@ -3,9 +3,7 @@ import { getCurrentSession } from '$lib/auth/session';
 // In development with Vite proxy, use relative path (empty string) to avoid CORS.
 // The Vite dev server proxies /api/* to the backend.
 // In production, VITE_API_URL is empty/unset and API calls go to the same origin.
-export const API_URL = import.meta.env.PROD
-	? (import.meta.env.VITE_API_URL || '')
-	: '';
+export const API_URL = import.meta.env.PROD ? import.meta.env.VITE_API_URL || '' : '';
 
 export class ApiError extends Error {
 	constructor(
@@ -29,6 +27,13 @@ export class ForbiddenError extends ApiError {
 	constructor(m: string) {
 		super(403, 'forbidden', m);
 		this.name = 'ForbiddenError';
+	}
+}
+
+export class PaywallError extends ApiError {
+	constructor(m: string) {
+		super(403, 'subscription_required', m);
+		this.name = 'PaywallError';
 	}
 }
 
@@ -90,6 +95,12 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 			case 402:
 				throw new PaymentRequiredError(message || 'Payment Required');
 			case 403:
+				if (
+					message.includes('subscription_required') ||
+					message.includes('Abonnement actif requis')
+				) {
+					throw new PaywallError(message);
+				}
 				throw new ForbiddenError(message || 'Forbidden');
 			case 404:
 				throw new NotFoundError(message || 'Not Found');
@@ -141,6 +152,12 @@ export async function apiFetchBlob(endpoint: string, options?: RequestInit): Pro
 			case 402:
 				throw new PaymentRequiredError(message || 'Payment Required');
 			case 403:
+				if (
+					message.includes('subscription_required') ||
+					message.includes('Abonnement actif requis')
+				) {
+					throw new PaywallError(message);
+				}
 				throw new ForbiddenError(message || 'Forbidden');
 			case 404:
 				throw new NotFoundError(message || 'Not Found');

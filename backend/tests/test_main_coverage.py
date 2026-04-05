@@ -219,12 +219,19 @@ class TestNotificationCronLoop:
         mock_client = MagicMock()
         with patch("app.main.asyncio.sleep", side_effect=asyncio.CancelledError()), \
              patch("app.main.get_supabase_service_client", return_value=mock_client), \
+             patch("app.main.check_monthly_loyer_generation", new_callable=AsyncMock), \
              patch("app.main.check_late_payments", new_callable=AsyncMock), \
              patch("app.main.check_expiring_bails", new_callable=AsyncMock), \
              patch("app.main.check_expiring_pno", new_callable=AsyncMock), \
              patch("app.main.check_pending_quittances", new_callable=AsyncMock), \
              patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock), \
-             patch("app.main.process_nurture_emails", new_callable=AsyncMock, return_value=0):
+             patch("app.main.check_irl_revisions", new_callable=AsyncMock), \
+             patch("app.main.check_bail_renewal", new_callable=AsyncMock), \
+             patch("app.main.check_recurring_charges", new_callable=AsyncMock), \
+             patch("app.main.check_regularisation_charges_reminder", new_callable=AsyncMock), \
+             patch("app.main.process_nurture_emails", new_callable=AsyncMock, return_value=0), \
+             patch("app.main.check_and_send_signup_nurture_emails", new_callable=AsyncMock, return_value=0), \
+             patch("app.main.auto_generate_bilans", new_callable=AsyncMock, return_value=0):
             await _notification_cron_loop()
 
     @pytest.mark.asyncio
@@ -233,18 +240,30 @@ class TestNotificationCronLoop:
         mock_client = MagicMock()
         with patch("app.main.asyncio.sleep", side_effect=asyncio.CancelledError()), \
              patch("app.main.get_supabase_service_client", return_value=mock_client), \
+             patch("app.main.check_monthly_loyer_generation", new_callable=AsyncMock) as m0, \
              patch("app.main.check_late_payments", new_callable=AsyncMock) as m1, \
              patch("app.main.check_expiring_bails", new_callable=AsyncMock) as m2, \
              patch("app.main.check_expiring_pno", new_callable=AsyncMock) as m3, \
              patch("app.main.check_pending_quittances", new_callable=AsyncMock) as m4, \
              patch("app.main.check_fiscal_deadlines", new_callable=AsyncMock) as m5, \
-             patch("app.main.process_nurture_emails", new_callable=AsyncMock, return_value=0):
+             patch("app.main.check_irl_revisions", new_callable=AsyncMock) as m6, \
+             patch("app.main.check_bail_renewal", new_callable=AsyncMock) as m7, \
+             patch("app.main.check_recurring_charges", new_callable=AsyncMock) as m8, \
+             patch("app.main.check_regularisation_charges_reminder", new_callable=AsyncMock) as m9, \
+             patch("app.main.process_nurture_emails", new_callable=AsyncMock, return_value=0), \
+             patch("app.main.check_and_send_signup_nurture_emails", new_callable=AsyncMock, return_value=0), \
+             patch("app.main.auto_generate_bilans", new_callable=AsyncMock, return_value=0):
             await _notification_cron_loop()
+            m0.assert_called_once_with(mock_client)
             m1.assert_called_once_with(mock_client)
             m2.assert_called_once_with(mock_client)
             m3.assert_called_once_with(mock_client)
             m4.assert_called_once_with(mock_client)
             m5.assert_called_once_with(mock_client)
+            m6.assert_called_once_with(mock_client)
+            m7.assert_called_once_with(mock_client)
+            m8.assert_called_once_with(mock_client)
+            m9.assert_called_once_with(mock_client)
 
     @pytest.mark.asyncio
     async def test_cron_loop_survives_runtime_error(self):
