@@ -273,6 +273,11 @@ body {
 	.sci-stagger > *:nth-child(6) { animation-delay: 0.18s; }
 	.sci-stagger > *:nth-child(n+7) { animation-delay: 0.21s; }
 
+	/* Tab content enter transition */
+	.sci-tab-enter {
+		animation: sciFadeInUp 0.2s ease-out both;
+	}
+
 	/* Loading spinner — minimal, centered */
 	.sci-loading {
 		@apply flex items-center justify-center py-20;

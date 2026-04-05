@@ -195,7 +195,8 @@
 			</div>
 		</nav>
 
-		<div class="sci-stagger mt-6">
+		{#key activeSection}
+		<div class="sci-tab-enter mt-6">
 			{#if activeSection === 'identite'}
 			<div id="section-identite" role="tabpanel" aria-label="Identité">
 				<FicheBienIdentite {bien} {isGerant} {isDemo} onRefresh={loadFicheBien} />
@@ -286,5 +287,6 @@
 			</div>
 			{/if}
 		</div>
+		{/key}
 	{/if}
 </section>
