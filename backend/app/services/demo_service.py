@@ -29,11 +29,18 @@ def _next_month_first() -> str:
     return f"{now.year}-{now.month + 1:02d}-01"
 
 
-async def seed_demo_data(client, user_id: str) -> dict:
-    """Seed a full set of realistic demo data for a new user.
+def _last_year() -> int:
+    return datetime.now(UTC).year - 1
 
-    Creates: 1 SCI, 2 biens, baux, locataires, 6+ months of loyers, charges, PNO.
-    All records marked with is_demo=True for easy cleanup.
+
+async def seed_demo_data(client, user_id: str) -> dict:
+    """Seed a complete demo dataset for a new user.
+
+    Creates: 1 SCI, 1 bien with ALL data filled in:
+    identité complète, bail, locataire, 6 mois de loyers, charges,
+    PNO, frais agence, crédit immobilier, fiscalité, AG, mouvement de parts,
+    événement bien.
+    All entity-table records marked with is_demo=True for easy cleanup.
     """
     logger.info("demo_seed_start", user_id=user_id)
 
@@ -42,31 +49,48 @@ async def seed_demo_data(client, user_id: str) -> dict:
     client.table("sci").insert({
         "id": sci_id,
         "nom": "SCI Résidence Belleville",
-        "siren": None,  # No SIREN for demo data (avoids unique constraint conflicts)
+        "siren": None,
         "regime_fiscal": "IR",
         "capital_social": 150000,
         "forme_juridique": "SCI",
         "nom_gerant": "Vous (démonstration)",
+        "adresse_siege": "12 rue de la Paix, 75002 Paris",
+        "date_creation": "2020-06-15",
+        "objet_social": "Acquisition, administration et gestion de biens immobiliers",
         "is_demo": True,
     }).execute()
 
-    # --- Associé (user = gérant 100%) ---
+    # --- Associé (user = gérant 70%) ---
+    assoc1_id = str(uuid.uuid4())
     client.table("associes").insert({
-        "id": str(uuid.uuid4()),
+        "id": assoc1_id,
         "id_sci": sci_id,
         "user_id": user_id,
         "nom": "Gérant Démonstration",
         "email": "demo@gerersci.fr",
         "role": "gerant",
-        "part": 100,
-        "nb_parts": 1000,
+        "part": 70,
+        "nb_parts": 700,
         "is_demo": True,
     }).execute()
 
-    # --- Bien 1: T3 Lyon 7e ---
-    bien1_id = str(uuid.uuid4())
+    # --- Associé 2 (co-associé 30%) ---
+    assoc2_id = str(uuid.uuid4())
+    client.table("associes").insert({
+        "id": assoc2_id,
+        "id_sci": sci_id,
+        "nom": "Sophie Martin",
+        "email": "sophie.martin@demo.gerersci.fr",
+        "role": "associe",
+        "part": 30,
+        "nb_parts": 300,
+        "is_demo": True,
+    }).execute()
+
+    # --- Bien: T3 Lyon 7e (COMPLET) ---
+    bien_id = str(uuid.uuid4())
     client.table("biens").insert({
-        "id": bien1_id,
+        "id": bien_id,
         "id_sci": sci_id,
         "adresse": "45 avenue Jean Jaurès",
         "ville": "Lyon",
@@ -75,37 +99,22 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "type_locatif": "nu",
         "surface_m2": 65,
         "nb_pieces": 3,
+        "etage": "3ème",
+        "annee_construction": 1985,
         "dpe_classe": "C",
+        "ges_classe": "B",
         "loyer_cc": 850,
         "charges": 50,
         "prix_acquisition": 185000,
+        "date_acquisition": "2021-03-10",
         "is_demo": True,
     }).execute()
 
-    # --- Bien 2: Studio Lyon 2e ---
-    bien2_id = str(uuid.uuid4())
-    client.table("biens").insert({
-        "id": bien2_id,
-        "id_sci": sci_id,
-        "adresse": "12 rue Victor Hugo",
-        "ville": "Lyon",
-        "code_postal": "69002",
-        "type_bien": "appartement",
-        "type_locatif": "meuble",
-        "surface_m2": 28,
-        "nb_pieces": 1,
-        "dpe_classe": "D",
-        "loyer_cc": 620,
-        "charges": 40,
-        "prix_acquisition": 95000,
-        "is_demo": True,
-    }).execute()
-
-    # --- Locataire 1 ---
-    loc1_id = str(uuid.uuid4())
+    # --- Locataire ---
+    loc_id = str(uuid.uuid4())
     client.table("locataires").insert({
-        "id": loc1_id,
-        "id_bien": bien1_id,
+        "id": loc_id,
+        "id_bien": bien_id,
         "nom": "Marie Lefèvre",
         "email": "marie.lefevre@demo.gerersci.fr",
         "telephone": "06 12 34 56 78",
@@ -113,53 +122,28 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "is_demo": True,
     }).execute()
 
-    # --- Locataire 2 ---
-    loc2_id = str(uuid.uuid4())
-    client.table("locataires").insert({
-        "id": loc2_id,
-        "id_bien": bien2_id,
-        "nom": "Thomas Durand",
-        "email": "thomas.durand@demo.gerersci.fr",
-        "telephone": "07 98 76 54 32",
-        "date_debut": _month_ago(3),
-        "is_demo": True,
-    }).execute()
-
-    # --- Bail 1 (Bien 1, 8 months ago) ---
-    bail1_id = str(uuid.uuid4())
+    # --- Bail (8 months ago, with état des lieux) ---
+    bail_id = str(uuid.uuid4())
     client.table("baux").insert({
-        "id": bail1_id,
-        "id_bien": bien1_id,
+        "id": bail_id,
+        "id_bien": bien_id,
         "date_debut": _month_ago(8),
+        "date_fin": None,
         "loyer_hc": 800,
         "charges_locatives": 50,
+        "depot_garantie": 800,
         "statut": "en_cours",
-        "is_demo": True,
-    }).execute()
-    # Link locataire to bail
-    client.table("bail_locataires").insert({
-        "id_bail": bail1_id,
-        "id_locataire": loc1_id,
-    }).execute()
-
-    # --- Bail 2 (Bien 2, 3 months ago) ---
-    bail2_id = str(uuid.uuid4())
-    client.table("baux").insert({
-        "id": bail2_id,
-        "id_bien": bien2_id,
-        "date_debut": _month_ago(3),
-        "loyer_hc": 580,
-        "charges_locatives": 40,
-        "statut": "en_cours",
+        "etat_lieux_date": _month_ago(8),
+        "etat_lieux_notes": "Bon état général. Traces d'usure normales sur le parquet du salon.",
         "is_demo": True,
     }).execute()
     client.table("bail_locataires").insert({
-        "id_bail": bail2_id,
-        "id_locataire": loc2_id,
+        "id_bail": bail_id,
+        "id_locataire": loc_id,
     }).execute()
 
-    # --- Loyers Bien 1 (6 months: 4 payés, 1 en attente, 1 en retard) ---
-    loyer_statuses_1 = [
+    # --- Loyers: 6 mois (4 payés, 1 en retard, 1 en attente) ---
+    loyer_statuses = [
         (_month_ago(6), "paye", _month_ago(6)),
         (_month_ago(5), "paye", _month_ago(5)),
         (_month_ago(4), "paye", _month_ago(4)),
@@ -167,70 +151,41 @@ async def seed_demo_data(client, user_id: str) -> dict:
         (_month_ago(2), "en_retard", None),
         (_month_ago(1), "en_attente", None),
     ]
-    for date_loyer, statut, date_paiement in loyer_statuses_1:
+    for date_loyer, statut, date_paiement in loyer_statuses:
         row = {
             "id": str(uuid.uuid4()),
-            "id_bien": bien1_id,
+            "id_bien": bien_id,
             "montant": 850,
             "statut": statut,
             "date_loyer": date_loyer,
-            "id_locataire": loc1_id,
+            "id_locataire": loc_id,
             "is_demo": True,
         }
         if date_paiement:
             row["date_paiement"] = date_paiement
         client.table("loyers").insert(row).execute()
 
-    # --- Loyers Bien 2 (3 months: 2 payés, 1 en attente) ---
-    loyer_statuses_2 = [
-        (_month_ago(3), "paye", _month_ago(3)),
-        (_month_ago(2), "paye", _month_ago(2)),
-        (_month_ago(1), "en_attente", None),
-    ]
-    for date_loyer, statut, date_paiement in loyer_statuses_2:
-        row = {
-            "id": str(uuid.uuid4()),
-            "id_bien": bien2_id,
-            "montant": 620,
-            "statut": statut,
-            "date_loyer": date_loyer,
-            "id_locataire": loc2_id,
-            "is_demo": True,
-        }
-        if date_paiement:
-            row["date_paiement"] = date_paiement
-        client.table("loyers").insert(row).execute()
-
-    # --- Charges Bien 1 ---
-    charges_data_1 = [
+    # --- Charges ---
+    charges_data = [
         ("copropriete", 150, _month_ago(3)),
         ("copropriete", 150, _month_ago(6)),
         ("taxe_fonciere", 800, _month_ago(4)),
+        ("entretien", 120, _month_ago(2)),
     ]
-    for type_charge, montant, date in charges_data_1:
+    for type_charge, montant, date in charges_data:
         client.table("charges").insert({
             "id": str(uuid.uuid4()),
-            "id_bien": bien1_id,
+            "id_bien": bien_id,
             "type_charge": type_charge,
             "montant": montant,
             "date_paiement": date,
             "is_demo": True,
         }).execute()
 
-    # --- Charges Bien 2 ---
-    client.table("charges").insert({
-        "id": str(uuid.uuid4()),
-        "id_bien": bien2_id,
-        "type_charge": "copropriete",
-        "montant": 90,
-        "date_paiement": _month_ago(3),
-        "is_demo": True,
-    }).execute()
-
-    # --- Assurance PNO (Bien 1) ---
+    # --- Assurance PNO ---
     client.table("assurances_pno").insert({
         "id": str(uuid.uuid4()),
-        "id_bien": bien1_id,
+        "id_bien": bien_id,
         "compagnie": "AXA",
         "numero_contrat": "PNO-DEMO-2025-001",
         "montant_annuel": 180,
@@ -238,8 +193,89 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "is_demo": True,
     }).execute()
 
+    # --- Frais Agence ---
+    client.table("frais_agence").insert({
+        "id": str(uuid.uuid4()),
+        "id_bien": bien_id,
+        "nom_agence": "Nexity Gestion",
+        "contact": "contact@nexity-lyon7.fr",
+        "type_frais": "pourcentage",
+        "montant_ou_pourcentage": 7.5,
+    }).execute()
+
+    # --- Crédit Immobilier ---
+    client.table("credits_immobiliers").insert({
+        "id": str(uuid.uuid4()),
+        "id_bien": bien_id,
+        "banque": "Crédit Agricole",
+        "numero_contrat": "CA-2021-DEMO-456",
+        "montant_emprunte": 148000,
+        "taux_nominal": 1.350,
+        "taux_assurance": 0.250,
+        "duree_mois": 240,
+        "date_debut": "2021-04-01",
+        "mensualite": 695.42,
+        "capital_restant_du": 118200,
+        "type_credit": "amortissable",
+        "statut": "en_cours",
+    }).execute()
+
+    # --- Fiscalité (année précédente) ---
+    year = _last_year()
+    client.table("fiscalite").insert({
+        "id": str(uuid.uuid4()),
+        "id_sci": sci_id,
+        "annee": year,
+        "total_revenus": 10200,
+        "total_charges": 3420,
+        "resultat_fiscal": 6780,
+        "interets_emprunt": 1850,
+        "travaux": 0,
+        "frais_gestion": 720,
+        "assurance": 180,
+        "taxe_fonciere": 800,
+        "copropriete": 300,
+    }).execute()
+
+    # --- Assemblée Générale ---
+    client.table("assemblees_generales").insert({
+        "id": str(uuid.uuid4()),
+        "id_sci": sci_id,
+        "date_ag": f"{year}-06-15",
+        "type_ag": "ordinaire",
+        "exercice_annee": year,
+        "ordre_du_jour": "Approbation des comptes de l'exercice, quitus au gérant, budget prévisionnel",
+        "resolutions": "Résolution 1 : Approbation des comptes — adoptée à l'unanimité.\nRésolution 2 : Quitus au gérant — adopté à l'unanimité.",
+        "quorum_atteint": True,
+        "notes": "AG tenue au siège social. Présents : 2 associés sur 2 (100% des parts).",
+    }).execute()
+
+    # --- Mouvement de parts ---
+    client.table("mouvements_parts").insert({
+        "id": str(uuid.uuid4()),
+        "id_sci": sci_id,
+        "date_mouvement": "2023-01-15",
+        "type": "cession",
+        "cedant": "Pierre Dupont (fondateur)",
+        "cessionnaire": "Sophie Martin",
+        "nb_parts": 300,
+        "prix_total": 45000,
+    }).execute()
+
+    # --- Événement Bien ---
+    client.table("evenements_bien").insert({
+        "id": str(uuid.uuid4()),
+        "id_bien": bien_id,
+        "type": "travaux",
+        "titre": "Remplacement chaudière",
+        "description": "Remplacement de la chaudière gaz par une pompe à chaleur air/eau. Travaux réalisés par Daikin Lyon.",
+        "date_evenement": _month_ago(2),
+        "montant": 4800,
+        "prestataire": "Daikin Lyon",
+        "deductible_fiscalement": True,
+    }).execute()
+
     # --- Mark demo as seeded in subscriptions ---
-    # Upsert subscription row with demo_seeded=True
     sub_check = (
         client.table("subscriptions")
         .select("id")
@@ -259,7 +295,7 @@ async def seed_demo_data(client, user_id: str) -> dict:
         }).execute()
 
     logger.info("demo_seed_complete", user_id=user_id, sci_id=sci_id)
-    return {"sci_id": sci_id, "bien_ids": [bien1_id, bien2_id]}
+    return {"sci_id": sci_id, "bien_ids": [bien_id]}
 
 
 async def cleanup_demo_data(client, user_id: str) -> int:
@@ -306,6 +342,22 @@ async def cleanup_demo_data(client, user_id: str) -> int:
         r = client.table("assurances_pno").delete().in_("id_bien", bien_ids).eq("is_demo", True).execute()
         deleted += len(r.data or [])
 
+        # Frais agence (no is_demo — clean by FK)
+        r = client.table("frais_agence").delete().in_("id_bien", bien_ids).execute()
+        deleted += len(r.data or [])
+
+        # Crédits immobiliers (no is_demo — clean by FK)
+        r = client.table("credits_immobiliers").delete().in_("id_bien", bien_ids).execute()
+        deleted += len(r.data or [])
+
+        # Événements bien (no is_demo — clean by FK)
+        r = client.table("evenements_bien").delete().in_("id_bien", bien_ids).execute()
+        deleted += len(r.data or [])
+
+        # Régularisations charges (no is_demo — clean by FK)
+        r = client.table("regularisations_charges").delete().in_("id_bien", bien_ids).execute()
+        deleted += len(r.data or [])
+
         # Bail_locataires (via baux)
         baux_res = client.table("baux").select("id").in_("id_bien", bien_ids).eq("is_demo", True).execute()
         bail_ids = [row["id"] for row in (baux_res.data or [])]
@@ -322,6 +374,20 @@ async def cleanup_demo_data(client, user_id: str) -> int:
 
         # Biens
         r = client.table("biens").delete().in_("id_sci", sci_ids).eq("is_demo", True).execute()
+        deleted += len(r.data or [])
+
+    # SCI-level tables (no is_demo — clean by FK)
+    for sci_id in sci_ids:
+        # Fiscalité
+        r = client.table("fiscalite").delete().eq("id_sci", sci_id).execute()
+        deleted += len(r.data or [])
+
+        # Assemblées générales
+        r = client.table("assemblees_generales").delete().eq("id_sci", sci_id).execute()
+        deleted += len(r.data or [])
+
+        # Mouvements de parts
+        r = client.table("mouvements_parts").delete().eq("id_sci", sci_id).execute()
         deleted += len(r.data or [])
 
     # Associes
