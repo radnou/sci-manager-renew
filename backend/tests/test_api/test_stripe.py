@@ -13,14 +13,14 @@ def test_create_checkout_session(client, auth_headers, monkeypatch):
         lambda plan_key, billing_period="month": "price_test",
     )
 
-    def fake_create(**kwargs):
+    async def fake_create(**kwargs):
         assert kwargs["line_items"][0]["price"] == "price_test"
         assert kwargs["mode"] == "subscription"
         assert kwargs["client_reference_id"] == "user-123"
         assert kwargs["metadata"]["plan_key"] == "starter"
         return SimpleNamespace(url="https://checkout.stripe.com/c/pay_test")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
+    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
@@ -35,9 +35,11 @@ def test_create_checkout_session(client, auth_headers, monkeypatch):
 
 def test_create_checkout_session_without_url_fails(client, auth_headers, monkeypatch):
     monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+    async def _no_url(**_kwargs):
+        return SimpleNamespace(url=None)
     monkeypatch.setattr(
-        "app.api.v1.stripe.stripe.checkout.Session.create",
-        lambda **_kwargs: SimpleNamespace(url=None),
+        "app.api.v1.stripe.stripe.checkout.Session.create_async",
+        _no_url,
     )
 
     response = client.post(
@@ -52,10 +54,10 @@ def test_create_checkout_session_without_url_fails(client, auth_headers, monkeyp
 def test_create_checkout_session_stripe_error_fails(client, auth_headers, monkeypatch):
     monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
 
-    def fake_create(**_kwargs):
+    async def fake_create(**_kwargs):
         raise stripe.error.StripeError("boom")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
+    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
@@ -295,14 +297,14 @@ def test_guest_checkout_success(client, monkeypatch):
         lambda plan_key, billing_period="month": "price_test",
     )
 
-    def fake_create(**kwargs):
+    async def fake_create(**kwargs):
         assert kwargs["line_items"][0]["price"] == "price_test"
         assert kwargs["mode"] == "subscription"
         assert kwargs["metadata"]["plan_key"] == "starter"
         assert "client_reference_id" not in kwargs
         return SimpleNamespace(url="https://checkout.stripe.com/c/pay_guest", id="cs_guest_123")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
+    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
 
     response = client.post(
         "/api/v1/stripe/create-guest-checkout",
@@ -758,10 +760,10 @@ def test_guest_checkout_stripe_error(client, monkeypatch):
     """Guest checkout returns 503 on Stripe error."""
     monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
 
-    def fake_create(**_kwargs):
+    async def fake_create(**_kwargs):
         raise stripe.error.StripeError("boom")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create", fake_create)
+    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
 
     response = client.post(
         "/api/v1/stripe/create-guest-checkout",
@@ -775,9 +777,11 @@ def test_guest_checkout_no_url(client, monkeypatch):
     """Guest checkout returns 503 when session has no URL."""
     monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
 
+    async def _no_url_guest(**_kwargs):
+        return SimpleNamespace(url=None, id="cs_no_url")
     monkeypatch.setattr(
-        "app.api.v1.stripe.stripe.checkout.Session.create",
-        lambda **_kwargs: SimpleNamespace(url=None, id="cs_no_url"),
+        "app.api.v1.stripe.stripe.checkout.Session.create_async",
+        _no_url_guest,
     )
 
     response = client.post(

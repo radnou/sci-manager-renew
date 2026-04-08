@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import stripe
@@ -16,7 +16,8 @@ def test_activate_missing_session_id(client):
 
 def test_activate_invalid_session_id(client):
     with patch(
-        "stripe.checkout.Session.retrieve",
+        "stripe.checkout.Session.retrieve_async",
+        new_callable=AsyncMock,
         side_effect=stripe.error.InvalidRequestError("No such session", param="session_id"),
     ):
         response = client.get("/api/v1/auth/activate?session_id=invalid")
@@ -28,7 +29,7 @@ def test_activate_unpaid_session(client, monkeypatch):
     fake_session = MagicMock()
     fake_session.payment_status = "unpaid"
 
-    with patch("stripe.checkout.Session.retrieve", return_value=fake_session):
+    with patch("stripe.checkout.Session.retrieve_async", new_callable=AsyncMock, return_value=fake_session):
         response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
     assert response.status_code == 400
     assert "Payment not completed" in response.json()["error"]
@@ -41,7 +42,7 @@ def test_activate_no_email_in_session(client):
     fake_session.customer_details = None
     fake_session.metadata = {}
 
-    with patch("stripe.checkout.Session.retrieve", return_value=fake_session):
+    with patch("stripe.checkout.Session.retrieve_async", new_callable=AsyncMock, return_value=fake_session):
         response = client.get("/api/v1/auth/activate?session_id=cs_test_123")
     assert response.status_code == 400
     assert "No email" in response.json()["error"]
@@ -60,7 +61,7 @@ def test_activate_user_not_found_fallback_creates(client):
     fake_link_result.properties.hashed_token = "test_hash"
 
     with (
-        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("stripe.checkout.Session.retrieve_async", new_callable=AsyncMock, return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value=None),
         patch("app.api.v1.auth._create_or_get_user", return_value="user-fallback-123"),
         patch("app.api.v1.auth.get_supabase_service_client") as mock_client,
@@ -81,7 +82,7 @@ def test_activate_user_not_found_fallback_fails(client):
     fake_session.metadata = {"plan_key": "pro"}
 
     with (
-        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("stripe.checkout.Session.retrieve_async", new_callable=AsyncMock, return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value=None),
         patch("app.api.v1.auth._create_or_get_user", return_value=None),
     ):
@@ -108,7 +109,7 @@ def test_activate_replay_blocked(client):
     fake_client.table.return_value = fake_table
 
     with (
-        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("stripe.checkout.Session.retrieve_async", new_callable=AsyncMock, return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value="user-uuid-123"),
         patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client),
     ):
@@ -144,7 +145,7 @@ def test_activate_success(client, fake_supabase):
     fake_client.auth.admin.generate_link.return_value = fake_link_result
 
     with (
-        patch("stripe.checkout.Session.retrieve", return_value=fake_session),
+        patch("stripe.checkout.Session.retrieve_async", new_callable=AsyncMock, return_value=fake_session),
         patch("app.api.v1.auth._find_user_by_email", return_value="user-uuid-123"),
         patch("app.api.v1.auth.get_supabase_service_client", return_value=fake_client),
     ):

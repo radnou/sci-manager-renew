@@ -60,7 +60,7 @@ async def activate_session(
     # 1. Validate with Stripe
     stripe.api_key = settings.stripe_secret_key
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
+        session = await stripe.checkout.Session.retrieve_async(session_id)
     except stripe.error.StripeError:
         raise ValidationError("Invalid or expired session")
 

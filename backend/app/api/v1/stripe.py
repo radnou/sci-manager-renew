@@ -347,7 +347,7 @@ async def create_checkout_session(
     stripe.api_key = settings.stripe_secret_key
 
     try:
-        session = stripe.checkout.Session.create(
+        session = await stripe.checkout.Session.create_async(
             payment_method_types=["card"],
             line_items=[
                 {
@@ -429,7 +429,7 @@ async def create_guest_checkout(
     stripe.api_key = settings.stripe_secret_key
 
     try:
-        session = stripe.checkout.Session.create(
+        session = await stripe.checkout.Session.create_async(
             payment_method_types=["card"],
             line_items=[
                 {
@@ -521,7 +521,7 @@ async def create_customer_portal(
     stripe.api_key = settings.stripe_secret_key
 
     try:
-        portal_session = stripe.billing_portal.Session.create(
+        portal_session = await stripe.billing_portal.Session.create_async(
             customer=stripe_customer_id,
             return_url=f"{settings.frontend_url}/settings",
         )
