@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Rocket, Building2, HandCoins, FileText, CheckCircle2, ArrowRight } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
 		fetchDashboard,
@@ -19,6 +20,16 @@
 	import Celebration from '$lib/components/Celebration.svelte';
 
 	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
+
+	// Auto-redirect to onboarding after checkout celebration
+	$effect(() => {
+		if (upgraded && !loading) {
+			const timer = setTimeout(() => {
+				goto('/onboarding');
+			}, 4000);
+			return () => clearTimeout(timer);
+		}
+	});
 
 	const currentYear = new Date().getFullYear();
 	let selectedYear = $state(currentYear);

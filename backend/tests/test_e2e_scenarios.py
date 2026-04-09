@@ -79,6 +79,7 @@ GERANT_ASSOC = {
     "email": "gerant@sci.local",
     "part": 60,
     "role": "gerant",
+    "is_demo": False,
 }
 
 ASSOC_ONLY = {

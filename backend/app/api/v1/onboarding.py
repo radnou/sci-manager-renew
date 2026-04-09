@@ -49,51 +49,55 @@ def _check_onboarding_progress(user_id: str) -> OnboardingStatus:
         completed = bool(sub_result.data[0].get("onboarding_completed", False))
 
     # Check if user has at least one SCI (via associes membership)
+    # Filter out demo data in Python to avoid mock/query edge cases
     sci_result = (
         client.table("associes")
-        .select("id_sci")
+        .select("id_sci, is_demo")
         .eq("user_id", user_id)
-        .limit(1)
         .execute()
     )
-    sci_created = bool(sci_result.data)
-    first_sci_id = str(sci_result.data[0]["id_sci"]) if sci_result.data else None
+    real_scis = [
+        row for row in (sci_result.data or [])
+        if not row.get("is_demo", False)
+    ]
+    sci_created = bool(real_scis)
+    first_sci_id = str(real_scis[0]["id_sci"]) if real_scis else None
 
-    # Check if user has at least one bien (via SCI membership)
+    # Check if user has at least one real bien
     bien_created = False
     if sci_created:
-        sci_ids = [str(row["id_sci"]) for row in sci_result.data]
+        sci_ids = [str(row["id_sci"]) for row in real_scis]
         for sci_id in sci_ids:
             bien_result = (
                 client.table("biens")
-                .select("id")
+                .select("id, is_demo")
                 .eq("id_sci", sci_id)
-                .limit(1)
                 .execute()
             )
-            if bien_result.data:
+            real_biens = [b for b in (bien_result.data or []) if not b.get("is_demo", False)]
+            if real_biens:
                 bien_created = True
                 break
 
-    # Check if at least one bail exists
+    # Check if at least one real bail exists
     bail_created = False
     if bien_created:
         for sci_id in sci_ids:
             biens_result = (
                 client.table("biens")
-                .select("id")
+                .select("id, is_demo")
                 .eq("id_sci", sci_id)
                 .execute()
             )
-            for bien_row in biens_result.data or []:
+            for bien_row in [b for b in (biens_result.data or []) if not b.get("is_demo", False)]:
                 bail_result = (
                     client.table("baux")
-                    .select("id")
+                    .select("id, is_demo")
                     .eq("id_bien", str(bien_row["id"]))
-                    .limit(1)
                     .execute()
                 )
-                if bail_result.data:
+                real_baux = [b for b in (bail_result.data or []) if not b.get("is_demo", False)]
+                if real_baux:
                     bail_created = True
                     break
             if bail_created:
