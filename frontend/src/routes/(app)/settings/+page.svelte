@@ -978,6 +978,24 @@
 							</label>
 						</div>
 
+						<!-- Jour de loyer par défaut (global fallback) -->
+						<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+							<div class="flex items-start justify-between gap-3">
+								<div>
+									<p class="font-semibold text-slate-900 dark:text-slate-100">Jour de loyer par défaut</p>
+									<p class="mt-1 text-slate-500 dark:text-slate-400">Jour du mois auquel les loyers sont générés, sauf surcharge au niveau de la SCI ou du bien (1–28).</p>
+								</div>
+								<input
+									type="number"
+									min="1"
+									max="28"
+									bind:value={preferences.defaultJourLoyer}
+									class="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+									aria-label="Jour de loyer par défaut"
+								/>
+							</div>
+						</div>
+
 						<Button onclick={handleSavePreferences}>Enregistrer les préférences</Button>
 					</CardContent>
 				</Card>

@@ -2,7 +2,7 @@
 	import { getContext } from 'svelte';
 	import { Building2, Users, FileText, MapPin, FolderOpen, Download, Wallet, TrendingUp, Receipt, AlertTriangle, CalendarDays, Clock, CheckCircle2, Pencil, Trash2, Loader2, ChevronDown, UserCog, Landmark, XCircle, Check, BarChart3 } from 'lucide-svelte';
 	import type { SCIDetail, ComptabiliteAnnuelle, ComptabiliteMoisItem, Associe } from '$lib/api';
-	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci, fetchComptabiliteAnnuelle, fetchComptabiliteMensuelle, changerGerant, modifierCapital, dissoudreSci, fetchSciAssociesList, marquerEcheanceFiscaleFaite, demarquerEcheanceFiscale, fetchCalendrierFiscalStatut } from '$lib/api';
+	import { fetchSciBiensList, exportBiensCsv, exportLoyersCsv, deleteSci, fetchComptabiliteAnnuelle, fetchComptabiliteMensuelle, changerGerant, modifierCapital, dissoudreSci, fetchSciAssociesList, marquerEcheanceFiscaleFaite, demarquerEcheanceFiscale, fetchCalendrierFiscalStatut, updateSci } from '$lib/api';
 	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { Button } from '$lib/components/ui/button';
@@ -254,6 +254,27 @@
 	}
 
 	const isGerant = $derived(userRole === 'gerant');
+
+	// ── Jour de loyer (inline edit for SCI-level default) ─────────
+	let editingJourLoyer = $state(false);
+	let jourLoyerValue = $state<number | ''>(sci.jour_loyer ?? '');
+	let jourLoyerSaving = $state(false);
+
+	async function saveJourLoyer() {
+		jourLoyerSaving = true;
+		try {
+			await updateSci(sciId, {
+				jour_loyer: jourLoyerValue !== '' ? Number(jourLoyerValue) : null
+			});
+			addToast({ title: 'Jour de loyer mis à jour', variant: 'success' });
+			editingJourLoyer = false;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de mettre à jour le jour de loyer.', variant: 'error' });
+		} finally {
+			jourLoyerSaving = false;
+		}
+	}
+
 	const hasFinancials = $derived(
 		(sci.total_monthly_rent ?? 0) > 0 || (sci.paid_loyers_total ?? 0) > 0 || (sci.total_recorded_charges ?? 0) > 0
 	);
@@ -917,6 +938,51 @@
 						<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{sci.forme_juridique}</span>
 					</div>
 				{/if}
+				<!-- Jour de loyer par défaut (SCI-level override) -->
+				<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+					<span class="text-sm text-slate-500 dark:text-slate-400">Jour de loyer</span>
+					{#if editingJourLoyer && isGerant}
+						<div class="flex items-center gap-2">
+							<input
+								type="number"
+								min="1"
+								max="28"
+								bind:value={jourLoyerValue}
+								class="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+								placeholder="1"
+							/>
+							<span class="text-xs text-slate-500 dark:text-slate-400">du mois</span>
+							<button
+								onclick={saveJourLoyer}
+								disabled={jourLoyerSaving}
+								class="rounded-lg bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+							>
+								{jourLoyerSaving ? '…' : 'OK'}
+							</button>
+							<button
+								onclick={() => { editingJourLoyer = false; jourLoyerValue = sci.jour_loyer ?? ''; }}
+								class="rounded-lg px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+							>
+								✕
+							</button>
+						</div>
+					{:else}
+						<div class="flex items-center gap-2">
+							<span class="text-sm font-medium text-slate-900 dark:text-slate-100">
+								{sci.jour_loyer != null ? `${sci.jour_loyer} du mois` : 'Hérité du réglage global'}
+							</span>
+							{#if isGerant}
+								<button
+									onclick={() => { editingJourLoyer = true; jourLoyerValue = sci.jour_loyer ?? ''; }}
+									class="rounded p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+									title="Modifier le jour de loyer"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+								</button>
+							{/if}
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 

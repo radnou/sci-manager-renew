@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 import structlog
 
 from app.services.notification_service import create_notification_with_email
+from app.services.jour_loyer_service import resolve_jour_loyer_for_bien
 
 logger = structlog.get_logger(__name__)
 
@@ -13,10 +14,13 @@ logger = structlog.get_logger(__name__)
 
 
 async def check_monthly_loyer_generation(supabase_client) -> int:
-    """On the 1st of each month, auto-create loyer records for all active baux.
+    """Generate loyer records for all active baux on their configured jour_loyer.
 
-    For each bail with statut='en_cours', creates a loyer with:
-    - date_loyer = 1st of current month
+    For each bail with statut='en_cours', creates a loyer when today matches the
+    resolved jour_loyer for the bien (bien.jour_loyer ?? sci.jour_loyer ?? 1).
+
+    Creates a loyer with:
+    - date_loyer = jour_loyer of current month (or 1st if jour_loyer > days in month)
     - montant = bail.loyer_hc + bail.charges_locatives
     - statut = 'en_attente'
     - id_bien = bail.id_bien
@@ -24,7 +28,6 @@ async def check_monthly_loyer_generation(supabase_client) -> int:
     Skips if a loyer already exists for this bien + month (dedup).
     """
     today = date.today()
-    first_of_month = today.replace(day=1).isoformat()
 
     # Fetch all active baux
     result = (
@@ -46,24 +49,52 @@ async def check_monthly_loyer_generation(supabase_client) -> int:
         if montant <= 0:
             continue
 
-        # Resolve id_sci from the bien
+        # Resolve id_sci and jour_loyer from the bien + sci
         bien_result = (
             supabase_client.table("biens")
-            .select("id_sci")
+            .select("id_sci, jour_loyer")
             .eq("id", id_bien)
             .execute()
         )
         bien_rows = bien_result.data or []
         if not bien_rows:
             continue
-        id_sci = bien_rows[0].get("id_sci")
+        bien_row = bien_rows[0]
+        id_sci = bien_row.get("id_sci")
+
+        # Fetch sci-level jour_loyer
+        sci_row = None
+        if id_sci:
+            sci_result = (
+                supabase_client.table("sci")
+                .select("jour_loyer")
+                .eq("id", id_sci)
+                .execute()
+            )
+            sci_rows = sci_result.data or []
+            sci_row = sci_rows[0] if sci_rows else None
+
+        effective_jour = resolve_jour_loyer_for_bien(bien_row, sci_row)
+
+        # Only generate on the configured day
+        if today.day != effective_jour:
+            continue
+
+        # Build the loyer date for this month using the effective day
+        # (safe because effective_jour is clamped to 1-28)
+        loyer_date = today.replace(day=effective_jour).isoformat()
 
         # Dedup: check if loyer already exists for this bien + month
+        month_start = today.replace(day=1).isoformat()
+        import calendar
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        month_end = today.replace(day=last_day).isoformat()
         existing = (
             supabase_client.table("loyers")
             .select("id")
             .eq("id_bien", id_bien)
-            .eq("date_loyer", first_of_month)
+            .gte("date_loyer", month_start)
+            .lte("date_loyer", month_end)
             .execute()
         )
         if existing.data:
@@ -73,7 +104,7 @@ async def check_monthly_loyer_generation(supabase_client) -> int:
         supabase_client.table("loyers").insert({
             "id_bien": id_bien,
             "id_sci": id_sci,
-            "date_loyer": first_of_month,
+            "date_loyer": loyer_date,
             "montant": montant,
             "statut": "en_attente",
             "quitus_genere": False,

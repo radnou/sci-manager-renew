@@ -14,6 +14,8 @@ export type ApplicationPreferences = {
 	showPdfPreview: boolean;
 	emailDigestEnabled: boolean;
 	riskAlertsEnabled: boolean;
+	/** Default day-of-month (1-28) for rent generation when no SCI or bien override is set. */
+	defaultJourLoyer: number;
 };
 
 export const DEFAULT_APPLICATION_PREFERENCES: ApplicationPreferences = {
@@ -21,7 +23,8 @@ export const DEFAULT_APPLICATION_PREFERENCES: ApplicationPreferences = {
 	density: 'comfortable',
 	showPdfPreview: true,
 	emailDigestEnabled: true,
-	riskAlertsEnabled: true
+	riskAlertsEnabled: true,
+	defaultJourLoyer: 1
 };
 
 function canUseStorage() {

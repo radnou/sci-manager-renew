@@ -17,6 +17,7 @@ class SCIBase(BaseModel):
     nom_gerant: str | None = Field(default=None, max_length=100)
     nb_parts_total: int | None = None
     valeur_nominale_part: float | None = None
+    jour_loyer: int | None = Field(default=None, ge=1, le=28)
 
 
 class SCICreate(SCIBase):
@@ -37,6 +38,7 @@ class SCIUpdate(BaseModel):
     nom_gerant: str | None = Field(default=None, max_length=100)
     nb_parts_total: int | None = None
     valeur_nominale_part: float | None = None
+    jour_loyer: int | None = Field(default=None, ge=1, le=28)
 
 
 class AssocieCreate(BaseModel):

@@ -41,6 +41,7 @@ export type SCIOverview = {
 	user_role?: string | null;
 	user_part?: number | null;
 	associes?: Associe[];
+	jour_loyer?: number | null;
 };
 
 export type SCICreatePayload = {
@@ -82,6 +83,7 @@ export type SCIUpdatePayload = {
 	rcs_numero?: string | null;
 	forme_juridique?: string | null;
 	nom_gerant?: string | null;
+	jour_loyer?: number | null;
 };
 
 export type Charge = {
@@ -198,6 +200,7 @@ export type BienUpdatePayload = {
 	tmi?: number;
 	acquisition_date?: string | null;
 	prix_acquisition?: number | null;
+	jour_loyer?: number | null;
 };
 
 export type LocataireCreatePayload = {
@@ -636,6 +639,7 @@ export type FicheBien = {
 	photo_url: string | null;
 	prix_acquisition: number | null;
 	statut: string | null;
+	jour_loyer: number | null;
 	bail_actif: BailEmbed | null;
 	loyers_recents: LoyerEmbed[];
 	charges_list: ChargeEmbed[];

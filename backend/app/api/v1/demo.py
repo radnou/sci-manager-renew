@@ -40,7 +40,7 @@ async def seed_demo(request: Request, user=Depends(get_current_user)):
 
 
 @router.delete("/cleanup", status_code=200)
-@limiter.limit("5/hour")
+@limiter.limit("1/minute")
 async def cleanup_demo(request: Request, user=Depends(get_current_user)):
     """Remove all demo data for the current user."""
     client = get_supabase_service_client()

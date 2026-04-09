@@ -33,7 +33,8 @@
 			dpe_classe: bien.dpe_classe ?? '',
 			loyer_cc: bien.loyer_cc ?? 0,
 			charges: bien.charges ?? 0,
-			prix_acquisition: bien.prix_acquisition ?? ''
+			prix_acquisition: bien.prix_acquisition ?? '',
+			jour_loyer: bien.jour_loyer ?? ('' as number | '')
 		};
 	}
 
@@ -55,7 +56,8 @@
 				type_bien: form.type_bien || undefined,
 				loyer_cc: Number(form.loyer_cc) || undefined,
 				charges: Number(form.charges) || undefined,
-				prix_acquisition: form.prix_acquisition !== '' ? Number(form.prix_acquisition) : null
+				prix_acquisition: form.prix_acquisition !== '' ? Number(form.prix_acquisition) : null,
+				jour_loyer: form.jour_loyer !== '' && form.jour_loyer != null ? Number(form.jour_loyer) : null
 			});
 			addToast({ title: 'Bien mis à jour', variant: 'success' });
 			editing = false;
@@ -149,7 +151,12 @@
 				value: bien.prix_acquisition != null ? formatEur(bien.prix_acquisition) : null
 			},
 			{ label: 'Loyer', value: formatEur(bien.loyer_cc), suffix: '/mois' },
-			{ label: 'Charges', value: formatEur(bien.charges), suffix: '/mois' }
+			{ label: 'Charges', value: formatEur(bien.charges), suffix: '/mois' },
+			{
+				label: 'Jour de loyer',
+				value: bien.jour_loyer != null ? bien.jour_loyer : null,
+				suffix: bien.jour_loyer != null ? 'du mois' : undefined
+			}
 		]);
 </script>
 
@@ -373,6 +380,23 @@
 					step="0.01"
 					min="0"
 					bind:value={form.charges}
+					class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+				/>
+			</div>
+
+			<!-- Jour de loyer -->
+			<div>
+				<label for="edit-jour-loyer" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
+					Jour de loyer <FieldHint text="Jour du mois (1-28) pour la génération automatique du loyer. Laissez vide pour hériter du réglage de la SCI." />
+				</label>
+				<input
+					id="edit-jour-loyer"
+					type="number"
+					step="1"
+					min="1"
+					max="28"
+					bind:value={form.jour_loyer}
+					placeholder="Hérité de la SCI"
 					class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
 				/>
 			</div>

@@ -49,6 +49,7 @@ class BienUpdate(BaseModel):
     diagnostic_electricite_date: date | None = None
     diagnostic_gaz_date: date | None = None
     diagnostic_plomb_date: date | None = None
+    jour_loyer: int | None = Field(default=None, ge=1, le=28)
 
 
 class BienResponse(BaseModel):
@@ -81,5 +82,6 @@ class BienResponse(BaseModel):
     rentabilite_brute: float = 0
     rentabilite_nette: float = 0
     cashflow_annuel: float = 0
+    jour_loyer: int | None = None
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")
