@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { SCIDetail, Fiscalite, ResumeFiscalData, AssocieQuotePart, SubscriptionEntitlements } from '$lib/api';
-	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, downloadReport2042Pdf, fetchResumeFiscal, createFiscalite, deleteFiscalite, prefillFiscalite } from '$lib/api';
+	import { fetchFiscalite, generateCerfa2044Pdf, downloadResumeFiscalPdf, downloadReport2042Pdf, downloadDeclaration2072Pdf, fetchResumeFiscal, createFiscalite, deleteFiscalite, prefillFiscalite } from '$lib/api';
 	import type { FiscalitePrefillResult } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
@@ -21,6 +21,7 @@
 	let cerfaError = $state('');
 	let generatingResume: number | null = $state(null);
 	let resumeError = $state('');
+	let generating2072: number | null = $state(null);
 	let resumeFiscalData: Map<number, ResumeFiscalData> = $state(new Map());
 	let loadingResumeFiscal: number | null = $state(null);
 	let downloadingReport2042: string | null = $state(null);
@@ -154,6 +155,25 @@
 			resumeError = err?.message ?? 'Erreur lors de la génération du résumé fiscal détaillé.';
 		} finally {
 			generatingResume = null;
+		}
+	}
+
+	async function handleDownloadDeclaration2072(annee: number) {
+		generating2072 = annee;
+		try {
+			const blob = await downloadDeclaration2072Pdf(sci.id, annee);
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `declaration_2072_${annee}_${sci.nom.replace(/ /g, '_')}.pdf`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de generer la declaration 2072.', variant: 'error' });
+		} finally {
+			generating2072 = null;
 		}
 	}
 
@@ -405,6 +425,14 @@
 								>
 									<Download class="h-3.5 w-3.5" />
 									{generatingCerfa ? 'Génération…' : 'Résumé fiscal PDF'}
+								</button>
+								<button
+									class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50 disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-400 dark:hover:bg-slate-800"
+									disabled={generating2072 === ex.annee}
+									onclick={() => handleDownloadDeclaration2072(ex.annee)}
+								>
+									<FileText class="h-3.5 w-3.5" />
+									{generating2072 === ex.annee ? 'Génération…' : 'Déclaration 2072'}
 								</button>
 							</div>
 						</LockedAction>

@@ -47,3 +47,7 @@ export function prefillFiscalite(sciId: EntityId, annee: number) {
 		{ method: 'POST' }
 	);
 }
+
+export function downloadDeclaration2072Pdf(sciId: EntityId, annee: number): Promise<Blob> {
+	return apiFetchBlob(`/api/v1/cerfa/scis/${sciId}/declaration-2072/${annee}/pdf`);
+}

@@ -17,6 +17,7 @@ from app.core.exceptions import FeatureDisabledError, ResourceNotFoundError, Val
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_user_client
+from app.services.declaration_2072_service import Declaration2072PdfService
 from app.services.resume_fiscal_pdf_service import ResumeFiscalPdfService, Report2042PdfService
 from app.services.resume_fiscal_service import ResumeFiscalService
 from app.services.subscription_service import SubscriptionService
@@ -354,6 +355,42 @@ async def generate_report_2042_pdf(
 
     safe_nom = target_associe.nom.replace(" ", "_")
     filename = f"report_2042_{annee}_{safe_nom}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/scis/{sci_id}/declaration-2072/{annee}/pdf")
+@limiter.limit("5/minute")
+async def generate_declaration_2072_pdf(
+    sci_id: str,
+    annee: int,
+    request: Request,
+    user_id: str = Depends(get_current_user),
+):
+    """Declaration 2072-S — Declaration de resultats des SCI non soumises a l'IS.
+
+    Generates a multi-page PDF:
+    - Cadre I: Identification de la SCI
+    - Cadre II: Revenus fonciers bruts par immeuble
+    - Cadre III: Charges deductibles par immeuble
+    - Cadre IV: Determination du resultat fiscal
+    - Cadre V: Repartition du resultat entre les associes
+    """
+    _ensure_feature_enabled(user_id)
+    client = get_supabase_user_client(request)
+    _ensure_sci_access(client, sci_id, user_id)
+
+    result = _calculate_and_validate(sci_id, annee, client)
+
+    # Generate PDF
+    pdf_service = Declaration2072PdfService()
+    pdf_bytes = pdf_service.generate(result)
+
+    safe_nom = (result.sci_nom or "sci").replace(" ", "_")
+    filename = f"declaration_2072_{annee}_{safe_nom}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
