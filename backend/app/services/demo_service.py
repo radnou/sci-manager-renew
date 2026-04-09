@@ -399,9 +399,10 @@ async def cleanup_demo_data(client, user_id: str) -> int:
         r = client.table("sci").delete().eq("id", sci_id).eq("is_demo", True).execute()
         deleted += len(r.data or [])
 
-    # Reset demo_seeded flag
+    # Reset demo_seeded flag and onboarding_completed so the user starts fresh
     client.table("subscriptions").update({
         "demo_seeded": False,
+        "onboarding_completed": False,
     }).eq("user_id", user_id).execute()
 
     logger.info("demo_cleanup_complete", user_id=user_id, deleted_rows=deleted)

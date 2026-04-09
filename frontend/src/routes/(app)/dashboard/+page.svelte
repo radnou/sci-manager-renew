@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import {
 		fetchDashboard,
+		cleanupDemo,
 		type DashboardData,
 		type DashboardAlerte,
 		type DashboardKpis,
@@ -21,12 +22,19 @@
 
 	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
 
-	// Auto-redirect to onboarding after checkout celebration
+	// Auto-redirect to onboarding after checkout celebration.
+	// Explicitly call cleanup before redirecting to handle the race condition where
+	// the Stripe webhook hasn't fired yet (demo data still present → onboarding skips to step 4).
 	$effect(() => {
 		if (upgraded && !loading) {
-			const timer = setTimeout(() => {
+			const timer = setTimeout(async () => {
+				try {
+					await cleanupDemo();
+				} catch {
+					// Non-blocking: if cleanup fails (already cleaned or error), proceed anyway
+				}
 				goto('/onboarding');
-			}, 4000);
+			}, 1000);
 			return () => clearTimeout(timer);
 		}
 	});
