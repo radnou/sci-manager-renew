@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Rocket, Building2, HandCoins, FileText } from 'lucide-svelte';
+	import { Rocket, Building2, HandCoins, FileText, CheckCircle2, ArrowRight } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { page } from '$app/state';
 	import {
@@ -113,10 +113,20 @@
 	</header>
 
 	{#if upgraded}
-		<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 dark:border-emerald-800 dark:bg-emerald-950/30">
-			<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-				Votre abonnement a été activé avec succès !
+		<div class="mt-6 flex flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-10 text-center dark:border-emerald-800 dark:bg-emerald-950/30">
+			<div class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+				<CheckCircle2 class="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+			</div>
+			<h2 class="mt-4 text-lg font-semibold text-emerald-800 dark:text-emerald-200">
+				Abonnement activé !
+			</h2>
+			<p class="mt-2 max-w-md text-sm text-emerald-700 dark:text-emerald-300">
+				Vos données de démonstration ont été nettoyées. Créez maintenant votre première SCI avec vos vraies informations.
 			</p>
+			<a href="/onboarding" class="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700">
+				Commencer la mise en route
+				<ArrowRight class="h-4 w-4" />
+			</a>
 		</div>
 	{/if}
 

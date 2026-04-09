@@ -205,11 +205,15 @@ async def _handle_event(event: Any) -> None:
                 plan_key=plan_key,
             )
 
-        # Clean up demo data now that user has paid
+        # Clean up demo data and reset onboarding so user goes through real setup
         try:
             from app.services.demo_service import cleanup_demo_data
             service_client = get_supabase_service_client()
             await cleanup_demo_data(service_client, user_id)
+            # Reset onboarding so user creates their real SCI/bien
+            service_client.table("subscriptions").update({
+                "onboarding_completed": False,
+            }).eq("user_id", user_id).execute()
             logger.info("demo_cleanup_after_checkout", user_id=user_id)
         except Exception:
             logger.warning("demo_cleanup_failed_after_checkout", user_id=user_id, exc_info=True)
