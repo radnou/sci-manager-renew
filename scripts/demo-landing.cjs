@@ -440,33 +440,30 @@ async function record() {
         // ── Scene 12: Post-purchase redirect ─────────
         await page.waitForURL(`${BASE_URL}/**`, { timeout: 30000 }).catch(() => {});
         await wait(page); await overlays(page);
-        await sub(page, '✓ Paiement réussi — bienvenue sur GérerSCI !');
+        await sub(page, 'Paiement réussi !');
         await page.waitForTimeout(2000);
 
-        // Activate subscription manually (test webhook won't fire)
-        await page.evaluate(async () => {
-          try {
-            const resp = await fetch('https://api.gerersci.fr/api/v1/stripe/subscription', {
-              headers: { 'Authorization': `Bearer ${(await (window.__supabase?.auth?.getSession?.()))?.data?.session?.access_token || ''}` }
-            });
-            // If subscription not yet active, the webhook didn't fire — expected in test mode
-          } catch (e) { /* ignore */ }
-        });
+        // Take screenshot of celebration card (upgraded=true)
+        await sub(page, 'Données demo nettoyées — place à vos vraies SCI');
+        await page.waitForTimeout(3000);
 
-        // Wait and reload to pick up activated state
-        await page.waitForTimeout(2000);
-        await page.goto(`${BASE_URL}/dashboard`);
+        // ── Scene 13: Navigate to onboarding ─────────
+        // Click "Commencer la mise en route" if visible, or navigate directly
+        const onboardingCta = page.locator('a:has-text("Commencer la mise en route")').first();
+        if (await onboardingCta.isVisible().catch(() => false)) {
+          await mc(page, onboardingCta, 'Start onboarding', 2000);
+        } else {
+          await page.goto(`${BASE_URL}/onboarding`);
+        }
         await wait(page); await overlays(page);
 
-        // Check if DemoBanner is gone (subscription active) or still there
-        const demoBanner = page.locator('text=Souscrire');
-        const stillDemo = await demoBanner.isVisible().catch(() => false);
-        if (stillDemo) {
-          await sub(page, 'Données de démonstration nettoyées — ajoutez vos SCI');
-        } else {
-          await sub(page, 'Abonnement activé — ajoutez vos vraies SCI');
-        }
+        await sub(page, 'Créez votre première SCI avec vos vraies données');
         await page.waitForTimeout(3000);
+
+        // Show the onboarding wizard steps
+        await scroll(page, 300);
+        await page.waitForTimeout(2000);
+        await sub(page, '');
 
       } catch (stripeErr) {
         console.warn('Stripe checkout not reached (test keys needed):', stripeErr.message);
