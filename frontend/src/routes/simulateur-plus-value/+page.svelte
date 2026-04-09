@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { ArrowRight, Calculator, TrendingUp, TrendingDown, Info, Clock } from 'lucide-svelte';
+	import EmailCapture from '$lib/components/EmailCapture.svelte';
+	import { trackEvent, EVENTS } from '$lib/analytics';
+	import { ArrowRight, Calculator, TrendingUp, TrendingDown, Info, Clock, Lock } from 'lucide-svelte';
 
 	// --- Form state ---
 	let dateAcquisition = $state('');
@@ -155,6 +157,9 @@
 			setter(raw ? parseInt(raw, 10) : 0);
 		};
 	}
+
+	// Email gate for detailed breakdown
+	let emailUnlocked = $state(false);
 
 	// Result animation
 	let resultChanged = $state(false);
@@ -579,116 +584,171 @@
 								</div>
 
 								{#if plusValueBrute > 0}
-									<!-- Abattements -->
-									<div
-										class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
-									>
-										<span class="text-sm text-slate-600 dark:text-slate-400">
-											Abattement IR ({formatPercent(abattementIR)})
-										</span>
-										<span
-											class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+									{#if emailUnlocked}
+										<!-- Abattements -->
+										<div
+											class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
 										>
-											{formatCurrency(pvNetteIR)}
-										</span>
-									</div>
-									<div
-										class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
-									>
-										<span class="text-sm text-slate-600 dark:text-slate-400">
-											Abattement PS ({formatPercent(abattementPS)})
-										</span>
-										<span
-											class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+											<span class="text-sm text-slate-600 dark:text-slate-400">
+												Abattement IR ({formatPercent(abattementIR)})
+											</span>
+											<span
+												class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+											>
+												{formatCurrency(pvNetteIR)}
+											</span>
+										</div>
+										<div
+											class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
 										>
-											{formatCurrency(pvNettePS)}
-										</span>
-									</div>
+											<span class="text-sm text-slate-600 dark:text-slate-400">
+												Abattement PS ({formatPercent(abattementPS)})
+											</span>
+											<span
+												class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+											>
+												{formatCurrency(pvNettePS)}
+											</span>
+										</div>
 
-									<!-- Impots details -->
-									<div
-										class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
-									>
-										<span class="text-sm text-slate-600 dark:text-slate-400"
-											>Impôt IR (19%)</span
-										>
-										<span
-											class="text-sm font-semibold text-rose-600 dark:text-rose-400"
-										>
-											{formatCurrency(impotIR)}
-										</span>
-									</div>
-									<div
-										class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
-									>
-										<span class="text-sm text-slate-600 dark:text-slate-400"
-											>Prélèvements sociaux (17,2%)</span
-										>
-										<span
-											class="text-sm font-semibold text-rose-600 dark:text-rose-400"
-										>
-											{formatCurrency(impotPS)}
-										</span>
-									</div>
-
-									{#if surtaxe > 0}
+										<!-- Impots details -->
 										<div
 											class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
 										>
 											<span class="text-sm text-slate-600 dark:text-slate-400"
-												>Surtaxe PV élevées</span
+												>Impôt IR (19%)</span
 											>
 											<span
 												class="text-sm font-semibold text-rose-600 dark:text-rose-400"
 											>
-												{formatCurrency(surtaxe)}
+												{formatCurrency(impotIR)}
 											</span>
+										</div>
+										<div
+											class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
+										>
+											<span class="text-sm text-slate-600 dark:text-slate-400"
+												>Prélèvements sociaux (17,2%)</span
+											>
+											<span
+												class="text-sm font-semibold text-rose-600 dark:text-rose-400"
+											>
+												{formatCurrency(impotPS)}
+											</span>
+										</div>
+
+										{#if surtaxe > 0}
+											<div
+												class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
+											>
+												<span class="text-sm text-slate-600 dark:text-slate-400"
+													>Surtaxe PV élevées</span
+												>
+												<span
+													class="text-sm font-semibold text-rose-600 dark:text-rose-400"
+												>
+													{formatCurrency(surtaxe)}
+												</span>
+											</div>
+										{/if}
+
+										<!-- Total impot -->
+										<div
+											class="mb-4 rounded-xl bg-rose-50 p-4 dark:bg-rose-900/20"
+										>
+											<div class="flex items-center justify-between">
+												<div class="flex items-center gap-2">
+													<TrendingDown
+														class="h-5 w-5 text-rose-600 dark:text-rose-400"
+													/>
+													<span
+														class="text-sm font-medium text-slate-700 dark:text-slate-300"
+														>Total impositions</span
+													>
+												</div>
+												<span
+													class="text-xl font-bold text-rose-600 dark:text-rose-400"
+												>
+													{formatCurrency(totalImpot)}
+												</span>
+											</div>
+										</div>
+
+										<!-- Net vendeur -->
+										<div
+											class="mb-6 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/20"
+										>
+											<div class="flex items-center justify-between">
+												<div class="flex items-center gap-2">
+													<TrendingUp
+														class="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+													/>
+													<span
+														class="text-sm font-medium text-slate-700 dark:text-slate-300"
+														>Net vendeur</span
+													>
+												</div>
+												<span
+													class="text-xl font-bold text-emerald-600 dark:text-emerald-400"
+												>
+													{formatCurrency(netVendeur)}
+												</span>
+											</div>
+										</div>
+									{:else}
+										<!-- Blurred teaser of detailed breakdown -->
+										<div class="relative mb-6">
+											<div class="pointer-events-none select-none blur-sm" aria-hidden="true">
+												<div
+													class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
+												>
+													<span class="text-sm text-slate-600 dark:text-slate-400">
+														Abattement IR ({formatPercent(abattementIR)})
+													</span>
+													<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+														{formatCurrency(pvNetteIR)}
+													</span>
+												</div>
+												<div
+													class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-700"
+												>
+													<span class="text-sm text-slate-600 dark:text-slate-400">
+														Abattement PS ({formatPercent(abattementPS)})
+													</span>
+													<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+														{formatCurrency(pvNettePS)}
+													</span>
+												</div>
+												<div class="mb-4 rounded-xl bg-rose-50 p-4 dark:bg-rose-900/20">
+													<div class="flex items-center justify-between">
+														<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Total impositions</span>
+														<span class="text-xl font-bold text-rose-600 dark:text-rose-400">{formatCurrency(totalImpot)}</span>
+													</div>
+												</div>
+											</div>
+											<!-- Overlay with lock + email capture -->
+											<div class="absolute inset-0 flex items-center justify-center">
+												<div class="w-full max-w-sm">
+													<div class="mb-3 flex items-center justify-center gap-2">
+														<Lock class="h-4 w-4 text-slate-500 dark:text-slate-400" />
+														<span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+															Détail fiscal complet
+														</span>
+													</div>
+													<EmailCapture
+														source="simulateur-plus-value"
+														title="Recevez le détail de votre imposition"
+														description="Abattements, impôt IR, prélèvements sociaux, surtaxe et net vendeur — envoyés à votre email."
+														buttonText="Voir le détail"
+														onCaptured={() => {
+															emailUnlocked = true;
+															trackEvent(EVENTS.SIMULATEUR_EMAIL_CAPTURE, { source: 'simulateur-plus-value' });
+														}}
+													/>
+												</div>
+											</div>
 										</div>
 									{/if}
-
-									<!-- Total impot -->
-									<div
-										class="mb-4 rounded-xl bg-rose-50 p-4 dark:bg-rose-900/20"
-									>
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-2">
-												<TrendingDown
-													class="h-5 w-5 text-rose-600 dark:text-rose-400"
-												/>
-												<span
-													class="text-sm font-medium text-slate-700 dark:text-slate-300"
-													>Total impositions</span
-												>
-											</div>
-											<span
-												class="text-xl font-bold text-rose-600 dark:text-rose-400"
-											>
-												{formatCurrency(totalImpot)}
-											</span>
-										</div>
-									</div>
-
-									<!-- Net vendeur -->
-									<div
-										class="mb-6 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/20"
-									>
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-2">
-												<TrendingUp
-													class="h-5 w-5 text-emerald-600 dark:text-emerald-400"
-												/>
-												<span
-													class="text-sm font-medium text-slate-700 dark:text-slate-300"
-													>Net vendeur</span
-												>
-											</div>
-											<span
-												class="text-xl font-bold text-emerald-600 dark:text-emerald-400"
-											>
-												{formatCurrency(netVendeur)}
-											</span>
-										</div>
-									</div>
 								{:else}
 									<!-- Pas de plus-value -->
 									<div
@@ -706,8 +766,8 @@
 									</div>
 								{/if}
 
-								<!-- Exoneration info -->
-								{#if plusValueBrute > 0 && dureeDetention < 30}
+								<!-- Exoneration info (gated behind email) -->
+								{#if emailUnlocked && plusValueBrute > 0 && dureeDetention < 30}
 									<div
 										class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20"
 									>
@@ -744,7 +804,7 @@
 											{/if}
 										</div>
 									</div>
-								{:else if plusValueBrute > 0 && dureeDetention >= 30}
+								{:else if emailUnlocked && plusValueBrute > 0 && dureeDetention >= 30}
 									<div
 										class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/20"
 									>
@@ -783,8 +843,8 @@
 							{/if}
 						</div>
 
-						<!-- Abattement timeline -->
-						{#if hasInputs && plusValueBrute > 0}
+						<!-- Abattement timeline (gated behind email) -->
+						{#if emailUnlocked && hasInputs && plusValueBrute > 0}
 							<div
 								class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
 							>
