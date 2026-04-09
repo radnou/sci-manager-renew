@@ -29,3 +29,18 @@ async def get_comptabilite_annuelle(
     client = get_supabase_user_client(request)
     service = ComptabiliteService()
     return service.get_recap_annuel(client, str(sci_id), annee)
+
+
+@router.get("/{annee}/mensuel")
+async def get_comptabilite_mensuelle(
+    sci_id: UUID,
+    annee: int,
+    request: Request,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Retourne l'evolution mensuelle revenus/charges d'une SCI."""
+    logger.info("get_comptabilite_mensuelle", sci_id=str(sci_id), annee=annee)
+
+    client = get_supabase_user_client(request)
+    service = ComptabiliteService()
+    return service.get_evolution_mensuelle(client, str(sci_id), annee)

@@ -794,6 +794,12 @@ export type ComptabiliteAnnuelle = {
 	} | null;
 };
 
+export type ComptabiliteMoisItem = {
+	mois: string;
+	revenus: number;
+	charges: number;
+};
+
 export type EvenementType =
 	| 'reparation'
 	| 'travaux'

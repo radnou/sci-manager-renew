@@ -16,7 +16,8 @@ import type {
 	DissoudreSciPayload,
 	ChangerGerantPayload,
 	ModifierCapitalPayload,
-	ComptabiliteAnnuelle
+	ComptabiliteAnnuelle,
+	ComptabiliteMoisItem
 } from './types';
 
 export function fetchScis() {
@@ -177,4 +178,11 @@ export async function fetchComptabiliteAnnuelle(
 	annee: number
 ): Promise<ComptabiliteAnnuelle> {
 	return apiFetch<ComptabiliteAnnuelle>(`/api/v1/scis/${sciId}/comptabilite/${annee}`);
+}
+
+export async function fetchComptabiliteMensuelle(
+	sciId: EntityId,
+	annee: number
+): Promise<ComptabiliteMoisItem[]> {
+	return apiFetch<ComptabiliteMoisItem[]>(`/api/v1/scis/${sciId}/comptabilite/${annee}/mensuel`);
 }

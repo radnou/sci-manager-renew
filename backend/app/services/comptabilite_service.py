@@ -176,6 +176,86 @@ def _pct_change(old: float, new: float) -> float | None:
     return round((new - old) / abs(old) * 100, 1)
 
 
+    @staticmethod
+    def get_evolution_mensuelle(client, sci_id: str, annee: int) -> list[dict]:
+        """Return monthly revenus/charges breakdown for a SCI.
+
+        Returns list of 12 dicts:
+            [{ mois: "2026-01", revenus: 1200.0, charges: 350.0 }, ...]
+        """
+        # Fetch biens for SCI
+        biens_result = (
+            client.table("biens")
+            .select("id")
+            .eq("id_sci", sci_id)
+            .execute()
+        )
+        biens = biens_result.data or []
+        if not biens:
+            return [
+                {"mois": f"{annee}-{m:02d}", "revenus": 0.0, "charges": 0.0}
+                for m in range(1, 13)
+            ]
+
+        bien_ids = [b["id"] for b in biens]
+
+        date_start = f"{annee}-01-01"
+        date_end = f"{annee}-12-31"
+
+        # Fetch loyers with month info
+        loyers_result = (
+            client.table("loyers")
+            .select("id_bien, montant, statut, date_loyer")
+            .in_("id_bien", bien_ids)
+            .gte("date_loyer", date_start)
+            .lte("date_loyer", date_end)
+            .execute()
+        )
+        loyers = loyers_result.data or []
+
+        # Fetch charges with month info
+        charges_result = (
+            client.table("charges")
+            .select("id_bien, montant, date_paiement")
+            .in_("id_bien", bien_ids)
+            .gte("date_paiement", date_start)
+            .lte("date_paiement", date_end)
+            .execute()
+        )
+        charges = charges_result.data or []
+
+        # Aggregate by month
+        monthly: dict[str, dict[str, float]] = {}
+        for m in range(1, 13):
+            key = f"{annee}-{m:02d}"
+            monthly[key] = {"revenus": 0.0, "charges": 0.0}
+
+        for l in loyers:
+            if l.get("statut") not in ("paye", "paid"):
+                continue
+            date_str = l.get("date_loyer", "")
+            if len(date_str) >= 7:
+                month_key = date_str[:7]
+                if month_key in monthly:
+                    monthly[month_key]["revenus"] += float(l.get("montant", 0) or 0)
+
+        for c in charges:
+            date_str = c.get("date_paiement", "")
+            if len(date_str) >= 7:
+                month_key = date_str[:7]
+                if month_key in monthly:
+                    monthly[month_key]["charges"] += float(c.get("montant", 0) or 0)
+
+        return [
+            {
+                "mois": key,
+                "revenus": round(monthly[key]["revenus"], 2),
+                "charges": round(monthly[key]["charges"], 2),
+            }
+            for key in sorted(monthly.keys())
+        ]
+
+
 def _empty_recap(annee: int) -> dict:
     return {
         "annee": annee,
