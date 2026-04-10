@@ -63,7 +63,7 @@
       <button
         type="button"
         onclick={confirm}
-        class="rounded-md bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+        class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary/90"
       >
         Confirmer
       </button>

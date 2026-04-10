@@ -1,4 +1,15 @@
-export const PLANS = {
+export interface PlanInfo {
+	key: string;
+	name: string;
+	description: string;
+	monthlyPrice: number;
+	yearlyPrice: number;
+	popular: boolean;
+	features: string[];
+	cta: string;
+}
+
+export const PLANS: Record<string, PlanInfo> = {
 	starter: {
 		key: 'starter',
 		name: 'Gestion',
@@ -39,20 +50,27 @@ export const PLANS = {
 		],
 		cta: 'Démarrer pour 39€/mois',
 	},
-} as const;
+};
 
 export type PlanKey = keyof typeof PLANS;
 
-export function formatPrice(plan: (typeof PLANS)[PlanKey], period: 'month' | 'year'): string {
+export function formatPrice(plan: PlanInfo, period: 'month' | 'year'): string {
 	return period === 'month' ? `${plan.monthlyPrice}€` : `${plan.yearlyPrice}€`;
 }
 
-export function formatPriceTTC(
-	plan: (typeof PLANS)[PlanKey],
-	period: 'month' | 'year',
-): string {
+export function formatPeriod(period: 'month' | 'year'): string {
+	return period === 'month' ? '/mois' : '/an';
+}
+
+export function formatPriceTTC(plan: PlanInfo, period: 'month' | 'year'): string {
 	const ht = period === 'month' ? plan.monthlyPrice : plan.yearlyPrice;
 	const ttc = (ht * 1.2).toFixed(2).replace('.', ',');
 	const periodLabel = period === 'month' ? '/mois' : '/an';
 	return `(${ttc}€ TTC${periodLabel})`;
 }
+
+/** Plans as an array for iteration in pricing UIs */
+export const PLANS_LIST: (PlanInfo & { href: string | null })[] = [
+	{ ...PLANS.starter, href: null },
+	{ ...PLANS.pro, href: null },
+];

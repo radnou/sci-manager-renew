@@ -20,7 +20,7 @@
 
 	let email = $state('');
 	let password = $state('');
-	let mode = $state<LoginMode>('password');
+	let mode = $state<LoginMode>('magic-link');
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 	let showCheckEmail = $state(false);

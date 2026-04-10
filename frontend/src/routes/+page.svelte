@@ -26,6 +26,7 @@
 	import CheckoutConfirmModal from '$lib/components/CheckoutConfirmModal.svelte';
 	import AppDemoVideo from '$lib/components/AppDemoVideo.svelte';
 	import { trackEvent, EVENTS } from '$lib/analytics';
+	import { PLANS_LIST, formatPrice, formatPeriod, formatPriceTTC } from '$lib/config/plans';
 
 	onMount(async () => {
 		const session = await getCurrentSession();
@@ -197,50 +198,7 @@
 		}
 	];
 
-	const plans = [
-		{
-			key: 'starter',
-			name: 'Gestion',
-			description: 'Automatisez votre gestion locative',
-			monthlyPrice: 19,
-			yearlyPrice: 190,
-			popular: false,
-			features: [
-				'1 SCI',
-				'5 biens',
-				'Quittances PDF conformes',
-				'Suivi des loyers + relances auto',
-				'Résumé fiscal CERFA 2044',
-				'Charges, PNO, frais agence',
-				'Export CSV',
-				'Support email 48h'
-			],
-			cta: 'Démarrer pour 19€/mois',
-			href: null
-		},
-		{
-			key: 'pro',
-			name: 'Pilotage',
-			description: 'Votre co-pilote fiscal et juridique',
-			monthlyPrice: 39,
-			yearlyPrice: 390,
-			popular: true,
-			features: [
-				'SCI illimitées',
-				'Biens illimités',
-				'Tout Gestion inclus',
-				'Assemblées générales + convocations',
-				'Mouvements de parts + simulation droits',
-				'Moteur 44+ échéances',
-				'Calendrier fiscal interactif',
-				'Vue comptable annuelle',
-				'Révision IRL automatique',
-				'Support prioritaire 24h'
-			],
-			cta: 'Démarrer pour 39€/mois',
-			href: null
-		}
-	];
+	const plans = PLANS_LIST;
 
 	const audiences = [
 		{
@@ -351,22 +309,7 @@
 		rose: { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' }
 	};
 
-	function formatPrice(plan: (typeof plans)[0]): string {
-		if (billingPeriod === 'month') return `${plan.monthlyPrice}€`;
-		return `${plan.yearlyPrice}€`;
-	}
 
-	function formatPeriod(): string {
-		if (billingPeriod === 'month') return '/mois';
-		return '/an';
-	}
-
-	function formatPriceTTC(plan: (typeof plans)[0]): string {
-		const ht = billingPeriod === 'month' ? plan.monthlyPrice : plan.yearlyPrice;
-		const ttc = (ht * 1.2).toFixed(2).replace('.', ',');
-		const period = billingPeriod === 'month' ? '/mois' : '/an';
-		return `(${ttc} € TTC${period})`;
-	}
 </script>
 
 <svelte:window onkeydown={(e) => {
@@ -737,13 +680,13 @@
 
 						<div class="mb-6">
 							<span class="text-4xl font-extrabold text-slate-900 dark:text-white">
-								{formatPrice(plan)}
+								{formatPrice(plan, billingPeriod)}
 							</span>
 							<span class="text-slate-500 dark:text-slate-400">
-								HT{formatPeriod()}
+								HT{formatPeriod(billingPeriod)}
 							</span>
 							<div class="mt-1 text-sm text-slate-400 dark:text-slate-500">
-								{formatPriceTTC(plan)}
+								{formatPriceTTC(plan, billingPeriod)}
 							</div>
 							{#if billingPeriod === 'year'}
 								<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">

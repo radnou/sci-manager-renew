@@ -92,6 +92,13 @@ body {
 }
 
 @theme inline {
+	/*
+	 * Border-radius tier system:
+	 *   rounded-lg  (8px)  — small elements: badges, chips, inputs
+	 *   rounded-xl  (12px) — cards (matches --radius token at 0.75rem)
+	 *   rounded-2xl (16px) — modals, overlays, dropdowns
+	 *   rounded-[1.75rem] (28px) — toolbar shells (glassmorphism navbar)
+	 */
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);

@@ -5,13 +5,25 @@
 	type Trend = 'up' | 'down' | 'neutral';
 	type Tone = 'default' | 'success' | 'warning' | 'danger' | 'accent';
 
-	export let label = 'Indicateur';
-	export let value: string | number = '-';
-	export let caption = '';
-	export let trend: Trend = 'neutral';
-	export let trendValue = '';
-	export let tone: Tone = 'default';
-	export let loading = false;
+	interface Props {
+		label?: string;
+		value?: string | number;
+		caption?: string;
+		trend?: Trend;
+		trendValue?: string;
+		tone?: Tone;
+		loading?: boolean;
+	}
+
+	let {
+		label = 'Indicateur',
+		value = '-',
+		caption = '',
+		trend = 'neutral',
+		trendValue = '',
+		tone = 'default',
+		loading = false
+	}: Props = $props();
 
 	const toneClasses: Record<Tone, string> = {
 		default:

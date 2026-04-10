@@ -99,7 +99,7 @@
 		<Card class="sci-section-card">
 			<CardHeader>
 				{#if selectedPlan && planLabel}
-					<Badge variant="secondary" class="mb-2 w-fit text-xs">Accès gratuit — aucune carte bancaire requise</Badge>
+					<Badge variant="secondary" class="mb-2 w-fit text-xs">Aucune carte bancaire requise</Badge>
 					<CardTitle class="text-2xl">Voyez ce que donnerait votre SCI dans un vrai cockpit de gestion.</CardTitle>
 					<CardDescription>
 						Données de démo pré-remplies. Zéro carte bancaire. 2 minutes pour comprendre.
