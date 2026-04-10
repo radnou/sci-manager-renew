@@ -171,11 +171,19 @@
 	const notificationTypeLabels: Record<string, string> = {
 		late_payment: 'Loyer en retard',
 		bail_expiring: 'Bail expirant',
+		bail_renewal: 'Renouvellement de bail',
+		bail_conge_deadline: 'Délai de congé bail',
 		quittance_pending: 'Quittance en attente',
 		pno_expiring: 'PNO expirant',
 		new_loyer: 'Nouveau loyer',
 		new_associe: 'Nouvel associé',
-		subscription_expiring: 'Abonnement expirant'
+		subscription_expiring: 'Abonnement expirant',
+		regularisation_charges: 'Régularisation de charges',
+		fiscal_deadline: 'Échéance fiscale',
+		irl_revision: 'Révision IRL (loyer)',
+		avenant_bail: 'Avenant au bail',
+		sinistre: 'Sinistre déclaré',
+		system: 'Notification système'
 	};
 
 	let notifPreferences: NotificationPreference[] = $state([]);

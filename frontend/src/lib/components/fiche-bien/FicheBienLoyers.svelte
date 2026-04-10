@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { Plus, FileText, Check, Loader2, X, Filter } from 'lucide-svelte';
+	import { Plus, FileText, Check, Loader2, X, Filter, Mail } from 'lucide-svelte';
 	import LockedAction from '$lib/components/LockedAction.svelte';
 	import DatePopover from '$lib/components/ui/DatePopover.svelte';
 	import {
 		createLoyerForBien,
 		updateLoyer,
 		renderQuitus,
+		sendQuittanceEmail,
 		type EntityId,
 		type LoyerCreatePayload,
 		type LoyerStatus,
@@ -39,6 +40,7 @@
 	let payDateLoyerId: EntityId | null = $state(null);
 	let payDateOpen = $state(false);
 	let generatingQuittanceFor: string | null = $state(null);
+	let sendingEmailFor: string | null = $state(null);
 	let periode = $state(new Date().toISOString().slice(0, 7));
 	let montant = $state(0);
 	let statut = $state<LoyerStatus>('en_attente');
@@ -227,6 +229,39 @@
 			generatingQuittanceFor = null;
 		}
 	}
+
+	async function handleSendEmail(loyer: any) {
+		const filename = loyer.quittance_filename;
+		if (!filename) {
+			addToast({
+				title: 'Quittance introuvable',
+				description: "Générez d'abord la quittance avant de l'envoyer par email.",
+				variant: 'error'
+			});
+			return;
+		}
+
+		sendingEmailFor = String(loyer.id);
+		try {
+			const result = await sendQuittanceEmail(filename, String(bienId));
+			const emailMatch = result.message.match(/à (.+)$/);
+			const emailDisplay = emailMatch ? emailMatch[1] : 'le locataire';
+			addToast({
+				title: 'Quittance envoyée',
+				description: `Quittance envoyée à ${emailDisplay}.`,
+				variant: 'success',
+				timeoutMs: 5000
+			});
+		} catch (err: any) {
+			addToast({
+				title: "Erreur d'envoi",
+				description: err?.message ?? "Impossible d'envoyer la quittance par email.",
+				variant: 'error'
+			});
+		} finally {
+			sendingEmailFor = null;
+		}
+	}
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
@@ -407,6 +442,7 @@
 					{#each filteredLoyers() as loyer (loyer.id ?? loyer.date_loyer)}
 						{@const statut = getStatut(loyer.statut)}
 						{@const isGenerating = generatingQuittanceFor === String(loyer.id)}
+						{@const isSendingEmail = sendingEmailFor === String(loyer.id)}
 						<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
 							<td class="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100 capitalize">
 								{buildPeriodeLabel(loyer.date_loyer)}
@@ -473,6 +509,24 @@
 												{/if}
 											</button>
 										</LockedAction>
+										{#if loyer.statut === 'paye' && loyer.quittance_filename}
+											<LockedAction {isDemo} action="envoyer une quittance par email">
+												<button
+													onclick={() => handleSendEmail(loyer)}
+													disabled={isSendingEmail}
+													class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-700 transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-400"
+													title="Envoyer par email au locataire"
+												>
+													{#if isSendingEmail}
+														<Loader2 class="h-3 w-3 animate-spin" />
+														Envoi…
+													{:else}
+														<Mail class="h-3 w-3" />
+														Email
+													{/if}
+												</button>
+											</LockedAction>
+										{/if}
 									</div>
 								</td>
 							{/if}
