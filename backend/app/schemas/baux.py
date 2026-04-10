@@ -45,6 +45,8 @@ class BailResponse(BaseModel):
     loyer_hc: float
     charges_locatives: float = 0
     depot_garantie: float = 0
+    depot_restitue: bool = False
+    date_restitution: Optional[date] = None
     indice_irl_reference: Optional[str] = None
     statut: str = "en_cours"
     etat_lieux_entree: Optional[date] = None

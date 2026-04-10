@@ -830,6 +830,8 @@ class BailCloturePayload(BaseModel):
     depot_restitue_montant: Optional[float] = None
     retenues_detail: Optional[str] = None
     motif: Optional[str] = None
+    depot_restitue: bool = False
+    date_restitution: Optional[date] = None
 
 
 @router.post("/{bien_id}/baux/{bail_id}/cloturer", response_model=BailResponse)
@@ -866,9 +868,12 @@ async def cloturer_bail(
     update_data: dict = {
         "statut": "termine",
         "date_fin": payload.date_fin_effective.isoformat(),
+        "depot_restitue": payload.depot_restitue,
     }
     if payload.etat_lieux_sortie:
         update_data["etat_lieux_sortie"] = payload.etat_lieux_sortie.isoformat()
+    if payload.date_restitution:
+        update_data["date_restitution"] = payload.date_restitution.isoformat()
 
     result = (
         client.table("baux")

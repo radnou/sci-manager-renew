@@ -48,6 +48,10 @@
 		resilie: {
 			label: 'Résilié',
 			class: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+		},
+		termine: {
+			label: 'Terminé',
+			class: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
 		}
 	};
 
@@ -1028,6 +1032,19 @@
 					<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
 						{formatEur(bail.depot_garantie)}
 					</p>
+					{#if bail.depot_garantie > 0 && bail.statut === 'termine'}
+						{#if bail.depot_restitue}
+							<p class="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+								<CheckCircle class="h-3 w-3" />
+								Restitué{bail.date_restitution ? ` le ${formatFrDate(bail.date_restitution)}` : ''}
+							</p>
+						{:else}
+							<p class="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+								<AlertTriangle class="h-3 w-3" />
+								Non restitué
+							</p>
+						{/if}
+					{/if}
 				</div>
 			</div>
 

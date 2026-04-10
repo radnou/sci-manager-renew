@@ -100,11 +100,28 @@ async def check_irl_revisions(supabase_client) -> int:
             .execute()
         )
 
+        dedup_key = f"irl_{bail['id']}_{anniversary.year}"
+
+        # Annual dedup: skip if an irl_revision notification already exists
+        # for this bail+year (regardless of read status / 7-day window).
+        existing_notif = (
+            supabase_client.table("notifications")
+            .select("id")
+            .eq("type", "irl_revision")
+            .execute()
+        )
+        already_sent = any(
+            (row.get("metadata") or {}).get("dedup_key") == dedup_key
+            for row in existing_notif.data or []
+        )
+        if already_sent:
+            continue
+
         for owner in owners.data or []:
             created = await create_notification_with_email(
                 supabase_client,
                 user_id=owner["user_id"],
-                notification_type="system",
+                notification_type="irl_revision",
                 data={
                     "title": f"Revision IRL \u2014 {adresse}",
                     "message": (
@@ -117,7 +134,7 @@ async def check_irl_revisions(supabase_client) -> int:
                         "current_loyer": loyer_hc,
                         "estimated_loyer": new_loyer,
                         "anniversary": anniversary.isoformat(),
-                        "dedup_key": f"irl_{bail['id']}_{anniversary.year}",
+                        "dedup_key": dedup_key,
                     },
                 },
             )

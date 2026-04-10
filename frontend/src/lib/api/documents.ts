@@ -31,16 +31,6 @@ export function downloadQuitus(filePath: string) {
 	return apiFetchBlob(filePath);
 }
 
-export function sendQuittanceEmail(
-	filename: string,
-	bienId: string
-): Promise<{ message: string }> {
-	return apiFetch<{ message: string }>(
-		`/api/v1/quitus/send-email/${encodeURIComponent(filename)}?bien_id=${encodeURIComponent(bienId)}`,
-		{ method: 'POST' }
-	);
-}
-
 export function generateCerfa2044Pdf(payload: Cerfa2044Request): Promise<Blob> {
 	return apiFetchBlob('/api/v1/cerfa/2044/pdf', {
 		method: 'POST',

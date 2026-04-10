@@ -16,9 +16,15 @@ export function batchGenerateQuittances(mois: string): Promise<BatchGenerateResu
 	});
 }
 
-export function sendQuittanceEmail(filename: string, bienId: string): Promise<SendQuittanceEmailResult> {
+export function sendQuittanceEmail(
+	filename: string,
+	bienId: string
+): Promise<SendQuittanceEmailResult> {
 	const params = new URLSearchParams({ bien_id: bienId });
-	return apiFetch<SendQuittanceEmailResult>(`/api/v1/quitus/send-email/${encodeURIComponent(filename)}?${params}`, {
-		method: 'POST'
-	});
+	return apiFetch<SendQuittanceEmailResult>(
+		`/api/v1/quitus/send-email/${encodeURIComponent(filename)}?${params}`,
+		{
+			method: 'POST'
+		}
+	);
 }

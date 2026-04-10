@@ -18,6 +18,7 @@ class SCIBase(BaseModel):
     nb_parts_total: int | None = None
     valeur_nominale_part: float | None = None
     jour_loyer: int | None = Field(default=None, ge=1, le=28)
+    date_cloture_exercice: str | None = Field(default=None)
 
 
 class SCICreate(SCIBase):
@@ -39,6 +40,7 @@ class SCIUpdate(BaseModel):
     nb_parts_total: int | None = None
     valeur_nominale_part: float | None = None
     jour_loyer: int | None = Field(default=None, ge=1, le=28)
+    date_cloture_exercice: str | None = Field(default=None)
 
 
 class AssocieCreate(BaseModel):

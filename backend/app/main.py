@@ -79,6 +79,7 @@ from app.services.signup_nurture_service import check_and_send_signup_nurture_em
 from app.services.bilan_mensuel_service import auto_generate_bilans
 from app.services.notification_cron import (
     check_bail_renewal,
+    check_depot_garantie_restitution,
     check_expiring_bails,
     check_expiring_pno,
     check_fiscal_deadlines,
@@ -125,6 +126,8 @@ async def _notification_cron_loop():
             await check_recurring_charges(client)
             # Task 9: Regularisation charges reminder (January)
             await check_regularisation_charges_reminder(client)
+            # Task 10: Depot garantie restitution alerts (1 or 2 month deadline)
+            await check_depot_garantie_restitution(client)
             # Task 6: Lead nurture email sequence
             nurture_sent = await process_nurture_emails()
             if nurture_sent:

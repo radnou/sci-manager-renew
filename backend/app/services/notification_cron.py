@@ -585,13 +585,11 @@ async def check_depot_garantie_restitution(supabase_client) -> int:
         except (ValueError, TypeError):
             continue
 
-        # Deadline: 1 month if conforme EDL sortie, else 2 months
+        # Deadline: 1 month (30 days) if conforme EDL sortie, else 2 months (60 days)
+        # Use timedelta to avoid ValueError on month-end dates (e.g. Jan 31 + 1 month ≠ Feb 31)
         has_edl_sortie = bool(bail.get("etat_lieux_sortie"))
-        deadline_months = 1 if has_edl_sortie else 2
-        deadline_date = date_fin.replace(
-            year=date_fin.year + (1 if date_fin.month + deadline_months > 12 else 0),
-            month=((date_fin.month - 1 + deadline_months) % 12) + 1,
-        )
+        deadline_days = 30 if has_edl_sortie else 60
+        deadline_date = date_fin + timedelta(days=deadline_days)
 
         if today < deadline_date:
             continue
@@ -625,7 +623,7 @@ async def check_depot_garantie_restitution(supabase_client) -> int:
                     "message": (
                         f"Le bail pour {adresse} est terminé depuis le {bail['date_fin']}. "
                         f"Le dépôt de garantie ({depot:.2f} EUR) doit être restitué "
-                        f"sous {deadline_months} mois (EDL {'conforme' if has_edl_sortie else 'absent'}). "
+                        f"sous {deadline_days // 30} mois (EDL {'conforme' if has_edl_sortie else 'absent'}). "
                         f"Délai dépassé de {days_overdue} jour(s)."
                     ),
                     "metadata": {
@@ -633,7 +631,7 @@ async def check_depot_garantie_restitution(supabase_client) -> int:
                         "bien_adresse": adresse,
                         "depot_garantie": depot,
                         "date_fin": bail["date_fin"],
-                        "deadline_months": deadline_months,
+                        "deadline_days": deadline_days,
                         "days_overdue": days_overdue,
                         "dedup_key": dedup_key,
                     },

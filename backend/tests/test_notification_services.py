@@ -452,6 +452,7 @@ class TestCheckExpiringBails:
         client.store["baux"] = [
             {
                 "id": "bail-orphan",
+                "statut": "termine",
                 "id_bien": "bien-x",
                 "date_fin": soon,
                 "biens": {"id_sci": None, "adresse": "Orphan", "ville": "Somewhere"},
@@ -585,5 +586,131 @@ class TestCheckExpiringPno:
             from app.services.notification_cron import check_expiring_pno
 
             result = await check_expiring_pno(client)
+
+        assert result == 0
+
+
+class TestCheckDepotGarantieRestitution:
+
+    @pytest.mark.asyncio
+    async def test_returns_zero_when_no_terminated_baux(self):
+        """No terminated baux -> 0 notifications."""
+        client = make_client([])
+        client.store.setdefault("baux", [])
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
+            from app.services.notification_cron import check_depot_garantie_restitution
+            result = await check_depot_garantie_restitution(client)
+
+        assert result == 0
+
+    @pytest.mark.asyncio
+    async def test_notifies_when_deadline_passed_no_edl(self):
+        """Terminated bail, no EDL sortie: 2-month deadline. If overdue -> notification."""
+        from datetime import date, timedelta
+
+        client = make_client([])
+        date_fin = (date.today() - timedelta(days=100)).isoformat()
+        client.store["baux"] = [
+            {
+                "id": "bail-termine-1",
+                "statut": "termine",
+                "id_bien": "bien-1",
+                "depot_garantie": 1200.0,
+                "depot_restitue": False,
+                "date_fin": date_fin,
+                "etat_lieux_sortie": None,
+                "biens": {"id_sci": "sci-1", "adresse": "10 rue Test", "ville": "Paris"},
+            }
+        ]
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_cron import check_depot_garantie_restitution
+            result = await check_depot_garantie_restitution(client)
+
+        assert result == 2  # 2 owners in sci-1
+        notifs = client.store.get("notifications", [])
+        assert all(n["type"] == "depot_garantie_restitution" for n in notifs)
+        assert all("1200" in n["message"] for n in notifs)
+
+    @pytest.mark.asyncio
+    async def test_notifies_when_deadline_passed_with_edl(self):
+        """Terminated bail, EDL sortie present: 1-month deadline. If overdue -> notification."""
+        from datetime import date, timedelta
+
+        client = make_client([])
+        date_fin = (date.today() - timedelta(days=45)).isoformat()
+        client.store["baux"] = [
+            {
+                "id": "bail-termine-2",
+                "statut": "termine",
+                "id_bien": "bien-1",
+                "depot_garantie": 800.0,
+                "depot_restitue": False,
+                "date_fin": date_fin,
+                "etat_lieux_sortie": date_fin,
+                "biens": {"id_sci": "sci-1", "adresse": "5 av Victor Hugo", "ville": "Lyon"},
+            }
+        ]
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock), \
+             patch(SERVICE_CLIENT_PATCH, return_value=_fake_service_client()):
+            from app.services.notification_cron import check_depot_garantie_restitution
+            result = await check_depot_garantie_restitution(client)
+
+        assert result == 2
+        notifs = client.store.get("notifications", [])
+        assert all("conforme" in n["message"] for n in notifs)
+
+    @pytest.mark.asyncio
+    async def test_skips_when_deadline_not_yet_passed(self):
+        """Bail terminated 10 days ago, 2-month deadline -> still within deadline -> 0."""
+        from datetime import date, timedelta
+
+        client = make_client([])
+        date_fin = (date.today() - timedelta(days=10)).isoformat()
+        client.store["baux"] = [
+            {
+                "id": "bail-recent",
+                "statut": "termine",
+                "id_bien": "bien-1",
+                "depot_garantie": 500.0,
+                "depot_restitue": False,
+                "date_fin": date_fin,
+                "etat_lieux_sortie": None,
+                "biens": {"id_sci": "sci-1", "adresse": "1 rue Neuve", "ville": "Bordeaux"},
+            }
+        ]
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
+            from app.services.notification_cron import check_depot_garantie_restitution
+            result = await check_depot_garantie_restitution(client)
+
+        assert result == 0
+
+    @pytest.mark.asyncio
+    async def test_skips_bail_with_no_sci_id(self):
+        """Bail whose bien has no sci_id is skipped."""
+        from datetime import date, timedelta
+
+        client = make_client([])
+        date_fin = (date.today() - timedelta(days=100)).isoformat()
+        client.store["baux"] = [
+            {
+                "id": "bail-orphan",
+                "statut": "termine",
+                "id_bien": "bien-orphan",
+                "depot_garantie": 600.0,
+                "depot_restitue": False,
+                "date_fin": date_fin,
+                "etat_lieux_sortie": None,
+                "biens": {"id_sci": None, "adresse": "Nowhere", "ville": "N/A"},
+            }
+        ]
+
+        with patch(EMAIL_PATCH, new_callable=AsyncMock):
+            from app.services.notification_cron import check_depot_garantie_restitution
+            result = await check_depot_garantie_restitution(client)
 
         assert result == 0
