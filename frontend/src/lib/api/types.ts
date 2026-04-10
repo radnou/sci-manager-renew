@@ -402,6 +402,15 @@ export type Notification = {
 	created_at: string;
 };
 
+export type OnboardingProfile = {
+	role: string;
+	volume: string;
+	current_tool: string;
+	priorities: string[];
+};
+
+export type OnboardingProfilePayload = OnboardingProfile;
+
 export type OnboardingStatus = {
 	completed: boolean;
 	sci_created: boolean;
@@ -409,6 +418,8 @@ export type OnboardingStatus = {
 	bien_created: boolean;
 	bail_created: boolean;
 	notifications_set: boolean;
+	profile_set: boolean;
+	profile: OnboardingProfile | null;
 };
 
 export type DashboardAlerte = {

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { Building2, Home, FileText, Sparkles } from 'lucide-svelte';
+	import { Building2, Home, FileText, Sparkles, UserCircle2 } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Celebration from '$lib/components/Celebration.svelte';
+	import { trackEvent } from '$lib/analytics';
 	import {
 		createSci,
 		createBienForSci,
@@ -13,11 +14,13 @@
 		completeOnboarding,
 		fetchOnboardingStatus,
 		fetchSciBiensList,
+		saveOnboardingProfile,
 		type SCICreatePayload,
 		type BienCreatePayload,
 		type BailCreate,
 		type LocataireCreatePayload,
-		type OnboardingStatus
+		type OnboardingStatus,
+		type OnboardingProfile
 	} from '$lib/api';
 
 	let currentStep = $state(1);
@@ -28,8 +31,15 @@
 	let batchProgress = $state(0);
 	let batchTotal = $state(0);
 	let showFinishCelebration = $state(false);
+	let savedProfile = $state<OnboardingProfile | null>(null);
 
-	// Step 1: SCI
+	// Step 1: Profile questions
+	let profileRole = $state('');
+	let profileVolume = $state('');
+	let profileTool = $state('');
+	let profilePriorities = $state<string[]>([]);
+
+	// Step 2: SCI
 	let sciNom = $state('');
 	let sciSiren = $state('');
 	let sciRegime = $state<'IR' | 'IS'>('IR');
@@ -65,10 +75,11 @@
 	let locataireEmail = $state('');
 
 	const steps = [
-		{ num: 1, label: 'Votre SCI', icon: Building2 },
-		{ num: 2, label: 'Votre 1er bien', icon: Home },
-		{ num: 3, label: 'Configuration bail', icon: FileText },
-		{ num: 4, label: 'Bienvenue', icon: Sparkles }
+		{ num: 1, label: 'Votre profil', icon: UserCircle2 },
+		{ num: 2, label: 'Votre SCI', icon: Building2 },
+		{ num: 3, label: 'Votre 1er bien', icon: Home },
+		{ num: 4, label: 'Configuration bail', icon: FileText },
+		{ num: 5, label: 'Bienvenue', icon: Sparkles }
 	];
 
 	onMount(async () => {
@@ -78,13 +89,17 @@
 				goto('/dashboard');
 				return;
 			}
-			// Resume at the right step, restoring createdSciId from status
-			if (status.sci_created) {
+			// Resume at the right step based on progress
+			if (status.profile_set) {
 				currentStep = 2;
+				if (status.profile) savedProfile = status.profile;
+			}
+			if (status.sci_created) {
+				currentStep = 3;
 				if (status.sci_id) createdSciId = String(status.sci_id);
 			}
 			if (status.bien_created) {
-				currentStep = 3;
+				currentStep = 4;
 				// Resolve first bien ID for bail creation
 				if (createdSciId) {
 					try {
@@ -93,7 +108,7 @@
 					} catch { /* continue without bienId */ }
 				}
 			}
-			if (status.bail_created || status.notifications_set) currentStep = 4;
+			if (status.bail_created || status.notifications_set) currentStep = 5;
 		} catch {
 			// Continue with step 1
 		} finally {
@@ -101,7 +116,56 @@
 		}
 	});
 
-	async function handleStep1() {
+	function togglePriority(value: string) {
+		if (profilePriorities.includes(value)) {
+			profilePriorities = profilePriorities.filter(p => p !== value);
+		} else if (profilePriorities.length < 3) {
+			profilePriorities = [...profilePriorities, value];
+		}
+	}
+
+	async function handleProfileSubmit() {
+		if (!profileRole) {
+			error = 'Veuillez sélectionner votre profil.';
+			return;
+		}
+		if (!profileVolume) {
+			error = 'Veuillez indiquer le nombre de biens.';
+			return;
+		}
+		if (!profileTool) {
+			error = 'Veuillez indiquer votre outil actuel.';
+			return;
+		}
+		if (profilePriorities.length === 0) {
+			error = 'Veuillez sélectionner au moins une priorité.';
+			return;
+		}
+		submitting = true;
+		error = '';
+		try {
+			const profile = await saveOnboardingProfile({
+				role: profileRole,
+				volume: profileVolume,
+				current_tool: profileTool,
+				priorities: profilePriorities
+			});
+			savedProfile = profile;
+			trackEvent('onboarding_profile_completed', {
+				role: profileRole,
+				volume: profileVolume,
+				tool: profileTool,
+				priorities: profilePriorities.join(',')
+			});
+			currentStep = 2;
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Erreur lors de la sauvegarde du profil.';
+		} finally {
+			submitting = false;
+		}
+	}
+
+	async function handleStep2() {
 		if (!sciNom.trim()) {
 			error = 'Le nom de la SCI est requis.';
 			return;
@@ -120,7 +184,7 @@
 			forme_juridique: sciFormeJuridique || undefined
 			} as SCICreatePayload);
 			createdSciId = String(sci.id);
-			currentStep = 2;
+			currentStep = 3;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur lors de la création de la SCI.';
 		} finally {
@@ -146,7 +210,7 @@
 		if (bienSubStep > 1) bienSubStep -= 1;
 	}
 
-	async function handleStep2Submit() {
+	async function handleStep3Submit() {
 		if (!bienAdresse.trim() || !bienVille.trim() || !bienCodePostal.trim()) {
 			error = "L'adresse, la ville et le code postal sont requis.";
 			return;
@@ -193,7 +257,7 @@
 			bailLoyerHc = bienLoyerCc > bienCharges ? bienLoyerCc - bienCharges : bienLoyerCc;
 			bailChargesLocatives = bienCharges;
 			batchTotal = 0;
-			currentStep = 3;
+			currentStep = 4;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur lors de la création du bien.';
 		} finally {
@@ -201,10 +265,10 @@
 		}
 	}
 
-	async function handleStep3() {
+	async function handleStep4() {
 		if (!createdBienId || !createdSciId) {
 			// No bien created yet — skip bail creation gracefully
-			currentStep = 4;
+			currentStep = 5;
 			return;
 		}
 		submitting = true;
@@ -239,7 +303,7 @@
 				}
 			}
 
-			currentStep = 4;
+			currentStep = 5;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur lors de la création du bail.';
 		} finally {
@@ -247,9 +311,48 @@
 		}
 	}
 
-	function handleSkipStep3() {
-		currentStep = 4;
+	function handleSkipStep4() {
+		currentStep = 5;
 	}
+
+	const ROLE_LABELS: Record<string, string> = {
+		gerant_familial: 'gérant de SCI familiale',
+		investisseur: 'investisseur patrimonial',
+		professionnel: 'professionnel de la gestion',
+		associe: 'associé'
+	};
+
+	const PRIORITY_ACTIONS: Record<string, { text: string; cta: string; destination: 'loyer' | 'dashboard' }> = {
+		loyers: { text: 'Enregistrer votre premier loyer (2 clics)', cta: 'Enregistrer mon premier loyer', destination: 'loyer' },
+		quittances: { text: 'Générer votre première quittance PDF', cta: 'Générer une quittance', destination: 'loyer' },
+		fiscalite: { text: 'Préparer votre déclaration CERFA 2044', cta: 'Voir la fiscalité', destination: 'dashboard' },
+		finances: { text: 'Consulter votre tableau de bord financier', cta: 'Voir le tableau de bord', destination: 'dashboard' },
+		ag_parts: { text: 'Planifier votre première assemblée générale', cta: 'Voir le tableau de bord', destination: 'dashboard' }
+	};
+
+	const personalizedRoleLabel = $derived(
+		savedProfile?.role ? (ROLE_LABELS[savedProfile.role] ?? '') : ''
+	);
+
+	const personalizedActions = $derived(
+		(!savedProfile?.priorities?.length)
+			? [
+				{ text: 'Enregistrer votre premier loyer (2 clics)', destination: 'loyer' as const },
+				{ text: 'Générer votre première quittance PDF', destination: 'loyer' as const },
+				{ text: 'Configurer les alertes de retard', destination: 'dashboard' as const }
+			]
+			: savedProfile.priorities
+				.map(p => PRIORITY_ACTIONS[p])
+				.filter(Boolean)
+				.map(a => ({ text: a.text, destination: a.destination }))
+	);
+
+	const personalizedCta = $derived((() => {
+		if (!savedProfile?.priorities?.length) return { label: 'Enregistrer mon premier loyer →', destination: 'loyer' as const };
+		const first = savedProfile.priorities[0];
+		const action = PRIORITY_ACTIONS[first];
+		return action ? { label: action.cta + ' →', destination: action.destination } : { label: 'Enregistrer mon premier loyer →', destination: 'loyer' as const };
+	})());
 
 	async function handleFinish(destination: 'loyer' | 'dashboard') {
 		// Show celebration briefly before navigating
@@ -336,6 +439,122 @@
 			class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950"
 		>
 			{#if currentStep === 1}
+				<h2 class="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">
+					Parlons de vous
+				</h2>
+				<p class="mb-6 text-sm text-slate-600 dark:text-slate-400">
+					Ces informations nous permettent de personnaliser votre expérience.
+				</p>
+
+				<!-- Q1: Role -->
+				<div class="mb-6">
+					<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Quel est votre profil ?</p>
+					<div class="grid grid-cols-2 gap-3">
+						{#each [
+							{ value: 'gerant_familial', label: 'Gérant de SCI familiale', emoji: '👨‍👩‍👧' },
+							{ value: 'investisseur', label: 'Investisseur patrimonial', emoji: '📈' },
+							{ value: 'professionnel', label: 'Expert-comptable / Gestionnaire', emoji: '💼' },
+							{ value: 'associe', label: 'Associé (non gérant)', emoji: '👤' }
+						] as option}
+							<button
+								type="button"
+								onclick={() => { profileRole = option.value; }}
+								class="flex items-center gap-3 rounded-xl border-2 p-3 text-left text-sm transition-all
+									{profileRole === option.value
+										? 'border-slate-900 bg-slate-50 dark:border-slate-100 dark:bg-slate-900'
+										: 'border-slate-200 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500'}"
+							>
+								<span class="text-xl">{option.emoji}</span>
+								<span class="font-medium text-slate-700 dark:text-slate-300">{option.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Q2: Volume -->
+				<div class="mb-6">
+					<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Combien de biens gérez-vous ?</p>
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+						{#each [
+							{ value: '1-2', label: '1–2 biens' },
+							{ value: '3-5', label: '3–5 biens' },
+							{ value: '6-20', label: '6–20 biens' },
+							{ value: '20+', label: '20+ biens' }
+						] as option}
+							<button
+								type="button"
+								onclick={() => { profileVolume = option.value; }}
+								class="rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all
+									{profileVolume === option.value
+										? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-slate-100 dark:bg-slate-900 dark:text-slate-100'
+										: 'border-slate-200 text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-500'}"
+							>
+								{option.label}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Q3: Current tool -->
+				<div class="mb-6">
+					<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Comment gérez-vous votre SCI aujourd'hui ?</p>
+					<div class="grid grid-cols-2 gap-3">
+						{#each [
+							{ value: 'tableur', label: 'Tableur (Excel, Sheets…)', emoji: '📊' },
+							{ value: 'comptable', label: 'Mon comptable s\'en charge', emoji: '🧮' },
+							{ value: 'rien', label: 'Pas d\'outil structuré', emoji: '📝' },
+							{ value: 'autre_logiciel', label: 'Un autre logiciel', emoji: '💻' }
+						] as option}
+							<button
+								type="button"
+								onclick={() => { profileTool = option.value; }}
+								class="flex items-center gap-3 rounded-xl border-2 p-3 text-left text-sm transition-all
+									{profileTool === option.value
+										? 'border-slate-900 bg-slate-50 dark:border-slate-100 dark:bg-slate-900'
+										: 'border-slate-200 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500'}"
+							>
+								<span class="text-xl">{option.emoji}</span>
+								<span class="font-medium text-slate-700 dark:text-slate-300">{option.label}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Q4: Priorities (multi-select) -->
+				<div class="mb-6">
+					<p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Quelles sont vos priorités ?</p>
+					<p class="mb-3 text-xs text-slate-500 dark:text-slate-400">Sélectionnez jusqu'à 3 réponses</p>
+					<div class="flex flex-wrap gap-2">
+						{#each [
+							{ value: 'loyers', label: 'Suivi des loyers et relances' },
+							{ value: 'quittances', label: 'Génération de quittances' },
+							{ value: 'fiscalite', label: 'Déclarations fiscales (CERFA)' },
+							{ value: 'finances', label: 'Vue financière consolidée' },
+							{ value: 'ag_parts', label: 'Gestion des AG et parts' }
+						] as option}
+							<button
+								type="button"
+								onclick={() => togglePriority(option.value)}
+								class="rounded-full border-2 px-4 py-2 text-sm transition-all
+									{profilePriorities.includes(option.value)
+										? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900'
+										: profilePriorities.length >= 3
+											? 'cursor-not-allowed border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-600'
+											: 'border-slate-200 text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-500'}"
+							>
+								{option.label}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<div class="mt-6 flex justify-end">
+					<Button onclick={handleProfileSubmit} disabled={submitting}>
+						{submitting ? 'Enregistrement...' : 'Continuer'}
+					</Button>
+				</div>
+
+			{:else if currentStep === 2}
 				<h2 class="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">
 					Créez votre première SCI
 				</h2>
@@ -473,12 +692,12 @@
 				</div>
 
 				<div class="mt-6 flex justify-end">
-					<Button onclick={handleStep1} disabled={submitting}>
+					<Button onclick={handleStep2} disabled={submitting}>
 						{submitting ? 'Création...' : 'Créer la SCI'}
 					</Button>
 				</div>
 
-			{:else if currentStep === 2}
+			{:else if currentStep === 3}
 				<div class="mb-4">
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
 						Ajoutez votre premier bien
@@ -693,14 +912,14 @@
 						{#if bienSubStep < 3}
 							<Button onclick={handleBienSubNext}>Suivant</Button>
 						{:else}
-							<Button onclick={handleStep2Submit} disabled={submitting}>
+							<Button onclick={handleStep3Submit} disabled={submitting}>
 								{submitting && batchTotal > 1 ? `Création ${batchProgress}/${batchTotal}...` : submitting ? 'Création...' : bienCategorie === 'immeuble' && bienNbLots > 1 ? `Créer ${bienNbLots} lots` : 'Ajouter le bien'}
 							</Button>
 						{/if}
 					</div>
 				</div>
 
-			{:else if currentStep === 3}
+			{:else if currentStep === 4}
 				<h2 class="mb-6 text-lg font-semibold text-slate-900 dark:text-slate-100">
 					Configuration du bail
 				</h2>
@@ -785,17 +1004,17 @@
 				<div class="mt-6 flex items-center justify-between">
 					<button
 						type="button"
-						onclick={handleSkipStep3}
+						onclick={handleSkipStep4}
 						class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
 					>
 						Passer cette étape
 					</button>
-					<Button onclick={handleStep3} disabled={submitting || !bailDateDebut || bailLoyerHc <= 0}>
+					<Button onclick={handleStep4} disabled={submitting || !bailDateDebut || bailLoyerHc <= 0}>
 						{submitting ? 'Création...' : 'Créer le bail'}
 					</Button>
 				</div>
 
-			{:else if currentStep === 4}
+			{:else if currentStep === 5}
 				<div class="text-center">
 					<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
 						<Sparkles class="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
@@ -803,9 +1022,15 @@
 					<h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
 						Votre SCI « {sciNom} » est configurée !
 					</h2>
-					<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-						Voici ce que GérerSCI a préparé pour vous :
-					</p>
+					{#if personalizedRoleLabel}
+						<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+							En tant que <strong>{personalizedRoleLabel}</strong>, voici ce que GérerSCI va faire pour vous :
+						</p>
+					{:else}
+						<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+							Voici ce que GérerSCI a préparé pour vous :
+						</p>
+					{/if}
 
 					<!-- KPI preview cards -->
 					<div class="mt-6 grid grid-cols-3 gap-3">
@@ -825,19 +1050,25 @@
 						{/each}
 					</div>
 
-					<!-- Next actions -->
+					<!-- Personalized next actions -->
 					<div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left dark:border-slate-700 dark:bg-slate-800">
-						<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">💡 Prochaines actions suggérées :</p>
+						<p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+							{#if savedProfile?.priorities?.length}
+								Vos priorités, nos suggestions :
+							{:else}
+								Prochaines actions suggérées :
+							{/if}
+						</p>
 						<ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-							<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> Enregistrer votre premier loyer (2 clics)</li>
-							<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> Générer votre première quittance PDF</li>
-							<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> Configurer les alertes de retard</li>
+							{#each personalizedActions as action}
+								<li class="flex items-center gap-2"><span class="text-emerald-500">→</span> {action.text}</li>
+							{/each}
 						</ul>
 					</div>
 
 					<div class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-						<Button onclick={() => handleFinish('loyer')} disabled={submitting}>
-							{submitting ? 'Finalisation...' : 'Enregistrer mon premier loyer →'}
+						<Button onclick={() => handleFinish(personalizedCta.destination)} disabled={submitting}>
+							{submitting ? 'Finalisation...' : personalizedCta.label}
 						</Button>
 						<Button variant="outline" onclick={() => handleFinish('dashboard')} disabled={submitting}>
 							Voir le tableau de bord
