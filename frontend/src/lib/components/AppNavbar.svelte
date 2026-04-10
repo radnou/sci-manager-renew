@@ -163,7 +163,14 @@
 		account: 'Compte',
 		billing: 'Abonnement',
 		settings: 'Paramètres',
-		'assemblees-generales': 'Assemblées générales'
+		'assemblees-generales': 'Assemblées générales',
+		'mouvements-parts': 'Mouvements de parts',
+		echeances: 'Échéances',
+		exploitation: 'Exploitation',
+		'generateur-quittance': 'Générateur de quittance',
+		'simulateur-cerfa': 'Simulateur CERFA',
+		'simulateur-plus-value': 'Simulateur plus-value',
+		'calendrier-fiscal': 'Calendrier fiscal'
 	};
 
 	type Crumb = { label: string; href: string };

@@ -451,10 +451,18 @@
 					<Button
 						size="lg"
 						class="bg-blue-600 px-8 text-lg font-semibold text-white hover:bg-blue-700"
+						onclick={() => { trackEvent(EVENTS.LANDING_CTA_CLICK, { cta: 'demarrer' }); goto('/register'); }}
+					>
+						Démarrer maintenant
+						<ArrowRight class="ml-2 h-5 w-5" />
+					</Button>
+					<Button
+						size="lg"
+						variant="outline"
+						class="px-8 text-lg font-semibold"
 						onclick={() => { trackEvent(EVENTS.LANDING_CTA_CLICK, { cta: 'comment_ca_marche' }); document.getElementById('comment-ca-marche')?.scrollIntoView({ behavior: 'smooth' }); }}
 					>
 						Voir comment ça marche
-						<ArrowRight class="ml-2 h-5 w-5" />
 					</Button>
 					<Button
 						size="lg"

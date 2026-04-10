@@ -157,14 +157,14 @@
 </script>
 
 <svelte:head>
-	<title>Echeances - GererSCI</title>
+	<title>Échéances | GérerSCI</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
 	<!-- Header -->
 	<div class="mb-8">
 		<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pilotage</p>
-		<h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Echeances</h1>
+		<h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Échéances</h1>
 	</div>
 
 	{#if loading}

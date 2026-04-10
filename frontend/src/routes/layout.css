@@ -1,3 +1,6 @@
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/fraunces";
+
 @import "tailwindcss";
 
 @import "tw-animate-css";
@@ -133,7 +136,7 @@ body {
 
 	body {
 		@apply bg-background text-foreground min-h-screen antialiased;
-		font-family: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
+		font-family: "Space Grotesk Variable", "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
 		background-image:
 			radial-gradient(circle at 12% -5%, rgba(125, 211, 252, 0.24), transparent 38%),
 			radial-gradient(circle at 85% 0%, rgba(20, 184, 166, 0.16), transparent 35%),
@@ -151,7 +154,7 @@ body {
 	h2,
 	h3,
 	h4 {
-		font-family: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+		font-family: "Fraunces Variable", "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
 	}
 }
 
@@ -245,7 +248,7 @@ body {
 	}
 
 	.sci-field-label {
-		@apply text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase;
+		@apply text-xs font-semibold tracking-[0.15em] text-slate-500 uppercase dark:text-slate-400;
 	}
 
 	.sci-select {

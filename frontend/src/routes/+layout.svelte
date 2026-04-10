@@ -161,6 +161,20 @@
 				</div>
 
 				<div class="flex items-center gap-2 md:gap-4">
+					<!-- Mobile hamburger button -->
+					<button
+						class="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+						aria-label="Menu"
+						aria-expanded={mobileMenuOpen}
+						aria-controls="mobile-navigation"
+						onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+					>
+						{#if mobileMenuOpen}
+							<X class="h-5 w-5" />
+						{:else}
+							<Menu class="h-5 w-5" />
+						{/if}
+					</button>
 					<div class="hidden items-center gap-4 md:flex">
 						<a
 							href="/pricing"
@@ -221,7 +235,7 @@
 							{/if}
 						</div>
 					</div>
-					<div class="flex items-center gap-3">
+					<div class="hidden items-center gap-3 md:flex">
 						<a href="/login">
 							<Button variant="ghost" size="sm">Connexion</Button>
 						</a>
@@ -246,27 +260,54 @@
 					<div class="grid gap-2">
 						<a
 							href="/pricing"
+							onclick={() => (mobileMenuOpen = false)}
 							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
 							Tarifs
 						</a>
+						<p class="px-4 pt-2 text-xs font-semibold tracking-wider text-slate-400 uppercase dark:text-slate-500">Simulateurs</p>
 						<a
 							href="/simulateur-cerfa"
+							onclick={() => (mobileMenuOpen = false)}
 							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
-							Simulateur CERFA 2044
+							CERFA 2044
+						</a>
+						<a
+							href="/generateur-quittance"
+							onclick={() => (mobileMenuOpen = false)}
+							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							Quittance de loyer
+						</a>
+						<a
+							href="/calendrier-fiscal"
+							onclick={() => (mobileMenuOpen = false)}
+							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+						>
+							Calendrier fiscal SCI
 						</a>
 						<a
 							href="/simulateur-plus-value"
+							onclick={() => (mobileMenuOpen = false)}
 							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
-							Simulateur Plus-Value
+							Plus-value immobilière
 						</a>
+						<div class="my-1 border-t border-slate-200 dark:border-slate-800"></div>
 						<a
 							href="/login"
+							onclick={() => (mobileMenuOpen = false)}
 							class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
 						>
 							Connexion
+						</a>
+						<a
+							href="/register"
+							onclick={() => (mobileMenuOpen = false)}
+							class="rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:from-blue-600 hover:to-cyan-600"
+						>
+							Inscription
 						</a>
 					</div>
 				</div>
