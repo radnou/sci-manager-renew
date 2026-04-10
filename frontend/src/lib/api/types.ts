@@ -42,6 +42,7 @@ export type SCIOverview = {
 	user_part?: number | null;
 	associes?: Associe[];
 	jour_loyer?: number | null;
+	date_cloture_exercice?: string | null;
 };
 
 export type SCICreatePayload = {
@@ -84,6 +85,7 @@ export type SCIUpdatePayload = {
 	forme_juridique?: string | null;
 	nom_gerant?: string | null;
 	jour_loyer?: number | null;
+	date_cloture_exercice?: string | null;
 };
 
 export type Charge = {
@@ -392,7 +394,7 @@ export type ResumeFiscalData = {
 
 export type Notification = {
 	id: string;
-	type: 'late_payment' | 'status_change' | 'document_ready' | 'system' | 'info';
+	type: 'late_payment' | 'status_change' | 'document_ready' | 'system' | 'info' | 'irl_revision';
 	title: string;
 	message: string;
 	metadata: Record<string, unknown>;
@@ -466,6 +468,8 @@ export type BailEmbed = {
 	loyer_hc: number;
 	charges_locatives: number;
 	depot_garantie: number;
+	depot_restitue: boolean;
+	date_restitution: string | null;
 	revision_indice: string | null;
 	statut: string;
 	etat_lieux_entree: string | null;

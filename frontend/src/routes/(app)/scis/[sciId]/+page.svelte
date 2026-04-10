@@ -275,6 +275,26 @@
 		}
 	}
 
+	// ── Date de clôture d'exercice (inline edit) ─────────────────
+	let editingCloture = $state(false);
+	let clotureValue = $state<string>(sci.date_cloture_exercice ?? '');
+	let clotureSaving = $state(false);
+
+	async function saveCloture() {
+		clotureSaving = true;
+		try {
+			await updateSci(sciId, {
+				date_cloture_exercice: clotureValue || null
+			});
+			addToast({ title: 'Date de clôture mise à jour', variant: 'success' });
+			editingCloture = false;
+		} catch (err: any) {
+			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de mettre à jour la date de clôture.', variant: 'error' });
+		} finally {
+			clotureSaving = false;
+		}
+	}
+
 	const hasFinancials = $derived(
 		(sci.total_monthly_rent ?? 0) > 0 || (sci.paid_loyers_total ?? 0) > 0 || (sci.total_recorded_charges ?? 0) > 0
 	);
@@ -976,6 +996,49 @@
 									onclick={() => { editingJourLoyer = true; jourLoyerValue = sci.jour_loyer ?? ''; }}
 									class="rounded p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
 									title="Modifier le jour de loyer"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+								</button>
+							{/if}
+						</div>
+					{/if}
+				</div>
+				<!-- Date de clôture d'exercice -->
+				<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+					<span class="text-sm text-slate-500 dark:text-slate-400">Clôture d'exercice</span>
+					{#if editingCloture && isGerant}
+						<div class="flex items-center gap-2">
+							<input
+								type="date"
+								bind:value={clotureValue}
+								class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+							/>
+							<button
+								onclick={saveCloture}
+								disabled={clotureSaving}
+								class="rounded-lg bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+							>
+								{clotureSaving ? '…' : 'OK'}
+							</button>
+							<button
+								onclick={() => { editingCloture = false; clotureValue = sci.date_cloture_exercice ?? ''; }}
+								class="rounded-lg px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+							>
+								✕
+							</button>
+						</div>
+					{:else}
+						<div class="flex items-center gap-2">
+							<span class="text-sm font-medium text-slate-900 dark:text-slate-100">
+								{sci.date_cloture_exercice
+									? new Date(sci.date_cloture_exercice).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+									: '31 décembre'}
+							</span>
+							{#if isGerant}
+								<button
+									onclick={() => { editingCloture = true; clotureValue = sci.date_cloture_exercice ?? ''; }}
+									class="rounded p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+									title="Modifier la date de clôture d'exercice"
 								>
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 								</button>

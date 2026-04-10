@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import calendar
 from datetime import date, datetime, timedelta, timezone
 
 import structlog
@@ -86,7 +87,6 @@ async def check_monthly_loyer_generation(supabase_client) -> int:
 
         # Dedup: check if loyer already exists for this bien + month
         month_start = today.replace(day=1).isoformat()
-        import calendar
         last_day = calendar.monthrange(today.year, today.month)[1]
         month_end = today.replace(day=last_day).isoformat()
         existing = (
@@ -552,6 +552,100 @@ async def check_regularisation_charges_reminder(supabase_client) -> int:
     return notified
 
 
+async def check_depot_garantie_restitution(supabase_client) -> int:
+    """Alert landlords when a terminated bail has an unrestituted depot de garantie.
+
+    Legal deadlines (loi du 6 juillet 1989, art. 22) :
+    - 1 month  if état des lieux de sortie is conforme (= etat_lieux_sortie IS NOT NULL)
+    - 2 months if no état des lieux de sortie recorded
+
+    Checks baux where:
+    - statut = 'termine'
+    - depot_garantie > 0
+    - depot_restitue = FALSE
+    - date_fin + deadline has passed
+    """
+    today = date.today()
+    notified = 0
+
+    # Fetch all terminated baux with unrestituted depot
+    result = (
+        supabase_client.table("baux")
+        .select("id, id_bien, depot_garantie, date_fin, etat_lieux_sortie, biens(id_sci, adresse, ville)")
+        .eq("statut", "termine")
+        .eq("depot_restitue", False)
+        .gt("depot_garantie", 0)
+        .not_.is_("date_fin", "null")
+        .execute()
+    )
+
+    for bail in result.data or []:
+        try:
+            date_fin = datetime.strptime(bail["date_fin"], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            continue
+
+        # Deadline: 1 month if conforme EDL sortie, else 2 months
+        has_edl_sortie = bool(bail.get("etat_lieux_sortie"))
+        deadline_months = 1 if has_edl_sortie else 2
+        deadline_date = date_fin.replace(
+            year=date_fin.year + (1 if date_fin.month + deadline_months > 12 else 0),
+            month=((date_fin.month - 1 + deadline_months) % 12) + 1,
+        )
+
+        if today < deadline_date:
+            continue
+
+        bien = bail.get("biens") or {}
+        sci_id = bien.get("id_sci")
+        if not sci_id:
+            continue
+
+        adresse = bien.get("adresse", "un bien")
+        depot = float(bail.get("depot_garantie") or 0)
+        days_overdue = (today - deadline_date).days
+
+        owners = (
+            supabase_client.table("associes")
+            .select("user_id")
+            .eq("id_sci", sci_id)
+            .not_.is_("user_id", "null")
+            .execute()
+        )
+
+        dedup_key = f"depot_{bail['id']}_{deadline_date.isoformat()}"
+
+        for owner in owners.data or []:
+            created = await create_notification_with_email(
+                supabase_client,
+                user_id=owner["user_id"],
+                notification_type="depot_garantie_restitution",
+                data={
+                    "title": f"Dépôt de garantie à restituer — {adresse}",
+                    "message": (
+                        f"Le bail pour {adresse} est terminé depuis le {bail['date_fin']}. "
+                        f"Le dépôt de garantie ({depot:.2f} EUR) doit être restitué "
+                        f"sous {deadline_months} mois (EDL {'conforme' if has_edl_sortie else 'absent'}). "
+                        f"Délai dépassé de {days_overdue} jour(s)."
+                    ),
+                    "metadata": {
+                        "bail_id": bail["id"],
+                        "bien_adresse": adresse,
+                        "depot_garantie": depot,
+                        "date_fin": bail["date_fin"],
+                        "deadline_months": deadline_months,
+                        "days_overdue": days_overdue,
+                        "dedup_key": dedup_key,
+                    },
+                },
+            )
+            if created:
+                notified += 1
+
+    logger.info("check_depot_garantie_restitution_complete", notified=notified)
+    return notified
+
+
 async def check_expiring_bails(supabase_client) -> int:
     """Find baux expiring within 90 days and notify the owner."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -713,7 +807,7 @@ async def check_fiscal_deadlines(supabase_client) -> int:
     year = now.year
 
     # Fetch all SCIs with their regime fiscal
-    result = supabase_client.table("sci").select("id, nom, regime_fiscal").execute()
+    result = supabase_client.table("sci").select("id, nom, regime_fiscal, date_cloture_exercice").execute()
     scis = result.data or []
     if not scis:
         return 0
@@ -722,17 +816,77 @@ async def check_fiscal_deadlines(supabase_client) -> int:
     for sci in scis:
         sci_regime = (sci.get("regime_fiscal") or "").upper()
 
+        # Resolve fiscal year-end from date_cloture_exercice (NULL → Dec 31)
+        cloture_raw: str | None = sci.get("date_cloture_exercice")
+        if cloture_raw:
+            try:
+                from datetime import date as _date
+                _cloture = _date.fromisoformat(cloture_raw)
+                cloture_month = _cloture.month
+                cloture_day = _cloture.day
+            except (ValueError, TypeError):
+                cloture_month, cloture_day = 12, 31
+        else:
+            cloture_month, cloture_day = 12, 31
+
+        # Build the closing date in the current (or previous) year that
+        # produces a sensible deadline reference.
+        try:
+            cloture_ref = datetime(year, cloture_month, cloture_day, tzinfo=timezone.utc)
+        except ValueError:
+            # Edge case: Feb 29 in non-leap year → use Feb 28
+            cloture_ref = datetime(year, cloture_month, 28, tzinfo=timezone.utc)
+
         for deadline in FISCAL_DEADLINES:
             # Skip regime-specific deadlines that don't apply
             if deadline["regime"] and deadline["regime"] != sci_regime:
                 continue
 
-            deadline_date = datetime(year, deadline["month"], deadline["day"], tzinfo=timezone.utc)
+            # Compute deadline date:
+            # - liasse_fiscale_is  → 3 months after closing
+            # - ag_annuelle        → 6 months after closing
+            # - all others         → fixed calendar date (unchanged by custom closing)
+            if deadline["key"] in ("liasse_fiscale_is", "ag_annuelle"):
+                # Compute deadline = N months after fiscal year closing.
+                # We try two reference years (current and previous) and pick
+                # the one that is upcoming (days_until >= 0) and within the
+                # advance window. This handles closings in Dec (e.g. Dec 31:
+                # liasse = Mar 31, AG = Jun 30) correctly regardless of which
+                # part of the year we're in.
+                _offset_months = 3 if deadline["key"] == "liasse_fiscale_is" else 6
+                _advance = deadline["advance_days"]
+
+                def _compute_relative(base_year: int) -> datetime:
+                    _rm = cloture_month + _offset_months
+                    _yo = (_rm - 1) // 12
+                    _ty = base_year + _yo
+                    _tm = ((_rm - 1) % 12) + 1
+                    _md = calendar.monthrange(_ty, _tm)[1]
+                    return datetime(_ty, _tm, min(cloture_day, _md), tzinfo=timezone.utc)
+
+                _d_curr = _compute_relative(year)
+                _d_prev = _compute_relative(year - 1)
+                _days_curr = (_d_curr - now).days
+                _days_prev = (_d_prev - now).days
+
+                # Prefer current-year base if within window; else try prev-year base
+                if 0 <= _days_curr <= _advance:
+                    deadline_date = _d_curr
+                elif 0 <= _days_prev <= _advance:
+                    deadline_date = _d_prev
+                else:
+                    deadline_date = _d_curr
+            else:
+                deadline_date = datetime(year, deadline["month"], deadline["day"], tzinfo=timezone.utc)
+
             days_until = (deadline_date - now).days
 
             # Only notify within the advance window and if not past
             if days_until < 0 or days_until > deadline["advance_days"]:
                 continue
+
+            # Human-readable closing date label for messages
+            cloture_label = f"{cloture_day:02d}/{cloture_month:02d}"
 
             # Fetch SCI owners
             owners = (
@@ -744,13 +898,9 @@ async def check_fiscal_deadlines(supabase_client) -> int:
             )
 
             for owner in owners.data or []:
-                # For IS liasse, append a caveat: the March 31 deadline is only
-                # correct for SCIs with a December 31 fiscal year-end.
                 base_message = f"Échéance le {deadline_date.strftime('%d/%m/%Y')} ({days_until} jours restants)."
-                if deadline["key"] == "liasse_fiscale_is":
-                    base_message += (
-                        " (date pour exercice clos au 31/12 — vérifiez si votre exercice a une clôture différente)"
-                    )
+                if deadline["key"] in ("liasse_fiscale_is", "ag_annuelle"):
+                    base_message += f" (basé sur la clôture de l'exercice au {cloture_label})"
 
                 created = await create_notification_with_email(
                     supabase_client,
