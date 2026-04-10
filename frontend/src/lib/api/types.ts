@@ -1,7 +1,7 @@
 export type EntityId = number | string;
 export type PlanKey = 'free' | 'starter' | 'pro' | 'lifetime';
 
-export type BienType = 'nu' | 'meuble' | 'mixte';
+export type BienType = 'nu' | 'meuble' | 'mixte' | 'mobilite';
 export type LoyerStatus = 'en_attente' | 'paye' | 'en_retard';
 export type SCIStatus = 'configuration' | 'mise_en_service' | 'exploitation';
 
@@ -201,6 +201,7 @@ export type BienUpdatePayload = {
 	acquisition_date?: string | null;
 	prix_acquisition?: number | null;
 	jour_loyer?: number | null;
+	zone_tendue?: boolean;
 };
 
 export type LocataireCreatePayload = {
@@ -621,6 +622,8 @@ export type RentabiliteCalculee = {
 	nette: number;
 	cashflow_mensuel: number;
 	cashflow_annuel: number;
+	cashflow_apres_credit_mensuel: number;
+	cashflow_apres_credit_annuel: number;
 };
 
 export type FicheBien = {
@@ -639,6 +642,7 @@ export type FicheBien = {
 	photo_url: string | null;
 	prix_acquisition: number | null;
 	statut: string | null;
+	zone_tendue: boolean;
 	jour_loyer: number | null;
 	bail_actif: BailEmbed | null;
 	loyers_recents: LoyerEmbed[];

@@ -47,6 +47,8 @@ class RentabiliteCalculee(BaseModel):
     nette: float = 0
     cashflow_mensuel: float = 0
     cashflow_annuel: float = 0
+    cashflow_apres_credit_mensuel: float = 0
+    cashflow_apres_credit_annuel: float = 0
 
 
 class CreditImmobilierEmbed(BaseModel):
@@ -80,6 +82,7 @@ class FicheBienResponse(BaseModel):
     photo_url: Optional[str] = None
     prix_acquisition: Optional[float] = None
     statut: Optional[str] = None
+    zone_tendue: bool = False
     bail_actif: Optional[BailEmbed] = None
     loyers_recents: list[dict] = []
     charges_list: list[dict] = []

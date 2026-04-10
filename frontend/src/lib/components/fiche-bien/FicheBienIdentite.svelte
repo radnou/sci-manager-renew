@@ -34,7 +34,8 @@
 			loyer_cc: bien.loyer_cc ?? 0,
 			charges: bien.charges ?? 0,
 			prix_acquisition: bien.prix_acquisition ?? '',
-			jour_loyer: bien.jour_loyer ?? ('' as number | '')
+			jour_loyer: bien.jour_loyer ?? ('' as number | ''),
+			zone_tendue: bien.zone_tendue ?? false
 		};
 	}
 
@@ -52,7 +53,8 @@
 				adresse: form.adresse || undefined,
 				ville: form.ville || undefined,
 				code_postal: form.code_postal || undefined,
-				type_locatif: (form.type_locatif as 'nu' | 'meuble' | 'mixte') || undefined,
+				type_locatif: (form.type_locatif as 'nu' | 'meuble' | 'mixte' | 'mobilite') || undefined,
+				zone_tendue: form.zone_tendue,
 				type_bien: form.type_bien || undefined,
 				loyer_cc: Number(form.loyer_cc) || undefined,
 				charges: Number(form.charges) || undefined,
@@ -112,7 +114,8 @@
 	const TYPE_OPTIONS: Array<{ value: string; label: string }> = [
 		{ value: 'nu', label: 'Location nue' },
 		{ value: 'meuble', label: 'Meublé' },
-		{ value: 'mixte', label: 'Mixte' }
+		{ value: 'mixte', label: 'Mixte' },
+		{ value: 'mobilite', label: 'Bail mobilité' }
 	];
 
 	const TYPE_BIEN_OPTIONS: Array<{ value: string; label: string }> = [
@@ -156,7 +159,8 @@
 				label: 'Jour de loyer',
 				value: bien.jour_loyer != null ? bien.jour_loyer : null,
 				suffix: bien.jour_loyer != null ? 'du mois' : undefined
-			}
+			},
+			{ label: 'Zone tendue', value: bien.zone_tendue ? 'Oui' : 'Non' }
 		]);
 </script>
 
@@ -399,6 +403,20 @@
 					placeholder="Hérité de la SCI"
 					class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
 				/>
+			</div>
+
+			<!-- Zone tendue -->
+			<div class="flex items-start gap-3 sm:col-span-2 lg:col-span-3">
+				<input
+					id="edit-zone-tendue"
+					type="checkbox"
+					bind:checked={form.zone_tendue}
+					class="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800"
+				/>
+				<label for="edit-zone-tendue" class="text-sm text-slate-700 dark:text-slate-300">
+					Zone tendue
+					<FieldHint text="En zone tendue (loi Alur), le préavis du locataire pour un logement nu passe de 3 mois à 1 mois." />
+				</label>
 			</div>
 		</form>
 	{:else}

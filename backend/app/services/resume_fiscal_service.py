@@ -348,12 +348,57 @@ class ResumeFiscalService:
             )
 
             # Ligne 230: intérêts d'emprunt (UI uses 'credit', 'interets_emprunt', or 'interets')
-            detail.ligne_230_interets_emprunt = round(
+            manual_interets = round(
                 charges_by_type.get("interets_emprunt", 0.0)
                 + charges_by_type.get("interets", 0.0)
                 + charges_by_type.get("credit", 0.0),
                 2,
             )
+
+            # If no manual interest charge recorded, auto-compute from credits_immobiliers amortissement
+            if manual_interets == 0.0:
+                credit_rows = self._execute_select(
+                    client.table("credits_immobiliers")
+                    .select("montant, taux_nominal, taux_assurance, duree_mois, date_debut, mensualite")
+                    .eq("id_bien", bien_id)
+                )
+                auto_interets = 0.0
+                for credit in credit_rows:
+                    montant = self._safe_float(credit.get("montant"))
+                    taux_nominal = self._safe_float(credit.get("taux_nominal"))
+                    duree_mois = int(credit.get("duree_mois") or 0)
+                    date_debut_str = credit.get("date_debut") or ""
+                    mensualite = self._safe_float(credit.get("mensualite"))
+
+                    if montant <= 0 or taux_nominal <= 0 or duree_mois <= 0 or not date_debut_str:
+                        continue
+
+                    taux_mensuel = (taux_nominal / 100) / 12
+                    capital_restant = montant
+                    for mois_num in range(1, duree_mois + 1):
+                        interets_mois = round(capital_restant * taux_mensuel, 2)
+                        capital_mois = round(mensualite - interets_mois, 2) if mois_num < duree_mois else round(capital_restant, 2)
+                        if capital_mois < 0:
+                            capital_mois = 0.0
+
+                        # Determine calendar month for this instalment
+                        try:
+                            from datetime import date as _date
+                            start = _date.fromisoformat(date_debut_str)
+                            month_offset = (start.month - 1 + mois_num) % 12 + 1
+                            year_offset = start.year + (start.month - 1 + mois_num) // 12
+                            if year_offset == annee:
+                                auto_interets += interets_mois
+                        except (ValueError, TypeError):
+                            pass
+
+                        capital_restant = round(capital_restant - capital_mois, 2)
+                        if capital_restant < 0:
+                            capital_restant = 0.0
+
+                detail.ligne_230_interets_emprunt = round(auto_interets, 2)
+            else:
+                detail.ligne_230_interets_emprunt = manual_interets
 
             # Ligne 220: also capture assurance charges from charges table
             detail.ligne_220_assurance = round(
@@ -418,6 +463,28 @@ class ResumeFiscalService:
         # 5. Aggregate
         resultat_global = round(total_revenus - total_charges - total_interets, 2)
 
+        # ── Phase 2: Déficit foncier (art. 156-I-3° CGI) ─────────────
+        # Must be computed on the raw resultat_global (current year, before prior deficit imputation)
+        is_deficit = resultat_global < 0
+        deficit_total = 0.0
+        deficit_interets_emprunt_val = 0.0
+        deficit_imputable_revenu_global = 0.0
+        deficit_reportable_foncier = 0.0
+
+        if is_deficit:
+            deficit_total = round(abs(resultat_global), 2)
+
+            # Intérêts d'emprunt: only deductible against rental income
+            deficit_interets = round(min(total_interets, deficit_total), 2)
+
+            # Other charges: deductible against global income up to 10 700 EUR
+            deficit_hors_interets = round(deficit_total - deficit_interets, 2)
+            deficit_imputable_revenu_global = round(min(deficit_hors_interets, 10_700), 2)
+            deficit_reportable_foncier = round(
+                deficit_hors_interets - deficit_imputable_revenu_global, 2
+            )
+            deficit_interets_emprunt_val = deficit_interets
+
         # ── Phase 3: Load and impute prior deficits (FIFO) ─────────────
         deficits_anterieurs: list[DeficitAnterieur] = []
         total_deficits_anterieurs_imputes = 0.0
@@ -447,26 +514,19 @@ class ResumeFiscalService:
         associes_qp: list[AssocieQuotePart] = []
         total_parts = sum(self._safe_float(a.get("part")) for a in associe_rows)
 
-        # ── Phase 2: Déficit foncier (art. 156-I-3° CGI) ─────────────
-        is_deficit = resultat_global < 0
-        deficit_total = 0.0
-        deficit_interets_emprunt_val = 0.0
-        deficit_imputable_revenu_global = 0.0
-        deficit_reportable_foncier = 0.0
-
-        if is_deficit:
-            deficit_total = round(abs(resultat_global), 2)
-
-            # Intérêts d'emprunt: only deductible against rental income
-            deficit_interets = round(min(total_interets, deficit_total), 2)
-
-            # Other charges: deductible against global income up to 10 700 EUR
-            deficit_hors_interets = round(deficit_total - deficit_interets, 2)
-            deficit_imputable_revenu_global = round(min(deficit_hors_interets, 10_700), 2)
-            deficit_reportable_foncier = round(
-                deficit_hors_interets - deficit_imputable_revenu_global, 2
+        # Validate that parts sum to 100 (tolerance: ±0.01)
+        if associe_rows and total_parts > 0 and abs(total_parts - 100.0) > 0.01:
+            warning_msg = (
+                f"Les parts des associés totalisent {total_parts:.2f} % au lieu de 100 %. "
+                f"Les quote-parts fiscales peuvent être incorrectes."
             )
-            deficit_interets_emprunt_val = deficit_interets
+            alertes.append(warning_msg)
+            logger.warning(
+                "associes_parts_not_100",
+                sci_id=sci_id,
+                annee=annee,
+                total_parts=total_parts,
+            )
 
         if total_parts > 0:
             for a in associe_rows:

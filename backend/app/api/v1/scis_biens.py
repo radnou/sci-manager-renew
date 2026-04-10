@@ -391,12 +391,20 @@ async def get_fiche_bien(
     charges_mensuelles = bien.get("charges", 0) or 0
     prix_acquisition = bien.get("prix_acquisition")
 
+    # Use mensualite from the first active credit, if any
+    mensualite_credit = 0.0
+    for credit in credits_immobiliers:
+        if credit.get("statut", "en_cours") == "en_cours":
+            mensualite_credit = float(credit.get("mensualite", 0) or 0)
+            break
+
     rentabilite = calculate_rentabilite(
         prix_acquisition=prix_acquisition,
         loyer_mensuel=loyer_mensuel,
         charges_mensuelles=charges_mensuelles,
         prime_pno_annuelle=prime_pno,
         frais_agence_annuel=frais_annuel,
+        mensualite_credit=mensualite_credit,
     )
 
     # Build response, mapping DB fields to schema fields
@@ -416,6 +424,7 @@ async def get_fiche_bien(
         photo_url=bien.get("photo_url"),
         prix_acquisition=prix_acquisition,
         statut=bien.get("statut"),
+        zone_tendue=bool(bien.get("zone_tendue", False)),
         bail_actif=bail_actif,
         loyers_recents=loyers_recents,
         charges_list=charges_list,
@@ -639,6 +648,7 @@ async def create_bien_bail(
         _MINIMUM_DURATIONS = {
             "nu": (1095, "3 ans"),
             "meuble": (365, "1 an"),
+            "mobilite": (30, "1 mois"),
         }
         if type_locatif in _MINIMUM_DURATIONS:
             min_days, label = _MINIMUM_DURATIONS[type_locatif]
@@ -657,6 +667,7 @@ async def create_bien_bail(
         _DEPOT_CAPS = {
             "nu": (1, "1 mois de loyer HC"),
             "meuble": (2, "2 mois de loyer HC"),
+            "mobilite": (0, "aucun dépôt de garantie (bail mobilité)"),
         }
         if type_locatif in _DEPOT_CAPS:
             max_months, label = _DEPOT_CAPS[type_locatif]
@@ -908,19 +919,27 @@ class CongePayload(BaseModel):
     date_effet: Optional[date] = None  # If omitted, calculated from préavis
 
 
-def _calculate_date_effet(date_notification: date, type_conge: str, type_locatif: str) -> date:
+def _calculate_date_effet(
+    date_notification: date,
+    type_conge: str,
+    type_locatif: str,
+    zone_tendue: bool = False,
+) -> date:
     """Calculate date_effet based on préavis rules.
 
-    - Locataire nu: 3 mois (1 mois en zone tendue, but we default to 3)
-    - Locataire meublé: 1 mois
+    - Locataire nu: 3 mois (1 mois en zone tendue — loi Alur)
+    - Locataire meublé / mobilite: 1 mois
     - Bailleur: 6 mois
     """
     if type_conge == "bailleur":
         return date_notification + timedelta(days=183)  # ~6 mois
 
     # Locataire
-    if type_locatif == "meuble":
+    if type_locatif in ("meuble", "mobilite"):
         return date_notification + timedelta(days=30)  # 1 mois
+    # Nu: 1 mois en zone tendue, 3 mois sinon
+    if zone_tendue:
+        return date_notification + timedelta(days=30)
     return date_notification + timedelta(days=91)  # ~3 mois (nu / default)
 
 
@@ -966,8 +985,9 @@ async def conge_bail(
 
     # Calculate date_effet
     type_locatif = (bien.get("type_locatif") or "").lower()
+    zone_tendue = bool(bien.get("zone_tendue", False))
     date_effet = payload.date_effet or _calculate_date_effet(
-        payload.date_notification, payload.type_conge, type_locatif
+        payload.date_notification, payload.type_conge, type_locatif, zone_tendue
     )
 
     update_data = {

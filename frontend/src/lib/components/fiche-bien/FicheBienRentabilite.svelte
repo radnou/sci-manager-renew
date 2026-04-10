@@ -140,6 +140,43 @@
 		</div>
 	</div>
 
+	{#if rentabilite.cashflow_apres_credit_mensuel !== 0 || rentabilite.cashflow_apres_credit_annuel !== 0}
+		<div class="mt-4 grid gap-4 sm:grid-cols-2">
+			<!-- Cashflow après crédit (mensuel) -->
+			<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_apres_credit_mensuel)}">
+				<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
+					Cashflow après crédit <span class="text-slate-400 dark:text-slate-500">/mois</span>
+				</p>
+				<div class="mt-1 flex items-center gap-1.5">
+					{#if rentabilite.cashflow_apres_credit_mensuel >= 0}
+						<TrendingUp class="h-4 w-4 {cashflowColor(rentabilite.cashflow_apres_credit_mensuel)}" />
+					{:else}
+						<TrendingDown class="h-4 w-4 {cashflowColor(rentabilite.cashflow_apres_credit_mensuel)}" />
+					{/if}
+					<p class="text-2xl font-bold {cashflowColor(rentabilite.cashflow_apres_credit_mensuel)}">
+						{formatEur(rentabilite.cashflow_apres_credit_mensuel)}
+					</p>
+				</div>
+			</div>
+			<!-- Cashflow après crédit (annuel) -->
+			<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_apres_credit_annuel)}">
+				<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
+					Cashflow après crédit <span class="text-slate-400 dark:text-slate-500">/an</span>
+				</p>
+				<div class="mt-1 flex items-center gap-1.5">
+					{#if rentabilite.cashflow_apres_credit_annuel >= 0}
+						<TrendingUp class="h-4 w-4 {cashflowColor(rentabilite.cashflow_apres_credit_annuel)}" />
+					{:else}
+						<TrendingDown class="h-4 w-4 {cashflowColor(rentabilite.cashflow_apres_credit_annuel)}" />
+					{/if}
+					<p class="text-2xl font-bold {cashflowColor(rentabilite.cashflow_apres_credit_annuel)}">
+						{formatEur(rentabilite.cashflow_apres_credit_annuel)}
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Vue comptable annuelle -->
 	{#if comptaLoading}
 		<div class="mt-6 flex items-center justify-center py-6">

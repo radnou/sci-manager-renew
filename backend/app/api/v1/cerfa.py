@@ -92,6 +92,18 @@ def _calculate_and_validate(sci_id: str, annee: int, client):
     return result
 
 
+def _ensure_parts_sum_to_100(result) -> None:
+    """Raise 400 if associé parts don't sum to 100 % (required for 2072 declaration)."""
+    total = sum(a.part_pct for a in result.associes)
+    # associes list is built only when total_parts > 0; fall back to raw check via alertes
+    parts_warning = any("totalisent" in alerte for alerte in result.alertes)
+    if parts_warning:
+        raise ValidationError(
+            "Les parts des associés ne totalisent pas 100 %. "
+            "Corrigez la répartition avant de générer la déclaration 2072."
+        )
+
+
 @router.post("/2044")
 @limiter.limit("30/minute")
 async def generate_cerfa_2044(
@@ -384,6 +396,7 @@ async def generate_declaration_2072_pdf(
     _ensure_sci_access(client, sci_id, user_id)
 
     result = _calculate_and_validate(sci_id, annee, client)
+    _ensure_parts_sum_to_100(result)
 
     # Generate PDF
     pdf_service = Declaration2072PdfService()

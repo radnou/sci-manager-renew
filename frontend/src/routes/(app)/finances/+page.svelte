@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { FinancesData, SubscriptionEntitlements } from '$lib/api';
-	import { fetchFinances, exportLoyersCsv } from '$lib/api';
+	import { fetchFinances, exportLoyersCsv, batchGenerateQuittances } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import {
 		TrendingUp,
@@ -11,7 +11,8 @@
 		BarChart3,
 		Percent,
 		RefreshCw,
-		Download
+		Download,
+		FileText
 	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -26,6 +27,50 @@
 	let error: string | null = $state(null);
 	let period = $state('12m');
 	let exportingLoyers = $state(false);
+	let generatingQuittances = $state(false);
+
+	// Default batch month: previous calendar month
+	function defaultBatchMois(): string {
+		const now = new Date();
+		const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+	}
+
+	async function handleBatchGenerateQuittances() {
+		generatingQuittances = true;
+		const mois = defaultBatchMois();
+		try {
+			const result = await batchGenerateQuittances(mois);
+			if (result.generated > 0) {
+				addToast({
+					title: 'Quittances générées',
+					description: `${result.generated} quittance${result.generated > 1 ? 's' : ''} générée${result.generated > 1 ? 's' : ''} pour ${mois}.`,
+					variant: 'success'
+				});
+			} else {
+				addToast({
+					title: 'Aucune quittance à générer',
+					description: `Tous les loyers payés de ${mois} ont déjà leur quittance.`,
+					variant: 'default'
+				});
+			}
+			if (result.errors.length > 0) {
+				addToast({
+					title: `${result.errors.length} erreur${result.errors.length > 1 ? 's' : ''}`,
+					description: result.errors[0],
+					variant: 'error'
+				});
+			}
+		} catch (err: any) {
+			addToast({
+				title: 'Erreur',
+				description: err?.message ?? 'Impossible de générer les quittances.',
+				variant: 'error'
+			});
+		} finally {
+			generatingQuittances = false;
+		}
+	}
 
 	async function handleExportLoyers() {
 		exportingLoyers = true;
@@ -98,12 +143,20 @@
 				</button>
 			{/each}
 		</div>
-		<LockedAction {isDemo} action="exporter les loyers en CSV">
-			<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="shrink-0">
-				<Download class="mr-2 h-4 w-4" />
-				{exportingLoyers ? 'Export...' : 'Exporter les loyers (CSV)'}
-			</Button>
-		</LockedAction>
+		<div class="flex items-center gap-2">
+			<LockedAction {isDemo} action="générer les quittances en lot">
+				<Button onclick={handleBatchGenerateQuittances} disabled={generatingQuittances} variant="outline" class="shrink-0">
+					<FileText class="mr-2 h-4 w-4" />
+					{generatingQuittances ? 'Génération...' : 'Générer toutes les quittances'}
+				</Button>
+			</LockedAction>
+			<LockedAction {isDemo} action="exporter les loyers en CSV">
+				<Button onclick={handleExportLoyers} disabled={exportingLoyers} variant="outline" class="shrink-0">
+					<Download class="mr-2 h-4 w-4" />
+					{exportingLoyers ? 'Export...' : 'Exporter les loyers (CSV)'}
+				</Button>
+			</LockedAction>
+		</div>
 	</div>
 
 	{#if loading}

@@ -11,6 +11,7 @@ def calculate_rentabilite(
     frais_agence_annuel: float = 0,
     taxe_fonciere: float = 0,
     tmi: float = 0,
+    mensualite_credit: float = 0,
 ) -> dict:
     """
     Calcule la rentabilité brute, nette, nette-nette et le cashflow d'un bien.
@@ -23,9 +24,11 @@ def calculate_rentabilite(
         frais_agence_annuel: Total annuel des frais d'agence.
         taxe_fonciere: Taxe foncière annuelle du bien.
         tmi: Taux marginal d'imposition du propriétaire (0-100, e.g. 30 for 30%).
+        mensualite_credit: Mensualité du crédit immobilier actif (capital + intérêts + assurance).
 
     Returns:
         Dictionnaire avec brute, nette, nette_nette, cashflow_mensuel, cashflow_annuel,
+        cashflow_apres_credit_mensuel, cashflow_apres_credit_annuel,
         taxe_fonciere, prelevements_sociaux, impot_revenu_foncier.
     """
     if not prix_acquisition or prix_acquisition <= 0:
@@ -35,6 +38,8 @@ def calculate_rentabilite(
             "nette_nette": 0,
             "cashflow_mensuel": 0,
             "cashflow_annuel": 0,
+            "cashflow_apres_credit_mensuel": 0,
+            "cashflow_apres_credit_annuel": 0,
             "taxe_fonciere": taxe_fonciere,
             "prelevements_sociaux": 0,
             "impot_revenu_foncier": 0,
@@ -68,12 +73,17 @@ def calculate_rentabilite(
     )
     cashflow_annuel = cashflow_mensuel * 12
 
+    cashflow_apres_credit_mensuel = cashflow_mensuel - mensualite_credit
+    cashflow_apres_credit_annuel = cashflow_apres_credit_mensuel * 12
+
     return {
         "brute": round(brute, 2),
         "nette": round(nette, 2),
         "nette_nette": round(nette_nette, 2),
         "cashflow_mensuel": round(cashflow_mensuel, 2),
         "cashflow_annuel": round(cashflow_annuel, 2),
+        "cashflow_apres_credit_mensuel": round(cashflow_apres_credit_mensuel, 2),
+        "cashflow_apres_credit_annuel": round(cashflow_apres_credit_annuel, 2),
         "taxe_fonciere": taxe_fonciere,
         "prelevements_sociaux": round(prelevements_sociaux, 2),
         "impot_revenu_foncier": round(impot_revenu_foncier, 2),

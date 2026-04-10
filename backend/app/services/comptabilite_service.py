@@ -131,51 +131,6 @@ class ComptabiliteService:
             "variation_n1": variation_n1,
         }
 
-
-def _fetch_loyers(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
-    result = (
-        client.table("loyers")
-        .select("id_bien, montant, statut")
-        .in_("id_bien", bien_ids)
-        .gte("date_loyer", date_start)
-        .lte("date_loyer", date_end)
-        .execute()
-    )
-    return result.data or []
-
-
-def _fetch_charges(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
-    result = (
-        client.table("charges")
-        .select("id_bien, montant")
-        .in_("id_bien", bien_ids)
-        .gte("date_paiement", date_start)
-        .lte("date_paiement", date_end)
-        .execute()
-    )
-    return result.data or []
-
-
-def _fetch_evenements_deductibles(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
-    result = (
-        client.table("evenements_bien")
-        .select("id_bien, montant")
-        .in_("id_bien", bien_ids)
-        .eq("deductible_fiscalement", True)
-        .gte("date_evenement", date_start)
-        .lte("date_evenement", date_end)
-        .execute()
-    )
-    return result.data or []
-
-
-def _pct_change(old: float, new: float) -> float | None:
-    """Calculate percentage change from old to new. Returns None if old is 0."""
-    if old == 0:
-        return None
-    return round((new - old) / abs(old) * 100, 1)
-
-
     @staticmethod
     def get_evolution_mensuelle(client, sci_id: str, annee: int) -> list[dict]:
         """Return monthly revenus/charges breakdown for a SCI.
@@ -254,6 +209,50 @@ def _pct_change(old: float, new: float) -> float | None:
             }
             for key in sorted(monthly.keys())
         ]
+
+
+def _fetch_loyers(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
+    result = (
+        client.table("loyers")
+        .select("id_bien, montant, statut")
+        .in_("id_bien", bien_ids)
+        .gte("date_loyer", date_start)
+        .lte("date_loyer", date_end)
+        .execute()
+    )
+    return result.data or []
+
+
+def _fetch_charges(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
+    result = (
+        client.table("charges")
+        .select("id_bien, montant")
+        .in_("id_bien", bien_ids)
+        .gte("date_paiement", date_start)
+        .lte("date_paiement", date_end)
+        .execute()
+    )
+    return result.data or []
+
+
+def _fetch_evenements_deductibles(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
+    result = (
+        client.table("evenements_bien")
+        .select("id_bien, montant")
+        .in_("id_bien", bien_ids)
+        .eq("deductible_fiscalement", True)
+        .gte("date_evenement", date_start)
+        .lte("date_evenement", date_end)
+        .execute()
+    )
+    return result.data or []
+
+
+def _pct_change(old: float, new: float) -> float | None:
+    """Calculate percentage change from old to new. Returns None if old is 0."""
+    if old == 0:
+        return None
+    return round((new - old) / abs(old) * 100, 1)
 
 
 def _empty_recap(annee: int) -> dict:

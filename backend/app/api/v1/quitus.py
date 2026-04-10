@@ -5,6 +5,7 @@ from datetime import date
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError, FeatureDisabledError, SCIManagerException, ValidationError
@@ -16,6 +17,15 @@ from app.models.quitus import PublicQuitusRequest, QuitusRequest, QuitusResponse
 from app.services.quitus_service import QuitusService, get_next_quittance_number
 from app.services.storage_service import storage_service
 from app.services.subscription_service import SubscriptionService
+
+
+class BatchGenerateRequest(BaseModel):
+    mois: str  # YYYY-MM format
+
+
+class BatchGenerateResponse(BaseModel):
+    generated: int
+    errors: list[str]
 
 router = APIRouter(prefix="/quitus", tags=["quitus"])
 
@@ -291,6 +301,157 @@ async def download_quitus(request: Request, filename: str, user_id: str = Depend
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
     )
+
+
+@router.post("/batch-generate", response_model=BatchGenerateResponse)
+@limiter.limit("3/hour")
+async def batch_generate_quitus(
+    request: Request,
+    payload: BatchGenerateRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Generate quittances for all paid loyers in a given month that don't have one yet.
+
+    Only processes loyers with statut='paye' that belong to biens the user can access.
+    Rate limited to 3/hour to prevent abuse.
+    """
+    import re as _re
+    import structlog
+
+    logger = structlog.get_logger()
+
+    SubscriptionService.ensure_feature_enabled(user_id, "quitus_enabled")
+
+    # Validate mois format: YYYY-MM
+    if not _re.fullmatch(r"\d{4}-\d{2}", payload.mois):
+        raise ValidationError("Le format du mois doit être YYYY-MM (ex: 2026-03).")
+
+    year_str, month_str = payload.mois.split("-")
+    year, month = int(year_str), int(month_str)
+    if not (1 <= month <= 12):
+        raise ValidationError("Mois invalide — doit être entre 01 et 12.")
+
+    # Date range for the month
+    import calendar
+    last_day = calendar.monthrange(year, month)[1]
+    date_start = f"{payload.mois}-01"
+    date_end = f"{payload.mois}-{last_day:02d}"
+
+    client = get_supabase_user_client(request)
+    write_client = get_supabase_service_client()
+
+    # Fetch all loyers paye for that month accessible to this user
+    # We join via biens → associes to enforce ownership (RLS handles this via user client)
+    try:
+        loyers_resp = (
+            client.table("loyers")
+            .select("id, id_bien, montant, date_loyer, quittance_filename")
+            .eq("statut", "paye")
+            .gte("date_loyer", date_start)
+            .lte("date_loyer", date_end)
+            .execute()
+        )
+    except Exception as exc:
+        raise ExternalServiceError("Database", f"Failed to fetch loyers: {str(exc)}") from exc
+
+    loyers = loyers_resp.data or []
+
+    # Filter to loyers that don't have a quittance yet
+    pending = [l for l in loyers if not l.get("quittance_filename")]
+
+    generated = 0
+    errors: list[str] = []
+
+    for loyer in pending:
+        id_loyer = str(loyer["id"])
+        id_bien = str(loyer["id_bien"])
+
+        try:
+            # Verify ownership and get sci_id
+            sci_id = _verify_bien_ownership(request, user_id, id_bien)
+
+            # Build enrichment data
+            enrichment = _fetch_enrichment_data(request, sci_id, id_bien, id_loyer)
+
+            # Build a minimal QuitusRequest from DB data
+            loyer_data = enrichment.get("loyer_data") or loyer
+            bail_data = enrichment.get("bail_data") or {}
+            locataires = enrichment.get("locataires") or []
+
+            nom_locataire = (
+                ", ".join(
+                    f"{loc.get('prenom', '')} {loc.get('nom', '')}".strip() or loc.get("nom", "")
+                    for loc in locataires
+                )
+                if locataires
+                else "Locataire"
+            )
+
+            loyer_hc = float(bail_data.get("loyer_hc") or 0)
+            charges_provisions = float(bail_data.get("charges_locatives") or 0)
+            montant = float(loyer_data.get("montant") or loyer_hc + charges_provisions or 1)
+
+            # Derive periode from date_loyer
+            date_loyer_str = loyer_data.get("date_loyer") or date_start
+            if isinstance(date_loyer_str, str):
+                loyer_date_obj = date.fromisoformat(date_loyer_str)
+            else:
+                loyer_date_obj = date_loyer_str
+
+            # French month names for periode label
+            _MONTHS_FR = [
+                "", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+                "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+            ]
+            periode = f"{_MONTHS_FR[loyer_date_obj.month]} {loyer_date_obj.year}"
+
+            # Fetch bien data for address
+            bien_resp = client.table("biens").select("adresse, ville, code_postal").eq("id", id_bien).execute()
+            bien_data = (bien_resp.data or [{}])[0]
+
+            quitus_req = QuitusRequest(
+                id_loyer=id_loyer,
+                id_bien=id_bien,
+                nom_locataire=nom_locataire or "Locataire",
+                periode=periode,
+                montant=montant,
+                loyer_hc=loyer_hc,
+                charges_locatives=charges_provisions,
+                adresse_bien=bien_data.get("adresse"),
+                ville_bien=bien_data.get("ville"),
+            )
+
+            pdf_bytes = QuitusService.generate_quitus_pdf(
+                quitus_req,
+                sci_data=enrichment["sci_data"],
+                bail_data=bail_data,
+                locataires=locataires,
+                quittance_numero=enrichment["quittance_numero"],
+            )
+
+            filename = _build_quitus_filename(sci_id)
+            storage_path = f"quitus/{sci_id}/{filename}"
+
+            await storage_service.create_bucket_if_not_exists()
+            await storage_service.upload_file(
+                file_path=storage_path,
+                file_content=pdf_bytes,
+                content_type="application/pdf",
+            )
+
+            # Store filename on the loyer row
+            write_client.table("loyers").update(
+                {"quittance_filename": filename}
+            ).eq("id", id_loyer).execute()
+
+            generated += 1
+
+        except Exception as exc:
+            logger.warning("batch_quitus_error", loyer_id=id_loyer, error=str(exc))
+            errors.append(f"Loyer {id_loyer}: {str(exc)}")
+
+    logger.info("batch_quitus_done", mois=payload.mois, generated=generated, errors=len(errors))
+    return {"generated": generated, "errors": errors}
 
 
 @router.post("/send-email/{filename}", status_code=200)
