@@ -131,8 +131,8 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "charges_locatives": 50,
         "depot_garantie": 800,
         "statut": "en_cours",
-        "etat_lieux_date": _month_ago(8),
-        "etat_lieux_notes": "Bon état général. Traces d'usure normales sur le parquet du salon.",
+        "etat_lieux_entree": _month_ago(8),
+        "etat_lieux_entree_notes": "Bon état général. Traces d'usure normales sur le parquet du salon.",
         "is_demo": True,
     }).execute()
     client.table("bail_locataires").insert({
@@ -253,9 +253,9 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "id": str(uuid.uuid4()),
         "id_sci": sci_id,
         "date_mouvement": "2023-01-15",
-        "type": "cession",
-        "cedant": "Pierre Dupont (fondateur)",
-        "cessionnaire": "Sophie Martin",
+        "type_mouvement": "cession",
+        "cedant_nom": "Pierre Dupont (fondateur)",
+        "cessionnaire_nom": "Sophie Martin",
         "nb_parts": 300,
         "prix_total": 45000,
     }).execute()
