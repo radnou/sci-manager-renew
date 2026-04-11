@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { supabase } from '$lib/supabase';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -28,7 +28,7 @@
 		pro: { name: 'Pilotage', features: 'SCI illimitées, CERFA 2044, fiscalité complète' },
 		lifetime: { name: 'Fondateur', features: 'Tout Pilotage inclus — à vie' },
 	};
-	const selectedPlan = $derived($page.url?.searchParams.get('plan') ?? null);
+	const selectedPlan = $derived(page.url?.searchParams.get('plan') ?? null);
 	const planLabel = $derived(selectedPlan ? planLabels[selectedPlan] ?? null : null);
 
 	const passwordMinLength = 8;

@@ -78,22 +78,26 @@
 
 		passwordLoading = true;
 
-		const { error } = await supabase.auth.updateUser({ password: newPassword });
+		try {
+			const { error } = await supabase.auth.updateUser({ password: newPassword });
 
-		if (error) {
+			if (error) {
+				passwordError = 'Erreur lors de la mise à jour du mot de passe.';
+			} else {
+				passwordSuccess = true;
+				newPassword = '';
+				newPasswordConfirm = '';
+				addToast({
+					title: 'Mot de passe mis à jour',
+					description: 'Votre mot de passe a été modifié avec succès.',
+					variant: 'success'
+				});
+			}
+		} catch {
 			passwordError = 'Erreur lors de la mise à jour du mot de passe.';
-		} else {
-			passwordSuccess = true;
-			newPassword = '';
-			newPasswordConfirm = '';
-			addToast({
-				title: 'Mot de passe mis à jour',
-				description: 'Votre mot de passe a été modifié avec succès.',
-				variant: 'success'
-			});
+		} finally {
+			passwordLoading = false;
 		}
-
-		passwordLoading = false;
 	}
 
 	// --- App preferences (Profil tab) ---

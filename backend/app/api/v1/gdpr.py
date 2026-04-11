@@ -18,7 +18,7 @@ from app.core.audit_log import AuditLogger
 from app.core.exceptions import SCIManagerException
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import get_supabase_service_client, get_supabase_user_client
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/gdpr", tags=["gdpr"])
@@ -396,7 +396,8 @@ async def delete_user_account(
             pass
 
         # 4. Supprimer le compte auth (dernière étape)
-        client.auth.admin.delete_user(user_id)
+        service_client = get_supabase_service_client()
+        service_client.auth.admin.delete_user(user_id)
 
         # Log final (avec user_id avant qu'il soit supprimé)
         await AuditLogger.log_gdpr_event(

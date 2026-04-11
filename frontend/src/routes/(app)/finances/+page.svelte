@@ -148,7 +148,7 @@
 	</header>
 
 	<!-- Period selector + export -->
-	<div class="mt-4 flex items-center justify-between gap-4">
+	<div class="mt-4 flex flex-wrap items-center justify-between gap-4">
 		<div class="flex items-center gap-2">
 			{#each ['6m', '12m', '24m'] as p}
 				<button

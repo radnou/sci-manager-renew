@@ -78,8 +78,8 @@
 					<Table.Body>
 						{#each biens as bien (String(bien.id ?? `${bien.adresse}-${bien.code_postal ?? ''}`))}
 							<Table.Row>
-								<Table.Cell class="px-3 py-3 font-medium text-slate-900">{bien.adresse}</Table.Cell>
-								<Table.Cell class="px-3 py-3 text-slate-700">{bien.ville || '—'}</Table.Cell>
+								<Table.Cell class="px-3 py-3 font-medium text-slate-900 dark:text-slate-100">{bien.adresse}</Table.Cell>
+								<Table.Cell class="px-3 py-3 text-slate-700 dark:text-slate-300">{bien.ville || '—'}</Table.Cell>
 								<Table.Cell class="px-3 py-3">
 									<span
 										class={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${mapBienTypeClass(bien.type_locatif)}`}

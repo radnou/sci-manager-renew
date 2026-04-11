@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from app.core.config import Environment, settings
+from app.core.entitlements import PlanKey, resolve_price_id_for_plan
 from app.core.supabase_client import get_supabase_service_client
 
 router = APIRouter(tags=["health"])
@@ -97,24 +98,27 @@ async def _check_stripe() -> dict:
             "warning": "stripe price validation skipped (placeholder key detected)",
         }
 
+    # Use resolve_price_id_for_plan() — same function the checkout uses
     configured_prices = OrderedDict(
         (
-            ("starter_monthly", settings.stripe_starter_price_id),
-            ("starter_annual", settings.stripe_starter_annual_price_id),
-            ("pro_monthly", settings.stripe_pro_price_id),
-            ("pro_annual", settings.stripe_pro_annual_price_id),
-            ("cabinet_monthly", settings.stripe_cabinet_price_id),
-            ("cabinet_annual", settings.stripe_cabinet_annual_price_id),
+            ("starter_monthly", resolve_price_id_for_plan(PlanKey.STARTER, "month")),
+            ("starter_annual", resolve_price_id_for_plan(PlanKey.STARTER, "year")),
+            ("pro_monthly", resolve_price_id_for_plan(PlanKey.PRO, "month")),
+            ("pro_annual", resolve_price_id_for_plan(PlanKey.PRO, "year")),
+            ("cabinet_monthly", resolve_price_id_for_plan(PlanKey.CABINET, "month")),
+            ("cabinet_annual", resolve_price_id_for_plan(PlanKey.CABINET, "year")),
         )
     )
-
-    missing_price_ids = [name for name, value in configured_prices.items() if not value]
-    if missing_price_ids:
+    # Filter out placeholders
+    configured_prices = OrderedDict(
+        (name, pid) for name, pid in configured_prices.items()
+        if pid and not pid.endswith("_placeholder")
+    )
+    if not configured_prices:
         return {
             "healthy": False,
             "mode": mode,
-            "error": "missing stripe price ids",
-            "missing_price_ids": missing_price_ids,
+            "error": "no valid stripe price ids configured",
         }
 
     invalid_price_ids: list[str] = []

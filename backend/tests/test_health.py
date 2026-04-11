@@ -203,15 +203,21 @@ async def test_stripe_check_detects_invalid_price_id():
     """Stripe readiness fails when one configured price id cannot be retrieved."""
     from unittest.mock import patch
     from app.api.v1.health import _check_stripe
+    from app.core.entitlements import PlanKey
 
-    with patch("app.api.v1.health.settings") as mock_settings:
+    def mock_resolve(plan_key, billing_period="month"):
+        mapping = {
+            (PlanKey.STARTER, "month"): "price_starter_month",
+            (PlanKey.STARTER, "year"): "price_starter_year",
+            (PlanKey.PRO, "month"): "price_pro_month",
+            (PlanKey.PRO, "year"): "price_pro_year",
+            (PlanKey.CABINET, "month"): "price_cabinet_month",
+            (PlanKey.CABINET, "year"): "price_cabinet_year",
+        }
+        return mapping.get((plan_key, billing_period))
+
+    with patch("app.api.v1.health.settings") as mock_settings,          patch("app.api.v1.health.resolve_price_id_for_plan", side_effect=mock_resolve):
         mock_settings.stripe_secret_key = "sk_live_abc123"
-        mock_settings.stripe_starter_price_id = "price_starter_month"
-        mock_settings.stripe_starter_annual_price_id = "price_starter_year"
-        mock_settings.stripe_pro_price_id = "price_pro_month"
-        mock_settings.stripe_pro_annual_price_id = "price_pro_year"
-        mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
-        mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
 
         def retrieve(price_id: str):
             if price_id == "price_starter_month":

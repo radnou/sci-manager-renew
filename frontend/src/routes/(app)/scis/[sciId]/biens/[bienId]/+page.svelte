@@ -60,6 +60,7 @@
 
 	async function loadFicheBien() {
 		loading = true;
+		bien = null; // Clear stale data on navigation
 		error = null;
 		try {
 			bien = await fetchFicheBien(sciId, bienId);

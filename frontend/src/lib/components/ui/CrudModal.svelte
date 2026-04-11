@@ -26,6 +26,34 @@
   }: Props = $props();
 
   const modalId = `modal-${Math.random().toString(36).slice(2, 9)}`;
+  let dialogEl: HTMLDivElement | undefined = $state();
+
+  function trapFocus(e: KeyboardEvent) {
+    if (e.key !== 'Tab' || !dialogEl) return;
+    const focusable = dialogEl.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])'
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  $effect(() => {
+    if (open && dialogEl) {
+      requestAnimationFrame(() => {
+        const firstInput = dialogEl?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
+        if (firstInput) firstInput.focus();
+        else dialogEl?.focus();
+      });
+    }
+  });
 
   function close() {
     if (loading) return;
@@ -35,6 +63,7 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') close();
+    trapFocus(e);
   }
 
   function handleSubmit(e: Event) {
@@ -50,6 +79,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
+    bind:this={dialogEl}
     role="dialog"
     aria-modal="true"
     aria-labelledby="{modalId}-title"

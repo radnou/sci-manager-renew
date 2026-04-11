@@ -86,8 +86,13 @@ async def get_alertes(client, user_id: str) -> list[dict]:
     all_biens = _query_in_sci_ids(client, "biens", "id,id_sci,adresse", sci_ids)
     biens_by_id: dict[str, dict] = {str(b["id"]): b for b in all_biens}
 
-    # --- Loyers en retard ---
-    loyers = _query_in_sci_ids(client, "loyers", "*", sci_ids)
+    # --- Loyers en retard (filtered at DB level for performance) ---
+    _late_q = client.table("loyers").select("id,id_sci,id_bien,statut,date_loyer,montant,paiement_date,date_paiement")
+    if hasattr(_late_q, "in_"):
+        _late_q = _late_q.in_("id_sci", sci_ids)
+    _late_q = _late_q.in_("statut", ["en_retard", "en_attente"])
+    _late_r = _late_q.execute()
+    loyers = _late_r.data or [] if not getattr(_late_r, "error", None) else []
     for loyer in loyers:
         statut = loyer.get("statut", "")
         paiement_date = loyer.get("paiement_date") or loyer.get("date_paiement")

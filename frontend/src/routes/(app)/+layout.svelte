@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setContext } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { fade } from 'svelte/transition';
 	import AppNavbar from '$lib/components/AppNavbar.svelte';
 	import DemoBanner from '$lib/components/DemoBanner.svelte';
@@ -17,7 +17,7 @@
 
 	$effect(() => {
 		// Access page.url to trigger on navigation
-		const _ = $page.url.pathname;
+		const _ = page.url.pathname;
 
 		if (!props.data.subscription?.is_active) {
 			const count = parseInt(localStorage.getItem('demo_page_visits') || '0') + 1;
@@ -39,7 +39,7 @@
 	<DemoBanner />
 {/if}
 
-{#key $page.url.pathname}
+{#key page.url.pathname}
 	<main class="pb-12 app-page-enter">
 		{@render props.children()}
 	</main>

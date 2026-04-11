@@ -14,15 +14,29 @@
 
 	type LoyerAction = (loyer: Loyer) => void;
 
-	export let loyers: Loyer[] = [];
-	export let biens: Pick<Bien, 'id' | 'adresse' | 'ville'>[] = [];
-	export let loading = false;
-	export let title = 'Journal des loyers';
-	export let description = 'Historique chronologique des encaissements et montants.';
-	export let onEdit: LoyerAction | undefined = undefined;
-	export let onDelete: LoyerAction | undefined = undefined;
-	export let busyRowId = '';
-	export let actionDisabled = false;
+	interface Props {
+		loyers?: Loyer[];
+		biens?: Pick<Bien, 'id' | 'adresse' | 'ville'>[];
+		loading?: boolean;
+		title?: string;
+		description?: string;
+		onEdit?: LoyerAction;
+		onDelete?: LoyerAction;
+		busyRowId?: string;
+		actionDisabled?: boolean;
+	}
+
+	let {
+		loyers = [],
+		biens = [],
+		loading = false,
+		title = 'Journal des loyers',
+		description = 'Historique chronologique des encaissements et montants.',
+		onEdit = undefined,
+		onDelete = undefined,
+		busyRowId = '',
+		actionDisabled = false
+	}: Props = $props();
 
 	function resolveBienLabel(idBien: Loyer['id_bien']) {
 		const bien = biens.find((entry) => String(entry.id || '') === String(idBien || ''));
@@ -33,7 +47,7 @@
 		return bien.ville ? `${bien.adresse} • ${bien.ville}` : bien.adresse;
 	}
 
-	$: showActions = Boolean(onEdit || onDelete);
+	let showActions = $derived(Boolean(onEdit || onDelete));
 </script>
 
 <Card class="sci-section-card">

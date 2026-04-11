@@ -808,7 +808,7 @@
 					</p>
 
 					<!-- KPI preview cards -->
-					<div class="mt-6 grid grid-cols-3 gap-3">
+					<div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
 						{#each [
 							{ label: 'Bien actif', value: '1', icon: '🏠' },
 							{ label: 'Bail en cours', value: '1', icon: '📄' },

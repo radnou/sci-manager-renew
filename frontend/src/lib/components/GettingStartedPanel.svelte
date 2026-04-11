@@ -21,20 +21,37 @@
 		type OperatorOnboardingScope
 	} from '$lib/onboarding/operator-steps';
 
-	export let loading = false;
-	export let sciCount = 0;
-	export let associeCount = 0;
-	export let bienCount = 0;
-	export let loyerCount = 0;
-	export let locataireCount = 0;
-	export let chargeCount = 0;
-	export let fiscaliteCount = 0;
-	export let activeSciLabel = '';
-	export let scope: OperatorOnboardingScope = 'all';
-	export let compact = false;
-	export let onDismiss: (() => void) | undefined = undefined;
+	interface Props {
+		loading?: boolean;
+		sciCount?: number;
+		associeCount?: number;
+		bienCount?: number;
+		loyerCount?: number;
+		locataireCount?: number;
+		chargeCount?: number;
+		fiscaliteCount?: number;
+		activeSciLabel?: string;
+		scope?: OperatorOnboardingScope;
+		compact?: boolean;
+		onDismiss?: () => void;
+	}
 
-	$: steps = [
+	let {
+		loading = false,
+		sciCount = 0,
+		associeCount = 0,
+		bienCount = 0,
+		loyerCount = 0,
+		locataireCount = 0,
+		chargeCount = 0,
+		fiscaliteCount = 0,
+		activeSciLabel = '',
+		scope = 'all',
+		compact = false,
+		onDismiss = undefined
+	}: Props = $props();
+
+	let steps = $derived([
 		...buildOperatorOnboardingSteps(
 			{
 				sciCount,
@@ -48,8 +65,8 @@
 			},
 			scope
 		)
-	];
-	$: completedSteps = steps.filter((step) => step.done).length;
+	]);
+	let completedSteps = $derived(steps.filter((step) => step.done).length);
 	const entityGuide = [
 		{
 			title: 'SCI',
@@ -188,7 +205,7 @@
 						{#each entityGuide as entity (entity.title)}
 							<div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
 								<div class="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-									<svelte:component this={entity.icon} class="h-4 w-4 text-cyan-600" />
+									<entity.icon class="h-4 w-4 text-cyan-600" />
 									<p class="text-sm font-semibold">{entity.title}</p>
 								</div>
 								<p class="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
