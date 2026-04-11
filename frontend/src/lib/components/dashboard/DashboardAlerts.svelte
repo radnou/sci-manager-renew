@@ -8,6 +8,11 @@
 
 	let { alertes }: Props = $props();
 
+	const MAX_VISIBLE = 3;
+	let showAll = $state(false);
+	let visibleAlertes = $derived(showAll ? alertes : alertes.slice(0, MAX_VISIBLE));
+	let hiddenCount = $derived(alertes.length - MAX_VISIBLE);
+
 	const severityConfig: Record<string, { icon: typeof CircleAlert; bg: string; border: string; text: string; iconColor: string }> = {
 		error: {
 			icon: CircleAlert,
@@ -112,7 +117,7 @@
 	</div>
 {:else}
 	<div class="space-y-3">
-		{#each alertes as alerte, i (alertKey(alerte, i))}
+		{#each visibleAlertes as alerte, i (alertKey(alerte, i))}
 			{@const config = severityConfig[alerte.severity] ?? fallbackConfig}
 			{@const tooltip = buildAlertTooltip(alerte)}
 			<div
@@ -148,5 +153,21 @@
 				{/if}
 			</div>
 		{/each}
+		{#if !showAll && hiddenCount > 0}
+			<button
+				onclick={() => (showAll = true)}
+				class="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-800"
+			>
+				Voir {hiddenCount} alerte{hiddenCount > 1 ? 's' : ''} de plus
+			</button>
+		{/if}
+		{#if showAll && alertes.length > MAX_VISIBLE}
+			<button
+				onclick={() => (showAll = false)}
+				class="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-800"
+			>
+				Réduire
+			</button>
+		{/if}
 	</div>
 {/if}
