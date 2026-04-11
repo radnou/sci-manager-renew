@@ -101,7 +101,6 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "nb_pieces": 3,
         "etage": "3ème",
         "dpe_classe": "C",
-        "ges_classe": "B",
         "loyer_cc": 850,
         "charges": 50,
         "prix_acquisition": 185000,
