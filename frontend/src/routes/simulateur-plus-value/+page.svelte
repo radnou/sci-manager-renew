@@ -192,7 +192,7 @@
 	<title>Simulateur Plus-Value Immobilière Gratuit — GérerSCI</title>
 	<meta
 		name="description"
-		content="Calculez gratuitement l'impôt sur la plus-value immobilière de votre SCI. Abattements IR et prélèvements sociaux, surtaxe, net vendeur. Simulation en ligne sans inscription."
+		content="Calculez gratuitement l'impôt sur la plus-value immobilière de votre SCI. Abattements IR, prélèvements sociaux, surtaxe et net vendeur."
 	/>
 	<link rel="canonical" href="https://gerersci.fr/simulateur-plus-value" />
 	<meta property="og:url" content="https://gerersci.fr/simulateur-plus-value" />

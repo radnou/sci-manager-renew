@@ -96,7 +96,8 @@
 
 <section class="sci-page-shell">
 	<div class="mx-auto mt-6 w-full max-w-md">
-		<Card class="sci-section-card">
+		<h1 class="sr-only">Inscription à GérerSCI</h1>
+	<Card class="sci-section-card">
 			<CardHeader>
 				{#if selectedPlan && planLabel}
 					<Badge variant="secondary" class="mb-2 w-fit text-xs">Aucune carte bancaire requise</Badge>

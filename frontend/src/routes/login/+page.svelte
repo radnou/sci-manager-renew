@@ -113,7 +113,8 @@
 
 <section class="sci-page-shell">
 	<div class="mx-auto mt-6 w-full max-w-md">
-		<Card class="sci-section-card">
+		<h1 class="sr-only">Connexion à GérerSCI</h1>
+	<Card class="sci-section-card">
 			<CardHeader>
 				<p class="sci-eyebrow">Espace de gestion</p>
 				<CardTitle class="text-2xl">Connexion</CardTitle>

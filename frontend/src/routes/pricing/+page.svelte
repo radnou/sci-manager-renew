@@ -146,9 +146,9 @@
 	<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
 		<div class="mb-12 text-center">
 			<Badge variant="secondary" class="mb-4 px-3 py-1 text-sm font-medium">Tarifs</Badge>
-			<h2 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
+			<h1 class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">
 				Un prix simple, sans surprise
-			</h2>
+			</h1>
 			<p class="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
 				Chaque SCI mérite un co-pilote. Choisissez le vôtre.
 			</p>

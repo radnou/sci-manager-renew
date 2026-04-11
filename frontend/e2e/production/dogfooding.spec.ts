@@ -41,12 +41,19 @@ function filterNoise(errors: string[]): string[] {
 }
 
 async function safeGoto(page: import('@playwright/test').Page, url: string) {
-	await page.goto(url);
-	await page.waitForLoadState('networkidle');
-	await page.evaluate(() => {
+	// Set consent BEFORE navigating to prevent banner from appearing
+	await page.addInitScript(() => {
 		localStorage.setItem('gerersci_cookie_consent', 'all');
 		localStorage.setItem('gerersci_tour_completed', 'true');
 	});
+	await page.goto(url);
+	await page.waitForLoadState('networkidle');
+	// Dismiss cookie banner if it still appeared (race condition)
+	const cookieBtn = page.getByRole('button', { name: /Tout accepter/i });
+	if (await cookieBtn.isVisible({ timeout: 800 }).catch(() => false)) {
+		await cookieBtn.click();
+		await page.waitForTimeout(200);
+	}
 	const tourBtn = page.getByRole('button', { name: /Passer/i });
 	if (await tourBtn.isVisible({ timeout: 800 }).catch(() => false)) {
 		await tourBtn.click();
