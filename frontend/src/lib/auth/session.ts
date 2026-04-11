@@ -72,6 +72,9 @@ function parseFakeSession(): Session | null {
 	}
 }
 
+// Track whether the initial session has been resolved at least once.
+let initialSessionResolved = false;
+
 export async function getCurrentSession(): Promise<Session | null> {
 	// parseFakeSession() returns null immediately in production.
 	const fakeSession = parseFakeSession();
@@ -83,12 +86,14 @@ export async function getCurrentSession(): Promise<Session | null> {
 		data: { session }
 	} = await supabase.auth.getSession();
 
-	// If session is null, Supabase may still be restoring from storage.
+	// If session is null and we haven't resolved the initial session yet,
+	// Supabase may still be restoring from storage.
 	// Wait briefly for INITIAL_SESSION event before giving up.
-	if (!session && browser) {
+	if (!session && browser && !initialSessionResolved) {
 		return new Promise<Session | null>((resolve) => {
 			const timeout = setTimeout(() => {
 				sub.unsubscribe();
+				initialSessionResolved = true;
 				resolve(null);
 			}, 1500);
 
@@ -98,10 +103,15 @@ export async function getCurrentSession(): Promise<Session | null> {
 				if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
 					clearTimeout(timeout);
 					sub.unsubscribe();
+					initialSessionResolved = true;
 					resolve(s);
 				}
 			});
 		});
+	}
+
+	if (session) {
+		initialSessionResolved = true;
 	}
 
 	return session;
