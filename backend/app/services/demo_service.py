@@ -260,18 +260,21 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "prix_total": 45000,
     }).execute()
 
-    # --- Événement Bien ---
-    client.table("evenements_bien").insert({
-        "id": str(uuid.uuid4()),
-        "id_bien": bien_id,
-        "type": "travaux",
-        "titre": "Remplacement chaudière",
-        "description": "Remplacement de la chaudière gaz par une pompe à chaleur air/eau. Travaux réalisés par Daikin Lyon.",
-        "date_evenement": _month_ago(2),
-        "montant": 4800,
-        "prestataire": "Daikin Lyon",
-        "deductible_fiscalement": True,
-    }).execute()
+    # --- Événement Bien (table may not exist on all environments) ---
+    try:
+        client.table("evenements_bien").insert({
+            "id": str(uuid.uuid4()),
+            "id_bien": bien_id,
+            "type": "travaux",
+            "titre": "Remplacement chaudière",
+            "description": "Remplacement de la chaudière gaz par une pompe à chaleur air/eau. Travaux réalisés par Daikin Lyon.",
+            "date_evenement": _month_ago(2),
+            "montant": 4800,
+            "prestataire": "Daikin Lyon",
+            "deductible_fiscalement": True,
+        }).execute()
+    except Exception:
+        logger.warning("demo_seed_skip_evenements_bien", reason="table not found")
 
     # --- Mark demo as seeded in subscriptions ---
     sub_check = (
