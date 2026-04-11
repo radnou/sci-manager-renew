@@ -164,7 +164,7 @@ async def test_stripe_check_live_key():
         mock_settings.stripe_pro_annual_price_id = "price_pro_year"
         mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
         mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
-        with patch("app.api.v1.health.stripe.Price.retrieve", return_value={"active": True}) as retrieve:
+        with patch("app.api.v1.health.stripe.Price.retrieve_async", return_value={"active": True}) as retrieve:
             result = await _check_stripe()
     assert retrieve.call_count == 6
     assert result["healthy"] is True
@@ -219,12 +219,12 @@ async def test_stripe_check_detects_invalid_price_id():
     with patch("app.api.v1.health.settings") as mock_settings,          patch("app.api.v1.health.resolve_price_id_for_plan", side_effect=mock_resolve):
         mock_settings.stripe_secret_key = "sk_live_abc123"
 
-        def retrieve(price_id: str):
+        async def retrieve(price_id: str):
             if price_id == "price_starter_month":
                 raise Exception("No such price")
             return {"active": True}
 
-        with patch("app.api.v1.health.stripe.Price.retrieve", side_effect=retrieve):
+        with patch("app.api.v1.health.stripe.Price.retrieve_async", side_effect=retrieve):
             result = await _check_stripe()
 
     assert result["healthy"] is False

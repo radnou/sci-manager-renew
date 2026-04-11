@@ -126,7 +126,7 @@ async def _check_stripe() -> dict:
 
     for name, price_id in configured_prices.items():
         try:
-            price = stripe.Price.retrieve(price_id)
+            price = await stripe.Price.retrieve_async(price_id)
         except Exception as exc:  # pragma: no cover - network dependent
             logger.warning("stripe_price_validation_failed", price_id=price_id, price_name=name, exc_info=True)
             invalid_price_ids.append(name)
