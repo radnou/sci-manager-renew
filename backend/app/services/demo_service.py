@@ -100,7 +100,6 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "surface_m2": 65,
         "nb_pieces": 3,
         "etage": "3ème",
-        "annee_construction": 1985,
         "dpe_classe": "C",
         "ges_classe": "B",
         "loyer_cc": 850,

@@ -40,32 +40,113 @@ function filterNoise(errors: string[]): string[] {
 	return errors.filter((e) => !NOISE_PATTERNS.some((p) => e.includes(p)));
 }
 
-async function safeGoto(page: import('@playwright/test').Page, url: string) {
-	// Set consent BEFORE navigating to prevent banner from appearing
-	await page.addInitScript(() => {
+
+/** Login via the actual UI form (password mode). More reliable than token injection. */
+async function loginViaUI(page: import('@playwright/test').Page) {
+	await page.goto('/login', { waitUntil: 'networkidle' });
+
+	// Dismiss cookie banner
+	const cookie = page.getByRole('button', { name: /Tout accepter/i });
+	if (await cookie.isVisible({ timeout: 1500 }).catch(() => false)) {
+		await cookie.click();
+		await page.waitForTimeout(300);
+	}
+
+	// Switch to password mode
+	const pwModeBtn = page.getByRole('button', { name: /Connexion par mot de passe/i });
+	if (await pwModeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+		await pwModeBtn.click();
+		await page.waitForTimeout(500);
+	}
+
+	// Fill credentials
+	await page.locator('input[type=email]').fill(process.env.E2E_EMAIL || '');
+	await page.locator('input[type=password]').fill(process.env.E2E_PASSWORD || '');
+	await page.waitForTimeout(300);
+
+	// Submit
+	await page.getByRole('button', { name: /Se connecter|Connexion/i }).first().click();
+
+	// Wait for redirect to dashboard/welcome
+	await page.waitForURL(/dashboard|welcome|pricing/, { timeout: 15000 });
+
+	// Dismiss overlays
+	await page.evaluate(() => {
 		localStorage.setItem('gerersci_cookie_consent', 'all');
 		localStorage.setItem('gerersci_tour_completed', 'true');
 	});
-	await page.goto(url);
-	await page.waitForLoadState('networkidle');
-	// Dismiss cookie banner if it still appeared (race condition)
+	const tourBtn = page.getByRole('button', { name: /Passer/i });
+	if (await tourBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+		await tourBtn.click();
+		await page.waitForTimeout(300);
+	}
+}
+
+async function safeGoto(page: import('@playwright/test').Page, url: string) {
+	// For auth-required pages, ensure we're logged in first
+	const isAuthPage = ['/dashboard', '/scis', '/finances', '/bilans', '/echeances', '/settings', '/exploitation'].some(p => url.startsWith(p));
+
+	if (isAuthPage && process.env.E2E_EMAIL && process.env.E2E_PASSWORD) {
+		// Check if already logged in (navbar shows user menu, not "Connexion")
+		const isLoggedIn = await page.evaluate(() => {
+			return Object.keys(localStorage).some(k =>
+				k.startsWith('sb-') && k.endsWith('-auth-token') &&
+				(localStorage.getItem(k) || '').includes('access_token')
+			);
+		}).catch(() => false);
+
+		if (!isLoggedIn) {
+			await loginViaUI(page);
+		}
+
+		// Use SPA-style navigation to preserve session
+		await page.evaluate((targetUrl) => {
+			window.history.pushState({}, '', targetUrl);
+			window.dispatchEvent(new PopStateEvent('popstate'));
+		}, url);
+		// SvelteKit also listens for link clicks — force a proper navigation
+		await page.goto(url, { waitUntil: 'networkidle' });
+		await page.waitForTimeout(2000);
+
+		// If we got redirected to login, the full page load killed the session.
+		// Re-login and navigate one more time.
+		if (page.url().includes('/login') || page.url().includes('/pricing')) {
+			await loginViaUI(page);
+			// After login we're on /dashboard. If target is different, navigate.
+			if (!page.url().includes(url.split('?')[0])) {
+				// Click a link instead of goto to keep SPA session
+				const link = page.locator(`a[href*="${url.split('?')[0]}"]`).first();
+				if (await link.isVisible({ timeout: 2000 }).catch(() => false)) {
+					await link.click();
+					await page.waitForLoadState('networkidle');
+				} else {
+					await page.goto(url, { waitUntil: 'networkidle' });
+				}
+				await page.waitForTimeout(1500);
+			}
+		}
+	} else {
+		// Public page — simple goto
+		await page.goto(url, { waitUntil: 'networkidle' });
+		await page.waitForTimeout(500);
+	}
+
+	// Dismiss overlays
+	await page.evaluate(() => {
+		localStorage.setItem('gerersci_cookie_consent', 'all');
+		localStorage.setItem('gerersci_tour_completed', 'true');
+	});
 	const cookieBtn = page.getByRole('button', { name: /Tout accepter/i });
-	if (await cookieBtn.isVisible({ timeout: 800 }).catch(() => false)) {
+	if (await cookieBtn.isVisible({ timeout: 500 }).catch(() => false)) {
 		await cookieBtn.click();
 		await page.waitForTimeout(200);
 	}
 	const tourBtn = page.getByRole('button', { name: /Passer/i });
-	if (await tourBtn.isVisible({ timeout: 800 }).catch(() => false)) {
+	if (await tourBtn.isVisible({ timeout: 500 }).catch(() => false)) {
 		await tourBtn.click();
-		await page.waitForTimeout(300);
+		await page.waitForTimeout(200);
 	}
-	// Handle pricing redirect (session race)
-	for (let attempt = 0; attempt < 3; attempt++) {
-		if (!page.url().includes('/pricing')) break;
-		await page.waitForTimeout(1500);
-		await page.goto(url, { waitUntil: 'networkidle' });
-	}
-	await page.waitForTimeout(1000);
+	await page.waitForTimeout(500);
 }
 
 // ─── DF-01: Dashboard KPIs Cohérents ─────────────────────────
@@ -78,12 +159,6 @@ test.describe('DF-01 — Dashboard KPIs', () => {
 	test('KPIs affichent des valeurs numériques cohérentes', async ({ authedPage: page }) => {
 		const errors = consoleErrors(page);
 		await safeGoto(page, '/dashboard');
-
-		// If redirected to login/pricing, skip (session not recognized)
-		if (page.url().includes('/login') || page.url().includes('/pricing')) {
-			console.log('Session not recognized on dashboard — skipping KPI test');
-			return;
-		}
 
 		// Verify KPI cards are present and contain numbers (not NaN, not "undefined")
 		const body = await page.locator('body').textContent();
@@ -262,12 +337,6 @@ test.describe('DF-06 — Bilan Mensuel', () => {
 	test('page bilan affiche des données numériques', async ({ authedPage: page }) => {
 		const errors = consoleErrors(page);
 		await safeGoto(page, '/bilans');
-
-		// If redirected to login/pricing, skip (session not recognized)
-		if (page.url().includes('/login') || page.url().includes('/pricing')) {
-			console.log('Session not recognized on bilans — skipping');
-			return;
-		}
 
 		const body = await page.locator('body').textContent();
 		expect(body).not.toContain('NaN');
