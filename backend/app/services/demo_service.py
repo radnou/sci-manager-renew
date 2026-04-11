@@ -99,7 +99,7 @@ async def seed_demo_data(client, user_id: str) -> dict:
         "type_locatif": "nu",
         "surface_m2": 65,
         "nb_pieces": 3,
-        "etage": "3ème",
+        "etage": 3,
         "dpe_classe": "C",
         "loyer_cc": 850,
         "charges": 50,
