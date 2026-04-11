@@ -55,7 +55,7 @@ def _format_date_fr(iso_date: str) -> str:
 async def get_alertes(client, user_id: str) -> list[dict]:
     """
     Return a list of alert objects for the user:
-    - Loyers en retard (statut='en_retard' or no paiement_date and date > 5 days ago)
+    - Loyers en retard (statut='en_retard' or no date_paiement and date > 5 days ago)
     - Baux expiring within 90 days
     Enriched with sci_nom, bien_adresse and link for frontend display.
     """
@@ -87,7 +87,7 @@ async def get_alertes(client, user_id: str) -> list[dict]:
     biens_by_id: dict[str, dict] = {str(b["id"]): b for b in all_biens}
 
     # --- Loyers en retard (filtered at DB level for performance) ---
-    _late_q = client.table("loyers").select("id,id_sci,id_bien,statut,date_loyer,montant,paiement_date,date_paiement")
+    _late_q = client.table("loyers").select("id,id_sci,id_bien,statut,date_loyer,montant,date_paiement")
     if hasattr(_late_q, "in_"):
         _late_q = _late_q.in_("id_sci", sci_ids)
     _late_q = _late_q.in_("statut", ["en_retard", "en_attente"])
@@ -95,7 +95,7 @@ async def get_alertes(client, user_id: str) -> list[dict]:
     loyers = _late_r.data or [] if not getattr(_late_r, "error", None) else []
     for loyer in loyers:
         statut = loyer.get("statut", "")
-        paiement_date = loyer.get("paiement_date") or loyer.get("date_paiement")
+        paiement_date = loyer.get("date_paiement")
         date_loyer = loyer.get("date_loyer", "")
 
         is_late = statut == "en_retard"
