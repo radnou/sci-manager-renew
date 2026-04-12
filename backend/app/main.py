@@ -450,6 +450,79 @@ app.add_middleware(
 )
 
 
+# ============================================================
+# WRITE-PROTECTION MIDDLEWARE (P0 security fix)
+# Blocks mutating requests from users without an active subscription.
+# ============================================================
+
+# Paths exempt from write-protection (prefix match with trailing slash to
+# prevent /api/v1/stripe matching a hypothetical /api/v1/stripe_admin).
+_WRITE_EXEMPT_PREFIXES: tuple[str, ...] = (
+    "/api/v1/auth/",
+    "/api/v1/stripe/",
+    "/api/v1/demo/",
+    "/api/v1/health/",
+    "/api/v1/leads/",
+    "/api/v1/onboarding/",
+    "/api/v1/gdpr/",
+    "/api/v1/admin/",
+    "/api/v1/notifications/",           # marking as read = UI state, not business data
+    "/api/v1/user/notification-preferences",  # demo UX: let users set prefs
+    "/api/v1/quitus/public-generate",   # public lead magnet, no auth
+    "/health",
+)
+
+_MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+@app.middleware("http")
+async def write_protection_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    """Block demo/inactive users from mutating data via direct API calls."""
+    if request.method not in _MUTATING_METHODS:
+        return await call_next(request)
+
+    path = request.url.path
+    if any(path.startswith(prefix) for prefix in _WRITE_EXEMPT_PREFIXES):
+        return await call_next(request)
+
+    # Extract user_id from Bearer token (lightweight HS256 decode only)
+    auth_header = request.headers.get("authorization", "")
+    if not auth_header.startswith("Bearer "):
+        # No auth header -- let the endpoint's own auth dependency handle 401
+        return await call_next(request)
+
+    token = auth_header[7:]
+    try:
+        import jwt as pyjwt
+        payload = pyjwt.decode(
+            token,
+            settings.supabase_jwt_secret,
+            algorithms=["HS256"],
+            options={"verify_aud": False, "verify_exp": True},
+        )
+        user_id = payload.get("sub")
+    except Exception:
+        # Bad token -- let endpoint auth handle it
+        return await call_next(request)
+
+    if user_id:
+        from app.core.paywall import check_write_access
+        if not check_write_access(user_id):
+            return JSONResponse(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                content={
+                    "code": "subscription_required",
+                    "error": "Un abonnement actif est requis pour cette action.",
+                    "redirect": "/pricing",
+                },
+            )
+
+    return await call_next(request)
+
+
 @app.middleware("http")
 async def maintenance_middleware(
     request: Request,

@@ -20,7 +20,7 @@ from fastapi import Depends, HTTPException, status
 
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
-from app.services.subscription_service import SubscriptionService
+from app.services.subscription_service import ACTIVE_SUBSCRIPTION_STATUSES, SubscriptionService
 
 
 @dataclass
@@ -37,6 +37,18 @@ class AssocieMembership:
     sci_id: str
     role: str  # 'gerant' | 'associe'
     associe_id: str
+
+
+def check_write_access(user_id: str) -> bool:
+    """Return True if user has an active subscription allowing write operations.
+
+    Uses a single DB query (subscriptions row) instead of get_subscription_summary
+    which fires 3-5 queries including usage counts we don't need here.
+    """
+    row = SubscriptionService._load_subscription_row(user_id)
+    if not row:
+        return False
+    return str(row.get("status") or "").lower() in ACTIVE_SUBSCRIPTION_STATUSES
 
 
 async def require_active_subscription(

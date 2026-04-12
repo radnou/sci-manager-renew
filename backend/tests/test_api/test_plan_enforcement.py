@@ -44,7 +44,7 @@ def enforce_mode(monkeypatch):
 
 
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """No active subscription: max_biens=0, user already has 1 bien -> 402 PlanLimitError."""
+    """Active subscription with max_biens=1, user already has 1 bien -> 402 PlanLimitError."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
     fake_supabase.store["biens"] = [
         {
@@ -59,17 +59,17 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "tmi": 0,
         }
     ]
-    # No active subscription -> restricted access (max_biens=0).
+    # Active subscription with tight quota -> quota enforcement triggers.
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
-            "plan_key": "free",
-            "status": "trialing",
-            "is_active": False,
-            "stripe_price_id": "trial",
-            "current_period_end": "2020-01-01T00:00:00+00:00",
-            "max_scis": 0,
-            "max_biens": 0,
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "stripe_price_id": "price_starter",
+            "current_period_end": "2030-01-01T00:00:00+00:00",
+            "max_scis": 1,
+            "max_biens": 1,
             "features": {},
         }
     ]
@@ -80,7 +80,7 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
     body = response.json()
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
-    assert body["details"]["plan_key"] == "free"
+    assert body["details"]["plan_key"] == "starter"
 
 
 def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase):
@@ -98,17 +98,17 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
             "tmi": 0,
         }
     ]
-    # No active subscription -> restricted access (max_biens=0).
+    # Active subscription with tight quota -> quota enforcement triggers.
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
-            "plan_key": "free",
-            "status": "trialing",
-            "is_active": False,
-            "stripe_price_id": "trial",
-            "current_period_end": "2020-01-01T00:00:00+00:00",
-            "max_scis": 0,
-            "max_biens": 0,
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "stripe_price_id": "price_starter",
+            "current_period_end": "2030-01-01T00:00:00+00:00",
+            "max_scis": 1,
+            "max_biens": 1,
             "features": {},
         }
     ]
@@ -121,9 +121,9 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
-    assert body["details"]["limit"] == 0
+    assert body["details"]["limit"] == 1
     assert body["details"]["current"] == 1
-    assert body["details"]["plan_key"] == "free"
+    assert body["details"]["plan_key"] == "starter"
     assert "request_id" in body
 
 
@@ -186,7 +186,7 @@ def test_create_bien_within_quota_allowed(client, auth_headers, fake_supabase):
 
 
 def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """No active subscription: max_scis=0, user already has 1 SCI -> 402 PlanLimitError."""
+    """Active subscription with max_scis=1, user already has 1 SCI -> 402 PlanLimitError."""
     # Override associes so user-123 has exactly 1 SCI membership.
     fake_supabase.store["associes"] = [
         {
@@ -199,17 +199,17 @@ def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
             "role": "gerant",
         },
     ]
-    # No active subscription -> restricted access (max_scis=0).
+    # Active subscription with tight quota -> quota enforcement triggers.
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
-            "plan_key": "free",
-            "status": "trialing",
-            "is_active": False,
-            "stripe_price_id": "trial",
-            "current_period_end": "2020-01-01T00:00:00+00:00",
-            "max_scis": 0,
-            "max_biens": 0,
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "stripe_price_id": "price_starter",
+            "current_period_end": "2030-01-01T00:00:00+00:00",
+            "max_scis": 1,
+            "max_biens": 5,
             "features": {},
         }
     ]
@@ -220,7 +220,7 @@ def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
     body = response.json()
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "scis"
-    assert body["details"]["plan_key"] == "free"
+    assert body["details"]["plan_key"] == "starter"
 
 
 def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase):
@@ -236,17 +236,17 @@ def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase)
             "role": "gerant",
         },
     ]
-    # No active subscription -> restricted access (max_scis=0).
+    # Active subscription with tight quota -> quota enforcement triggers.
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
-            "plan_key": "free",
-            "status": "trialing",
-            "is_active": False,
-            "stripe_price_id": "trial",
-            "current_period_end": "2020-01-01T00:00:00+00:00",
-            "max_scis": 0,
-            "max_biens": 0,
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "stripe_price_id": "price_starter",
+            "current_period_end": "2030-01-01T00:00:00+00:00",
+            "max_scis": 1,
+            "max_biens": 5,
             "features": {},
         }
     ]
@@ -259,9 +259,9 @@ def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase)
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "scis"
-    assert body["details"]["limit"] == 0
+    assert body["details"]["limit"] == 1
     assert body["details"]["current"] == 1
-    assert body["details"]["plan_key"] == "free"
+    assert body["details"]["plan_key"] == "starter"
     assert "request_id" in body
 
 

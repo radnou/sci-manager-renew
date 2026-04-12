@@ -55,7 +55,7 @@ def test_generate_cerfa_2044_disabled(client, auth_headers, monkeypatch, fake_su
 
 
 def test_cerfa_2044_blocked_for_free_plan(client, auth_headers, free_plan):
-    """Free users cannot access CERFA 2044 (cerfa_enabled=False for FREE plan)."""
+    """Free users blocked by write-protection middleware (no active subscription)."""
     payload = {
         "annee": 2025,
         "total_revenus": 24000.0,
@@ -65,11 +65,11 @@ def test_cerfa_2044_blocked_for_free_plan(client, auth_headers, free_plan):
     response = client.post("/api/v1/cerfa/2044", json=payload, headers=auth_headers)
     assert response.status_code == 402
     data = response.json()
-    assert data["code"] == "upgrade_required"
+    assert data["code"] == "subscription_required"
 
 
 def test_cerfa_2044_pdf_blocked_for_free_plan(client, auth_headers, free_plan):
-    """Free users cannot access CERFA 2044 PDF (cerfa_enabled=False for FREE plan)."""
+    """Free users blocked by write-protection middleware (no active subscription)."""
     payload = {
         "annee": 2025,
         "total_revenus": 24000.0,
@@ -79,7 +79,7 @@ def test_cerfa_2044_pdf_blocked_for_free_plan(client, auth_headers, free_plan):
     response = client.post("/api/v1/cerfa/2044/pdf", json=payload, headers=auth_headers)
     assert response.status_code == 402
     data = response.json()
-    assert data["code"] == "upgrade_required"
+    assert data["code"] == "subscription_required"
 
 
 def test_cerfa_2044_requires_auth(client):

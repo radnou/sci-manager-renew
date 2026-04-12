@@ -87,7 +87,7 @@ def test_create_charge_requires_feature_upgrade(client, auth_headers, free_plan)
         headers=auth_headers,
     )
     assert response.status_code == 402
-    assert response.json()["code"] == "upgrade_required"
+    assert response.json()["code"] == "subscription_required"
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +280,7 @@ def test_update_charge_requires_feature_upgrade(client, auth_headers, free_plan)
         headers=auth_headers,
     )
     assert resp.status_code == 402
-    assert resp.json()["code"] == "upgrade_required"
+    assert resp.json()["code"] == "subscription_required"
 
 
 # ---------------------------------------------------------------------------
@@ -313,7 +313,7 @@ def test_delete_charge_requires_feature_upgrade(client, auth_headers, free_plan)
     """Covers L198: delete_charge feature gate on free plan."""
     resp = client.delete("/api/v1/charges/ch-any", headers=auth_headers)
     assert resp.status_code == 402
-    assert resp.json()["code"] == "upgrade_required"
+    assert resp.json()["code"] == "subscription_required"
 
 
 # ---------------------------------------------------------------------------
