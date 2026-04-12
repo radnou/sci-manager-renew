@@ -24,7 +24,11 @@ export const load: LayoutLoad = async ({ url }) => {
 		}
 
 		// Only redirect to onboarding if user has an active subscription (not demo)
-		if (subscription.is_active && !subscription.onboarding_completed && !url.pathname.startsWith('/onboarding')) {
+		if (
+			subscription.is_active &&
+			!subscription.onboarding_completed &&
+			!url.pathname.startsWith('/onboarding')
+		) {
 			throw redirect(302, '/onboarding');
 		}
 

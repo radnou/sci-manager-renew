@@ -38,7 +38,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="absolute top-full right-0 z-40 mt-1 rounded-xl border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+    class="absolute bottom-full right-0 z-40 mb-1 rounded-xl border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-900"
     transition:fade={{ duration: 100 }}
     onkeydown={handleKeydown}
   >
