@@ -185,6 +185,26 @@ async def get_calendrier_fiscal(
     return CalendrierFiscalResponse(annee=annee, echeances=echeances)
 
 
+@router.get("/{annee}/statut")
+async def get_calendrier_fiscal_statut(
+    request: Request,
+    sci_id: UUID,
+    annee: int,
+    membership: AssocieMembership = Depends(require_sci_membership),
+):
+    """Return {echeance_key: bool} map for checkbox UI."""
+    client = _get_client(request)
+    completions_result = (
+        client.table("calendrier_fiscal")
+        .select("echeance_key")
+        .eq("id_sci", str(sci_id))
+        .eq("annee", annee)
+        .execute()
+    )
+    done_keys = {row["echeance_key"] for row in (completions_result.data or [])}
+    return {d["key"]: d["key"] in done_keys for d in _ECHEANCES_DEFINITION}
+
+
 @router.post("/{annee}/{key}/marquer-fait", response_model=MarquerFaitResponse)
 @limiter.limit("30/minute")
 async def marquer_echeance_faite(
@@ -237,3 +257,26 @@ async def marquer_echeance_faite(
         statut="fait",
         date_realisation=payload.date_realisation,
     )
+
+
+@router.post("/{annee}/{key}/demarquer")
+@limiter.limit("30/minute")
+async def demarquer_echeance(
+    request: Request,
+    sci_id: UUID,
+    annee: int,
+    key: str,
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Unmark a fiscal deadline (set back to a_faire)."""
+    valid_keys = {d["key"] for d in _ECHEANCES_DEFINITION}
+    if key not in valid_keys:
+        raise ResourceNotFoundError("echeance_key", key)
+
+    write_client = get_supabase_service_client()
+    write_client.table("calendrier_fiscal").delete().eq(
+        "id_sci", str(sci_id)
+    ).eq("annee", annee).eq("echeance_key", key).execute()
+
+    logger.info("echeance_demarquee", key=key, annee=annee, sci_id=str(sci_id))
+    return {"success": True}

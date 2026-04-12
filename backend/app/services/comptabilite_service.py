@@ -236,16 +236,19 @@ def _fetch_charges(client, bien_ids: list[str], date_start: str, date_end: str) 
 
 
 def _fetch_evenements_deductibles(client, bien_ids: list[str], date_start: str, date_end: str) -> list[dict]:
-    result = (
-        client.table("evenements_bien")
-        .select("id_bien, montant")
-        .in_("id_bien", bien_ids)
-        .eq("deductible_fiscalement", True)
-        .gte("date_evenement", date_start)
-        .lte("date_evenement", date_end)
-        .execute()
-    )
-    return result.data or []
+    try:
+        result = (
+            client.table("evenements_bien")
+            .select("id_bien, montant")
+            .in_("id_bien", bien_ids)
+            .eq("deductible_fiscalement", True)
+            .gte("date_evenement", date_start)
+            .lte("date_evenement", date_end)
+            .execute()
+        )
+        return result.data or []
+    except Exception:
+        return []
 
 
 def _pct_change(old: float, new: float) -> float | None:
