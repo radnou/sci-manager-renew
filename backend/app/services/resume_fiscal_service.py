@@ -359,12 +359,12 @@ class ResumeFiscalService:
             if manual_interets == 0.0:
                 credit_rows = self._execute_select(
                     client.table("credits_immobiliers")
-                    .select("montant, taux_nominal, taux_assurance, duree_mois, date_debut, mensualite")
+                    .select("montant_emprunte, taux_nominal, taux_assurance, duree_mois, date_debut, mensualite")
                     .eq("id_bien", bien_id)
                 )
                 auto_interets = 0.0
                 for credit in credit_rows:
-                    montant = self._safe_float(credit.get("montant"))
+                    montant = self._safe_float(credit.get("montant_emprunte"))
                     taux_nominal = self._safe_float(credit.get("taux_nominal"))
                     duree_mois = int(credit.get("duree_mois") or 0)
                     date_debut_str = credit.get("date_debut") or ""
