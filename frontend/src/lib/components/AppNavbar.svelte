@@ -228,6 +228,7 @@
 		<!-- Main nav links (hidden on mobile) -->
 		<a
 			href="/dashboard"
+			data-tour="nav-dashboard"
 			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:flex {isActive('/dashboard')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
@@ -237,7 +238,7 @@
 		</a>
 
 		<!-- SCI Switcher (hidden on mobile) -->
-		<div class="relative hidden md:block" bind:this={sciSwitcherContainer}>
+		<div class="relative hidden md:block" bind:this={sciSwitcherContainer} data-tour="nav-scis">
 			<button
 				type="button"
 				onclick={() => (sciSwitcherOpen = !sciSwitcherOpen)}
@@ -291,6 +292,7 @@
 
 		<a
 			href="/finances"
+			data-tour="nav-finances"
 			class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:flex {isActive('/finances')
 				? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
 				: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
@@ -300,7 +302,7 @@
 		</a>
 
 		<!-- Pilotage dropdown -->
-		<div class="relative hidden md:block" id="pilotage-dropdown">
+		<div class="relative hidden md:block" id="pilotage-dropdown" data-tour="nav-pilotage">
 			<button
 				type="button"
 				class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 {pilotageOpen || isActive('/exploitation') || isActive('/echeances') || isActive('/bilans')

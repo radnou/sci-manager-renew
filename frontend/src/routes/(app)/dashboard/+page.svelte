@@ -18,6 +18,7 @@
 	import DashboardActivity from '$lib/components/dashboard/DashboardActivity.svelte';
 	import AnneeSelector from '$lib/components/AnneeSelector.svelte';
 	import OnboardingTour from '$lib/components/OnboardingTour.svelte';
+	import ProductTour from '$lib/components/ProductTour.svelte';
 	import Celebration from '$lib/components/Celebration.svelte';
 
 	const upgraded = $derived(page.url.searchParams.get('upgraded') === 'true');
@@ -202,12 +203,12 @@
 	{:else}
 		<div class="sci-stagger">
 			<!-- Alertes -->
-			<div class="mt-6">
+			<div class="mt-6" data-tour="alerts">
 				<DashboardAlerts {alertes} />
 			</div>
 
 			<!-- KPIs with N-1 variation -->
-			<div class="mt-6">
+			<div class="mt-6" data-tour="dashboard-kpis">
 				<DashboardKpisComponent {kpis} />
 				{#if kpiVariations.length > 0}
 					<div class="mt-2 flex flex-wrap gap-3">
@@ -239,6 +240,7 @@
 </section>
 
 <OnboardingTour />
+<ProductTour />
 
 {#if showCelebration}
 	<Celebration

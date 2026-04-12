@@ -10,9 +10,10 @@ DEDUP_WINDOW_DAYS = 7
 
 
 def _find_duplicate(supabase_client, user_id: str, notification_type: str, dedup_key: str | None) -> bool:
-    """Check if an unread notification with the same dedup_key exists within the last 7 days.
+    """Check if a notification with the same dedup_key exists within the last 7 days.
 
     Returns True if a duplicate is found (meaning we should skip creation).
+    Checks ALL notifications (read or unread) to prevent re-creation after dismissal.
     """
     if not dedup_key:
         return False
@@ -24,7 +25,6 @@ def _find_duplicate(supabase_client, user_id: str, notification_type: str, dedup
         .select("id, metadata")
         .eq("user_id", user_id)
         .eq("type", notification_type)
-        .is_("read_at", "null")
         .gte("created_at", cutoff)
         .execute()
     )
