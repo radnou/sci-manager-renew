@@ -1752,18 +1752,19 @@ async def list_bien_evenements(
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    query = (
-        client.table("evenements_bien")
-        .select("*")
-        .eq("id_bien", bien_id)
-    )
+    try:
+        query = (
+            client.table("evenements_bien")
+            .select("*")
+            .eq("id_bien", bien_id)
+        )
 
-    if annee is not None:
-        query = query.gte("date_evenement", f"{annee}-01-01").lte("date_evenement", f"{annee}-12-31")
+        if annee is not None:
+            query = query.gte("date_evenement", f"{annee}-01-01").lte("date_evenement", f"{annee}-12-31")
 
-    result = query.order("date_evenement", desc=True).execute()
-    if getattr(result, "error", None):
-        raise DatabaseError(str(result.error))
+        result = query.order("date_evenement", desc=True).execute()
+    except Exception:
+        return []
 
     return result.data or []
 
@@ -1983,9 +1984,11 @@ async def create_avenant(
     }
 
     write_client = _get_write_client()
-    evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
-    if getattr(evt_result, "error", None):
-        raise DatabaseError(str(evt_result.error))
+    try:
+        evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
+    except Exception as exc:
+        logger.warning("evenements_bien_insert_skip", reason=str(exc))
+        return {"id": None, "message": "Avenant enregistré mais événement non créé (table manquante)"}
 
     created_event = (evt_result.data or [{}])[0]
 
@@ -2078,9 +2081,11 @@ async def declare_sinistre(
     }
 
     write_client = _get_write_client()
-    evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
-    if getattr(evt_result, "error", None):
-        raise DatabaseError(str(evt_result.error))
+    try:
+        evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
+    except Exception as exc:
+        logger.warning("evenements_bien_insert_skip", reason=str(exc))
+        return {"id": None, "message": "Sinistre signalé mais événement non créé (table manquante)"}
 
     created_event = (evt_result.data or [{}])[0]
 

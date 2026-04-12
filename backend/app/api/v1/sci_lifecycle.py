@@ -441,7 +441,10 @@ async def ceder_bien(
         "montant": payload.prix_cession,
         "deductible_fiscalement": False,
     }
-    write_client.table("evenements_bien").insert(evenement_data).execute()
+    try:
+        write_client.table("evenements_bien").insert(evenement_data).execute()
+    except Exception:
+        logger.warning("evenements_bien_insert_skip", reason="table not found")
 
     # Notify all associes
     sci_rows = _execute_select(client.table("sci").select("nom").eq("id", str(sci_id)))

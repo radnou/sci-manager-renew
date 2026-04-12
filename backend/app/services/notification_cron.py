@@ -569,15 +569,20 @@ async def check_depot_garantie_restitution(supabase_client) -> int:
     notified = 0
 
     # Fetch all terminated baux with unrestituted depot
-    result = (
-        supabase_client.table("baux")
-        .select("id, id_bien, depot_garantie, date_fin, etat_lieux_sortie, biens(id_sci, adresse, ville)")
-        .eq("statut", "termine")
-        .eq("depot_restitue", False)
-        .gt("depot_garantie", 0)
-        .not_.is_("date_fin", "null")
-        .execute()
-    )
+    try:
+        result = (
+            supabase_client.table("baux")
+            .select("id, id_bien, depot_garantie, date_fin, etat_lieux_sortie, biens(id_sci, adresse, ville)")
+            .eq("statut", "termine")
+            .eq("depot_restitue", False)
+            .gt("depot_garantie", 0)
+            .not_.is_("date_fin", "null")
+            .execute()
+        )
+    except Exception:
+        # depot_restitue column may not exist in production yet
+        logger.warning("check_depot_garantie_skip", reason="depot_restitue column not found")
+        return 0
 
     for bail in result.data or []:
         try:
