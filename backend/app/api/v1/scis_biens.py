@@ -696,9 +696,11 @@ async def create_bien_bail(
         .eq("statut", "en_cours")
         .execute()
     )
+    write_client = _get_write_client()
+
     if not getattr(existing, "error", None) and existing.data:
         for old_bail in existing.data:
-            client.table("baux").update({"statut": "expire"}).eq("id", old_bail["id"]).execute()
+            write_client.table("baux").update({"statut": "expire"}).eq("id", old_bail["id"]).execute()
             logger.info("bail_expired", bail_id=old_bail["id"])
 
     # 2. Insert new bail
@@ -706,8 +708,6 @@ async def create_bien_bail(
     row = payload.model_dump(mode="json", exclude={"locataire_ids"})
     row["id_bien"] = bien_id
     row["statut"] = "en_cours"
-
-    write_client = _get_write_client()
     result = write_client.table("baux").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -1956,10 +1956,12 @@ async def create_avenant(
     elif payload.type_avenant == "modification_charges" and payload.nouvelles_charges is not None:
         bail_update["charges_locatives"] = payload.nouvelles_charges
 
-    # Update the bail if there are changes
+    write_client = _get_write_client()
+
+    # Update the bail if there are changes (must use write_client — RLS read-only on baux)
     if bail_update:
         update_result = (
-            client.table("baux")
+            write_client.table("baux")
             .update(bail_update)
             .eq("id", bail_id)
             .execute()
@@ -1983,14 +1985,12 @@ async def create_avenant(
         "deductible_fiscalement": False,
     }
 
-    write_client = _get_write_client()
     try:
         evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
+        created_event = (evt_result.data or [{}])[0]
     except Exception as exc:
         logger.warning("evenements_bien_insert_skip", reason=str(exc))
-        return {"id": None, "message": "Avenant enregistré mais événement non créé (table manquante)"}
-
-    created_event = (evt_result.data or [{}])[0]
+        created_event = {"id": None, "type": "avenant", "titre": evenement_row["titre"]}
 
     # Create notification for SCI owners
     from app.services.notification_service import create_notification_with_email
@@ -2003,21 +2003,24 @@ async def create_avenant(
         .execute()
     )
     for owner in (owners.data or []):
-        await create_notification_with_email(
-            write_client,
-            user_id=owner["user_id"],
-            notification_type="avenant_bail",
-            data={
-                "title": f"Avenant bail — {payload.type_avenant.replace('_', ' ')}",
-                "message": f"{payload.motif} (effet au {payload.date_effet.isoformat()})",
-                "metadata": {
-                    "bail_id": bail_id,
-                    "bien_id": bien_id,
-                    "type_avenant": payload.type_avenant,
-                    "dedup_key": f"avenant_{bail_id}_{payload.date_effet.isoformat()}",
+        try:
+            await create_notification_with_email(
+                write_client,
+                user_id=owner["user_id"],
+                notification_type="avenant_bail",
+                data={
+                    "title": f"Avenant bail — {payload.type_avenant.replace('_', ' ')}",
+                    "message": f"{payload.motif} (effet au {payload.date_effet.isoformat()})",
+                    "metadata": {
+                        "bail_id": bail_id,
+                        "bien_id": bien_id,
+                        "type_avenant": payload.type_avenant,
+                        "dedup_key": f"avenant_{bail_id}_{payload.date_effet.isoformat()}",
+                    },
                 },
-            },
-        )
+            )
+        except Exception as notif_exc:
+            logger.warning("avenant_notification_skip", reason=str(notif_exc), user_id=owner["user_id"])
 
     logger.info("avenant_created", bail_id=bail_id, event_id=created_event.get("id"))
     return AvenantResponse(avenant=created_event, bail_updated=bail)
@@ -2083,11 +2086,10 @@ async def declare_sinistre(
     write_client = _get_write_client()
     try:
         evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
+        created_event = (evt_result.data or [{}])[0]
     except Exception as exc:
         logger.warning("evenements_bien_insert_skip", reason=str(exc))
-        return {"id": None, "message": "Sinistre signalé mais événement non créé (table manquante)"}
-
-    created_event = (evt_result.data or [{}])[0]
+        created_event = {"id": None, "type": "sinistre", "titre": evenement_row["titre"]}
 
     # Create notification with PNO assureur details
     from app.services.notification_service import create_notification_with_email
@@ -2103,25 +2105,28 @@ async def declare_sinistre(
         .execute()
     )
     for owner in (owners.data or []):
-        await create_notification_with_email(
-            write_client,
-            user_id=owner["user_id"],
-            notification_type="sinistre",
-            data={
-                "title": f"Sinistre declare — {adresse}",
-                "message": (
-                    f"{payload.description}. "
-                    f"Montant estime : {payload.montant_estime or 'N/A'} EUR. "
-                    f"Assureur PNO : {assureur}."
-                ),
-                "metadata": {
-                    "bien_id": bien_id,
-                    "event_id": created_event.get("id"),
-                    "numero_dossier": payload.numero_dossier,
-                    "dedup_key": f"sinistre_{bien_id}_{payload.date_sinistre.isoformat()}",
+        try:
+            await create_notification_with_email(
+                write_client,
+                user_id=owner["user_id"],
+                notification_type="sinistre",
+                data={
+                    "title": f"Sinistre declare — {adresse}",
+                    "message": (
+                        f"{payload.description}. "
+                        f"Montant estime : {payload.montant_estime or 'N/A'} EUR. "
+                        f"Assureur PNO : {assureur}."
+                    ),
+                    "metadata": {
+                        "bien_id": bien_id,
+                        "event_id": created_event.get("id"),
+                        "numero_dossier": payload.numero_dossier,
+                        "dedup_key": f"sinistre_{bien_id}_{payload.date_sinistre.isoformat()}",
+                    },
                 },
-            },
-        )
+            )
+        except Exception as notif_exc:
+            logger.warning("sinistre_notification_skip", reason=str(notif_exc), user_id=owner["user_id"])
 
     logger.info("sinistre_declared", event_id=created_event.get("id"), bien_id=bien_id)
     return SinistreResponse(evenement=created_event, assurance_pno=pno_info)
