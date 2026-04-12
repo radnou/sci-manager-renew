@@ -75,11 +75,24 @@
 		}
 	];
 
+	function markDone() {
+		try {
+			localStorage.setItem(STORAGE_KEY, 'true');
+		} catch {
+			/* noop */
+		}
+	}
+
 	export function start() {
 		runTour();
 	}
 
 	function runTour() {
+		const filteredSteps = steps.filter((step) => {
+			if (!step.element) return true;
+			return !!document.querySelector(step.element as string);
+		});
+
 		const driverObj = driver({
 			showProgress: true,
 			animate: true,
@@ -93,16 +106,23 @@
 			prevBtnText: 'Précédent',
 			doneBtnText: 'Terminer',
 			progressText: '{{current}} / {{total}}',
-			steps: steps.filter((step) => {
-				if (!step.element) return true;
-				return !!document.querySelector(step.element as string);
-			}),
+			steps: filteredSteps,
+			onDestroyStarted: () => {
+				markDone();
+			},
 			onDestroyed: () => {
-				try {
-					localStorage.setItem(STORAGE_KEY, 'true');
-				} catch {
-					/* noop */
+				markDone();
+			},
+			onNextClick: (_el, step) => {
+				const isLast = filteredSteps.indexOf(step) === filteredSteps.length - 1;
+				if (isLast) {
+					markDone();
 				}
+				driverObj.moveNext();
+			},
+			onCloseClick: () => {
+				markDone();
+				driverObj.destroy();
 			}
 		});
 		driverObj.drive();
