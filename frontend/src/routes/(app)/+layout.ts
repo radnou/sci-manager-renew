@@ -8,9 +8,7 @@ export const ssr = false;
 export const load: LayoutLoad = async ({ url }) => {
 	const session = await getCurrentSession();
 	if (!session?.user) {
-		// Return null — root layout $effect handles redirect to /login
-		// after authResolved is confirmed true (prevents login page flash).
-		return { user: null, subscription: null };
+		throw redirect(302, `/login?next=${encodeURIComponent(url.pathname)}`);
 	}
 
 	try {

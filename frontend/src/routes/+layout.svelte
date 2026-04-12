@@ -117,7 +117,8 @@
 		}
 
 		if (user && isGuestOnlyRoute(pathname)) {
-			goto('/dashboard', { replaceState: true, noScroll: true });
+			const next = page.url.searchParams.get('next') || page.url.searchParams.get('redirect');
+			goto(next || '/dashboard', { replaceState: true, noScroll: true });
 		}
 	});
 

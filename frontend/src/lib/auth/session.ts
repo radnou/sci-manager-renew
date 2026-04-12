@@ -95,7 +95,7 @@ export async function getCurrentSession(): Promise<Session | null> {
 				sub.unsubscribe();
 				initialSessionResolved = true;
 				resolve(null);
-			}, 1500);
+			}, 4000);
 
 			const {
 				data: { subscription: sub }
