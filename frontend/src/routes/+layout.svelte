@@ -323,20 +323,10 @@
 			<div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600"></div>
 		</section>
 	{:else if isProtectedRoute(page.url.pathname) && !user}
-		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
-			<div
-				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
-			>
-				<p class="text-sm font-semibold tracking-[0.15em] text-slate-500 uppercase">
-					Zone protégée
-				</p>
-				<h1 class="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-					Connexion requise
-				</h1>
-				<p class="mt-3 text-sm text-slate-600 dark:text-slate-400">
-					Redirection vers l'espace de connexion sécurisé.
-				</p>
-			</div>
+		<!-- Silent redirect handled by $effect — show spinner, not a "Zone protégée" card
+		     that would flash on F5/hard-refresh while Supabase restores the session. -->
+		<section class="flex min-h-[60vh] items-center justify-center">
+			<div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600"></div>
 		</section>
 	{:else if authResolved}
 		<div id="main-content">{@render children()}</div>
