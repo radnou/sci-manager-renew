@@ -351,9 +351,12 @@ async def cleanup_demo_data(client, user_id: str) -> int:
         r = client.table("credits_immobiliers").delete().in_("id_bien", bien_ids).execute()
         deleted += len(r.data or [])
 
-        # Événements bien (no is_demo — clean by FK)
-        r = client.table("evenements_bien").delete().in_("id_bien", bien_ids).execute()
-        deleted += len(r.data or [])
+        # Événements bien (no is_demo — clean by FK; table may not exist)
+        try:
+            r = client.table("evenements_bien").delete().in_("id_bien", bien_ids).execute()
+            deleted += len(r.data or [])
+        except Exception:
+            logger.warning("demo_cleanup_skip_evenements_bien", reason="table not found")
 
         # Régularisations charges (no is_demo — clean by FK)
         r = client.table("regularisations_charges").delete().in_("id_bien", bien_ids).execute()
