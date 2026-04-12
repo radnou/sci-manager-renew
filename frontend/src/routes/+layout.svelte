@@ -321,7 +321,12 @@
 		<section class="flex min-h-[60vh] items-center justify-center">
 			<p class="animate-pulse text-sm text-slate-500">Redirection vers le tableau de bord…</p>
 		</section>
-	{:else if isProtectedRoute(page.url.pathname) && (!authResolved || !user)}
+	{:else if isProtectedRoute(page.url.pathname) && !authResolved}
+		<!-- Silent wait while Supabase restores session from storage -->
+		<section class="flex min-h-[60vh] items-center justify-center">
+			<div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600"></div>
+		</section>
+	{:else if isProtectedRoute(page.url.pathname) && !user}
 		<section class="mx-auto w-full max-w-7xl px-4 py-8 md:px-8">
 			<div
 				class="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-[0_30px_80px_-48px_rgba(15,23,42,0.35)] dark:border-slate-800 dark:bg-slate-950"
