@@ -73,8 +73,9 @@ async def export_user_data(
             "data": {},
         }
 
-        # 1. Informations utilisateur (via auth)
-        auth_user = client.auth.admin.get_user_by_id(user_id)
+        # 1. Informations utilisateur (via auth — requires service role)
+        service_client = get_supabase_service_client()
+        auth_user = service_client.auth.admin.get_user_by_id(user_id)
         export_data["data"]["user"] = {
             "id": auth_user.user.id,
             "email": auth_user.user.email,
@@ -209,7 +210,8 @@ async def get_data_summary(
         user_created_at = ""
         last_sign_in = ""
         try:
-            auth_user = client.auth.admin.get_user_by_id(user_id)
+            svc = get_supabase_service_client()
+            auth_user = svc.auth.admin.get_user_by_id(user_id)
             user_email = str(auth_user.user.email or "")
             user_created_at = str(auth_user.user.created_at or "")
             last_sign_in = str(auth_user.user.last_sign_in_at or "")

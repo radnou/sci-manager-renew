@@ -110,13 +110,12 @@ async def generate_bilan_mensuel(client, user_id: str, periode: str) -> dict:
     if locataire_ids:
         loc_res = (
             client.table("locataires")
-            .select("id, nom, prenom")
+            .select("id, nom")
             .in_("id", locataire_ids)
             .execute()
         )
         for loc in (loc_res.data or []):
-            full = f"{loc.get('prenom', '')} {loc.get('nom', '')}".strip()
-            locataire_map[str(loc["id"])] = full or loc.get("nom", "?")
+            locataire_map[str(loc["id"])] = loc.get("nom", "?")
 
     # --------------- Aggregate per bien ---------------
     # Group loyers by bien
