@@ -488,7 +488,7 @@ async def write_protection_middleware(
     if any(path.startswith(prefix) for prefix in _WRITE_EXEMPT_PREFIXES):
         return await call_next(request)
 
-    # Extract user_id from Bearer token (lightweight HS256 decode only)
+    # Extract user_id from Bearer token (supports HS256 + ES256/RS256 via JWKS)
     auth_header = request.headers.get("authorization", "")
     if not auth_header.startswith("Bearer "):
         # No auth header -- let the endpoint's own auth dependency handle 401
@@ -496,13 +496,8 @@ async def write_protection_middleware(
 
     token = auth_header[7:]
     try:
-        import jwt as pyjwt
-        payload = pyjwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False, "verify_exp": True},
-        )
+        from app.core.security import _decode_bearer_token
+        payload = await _decode_bearer_token(token)
         user_id = payload.get("sub")
     except Exception:
         # Bad token -- let endpoint auth handle it
