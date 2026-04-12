@@ -805,7 +805,11 @@ async def check_fiscal_deadlines(supabase_client) -> int:
     year = now.year
 
     # Fetch all SCIs with their regime fiscal
-    result = supabase_client.table("sci").select("id, nom, regime_fiscal, date_cloture_exercice").execute()
+    try:
+        result = supabase_client.table("sci").select("id, nom, regime_fiscal, date_cloture_exercice").execute()
+    except Exception:
+        # date_cloture_exercice column may not exist in production yet
+        result = supabase_client.table("sci").select("id, nom, regime_fiscal").execute()
     scis = result.data or []
     if not scis:
         return 0
