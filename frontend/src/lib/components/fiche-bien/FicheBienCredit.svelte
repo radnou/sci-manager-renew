@@ -4,6 +4,7 @@
 	import type { CreditCreate, CreditUpdate } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import { Landmark, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Loader2, Table } from 'lucide-svelte';
+	import FieldHint from '$lib/components/FieldHint.svelte';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import {
 		announceFicheBienModal,
@@ -293,7 +294,7 @@
 						/>
 					</label>
 					<label class="block">
-						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Taux nominal (%)</span>
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Taux nominal (%)<FieldHint text="Taux d'interet hors assurance (different du TAEG). Visible sur votre offre de pret." /></span>
 						<input
 							type="number"
 							bind:value={tauxNominal}
@@ -304,7 +305,7 @@
 						/>
 					</label>
 					<label class="block">
-						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Taux assurance (%)</span>
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Taux assurance (%)<FieldHint text="Taux annuel de l'assurance emprunteur. Souvent entre 0.1% et 0.5% selon l'age et le profil." /></span>
 						<input
 							type="number"
 							bind:value={tauxAssurance}
@@ -334,7 +335,7 @@
 						/>
 					</label>
 					<label class="block">
-						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Capital restant dû (€)</span>
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Capital restant dû (€)<FieldHint text="Optionnel. Si renseigne, utilise cette valeur au lieu du calcul automatique depuis le tableau d'amortissement." /></span>
 						<input
 							type="number"
 							bind:value={capitalRestantDu}
@@ -345,7 +346,7 @@
 						/>
 					</label>
 					<label class="block">
-						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Type de crédit</span>
+						<span class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Type de crédit<FieldHint text="Amortissable : mensualites capital+interets. In fine : interets seuls, capital rembourse a terme. Relais : pret court terme en attente de vente." /></span>
 						<select
 							bind:value={typeCredit}
 							class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"

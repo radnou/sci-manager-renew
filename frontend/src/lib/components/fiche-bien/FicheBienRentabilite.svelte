@@ -3,6 +3,7 @@
 	import { apiFetch } from '$lib/api';
 	import { formatEur } from '$lib/high-value/formatters';
 	import { TrendingUp, TrendingDown, BarChart3, Table2, Loader2 } from 'lucide-svelte';
+	import FieldHint from '$lib/components/FieldHint.svelte';
 	import { onMount } from 'svelte';
 
 	interface Props {
@@ -88,7 +89,7 @@
 		<!-- Rentabilité brute -->
 		<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
 			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
-				Rentabilité brute
+				Rentabilité brute<FieldHint text="Loyers annuels HC / prix d'acquisition. Ne tient pas compte des charges ni de la fiscalité." />
 			</p>
 			<p class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
 				{rentabilite.brute.toFixed(1)}%
@@ -98,7 +99,7 @@
 		<!-- Rentabilité nette -->
 		<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900">
 			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
-				Rentabilité nette
+				Rentabilité nette<FieldHint text="Rentabilité brute moins charges (copro, taxe fonciere, PNO, agence). Indicateur cle pour comparer des biens entre eux." />
 			</p>
 			<p class="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
 				{rentabilite.nette.toFixed(1)}%
@@ -108,7 +109,7 @@
 		<!-- Cashflow mensuel -->
 		<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_mensuel)}">
 			<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
-				Cashflow mensuel
+				Cashflow mensuel<FieldHint text="Loyers encaisses moins charges mensualisees. Positif = le bien genere un excedent avant credit." />
 			</p>
 			<div class="mt-1 flex items-center gap-1.5">
 				{#if rentabilite.cashflow_mensuel >= 0}
@@ -145,7 +146,7 @@
 			<!-- Cashflow après crédit (mensuel) -->
 			<div class="rounded-xl border p-5 {cashflowBg(rentabilite.cashflow_apres_credit_mensuel)}">
 				<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
-					Cashflow après crédit <span class="text-slate-400 dark:text-slate-500">/mois</span>
+					Cashflow après crédit<FieldHint text="Cashflow net moins mensualite de credit. C'est ce qui reste reellement en tresorerie chaque mois." /> <span class="text-slate-400 dark:text-slate-500">/mois</span>
 				</p>
 				<div class="mt-1 flex items-center gap-1.5">
 					{#if rentabilite.cashflow_apres_credit_mensuel >= 0}
