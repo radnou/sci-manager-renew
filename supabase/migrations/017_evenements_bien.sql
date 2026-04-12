@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS evenements_bien (
     id_bien UUID NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
     type VARCHAR(30) NOT NULL CHECK (type IN (
         'reparation', 'travaux', 'sinistre', 'visite',
-        'controle', 'diagnostic', 'autre'
+        'controle', 'diagnostic', 'autre', 'avenant'
     )),
     titre VARCHAR(200) NOT NULL,
     description TEXT,
