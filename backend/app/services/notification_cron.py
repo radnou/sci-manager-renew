@@ -186,7 +186,7 @@ async def check_late_payments(supabase_client) -> int:
                         "title": f"{level['title_prefix']} \u2014 {adresse}",
                         "message": (
                             f"Le loyer du {loyer['date_loyer']} ({loyer['montant']} EUR) "
-                            f"pour {adresse} est impaye depuis {days_late} jours."
+                            f"pour {adresse} est impayé depuis {days_late} jours."
                         ),
                         "metadata": metadata,
                     },
@@ -352,7 +352,7 @@ async def check_bail_renewal(supabase_client) -> int:
                 user_id=owner["user_id"],
                 notification_type="bail_conge_deadline",
                 data={
-                    "title": f"Deadline conge bailleur \u2014 {adresse}",
+                    "title": f"Deadline congé bailleur \u2014 {adresse}",
                     "message": (
                         f"Le bail pour {adresse} expire le {bail['date_fin']}. "
                         f"Deadline conge bailleur dans {months_until} mois."
@@ -722,7 +722,7 @@ async def check_pending_quittances(supabase_client) -> int:
                 notification_type="quittance_pending",
                 data={
                     "title": "Quittance en attente",
-                    "message": f"Le loyer du {loyer['date_loyer']} pour {bien.get('adresse', 'un bien')} est paye mais la quittance n'a pas ete generee.",
+                    "message": f"Le loyer du {loyer['date_loyer']} pour {bien.get('adresse', 'un bien')} est payé mais la quittance n'a pas été générée.",
                     "metadata": {"loyer_id": loyer["id"], "bien_adresse": bien.get("adresse"), "dedup_key": f"quittance_{loyer['id']}"},
                 },
             )

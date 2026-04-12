@@ -231,13 +231,13 @@ class Declaration2072PdfService:
 
         elements.append(
             Paragraph(
-                f"Declaration 2072-S — Exercice {result.annee}",
+                f"Déclaration 2072-S — Exercice {result.annee}",
                 self.title_style,
             )
         )
         elements.append(
             Paragraph(
-                "Declaration de resultats des societes immobilieres non soumises a l'IS",
+                "Déclaration de résultats des sociétés immobilières non soumises à l'IS",
                 self.small_style,
             )
         )
@@ -263,7 +263,7 @@ class Declaration2072PdfService:
                 else "Non renseigne",
             ],
             ["Gerant", result.sci_nom_gerant or "Non renseigne"],
-            ["Regime fiscal", "IR — Revenus fonciers (art. 8 CGI)"],
+            ["Régime fiscal", "IR — Revenus fonciers (art. 8 CGI)"],
             ["Exercice", f"01/01/{result.annee} au 31/12/{result.annee}"],
             ["Nombre d'immeubles", str(result.nb_biens)],
             ["Nombre d'associes", str(result.nb_associes)],
@@ -332,7 +332,7 @@ class Declaration2072PdfService:
 
         elements.append(
             Paragraph(
-                "Cadre III — Charges deductibles par immeuble",
+                "Cadre III — Charges déductibles par immeuble",
                 self.cadre_title_style,
             )
         )
@@ -355,11 +355,11 @@ class Declaration2072PdfService:
                 ["Poste", "Montant"],
                 ["Frais d'administration (forfait 20 EUR)", _fmt_eur(bien.ligne_215_frais_gestion)],
                 ["Assurances (PNO)", _fmt_eur(bien.ligne_220_assurance)],
-                ["Travaux d'entretien et reparation", _fmt_eur(bien.ligne_221_travaux)],
-                ["Taxe fonciere", _fmt_eur(bien.ligne_224_taxe_fonciere)],
-                ["Charges de copropriete", _fmt_eur(bien.ligne_227_copropriete)],
-                ["Interets d'emprunt", _fmt_eur(bien.ligne_230_interets_emprunt)],
-                ["Total charges deductibles", _fmt_eur(charges_total)],
+                ["Travaux d'entretien et réparation", _fmt_eur(bien.ligne_221_travaux)],
+                ["Taxe foncière", _fmt_eur(bien.ligne_224_taxe_fonciere)],
+                ["Charges de copropriété", _fmt_eur(bien.ligne_227_copropriete)],
+                ["Intérêts d'emprunt", _fmt_eur(bien.ligne_230_interets_emprunt)],
+                ["Total charges déductibles", _fmt_eur(charges_total)],
             ]
 
             table = self._make_table(data, col_w, highlight_last=True)
@@ -371,9 +371,9 @@ class Declaration2072PdfService:
         total_all_charges = result.total_charges + result.total_interets
         agg_data = [
             ["Poste", "Montant"],
-            ["TOTAL charges hors interets", _fmt_eur(result.total_charges)],
-            ["TOTAL interets d'emprunt", _fmt_eur(result.total_interets)],
-            ["TOTAL CHARGES DEDUCTIBLES", _fmt_eur(total_all_charges)],
+            ["TOTAL charges hors intérêts", _fmt_eur(result.total_charges)],
+            ["TOTAL intérêts d'emprunt", _fmt_eur(result.total_interets)],
+            ["TOTAL CHARGES DÉDUCTIBLES", _fmt_eur(total_all_charges)],
         ]
         agg_table = Table(agg_data, colWidths=[80 * mm, 45 * mm])
         agg_table.setStyle(
@@ -402,7 +402,7 @@ class Declaration2072PdfService:
 
         elements.append(
             Paragraph(
-                "Cadre IV — Determination du resultat fiscal",
+                "Cadre IV — Détermination du résultat fiscal",
                 self.cadre_title_style,
             )
         )
@@ -413,8 +413,8 @@ class Declaration2072PdfService:
         res_data = [
             ["Poste", "Montant"],
             ["Revenus fonciers bruts (Cadre II)", _fmt_eur(result.total_revenus)],
-            ["Charges deductibles (Cadre III)", f"- {_fmt_eur(total_all_charges)}"],
-            ["RESULTAT FISCAL DE LA SCI", _fmt_eur(result.resultat_global)],
+            ["Charges déductibles (Cadre III)", f"- {_fmt_eur(total_all_charges)}"],
+            ["RÉSULTAT FISCAL DE LA SCI", _fmt_eur(result.resultat_global)],
         ]
 
         res_table = Table(res_data, colWidths=col_w)
@@ -443,11 +443,11 @@ class Declaration2072PdfService:
         if result.is_deficit:
             elements.append(Spacer(1, 6 * mm))
             elements.append(
-                Paragraph("Decomposition du deficit foncier", self.section_style)
+                Paragraph("Décomposition du déficit foncier", self.section_style)
             )
             elements.append(
                 Paragraph(
-                    "<i>Art. 156-I-3. CGI — Les interets d'emprunt ne s'imputent que sur les revenus fonciers.</i>",
+                    "<i>Art. 156-I-3. CGI — Les intérêts d'emprunt ne s'imputent que sur les revenus fonciers.</i>",
                     self.disclaimer_style,
                 )
             )
@@ -455,17 +455,17 @@ class Declaration2072PdfService:
 
             deficit_data = [
                 ["Poste", "Montant"],
-                ["Deficit total", _fmt_eur(result.deficit_total)],
+                ["Déficit total", _fmt_eur(result.deficit_total)],
                 [
-                    "Dont interets d'emprunt (reportable revenus fonciers)",
+                    "Dont intérêts d'emprunt (reportable revenus fonciers)",
                     _fmt_eur(result.deficit_interets_emprunt),
                 ],
                 [
-                    "Dont charges hors interets — imputable revenu global (max 10 700 EUR)",
+                    "Dont charges hors intérêts — imputable revenu global (max 10 700 EUR)",
                     _fmt_eur(result.deficit_imputable_revenu_global),
                 ],
                 [
-                    "Excedent reportable sur revenus fonciers (10 ans)",
+                    "Excédent reportable sur revenus fonciers (10 ans)",
                     _fmt_eur(result.deficit_reportable_foncier),
                 ],
             ]
@@ -501,7 +501,7 @@ class Declaration2072PdfService:
 
         elements.append(
             Paragraph(
-                "Cadre V — Repartition du resultat entre les associes",
+                "Cadre V — Répartition du résultat entre les associés",
                 self.cadre_title_style,
             )
         )
@@ -509,7 +509,7 @@ class Declaration2072PdfService:
         if not result.associes:
             elements.append(
                 Paragraph(
-                    "Aucun associe enregistre — repartition non calculable.",
+                    "Aucun associé enregistré — répartition non calculable.",
                     self.normal_style,
                 )
             )
@@ -570,10 +570,10 @@ class Declaration2072PdfService:
         # Legend
         elements.append(Spacer(1, 4 * mm))
         legends = [
-            "<b>Case 4BA</b> : Benefice foncier imposable",
-            "<b>Case 4BB</b> : Deficit imputable sur le revenu global (max 10 700 EUR)",
-            "<b>Case 4BC</b> : Deficit reportable sur les revenus fonciers (10 ans)",
-            "<b>Case 4BD</b> : Deficits anterieurs non encore imputes",
+            "<b>Case 4BA</b> : Bénéfice foncier imposable",
+            "<b>Case 4BB</b> : Déficit imputable sur le revenu global (max 10 700 EUR)",
+            "<b>Case 4BC</b> : Déficit reportable sur les revenus fonciers (10 ans)",
+            "<b>Case 4BD</b> : Déficits antérieurs non encore imputés",
         ]
         for legend in legends:
             elements.append(Paragraph(legend, self.small_style))
@@ -589,7 +589,7 @@ class Declaration2072PdfService:
         if result.alertes:
             elements.append(Spacer(1, 6 * mm))
             elements.append(
-                Paragraph("Alertes et donnees manquantes", self.section_style)
+                Paragraph("Alertes et données manquantes", self.section_style)
             )
             for alerte in result.alertes:
                 elements.append(Paragraph(f"  - {alerte}", self.normal_style))
@@ -599,7 +599,7 @@ class Declaration2072PdfService:
         elements.append(
             Paragraph(
                 "<i>Ce document est un resume simplifie structure selon le formulaire "
-                "CERFA 2072-S (declaration de resultats des societes immobilieres non soumises "
+                "CERFA 2072-S (déclaration de résultats des sociétés immobilières non soumises "
                 "a l'IS), genere par GererSCI. Il ne constitue pas le formulaire officiel "
                 "et ne se substitue pas aux obligations declaratives aupres de l'administration "
                 "fiscale. Consultez votre comptable pour la declaration definitive.</i>",

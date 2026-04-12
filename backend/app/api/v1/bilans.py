@@ -29,7 +29,7 @@ def _validate_periode(periode: str) -> str:
     if not _PERIODE_RE.match(periode):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Format periode invalide. Attendu: YYYY-MM",
+            detail="Format période invalide. Attendu : YYYY-MM",
         )
     return periode
 

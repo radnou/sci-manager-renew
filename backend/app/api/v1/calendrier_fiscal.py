@@ -64,7 +64,7 @@ class MarquerFaitResponse(BaseModel):
 _ECHEANCES_DEFINITION = [
     {
         "key": "2072",
-        "label": "Declaration 2072",
+        "label": "Déclaration 2072",
         "month": 5,
         "day": 3,
         "reference": "Art. 172 CGI",
@@ -202,7 +202,7 @@ async def marquer_echeance_faite(
     valid_keys = {d["key"] for d in _ECHEANCES_DEFINITION}
     if key not in valid_keys:
         from app.core.exceptions import ValidationError
-        raise ValidationError(f"Cle d'echeance invalide : {key}. Valeurs acceptees : {', '.join(sorted(valid_keys))}")
+        raise ValidationError(f"Clé d'échéance invalide : {key}. Valeurs acceptées : {', '.join(sorted(valid_keys))}")
 
     write_client = _get_write_client()
 

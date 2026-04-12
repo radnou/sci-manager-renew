@@ -1927,7 +1927,7 @@ async def create_avenant(
     if payload.type_avenant not in AVENANT_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"type_avenant invalide. Valeurs acceptees : {', '.join(sorted(AVENANT_TYPES))}",
+            detail=f"type_avenant invalide. Valeurs acceptées : {', '.join(sorted(AVENANT_TYPES))}",
         )
 
     logger.info(

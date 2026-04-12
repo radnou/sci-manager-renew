@@ -75,7 +75,7 @@
 	};
 
 	const kpiCards = $derived([
-		{ key: 'depassee' as const, label: 'Depassees', count: resume.depassee, bgClass: 'bg-slate-900 dark:bg-slate-100', textClass: 'text-white dark:text-slate-900', countClass: 'text-white dark:text-slate-900' },
+		{ key: 'depassee' as const, label: 'Dépassées', count: resume.depassee, bgClass: 'bg-slate-900 dark:bg-slate-100', textClass: 'text-white dark:text-slate-900', countClass: 'text-white dark:text-slate-900' },
 		{ key: 'critique' as const, label: 'Critiques', count: resume.critique, bgClass: 'bg-red-50 dark:bg-red-900/20', textClass: 'text-red-800 dark:text-red-300', countClass: 'text-red-600 dark:text-red-400' },
 		{ key: 'urgente' as const, label: 'Urgentes', count: resume.urgente, bgClass: 'bg-orange-50 dark:bg-orange-900/20', textClass: 'text-orange-800 dark:text-orange-300', countClass: 'text-orange-600 dark:text-orange-400' },
 		{ key: 'normale' as const, label: 'Normales', count: resume.normale, bgClass: 'bg-emerald-50 dark:bg-emerald-900/20', textClass: 'text-emerald-800 dark:text-emerald-300', countClass: 'text-emerald-600 dark:text-emerald-400' },
@@ -240,7 +240,7 @@
 		{#if groupedEcheances().length === 0}
 			<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 py-16 dark:border-slate-700">
 				<CalendarClock class="mb-3 h-10 w-10 text-slate-400 dark:text-slate-500" />
-				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucune echeance trouvee.</p>
+				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Aucune échéance trouvée.</p>
 			</div>
 		{:else}
 			<div class="space-y-8">
