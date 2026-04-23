@@ -1,0 +1,12 @@
+// Barrel export pour les composants landing page
+export { default as HeroSection } from './HeroSection.svelte';
+export { default as FeaturesSection } from './FeaturesSection.svelte';
+export { default as CommentCaMarcheSection } from './CommentCaMarcheSection.svelte';
+export { default as TargetAudienceSection } from './TargetAudienceSection.svelte';
+export { default as ValueStackSection } from './ValueStackSection.svelte';
+export { default as PricingSection } from './PricingSection.svelte';
+export { default as GuaranteeSection } from './GuaranteeSection.svelte';
+export { default as TrustBar } from './TrustBar.svelte';
+export { default as CTASection } from './CTASection.svelte';
+export { default as FAQSection } from './FAQSection.svelte';
+export { default as FooterSection } from './FooterSection.svelte';
