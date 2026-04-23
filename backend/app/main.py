@@ -46,7 +46,7 @@ from app.api.v1 import (
     comptabilite,
     credits,
     dashboard,
-    demo,
+    declarations,    demo,
     echeances,
     export,
     files,
@@ -698,4 +698,5 @@ app.include_router(leads.router, prefix="/api/v1")
 app.include_router(bilans.router, prefix="/api/v1")
 app.include_router(credits.router, prefix="/api/v1")
 app.include_router(demo.router, prefix="/api/v1")
+app.include_router(declarations.router, prefix="/api/v1")
 app.include_router(admin.router)
