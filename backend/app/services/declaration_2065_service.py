@@ -152,13 +152,23 @@ class Declaration2065Service:
         )
 
         # 3. Crédits immobiliers (dettes) — calcul exact du capital restant dû
-        credits_result = (
-            self.client.table("credits_immobiliers")
-            .select("montant_emprunte, taux_nominal, duree_mois, date_debut, mensualite, capital_restant_du")
+        # Récupérer d'abord les IDs des biens de cette SCI
+        biens_ids_result = (
+            self.client.table("biens")
+            .select("id")
             .eq("id_sci", str(sci_id))
             .execute()
         )
+        biens_ids = [b["id"] for b in (biens_ids_result.data or [])]
+        
         emprunts = Decimal("0")
+        if biens_ids:
+            credits_result = (
+                self.client.table("credits_immobiliers")
+                .select("montant_emprunte, taux_nominal, duree_mois, date_debut, mensualite, capital_restant_du")
+                .in_("id_bien", biens_ids)
+                .execute()
+            )
         for cr in credits_result.data or []:
             # Si capital_restant_du est déjà calculé, l'utiliser
             crd = cr.get("capital_restant_du")
