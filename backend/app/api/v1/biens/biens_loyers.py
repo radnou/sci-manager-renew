@@ -27,7 +27,7 @@ from app.services.rentabilite_service import calculate_rentabilite
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="", tags=["scis-biens"])
+router = APIRouter(tags=["scis-biens"])
 
 
 def _get_client(request: Request):

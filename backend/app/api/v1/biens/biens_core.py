@@ -27,7 +27,7 @@ from app.services.rentabilite_service import calculate_rentabilite
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="", tags=["scis-biens"])
+router = APIRouter(tags=["scis-biens"])
 
 
 def _get_client(request: Request):
@@ -52,44 +52,6 @@ def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
 
 
 """Nested biens API under /scis/{sci_id}/biens with fiche bien support."""
-
-
-from datetime import date, timedelta
-from typing import Optional
-from uuid import UUID
-
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
-from pydantic import BaseModel
-
-logger = structlog.get_logger(__name__)
-
-router = APIRouter(prefix="", tags=["scis-biens"])
-
-
-def _get_client(request: Request):
-    return get_supabase_user_client(request)
-
-
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
-def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
-    """Fetch a bien and verify it belongs to the given SCI. Returns the bien row."""
-    result = client.table("biens").select("*").eq("id", bien_id).execute()
-    if getattr(result, "error", None):
-        raise DatabaseError(str(result.error))
-
-    rows = result.data or []
-    if not rows:
-        raise ResourceNotFoundError("Bien", bien_id)
-
-    bien = rows[0]
-    if str(bien.get("id_sci", "")) != sci_id:
-        raise ResourceNotFoundError("Bien", bien_id)
-
-    return bien
 
 
 # ──────────────────────────────────────────────────────────────
