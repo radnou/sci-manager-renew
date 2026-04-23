@@ -277,19 +277,21 @@ class Declaration2065Service:
         """Génère une déclaration 2065 pré-remplie."""
         data = await self.get_bilan_data(sci_id, exercice)
 
-        # Récupérer la date de clôture
-        sci_result = (
-            self.client.table("sci")
-            .select("date_cloture_exercice")
-            .eq("id", str(sci_id))
-            .execute()
-        )
-        date_cloture_str = sci_result.data[0].get("date_cloture_exercice") if sci_result.data else None
-        date_cloture = (
-            date.fromisoformat(date_cloture_str)
-            if date_cloture_str
-            else date(exercice, 12, 31)
-        )
+        # Récupérer la date de clôture (colonne optionnelle)
+        date_cloture = date(exercice, 12, 31)
+        try:
+            sci_result = (
+                self.client.table("sci")
+                .select("date_cloture_exercice")
+                .eq("id", str(sci_id))
+                .execute()
+            )
+            date_cloture_str = sci_result.data[0].get("date_cloture_exercice") if sci_result.data else None
+            if date_cloture_str:
+                date_cloture = date.fromisoformat(date_cloture_str)
+        except Exception:
+            # Colonne inexistante → utiliser 31/12 de l'exercice
+            pass
 
         actif = BilanActif(
             immobilisations_corporelles=data["immobilisations"],
@@ -337,13 +339,20 @@ class Declaration2065Service:
             "ecart": float(declaration.écart),
         }
 
-        result = self.client.table("declarations_2065").upsert(payload).execute()
+        try:
+            result = self.client.table("declarations_2065").upsert(payload).execute()
 
-        if getattr(result, "error", None):
-            raise DatabaseError(str(result.error))
+            if getattr(result, "error", None):
+                raise DatabaseError(str(result.error))
 
-        logger.info("declaration_2065_saved", sci_id=str(declaration.sci_id))
-        return result.data[0] if result.data else payload
+            logger.info("declaration_2065_saved", sci_id=str(declaration.sci_id))
+            return result.data[0] if result.data else payload
+        except Exception as e:
+            # Si la table n'existe pas encore (PGRST205), retourner le payload sans sauvegarder
+            if "declarations_2065" in str(e) or "PGRST205" in str(e):
+                logger.warning("declarations_2065_table_missing", sci_id=str(declaration.sci_id))
+                return payload
+            raise
 
 
 # ──────────────────────────────────────────────────────────────
