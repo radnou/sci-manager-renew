@@ -23,6 +23,7 @@ class BienBase(BaseModel):
 
 
 class BienCreate(BienBase):
+    id_sci: str | None = None  # Optionnel pour routes nestées (/scis/{id}/biens)
     frais_notaire: float | None = Field(default=None, ge=0)
     frais_agence_acquisition: float | None = Field(default=None, ge=0)
 
