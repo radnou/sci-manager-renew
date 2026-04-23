@@ -18,6 +18,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 from uuid import UUID
 
+from dataclasses import dataclass
+
 import structlog
 from fastapi import HTTPException, status
 
@@ -32,14 +34,15 @@ logger = structlog.get_logger(__name__)
 # ──────────────────────────────────────────────────────────────
 
 
+@dataclass
 class BilanActif:
     """Actif du bilan (ce que possède la SCI)."""
 
     immobilisations_corporelles: Decimal  # Biens immobiliers
     travaux_en_cours: Optional[Decimal] = None
-    créances_clients: Decimal  # Loyers impayés
+    créances_clients: Decimal = Decimal("0")  # Loyers impayés
     autres_créances: Optional[Decimal] = None
-    trésorerie_actif: Decimal  # Compte bancaire
+    trésorerie_actif: Decimal = Decimal("0")  # Compte bancaire
 
     @property
     def total_actif(self) -> Decimal:
@@ -52,14 +55,15 @@ class BilanActif:
         )
 
 
+@dataclass
 class BilanPassif:
     """Passif du bilan (origine des fonds)."""
 
-    capital_social: Decimal
+    capital_social: Decimal = Decimal("0")
     réserves: Optional[Decimal] = None
     report_à_nouveau: Optional[Decimal] = None
-    résultat_exercice: Decimal
-    emprunts: Decimal
+    résultat_exercice: Decimal = Decimal("0")
+    emprunts: Decimal = Decimal("0")
     dettes_fournisseurs: Optional[Decimal] = None
     autres_dettes: Optional[Decimal] = None
 
@@ -79,6 +83,7 @@ class BilanPassif:
         return capitaux_propres + dettes
 
 
+@dataclass
 class Declaration2065:
     """Déclaration 2065 complète."""
 
@@ -87,7 +92,7 @@ class Declaration2065:
     date_cloture: date
     actif: BilanActif
     passif: BilanPassif
-    écart: Decimal  # Doit être = 0
+    écart: Decimal = Decimal("0")  # Doit être = 0
 
     def __post_init__(self):
         self.écart = self.actif.total_actif - self.passif.total_passif
