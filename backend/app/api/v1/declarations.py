@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 
-from app.core.dependencies import require_sci_membership
+from app.core.paywall import AssocieMembership, require_sci_membership
 from app.core.exceptions import ResourceNotFoundError, ValidationError
 from app.services.declaration_2065_service import Declaration2065Service
 
