@@ -1,121 +1,74 @@
-<svelte:head>
-	<title>Mentions légales — GérerSCI</title>
-	<meta name="description" content="Mentions légales du site GérerSCI.fr" />
-	<link rel="canonical" href="https://gerersci.fr/mentions-legales" />
-</svelte:head>
+<script lang="ts">
+	import { Button } from '$lib/components/ui/button';
+	import { ArrowLeft } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
+</script>
 
-<div class="mx-auto max-w-3xl px-4 py-12">
-	<a
-		href="/"
-		class="mb-8 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-	>
-		&larr; Retour à l'accueil
-	</a>
+<div class="min-h-screen bg-slate-50 py-16 dark:bg-slate-950">
+	<div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+		<Button variant="outline" size="sm" class="mb-8 gap-2" onclick={() => goto('/')}>
+			<ArrowLeft class="h-4 w-4" />
+			Retour
+		</Button>
 
-	<h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Mentions légales</h1>
-	<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-		Dernière mise à jour : 10 mars 2026
-	</p>
+		<h1 class="mb-8 text-3xl font-bold text-slate-900 dark:text-white">Mentions légales</h1>
 
-	<div class="mt-10 space-y-10 text-slate-700 dark:text-slate-300">
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				1. Éditeur du site
-			</h2>
-			<div class="mt-3 space-y-1 text-sm">
-				<p><strong>Raison sociale :</strong> GérerSCI (exploité par Radnoumane Mossabely, entrepreneur individuel)</p>
-				<p><strong>Forme juridique :</strong> Entrepreneur individuel (EI)</p>
-				<p><strong>Capital social :</strong> N/A (entreprise individuelle)</p>
-				<p><strong>Siège social :</strong> Paris, France</p>
-				<p><strong>RCS :</strong> N/A (entreprise individuelle)</p>
-				<p><strong>SIRET :</strong> En cours d'immatriculation</p>
-				<p><strong>Numéro de TVA intracommunautaire :</strong> En cours d'attribution</p>
-				<p><strong>Email :</strong> contact@gerersci.fr</p>
-				<p><strong>Téléphone :</strong> Support par email : contact@gerersci.fr</p>
-			</div>
-		</section>
-
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				2. Directeur de publication
-			</h2>
-			<div class="mt-3 space-y-1 text-sm">
-				<p><strong>Nom :</strong> Radnoumane Mossabely</p>
-				<p><strong>Qualité :</strong> Fondateur et dirigeant</p>
-			</div>
-		</section>
-
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">3. Hébergeur</h2>
-			<div class="mt-3 space-y-1 text-sm">
-				<p><strong>Nom :</strong> OVH SAS</p>
-				<p><strong>Siège social :</strong> 2 rue Kellermann, 59100 Roubaix, France</p>
-				<p><strong>Téléphone :</strong> 1007 (depuis la France)</p>
-				<p><strong>Site web :</strong> <a href="https://www.ovhcloud.com" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">www.ovhcloud.com</a></p>
-			</div>
-		</section>
-
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">4. Contact</h2>
-			<div class="mt-3 space-y-1 text-sm">
-				<p>
-					Pour toute question relative au site, vous pouvez nous contacter à l'adresse
-					suivante :
+		<div class="space-y-8">
+			<section>
+				<h2 class="mb-3 text-xl font-semibold text-slate-900 dark:text-white">Éditeur du site</h2>
+				<p class="text-slate-600 dark:text-slate-300">
+					<strong>GérerSCI</strong> — Géré par Radnoumane Mossabely
 				</p>
-				<p><strong>Email :</strong> contact@gerersci.fr</p>
-			</div>
-		</section>
+				<p class="text-slate-600 dark:text-slate-300">
+					Email : contact@gerersci.fr
+				</p>
+			</section>
 
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				5. Propriété intellectuelle
-			</h2>
-			<p class="mt-3 text-sm">
-				L'ensemble du contenu du site GérerSCI (textes, graphismes, logiciels, images, bases de
-				données, etc.) est protégé par le droit d'auteur et le droit des bases de données. Toute
-				reproduction, représentation, modification, publication ou adaptation de tout ou partie des
-				éléments du site est interdite sans autorisation écrite préalable.
-			</p>
-		</section>
+			<section>
+				<h2 class="mb-3 text-xl font-semibold text-slate-900 dark:text-white">Hébergement</h2>
+				<p class="text-slate-600 dark:text-slate-300">
+					OVH Cloud — France 🇫🇷<br />
+					2 rue Kellermann, 59100 Roubaix<br />
+					Site : <a href="https://www.ovhcloud.com" class="text-blue-600 underline">ovhcloud.com</a>
+				</p>
+			</section>
 
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				6. Médiation de la consommation
-			</h2>
-			<div class="mt-3 space-y-2 text-sm">
-				<p>
-					Conformément aux articles L611-1 et R612-1 du Code de la consommation, tout
-					consommateur a le droit de recourir gratuitement à un médiateur de la consommation
-					en vue de la résolution amiable d'un litige.
-				</p>
-				<p>
-					<strong>Médiateur :</strong> CNPM - MEDIATION DE LA CONSOMMATION
-				</p>
-				<p>
-					<strong>Site web :</strong>
-					<a href="https://cnpm-mediation-consommation.eu" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-						>cnpm-mediation-consommation.eu</a>
-				</p>
-				<p>
-					<strong>Adresse :</strong> 27 avenue de la Libération, 42400 Saint-Chamond
-				</p>
-				<p>
-					Avant de saisir le médiateur, vous devez avoir tenté de résoudre le litige
-					directement auprès du service client en adressant une réclamation écrite à
-					contact@gerersci.fr.
-				</p>
-			</div>
-		</section>
+			<section>
+				<h2 class="mb-3 text-xl font-semibold text-slate-900 dark:text-white">Responsable de la publication</h2>
+				<p class="text-slate-600 dark:text-slate-300">Radnoumane Mossabely — contact@gerersci.fr</p>
+			</section>
 
-		<section>
-			<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-				7. Données personnelles
-			</h2>
-			<p class="mt-3 text-sm">
-				Pour en savoir plus sur la gestion de vos données personnelles et pour exercer vos droits,
-				veuillez consulter notre
-				<a href="/confidentialite" class="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">politique de confidentialité</a>.
-			</p>
-		</section>
+			<section>
+				<h2 class="mb-3 text-xl font-semibold text-slate-900 dark:text-white">RGPD — Délégué à la protection des données</h2>
+				<p class="text-slate-600 dark:text-slate-300">
+					Pour toute question relative à vos données personnelles :<br />
+					📧 privacy@gerersci.fr
+				</p>
+				<p class="text-slate-600 dark:text-slate-300">
+					Vos droits : accès, rectification, effacement, portabilité, limitation, opposition.
+				</p>
+			</section>
+
+			<section>
+				<h2 class="mb-3 text-xl font-semibold text-slate-900 dark:text-white">Propriété intellectuelle</h2>
+				<p class="text-slate-600 dark:text-slate-300">
+					Tout le contenu du site (textes, images, code) est la propriété exclusive de GérerSCI.
+					Toute reproduction sans autorisation est interdite.
+				</p>
+			</section>
+
+			<section>
+				<h2 class="mb-3 text-xl font-semibold text-slate-900 dark:text-white">Cookies</h2>
+				<p class="text-slate-600 dark:text-slate-300">
+					Ce site utilise des cookies essentiels (connexion, sécurité) et des cookies analytiques
+					anonymisés (Umami). Vous pouvez modifier vos préférences à tout moment via la bannière
+					cookies en bas de page.
+				</p>
+			</section>
+		</div>
+
+		<footer class="mt-16 border-t border-slate-200 pt-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+			© {new Date().getFullYear()} GérerSCI — Tous droits réservés
+		</footer>
 	</div>
 </div>
