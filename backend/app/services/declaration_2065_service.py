@@ -128,14 +128,18 @@ class Declaration2065Service:
             .execute()
         )
         biens = biens_result.data or []
-        immobilisations = sum(
-            Decimal(str(b.get("prix_acquisition", 0) or 0)) for b in biens
-        )
-        travaux = sum(
-            Decimal(str(b.get("frais_notaire", 0) or 0)) +
-            Decimal(str(b.get("frais_agence_acquisition", 0) or 0))
-            for b in biens
-        )
+        immobilisations = Decimal("0")
+        if biens:
+            immobilisations = sum(
+                Decimal(str(b.get("prix_acquisition", 0) or 0)) for b in biens
+            )
+        travaux = Decimal("0")
+        if biens:
+            travaux = sum(
+                Decimal(str(b.get("frais_notaire", 0) or 0)) +
+                Decimal(str(b.get("frais_agence_acquisition", 0) or 0))
+                for b in biens
+            )
 
         # 2. Loyers impayés (créances)
         loyers_result = (
@@ -150,6 +154,8 @@ class Declaration2065Service:
         créances = sum(
             Decimal(str(l.get("montant", 0) or 0)) for l in (loyers_result.data or [])
         )
+        if not isinstance(créances, Decimal):
+            créances = Decimal(str(créances))
 
         # 3. Crédits immobiliers (dettes) — calcul exact du capital restant dû
         # Récupérer d'abord les IDs des biens de cette SCI
