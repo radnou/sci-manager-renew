@@ -133,7 +133,6 @@ def _refresh_documents_urls(client, docs: list[dict]) -> list[dict]:
 # LIST biens for a SCI
 # ──────────────────────────────────────────────────────────────
 
-@router.get("", response_model=list[BienResponse])
 @router.get("/", response_model=list[BienResponse])
 async def list_sci_biens(
     sci_id: UUID,
@@ -189,7 +188,6 @@ async def list_sci_biens(
 # CREATE bien for a SCI
 # ──────────────────────────────────────────────────────────────
 
-@router.post("", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=BienResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute")
 async def create_sci_bien(
