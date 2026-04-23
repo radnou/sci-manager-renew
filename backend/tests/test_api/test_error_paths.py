@@ -163,13 +163,13 @@ class TestChargesErrorPaths:
 class TestScisBiensErrorPaths:
     def test_verify_bien_error_result(self):
         """_verify_bien_belongs_to_sci raises on error result (line 36)."""
-        from app.api.v1.scis_biens import _verify_bien_belongs_to_sci
+        from app.api.v1.biens.biens_core import _verify_bien_belongs_to_sci
         with pytest.raises(DatabaseError):
             _verify_bien_belongs_to_sci(ErrorClient(), "bien-1", "sci-1")
 
     def test_verify_bien_not_found(self):
         """_verify_bien_belongs_to_sci raises when bien not found (line 40)."""
-        from app.api.v1.scis_biens import _verify_bien_belongs_to_sci
+        from app.api.v1.biens.biens_core import _verify_bien_belongs_to_sci
         from app.core.exceptions import ResourceNotFoundError
 
         class EmptyClient:
@@ -185,7 +185,7 @@ class TestScisBiensErrorPaths:
 
     def test_verify_bien_wrong_sci(self):
         """_verify_bien_belongs_to_sci raises when bien belongs to different SCI (line 44)."""
-        from app.api.v1.scis_biens import _verify_bien_belongs_to_sci
+        from app.api.v1.biens.biens_core import _verify_bien_belongs_to_sci
         from app.core.exceptions import ResourceNotFoundError
 
         class WrongSciClient:
@@ -201,7 +201,7 @@ class TestScisBiensErrorPaths:
 
     def test_verify_bien_success(self, fake_supabase):
         """_verify_bien_belongs_to_sci returns bien on success."""
-        from app.api.v1.scis_biens import _verify_bien_belongs_to_sci
+        from app.api.v1.biens.biens_core import _verify_bien_belongs_to_sci
         bien = _verify_bien_belongs_to_sci(fake_supabase, "bien-1", "sci-1")
         assert bien["id"] == "bien-1"
 

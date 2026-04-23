@@ -65,7 +65,7 @@ from app.api.v1 import (
     quitus,
     sci_lifecycle,
     scis,
-    scis_biens,
+    biens as scis_biens,  # Module splité (anciennement scis_biens.py monolithe)
     stripe,
 )
 from app.core.config import Environment, settings
@@ -685,7 +685,7 @@ app.include_router(onboarding.router, prefix="/api/v1")
 app.include_router(export.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(finances.router, prefix="/api/v1")
-app.include_router(scis_biens.router, prefix="/api/v1")
+app.include_router(biens.router, prefix="/api/v1")
 app.include_router(mouvements_parts.router, prefix="/api/v1")
 app.include_router(sci_lifecycle.router, prefix="/api/v1")
 app.include_router(assemblees_generales.router, prefix="/api/v1")

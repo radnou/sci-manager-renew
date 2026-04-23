@@ -1208,89 +1208,89 @@ class TestValidateUpload:
     """Unit tests for _validate_upload function."""
 
     def test_empty_file_raises(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         with pytest.raises(Exception, match="vide"):
             _validate_upload(b"", "test.pdf")
 
     def test_oversized_file_raises(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         big = b"x" * (20 * 1024 * 1024 + 1)
         with pytest.raises(Exception, match="volumineux"):
             _validate_upload(big, "test.pdf")
 
     def test_disallowed_extension_raises(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         with pytest.raises(Exception, match="non autorisée"):
             _validate_upload(b"some content", "test.exe")
 
     def test_no_extension_raises(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         with pytest.raises(Exception, match="non autorisée"):
             _validate_upload(b"some content", "noext")
 
     def test_magic_bytes_mismatch_raises(self):
         """PDF magic bytes with .jpg extension should raise."""
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         pdf_content = b"%PDF-1.4 some content"
         with pytest.raises(Exception, match="ne correspond pas"):
             _validate_upload(pdf_content, "image.jpg")
 
     def test_magic_bytes_pdf_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         pdf_content = b"%PDF-1.4 some content"
         ext = _validate_upload(pdf_content, "document.pdf")
         assert ext == "pdf"
 
     def test_magic_bytes_jpg_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         jpg_content = b"\xff\xd8\xff some jpg data here"
         ext = _validate_upload(jpg_content, "photo.jpg")
         assert ext == "jpg"
 
     def test_magic_bytes_jpeg_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         jpg_content = b"\xff\xd8\xff some jpeg data here"
         ext = _validate_upload(jpg_content, "photo.jpeg")
         assert ext == "jpeg"
 
     def test_magic_bytes_png_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         png_content = b"\x89PNG some png data here"
         ext = _validate_upload(png_content, "image.png")
         assert ext == "png"
 
     def test_magic_bytes_docx_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         docx_content = b"PK some ooxml data here"
         ext = _validate_upload(docx_content, "document.docx")
         assert ext == "docx"
 
     def test_magic_bytes_xlsx_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         xlsx_content = b"PK some xlsx archive data"
         ext = _validate_upload(xlsx_content, "sheet.xlsx")
         assert ext == "xlsx"
 
     def test_magic_bytes_webp_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         webp_content = b"RIFF some webp data here"
         ext = _validate_upload(webp_content, "image.webp")
         assert ext == "webp"
 
     def test_no_magic_match_allowed(self):
         """Txt files have no magic bytes check — should pass."""
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         ext = _validate_upload(b"plain text content", "notes.txt")
         assert ext == "txt"
 
     def test_csv_no_magic_match(self):
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         ext = _validate_upload(b"a,b,c\n1,2,3", "data.csv")
         assert ext == "csv"
 
     def test_png_magic_with_jpg_ext_raises(self):
         """PNG magic bytes + .jpg extension -> mismatch."""
-        from app.api.v1.scis_biens import _validate_upload
+        from app.api.v1.biens.biens_core import _validate_upload
         png_content = b"\x89PNG some png data here"
         with pytest.raises(Exception, match="ne correspond pas"):
             _validate_upload(png_content, "fake.jpg")

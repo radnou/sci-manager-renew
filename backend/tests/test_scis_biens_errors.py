@@ -80,7 +80,7 @@ def _mock_request():
 class TestListSciBiensError:
     @pytest.mark.asyncio
     async def test_raises_database_error_on_query_error(self):
-        from app.api.v1.scis_biens import list_sci_biens
+        from app.api.v1.biens.biens_core import list_sci_biens
         request = _mock_request()
         with patch("app.api.v1.scis_biens._get_client", return_value=ErrorClient()):
             with pytest.raises(DatabaseError):
@@ -94,7 +94,7 @@ class TestListSciBiensError:
 class TestCreateSciBienError:
     @pytest.mark.asyncio
     async def test_raises_on_insert_error(self):
-        from app.api.v1.scis_biens import create_sci_bien
+        from app.api.v1.biens.biens_core import create_sci_bien
         from app.models.biens import BienCreate
         request = _mock_request()
         payload = BienCreate(
@@ -109,7 +109,7 @@ class TestCreateSciBienError:
 
     @pytest.mark.asyncio
     async def test_raises_on_empty_insert_result(self):
-        from app.api.v1.scis_biens import create_sci_bien
+        from app.api.v1.biens.biens_core import create_sci_bien
         from app.models.biens import BienCreate
 
         class EmptyInsertClient:
@@ -171,7 +171,7 @@ async def test_list_endpoint_raises_on_db_error(func_name, table_name):
 
 @pytest.mark.asyncio
 async def test_create_bail_error():
-    from app.api.v1.scis_biens import create_bien_bail
+    from app.api.v1.biens.biens_core import create_bien_bail
     from app.schemas.baux import BailCreate
     request = _mock_request()
     payload = BailCreate(date_debut="2026-01-01", loyer_hc=800, charges_provisions=100, type_bail="nu")
@@ -184,7 +184,7 @@ async def test_create_bail_error():
 
 @pytest.mark.asyncio
 async def test_create_loyer_error():
-    from app.api.v1.scis_biens import create_bien_loyer
+    from app.api.v1.biens.biens_core import create_bien_loyer
     from app.models.loyers import LoyerCreate
     request = _mock_request()
     payload = LoyerCreate(id_bien="b1", id_sci="s1", date_loyer="2026-01-01", montant=800, statut="en_attente")
@@ -197,7 +197,7 @@ async def test_create_loyer_error():
 
 @pytest.mark.asyncio
 async def test_create_charge_error():
-    from app.api.v1.scis_biens import create_bien_charge
+    from app.api.v1.biens.biens_core import create_bien_charge
     from app.models.charges import ChargeCreate
     request = _mock_request()
     payload = ChargeCreate(id_bien="b1", type_charge="copropriete", montant=200, date_paiement="2026-01-01")
