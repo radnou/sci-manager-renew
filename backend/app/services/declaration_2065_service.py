@@ -97,9 +97,13 @@ class Declaration2065:
     def __post_init__(self):
         self.écart = self.actif.total_actif - self.passif.total_passif
         if abs(self.écart) > Decimal("0.01"):
-            raise ValidationError(
+            # MVP : logger un warning au lieu de bloquer
+            # Le gestionnaire débutant n'a pas encore toutes les données
+            import warnings
+            warnings.warn(
                 f"Bilan déséquilibré : écart de {self.écart} €. "
-                "Vérifiez les montants saisis."
+                "Le gestionnaire devra compléter les données.",
+                stacklevel=2,
             )
 
 

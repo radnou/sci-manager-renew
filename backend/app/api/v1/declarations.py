@@ -98,45 +98,69 @@ async def get_declaration_2065(
     exercice: int,
     _=Depends(require_sci_membership),
 ):
-    """Récupère une déclaration 2065 existante."""
+    """Récupère une déclaration 2065 existante (la génère si absente)."""
     service = Declaration2065Service()
     
-    # Récupération depuis la base
-    result = service.client.table("declarations_2065").select("*").eq("id_sci", str(sci_id)).eq("exercice", exercice).execute()
+    # Essayer de récupérer depuis la base
+    try:
+        result = service.client.table("declarations_2065").select("*").eq("id_sci", str(sci_id)).eq("exercice", exercice).execute()
+        if result.data:
+            data = result.data[0]
+            return Declaration2065Response(
+                sci_id=str(sci_id),
+                exercice=exercice,
+                date_cloture=data.get("date_cloture", ""),
+                actif={
+                    "immobilisations": data.get("actif_immobilisations", 0),
+                    "creances": data.get("actif_creances", 0),
+                    "tresorerie": data.get("actif_tresorerie", 0),
+                    "total": sum([
+                        data.get("actif_immobilisations", 0) or 0,
+                        data.get("actif_creances", 0) or 0,
+                        data.get("actif_tresorerie", 0) or 0,
+                    ]),
+                },
+                passif={
+                    "capital": data.get("passif_capital", 0),
+                    "resultat": data.get("passif_resultat", 0),
+                    "emprunts": data.get("passif_emprunts", 0),
+                    "total": sum([
+                        data.get("passif_capital", 0) or 0,
+                        data.get("passif_resultat", 0) or 0,
+                        data.get("passif_emprunts", 0) or 0,
+                    ]),
+                },
+                ecart=data.get("ecart", 0),
+            )
+    except Exception:
+        # Table non existante ou autre erreur → fallback génération
+        pass
     
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Déclaration 2065 non trouvée pour l'exercice {exercice}"
+    # Fallback : générer la déclaration à la volée
+    try:
+        declaration = await service.generate_declaration(sci_id, exercice)
+        return Declaration2065Response(
+            sci_id=str(sci_id),
+            exercice=exercice,
+            date_cloture=declaration.date_cloture.isoformat(),
+            actif={
+                "immobilisations": float(declaration.actif.immobilisations_corporelles),
+                "creances": float(declaration.actif.créances_clients),
+                "tresorerie": float(declaration.actif.trésorerie_actif),
+                "total": float(declaration.actif.total_actif),
+            },
+            passif={
+                "capital": float(declaration.passif.capital_social),
+                "resultat": float(declaration.passif.résultat_exercice),
+                "emprunts": float(declaration.passif.emprunts),
+                "total": float(declaration.passif.total_passif),
+            },
+            ecart=float(declaration.écart),
         )
-    
-    data = result.data[0]
-    return Declaration2065Response(
-        sci_id=str(sci_id),
-        exercice=exercice,
-        date_cloture=data.get("date_cloture", ""),
-        actif={
-            "immobilisations": data.get("actif_immobilisations", 0),
-            "creances": data.get("actif_creances", 0),
-            "tresorerie": data.get("actif_tresorerie", 0),
-            "total": sum([
-                data.get("actif_immobilisations", 0) or 0,
-                data.get("actif_creances", 0) or 0,
-                data.get("actif_tresorerie", 0) or 0,
-            ]),
-        },
-        passif={
-            "capital": data.get("passif_capital", 0),
-            "resultat": data.get("passif_resultat", 0),
-            "emprunts": data.get("passif_emprunts", 0),
-            "total": sum([
-                data.get("passif_capital", 0) or 0,
-                data.get("passif_resultat", 0) or 0,
-                data.get("passif_emprunts", 0) or 0,
-            ]),
-        },
-        ecart=data.get("ecart", 0),
-    )
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get("/{exercice}/pdf")
