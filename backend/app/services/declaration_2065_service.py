@@ -123,16 +123,18 @@ class Declaration2065Service:
         # 1. Biens immobiliers (actif)
         biens_result = (
             self.client.table("biens")
-            .select("acquisition_prix, travaux_montant")
+            .select("prix_acquisition, frais_notaire, frais_agence_acquisition")
             .eq("id_sci", str(sci_id))
             .execute()
         )
         biens = biens_result.data or []
         immobilisations = sum(
-            Decimal(str(b.get("acquisition_prix", 0) or 0)) for b in biens
+            Decimal(str(b.get("prix_acquisition", 0) or 0)) for b in biens
         )
         travaux = sum(
-            Decimal(str(b.get("travaux_montant", 0) or 0)) for b in biens
+            Decimal(str(b.get("frais_notaire", 0) or 0)) +
+            Decimal(str(b.get("frais_agence_acquisition", 0) or 0))
+            for b in biens
         )
 
         # 2. Loyers impayés (créances)
