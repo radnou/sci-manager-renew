@@ -172,21 +172,15 @@ async def get_declaration_2065_pdf(
     """Télécharge la déclaration 2065 au format PDF CERFA."""
     service = Declaration2065Service()
     
-    # Récupérer la déclaration
-    result = service.client.table("declarations_2065").select("*").eq("id_sci", str(sci_id)).eq("exercice", exercice).execute()
-    
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Déclaration 2065 non trouvée pour l'exercice {exercice}"
-        )
-    
     # Récupérer le nom de la SCI
     sci_result = service.client.table("sci").select("nom").eq("id", str(sci_id)).execute()
     sci_nom = sci_result.data[0]["nom"] if sci_result.data else ""
     
-    # Re-générer la déclaration pour avoir l'objet complet
-    declaration = await service.generate_declaration(sci_id, exercice)
+    # Générer la déclaration (pas besoin de la table declarations_2065)
+    try:
+        declaration = await service.generate_declaration(sci_id, exercice)
+    except ResourceNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     
     # Générer le PDF
     pdf_service = Declaration2065PdfService()
