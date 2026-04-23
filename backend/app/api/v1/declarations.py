@@ -9,13 +9,16 @@ Endpoints :
 
 from uuid import UUID
 from typing import Optional
+import io
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.core.paywall import AssocieMembership, require_sci_membership
 from app.core.exceptions import ResourceNotFoundError, ValidationError
 from app.services.declaration_2065_service import Declaration2065Service
+from app.services.declaration_2065_pdf_service import Declaration2065PdfService
 
 router = APIRouter(prefix="/scis/{sci_id}/declaration-2065", tags=["declarations"])
 
@@ -142,8 +145,34 @@ async def get_declaration_2065_pdf(
     exercice: int,
     _=Depends(require_sci_membership),
 ):
-    """Télécharge la déclaration 2065 au format PDF (placeholder)."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Génération PDF en cours de développement. Utilisez les données JSON."
+    """Télécharge la déclaration 2065 au format PDF CERFA."""
+    service = Declaration2065Service()
+    
+    # Récupérer la déclaration
+    result = service.client.table("declarations_2065").select("*").eq("id_sci", str(sci_id)).eq("exercice", exercice).execute()
+    
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Déclaration 2065 non trouvée pour l'exercice {exercice}"
+        )
+    
+    # Récupérer le nom de la SCI
+    sci_result = service.client.table("sci").select("nom").eq("id", str(sci_id)).execute()
+    sci_nom = sci_result.data[0]["nom"] if sci_result.data else ""
+    
+    # Re-générer la déclaration pour avoir l'objet complet
+    declaration = await service.generate_declaration(sci_id, exercice)
+    
+    # Générer le PDF
+    pdf_service = Declaration2065PdfService()
+    pdf_bytes = pdf_service.generate(declaration, sci_nom)
+    
+    safe_nom = sci_nom.replace(" ", "_") if sci_nom else "sci"
+    filename = f"declaration_2065_{exercice}_{safe_nom}.pdf"
+    
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )

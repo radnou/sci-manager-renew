@@ -178,8 +178,20 @@ async def list_sci_biens(
         loyer_cc = float(bien.get("loyer_cc") or 0)
         prix = float(bien.get("prix_acquisition") or 0)
         charges = float(bien.get("charges") or 0)
-        bien["rentabilite_brute"] = round(loyer_cc * 12 / prix * 100, 2) if prix else 0
+        frais_notaire = float(bien.get("frais_notaire") or 0)
+        frais_agence = float(bien.get("frais_agence_acquisition") or 0)
+        
+        # Prix total d'acquisition (prix + frais)
+        prix_total = prix + frais_notaire + frais_agence
+        
+        # Rentabilité brute : loyer annuel / prix total * 100
+        bien["rentabilite_brute"] = round(loyer_cc * 12 / prix_total * 100, 2) if prix_total else 0
+        
+        # Cashflow annuel : (loyer - charges) * 12
         bien["cashflow_annuel"] = round((loyer_cc - charges) * 12, 2)
+        
+        # Rentabilité nette : (loyer - charges) * 12 / prix_total * 100
+        bien["rentabilite_nette"] = round((loyer_cc - charges) * 12 / prix_total * 100, 2) if prix_total else 0
 
     return biens
 

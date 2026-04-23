@@ -149,20 +149,76 @@ class Declaration2065Service:
             Decimal(str(l.get("montant", 0) or 0)) for l in (loyers_result.data or [])
         )
 
-        # 3. Crédits (dettes)
+        # 3. Crédits immobiliers (dettes) — calcul exact du capital restant dû
         credits_result = (
-            self.client.table("credits")
-            .select("montant_mensuel, duree_mois, date_debut")
+            self.client.table("credits_immobiliers")
+            .select("montant_emprunte, taux_nominal, duree_mois, date_debut, mensualite, capital_restant_du")
             .eq("id_sci", str(sci_id))
             .execute()
         )
-        # Calcul solde restant (simplifié)
         emprunts = Decimal("0")
         for cr in credits_result.data or []:
-            mensualité = Decimal(str(cr.get("montant_mensuel", 0) or 0))
-            durée = cr.get("duree_mois", 0) or 0
-            # Approximation : 50% du capital restant (à affiner)
-            emprunts += mensualité * durée * Decimal("0.5")
+            # Si capital_restant_du est déjà calculé, l'utiliser
+            crd = cr.get("capital_restant_du")
+            if crd is not None:
+                emprunts += Decimal(str(crd))
+                continue
+
+            # Sinon, calculer via amortissement linéaire
+            capital = Decimal(str(cr.get("montant_emprunte", 0) or 0))
+            taux_annuel = Decimal(str(cr.get("taux_nominal", 0) or 0))
+            duree = int(cr.get("duree_mois", 0) or 0)
+            date_debut = cr.get("date_debut")
+            
+            if capital <= 0 or duree <= 0 or not date_debut:
+                continue
+            
+            # Taux mensuel
+            t = taux_annuel / Decimal("12")
+            
+            # Nombre de mensualités déjà payées depuis le début
+            from datetime import date
+            date_debut = date.fromisoformat(str(date_debut))
+            today = date.today()
+            mois_ecoules = (today.year - date_debut.year) * 12 + (today.month - date_debut.month)
+            
+            if mois_ecoules <= 0:
+                # Le crédit n'a pas encore commencé ou vient de commencer
+                emprunts += capital
+                continue
+            
+            if mois_ecoules >= duree:
+                # Crédit remboursé (ou presque)
+                continue
+            
+            if t == 0:
+                # Crédit à taux 0 : amortissement linéaire simple
+                crd = capital - (capital / duree * mois_ecoules)
+            else:
+                # Formule du capital restant dû
+                # CRD(k) = C × ((1+t)^n - (1+t)^k) / ((1+t)^n - 1)
+                try:
+                    t_dec = t.quantize(Decimal("0.00000001"))
+                    n = Decimal(str(duree))
+                    k = Decimal(str(mois_ecoules))
+                    
+                    un_plus_t_n = (Decimal("1") + t_dec) ** n
+                    un_plus_t_k = (Decimal("1") + t_dec) ** k
+                    
+                    crd = capital * (un_plus_t_n - un_plus_t_k) / (un_plus_t_n - Decimal("1"))
+                except (ValueError, OverflowError):
+                    # Fallback sur l'amortissement linéaire simple
+                    crd = capital - (capital / duree * mois_ecoules)
+            
+            emprunts += crd
+            
+            # Mettre à jour le capital_restant_du en base (cache)
+            try:
+                self.client.table("credits_immobiliers").update({
+                    "capital_restant_du": float(crd.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+                }).eq("id", cr["id"]).execute()
+            except Exception:
+                pass  # Ne pas bloquer si la mise à jour échoue
 
         # 4. Résultat fiscal
         fiscal_result = (
