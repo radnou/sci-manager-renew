@@ -73,7 +73,13 @@ function parseFakeSession(): Session | null {
 }
 
 // Track whether the initial session has been resolved at least once.
+// WARNING: Do NOT use this as a guard across SPA navigations.
+// Each page mount must independently resolve the session.
 let initialSessionResolved = false;
+
+export function resetSessionResolution() {
+	initialSessionResolved = false;
+}
 
 export async function getCurrentSession(): Promise<Session | null> {
 	// parseFakeSession() returns null immediately in production.

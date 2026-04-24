@@ -11,6 +11,7 @@
 	import {
 		clearFakeSession,
 		getCurrentSession,
+		resetSessionResolution,
 		subscribeToSessionChanges
 	} from '$lib/auth/session';
 	import {
@@ -63,6 +64,10 @@
 
 		// Initialize Matomo analytics
 		initMatomo();
+
+		// Reset session resolution on each page mount so that
+		// getCurrentSession() will wait for INITIAL_SESSION if needed.
+		resetSessionResolution();
 
 		// Get current session first (restores from localStorage),
 		// then subscribe to changes. This prevents the redirect-to-/login
