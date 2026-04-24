@@ -10,6 +10,7 @@
 	import { supabase } from '$lib/supabase';
 	import {
 		clearFakeSession,
+		getCurrentSession,
 		subscribeToSessionChanges
 	} from '$lib/auth/session';
 	import {
@@ -63,9 +64,16 @@
 		// Initialize Matomo analytics
 		initMatomo();
 
-		// Single auth source: onAuthStateChange fires INITIAL_SESSION
-		// immediately with the restored session. No separate getCurrentSession()
-		// call — that races and can timeout, causing a false redirect to /login.
+		// Get current session first (restores from localStorage),
+		// then subscribe to changes. This prevents the redirect-to-/login
+		// flash on SPA navigation when the session is already stored.
+		getCurrentSession().then((session) => {
+			if (mounted) {
+				user = session?.user || null;
+				authResolved = true;
+			}
+		});
+
 		const subscription = subscribeToSessionChanges((session) => {
 			if (mounted) {
 				user = session?.user || null;
