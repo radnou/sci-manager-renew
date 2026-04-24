@@ -3,9 +3,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { ArrowRight, Play, ChevronDown } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
-	import { getSupabaseClient } from '$lib/supabase';
+	import { supabase } from '$lib/supabase';
 
-	const supabase = getSupabaseClient();
 	let isLoggedIn = $state(false);
 
 	$effect(() => {
