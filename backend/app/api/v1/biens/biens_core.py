@@ -229,7 +229,21 @@ async def create_sci_bien(
 
     created = data[0]
     bien_id = str(created.get("id", ""))
-    logger.info("bien_created_nested", bien_id=bien_id, sci_id=str(sci_id))
+    
+    # Compute prix_total and rentabilite on-the-fly for the response
+    prix = float(payload.prix_acquisition or 0)
+    frais_notaire = float(payload.frais_notaire or 0)
+    frais_agence = float(payload.frais_agence_acquisition or 0)
+    prix_total = prix + frais_notaire + frais_agence
+    loyer_cc = float(payload.loyer_cc or 0)
+    charges = float(payload.charges or 0)
+    
+    created["prix_total"] = round(prix_total, 2) if prix_total > 0 else None
+    created["rentabilite_brute"] = round(loyer_cc * 12 / prix_total * 100, 2) if prix_total > 0 else 0.0
+    created["rentabilite_nette"] = round((loyer_cc - charges) * 12 / prix_total * 100, 2) if prix_total > 0 else 0.0
+    created["cashflow_annuel"] = round((loyer_cc - charges) * 12, 2)
+    
+    logger.info("bien_created_nested", bien_id=bien_id, sci_id=str(sci_id), prix_total=prix_total)
 
     # Auto-create "Acquisition" événement if acquisition data is provided
     if payload.prix_acquisition is not None and payload.acquisition_date is not None:
