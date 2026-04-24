@@ -80,6 +80,7 @@ class BienResponse(BaseModel):
     statut: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    prix_total: float | None = None
     rentabilite_brute: float = 0
     rentabilite_nette: float = 0
     cashflow_annuel: float = 0
