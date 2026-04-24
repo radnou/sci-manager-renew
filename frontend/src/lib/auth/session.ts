@@ -92,14 +92,18 @@ export async function getCurrentSession(): Promise<Session | null> {
 		data: { session }
 	} = await supabase.auth.getSession();
 
-	// If session is null and we haven't resolved the initial session yet,
-	// Supabase may still be restoring from storage.
-	// Wait briefly for INITIAL_SESSION event before giving up.
-	if (!session && browser && !initialSessionResolved) {
+	// If getSession() returned a session, use it directly.
+	if (session) {
+		return session;
+	}
+
+	// getSession() returned null. Supabase may still be restoring from storage.
+	// Wait for INITIAL_SESSION event (fires once on client startup after storage
+	// has been read). This is the canonical way to get the initial session.
+	if (browser) {
 		return new Promise<Session | null>((resolve) => {
 			const timeout = setTimeout(() => {
 				sub.unsubscribe();
-				initialSessionResolved = true;
 				resolve(null);
 			}, 4000);
 
@@ -109,43 +113,13 @@ export async function getCurrentSession(): Promise<Session | null> {
 				if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
 					clearTimeout(timeout);
 					sub.unsubscribe();
-					initialSessionResolved = true;
 					resolve(s);
 				}
 			});
 		});
 	}
 
-	// If we previously had a session but getSession() returned null,
-	// Supabase may be mid-token-refresh. Wait briefly before returning null
-	// (which would cause a redirect-to-/login flash on SPA navigation).
-	if (!session && browser && initialSessionResolved) {
-		const retrySession = await new Promise<Session | null>((resolve) => {
-			const timeout = setTimeout(() => {
-				retrySub.unsubscribe();
-				resolve(null);
-			}, 1500);
-
-			const {
-				data: { subscription: retrySub }
-			} = supabase.auth.onAuthStateChange((event, s) => {
-				if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-					clearTimeout(timeout);
-					retrySub.unsubscribe();
-					resolve(s);
-				}
-			});
-		});
-		if (retrySession) {
-			return retrySession;
-		}
-	}
-
-	if (session) {
-		initialSessionResolved = true;
-	}
-
-	return session;
+	return null;
 }
 
 export function subscribeToSessionChanges(
