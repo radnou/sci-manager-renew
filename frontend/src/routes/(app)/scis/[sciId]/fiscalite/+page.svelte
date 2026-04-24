@@ -357,8 +357,15 @@
 				</h2>
 			</div>
 			<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-				Les SCI à l'IS utilisent la liasse fiscale 2065 (hors périmètre).
+				Les SCI à l'IS utilisent la liasse fiscale 2065.
 			</p>
+			<a
+				href="/scis/{sci.id}/fiscalite/declaration-2065"
+				class="mt-4 inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+			>
+				<FileText class="h-4 w-4" />
+				Générer la déclaration 2065
+			</a>
 		</div>
 	{:else}
 	<div

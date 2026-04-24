@@ -137,8 +137,8 @@
 <CommentCaMarcheSection bind:demoScene />
 <TargetAudienceSection />
 <ValueStackSection />
-<PricingSection
-    {plans}
+    <PricingSection
+    plans={PLANS_LIST}
     bind:billingPeriod
     {checkoutLoading}
     {openCheckoutModal}

@@ -10,11 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app ./app
-COPY templates ./templates
-
 # Run as non-root user (security: container escape mitigation)
 RUN addgroup --system app && adduser --system --ingroup app app
+
+COPY --chown=app:app app ./app
+COPY --chown=app:app templates ./templates
+
 USER app
 
 EXPOSE 8000

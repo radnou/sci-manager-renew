@@ -16,3 +16,4 @@ export * from './import-export';
 export * from './bilans';
 export * from './demo';
 export * from './quitus';
+export * from './declarations';
