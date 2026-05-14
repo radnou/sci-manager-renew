@@ -393,9 +393,19 @@ def _fake_supabase_session() -> FakeSupabaseClient:
 @pytest.fixture(scope="session")
 def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient:
     """Boot TestClient + monkeypatch once per xdist worker."""
-    from app.api.v1 import associes, biens, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
-    from app.api.v1 import dashboard, scis_biens, notification_preferences
+    from app.api.v1 import associes, biens, biens_flat, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
+    from app.api.v1 import dashboard, notification_preferences
     from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle, calendrier_fiscal, leads
+    from app.api.v1.biens import (
+        biens_core,
+        biens_loyers,
+        biens_baux,
+        biens_charges,
+        biens_pno,
+        biens_frais,
+        biens_documents,
+        biens_evenements,
+    )
     from app import main
     from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin
     from app.services import subscription_service
@@ -411,10 +421,12 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
             return fake_supabase
         fake_service.cache_clear = lambda: None
 
-        for mod in [associes, biens, charges, export, fiscalite, loyers, locataires, scis,
-                    notifications, dashboard, scis_biens, notification_preferences, quitus,
+        for mod in [associes, biens_flat, charges, export, fiscalite, loyers, locataires, scis,
+                    notifications, dashboard, notification_preferences, quitus,
                     assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle,
-                    calendrier_fiscal, leads]:
+                    calendrier_fiscal, leads,
+                    biens_core, biens_loyers, biens_baux, biens_charges,
+                    biens_pno, biens_frais, biens_documents, biens_evenements]:
             mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
             mp.setattr(mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
 

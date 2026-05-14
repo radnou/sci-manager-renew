@@ -203,6 +203,18 @@ def resolve_price_id_for_plan(plan_key: PlanKey | str, billing_period: str = "mo
         return settings.stripe_pilotage_monthly_price_id or settings.stripe_pro_price_id
     if normalized == PlanKey.FONDATEUR:
         return settings.stripe_fondateur_price_id
+    if normalized == PlanKey.LIFETIME:
+        # Prefer a dedicated lifetime price id; fall back to the fondateur
+        # (lifetime deal) price id. Treat the placeholder default as unset so
+        # callers raise a clear "Price ID unavailable" error instead of pushing
+        # a fake price to Stripe.
+        lifetime_id = settings.stripe_lifetime_price_id
+        if lifetime_id and not lifetime_id.endswith("_placeholder"):
+            return lifetime_id
+        fondateur_id = settings.stripe_fondateur_price_id
+        if fondateur_id and not fondateur_id.endswith("_placeholder"):
+            return fondateur_id
+        return None
     if normalized == PlanKey.CABINET:
         if billing_period == "year":
             return settings.stripe_cabinet_annual_price_id
@@ -235,6 +247,9 @@ def resolve_plan_key_from_price_id(price_id: str | None) -> PlanKey | None:
     # Fondateur (one-time lifetime)
     if settings.stripe_fondateur_price_id:
         price_mapping[settings.stripe_fondateur_price_id] = PlanKey.FONDATEUR
+    # Lifetime (legacy / grandfathered)
+    if settings.stripe_lifetime_price_id and not settings.stripe_lifetime_price_id.endswith("_placeholder"):
+        price_mapping[settings.stripe_lifetime_price_id] = PlanKey.LIFETIME
 
     # Cabinet
     price_mapping[settings.stripe_cabinet_price_id] = PlanKey.CABINET

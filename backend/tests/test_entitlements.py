@@ -162,6 +162,45 @@ def test_resolve_plan_key_unknown_falls_back_to_free():
     assert result == PlanKey.FREE
 
 
-def test_resolve_price_id_lifetime_returns_none():
+def test_resolve_price_id_lifetime_returns_none_when_only_placeholder(monkeypatch):
+    """When env vars are still placeholders, lifetime resolution must return None
+    so callers raise a clear 'Price ID unavailable' error rather than passing a
+    fake id to Stripe."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_lifetime_price_id", "price_lifetime_placeholder")
+    monkeypatch.setattr(settings, "stripe_fondateur_price_id", "price_fondateur_placeholder")
     result = resolve_price_id_for_plan(PlanKey.LIFETIME)
     assert result is None
+
+
+def test_resolve_price_id_lifetime_uses_dedicated_env(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_lifetime_price_id", "price_lifetime_real")
+    monkeypatch.setattr(settings, "stripe_fondateur_price_id", "price_fondateur_real")
+    result = resolve_price_id_for_plan(PlanKey.LIFETIME)
+    assert result == "price_lifetime_real"
+
+
+def test_resolve_price_id_lifetime_falls_back_to_fondateur(monkeypatch):
+    """If no dedicated lifetime price is configured, fall back to fondateur."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_lifetime_price_id", "price_lifetime_placeholder")
+    monkeypatch.setattr(settings, "stripe_fondateur_price_id", "price_fondateur_real")
+    result = resolve_price_id_for_plan(PlanKey.LIFETIME)
+    assert result == "price_fondateur_real"
+
+
+def test_resolve_price_id_lifetime_accepts_string_plan_key(monkeypatch):
+    """resolve_price_id_for_plan must accept the literal string 'lifetime'
+    (this is what the pricing page sends)."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_lifetime_price_id", "price_lifetime_real")
+    result = resolve_price_id_for_plan("lifetime")
+    assert result == "price_lifetime_real"
+
+
+def test_resolve_plan_key_lifetime(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "stripe_lifetime_price_id", "price_lifetime_real")
+    result = resolve_plan_key_from_price_id("price_lifetime_real")
+    assert result == PlanKey.LIFETIME

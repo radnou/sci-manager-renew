@@ -25,6 +25,8 @@ from app.schemas.frais_agence import FraisAgenceCreate, FraisAgenceResponse
 from app.services.document_links import create_document_signed_url, extract_document_storage_path
 from app.services.rentabilite_service import calculate_rentabilite
 
+from .biens_core import _refresh_documents_urls, _validate_upload
+
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(tags=["scis-biens"])
