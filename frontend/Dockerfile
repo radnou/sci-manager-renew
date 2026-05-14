@@ -1,4 +1,5 @@
-FROM node:20-alpine AS build
+# Node 22: packageManager/corepack pulls pnpm 11.x, which requires Node >=22.13 (uses node:sqlite).
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -29,7 +30,11 @@ ENV VITE_PLAUSIBLE_API_HOST=${VITE_PLAUSIBLE_API_HOST}
 ENV VITE_ANALYTICS_REQUIRE_CONSENT=${VITE_ANALYTICS_REQUIRE_CONSENT}
 
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+# pnpm 11 blocks native build scripts by default (ERR_PNPM_IGNORED_BUILDS for
+# @sentry/cli, esbuild, ...). Approve them explicitly inside the container build.
+RUN corepack enable \
+    && pnpm config set dangerously-allow-all-builds true \
+    && pnpm install --frozen-lockfile
 
 COPY . .
 RUN pnpm run build
@@ -38,7 +43,8 @@ RUN pnpm run build
 RUN pnpm prune --prod
 
 # ---- Production runtime ----
-FROM node:20-alpine AS runtime
+# Match the build stage on Node 22 (required by pnpm 11 / node:sqlite).
+FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
