@@ -39,6 +39,7 @@ from app.api.v1 import (
     associes,
     auth,
     biens,
+    biens_flat,
     bilans,
     calendrier_fiscal,
     cerfa,
@@ -65,7 +66,6 @@ from app.api.v1 import (
     quitus,
     sci_lifecycle,
     scis,
-    biens as scis_biens,  # Module splité (anciennement scis_biens.py monolithe)
     stripe,
 )
 from app.core.config import Environment, settings
@@ -526,8 +526,15 @@ async def maintenance_middleware(
     """Block all requests in maintenance mode, except health + webhooks."""
     if settings.maintenance_mode:
         path = request.url.path
-        # Always allow health checks and Stripe webhooks
-        if path in ("/api/v1/health", "/api/v1/health/ready") or path.startswith("/api/v1/stripe/webhooks"):
+        # Always allow health checks and Stripe webhooks.
+        # The webhook route is /api/v1/stripe/webhook (singular); accept both
+        # spellings for defence-in-depth in case the route is ever renamed.
+        if (
+            path in ("/api/v1/health", "/api/v1/health/ready")
+            or path == "/api/v1/stripe/webhook"
+            or path.startswith("/api/v1/stripe/webhook/")
+            or path.startswith("/api/v1/stripe/webhooks")
+        ):
             return await call_next(request)
         # Allow beta access with password
         if settings.beta_password:
@@ -685,7 +692,7 @@ app.include_router(onboarding.router, prefix="/api/v1")
 app.include_router(export.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(finances.router, prefix="/api/v1")
-app.include_router(biens.router, prefix="/api/v1")
+app.include_router(biens_flat.router, prefix="/api/v1")
 app.include_router(mouvements_parts.router, prefix="/api/v1")
 app.include_router(sci_lifecycle.router, prefix="/api/v1")
 app.include_router(assemblees_generales.router, prefix="/api/v1")

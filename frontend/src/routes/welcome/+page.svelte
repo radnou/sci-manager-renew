@@ -8,6 +8,7 @@
 	let factIndex = $state(0);
 	let progress = $state(0);
 	let error = $state('');
+	let seedFailed = $state(false);
 
 	const steps = [
 		{ text: 'Création de votre espace de gestion', duration: 1500 },
@@ -25,13 +26,24 @@
 
 	const totalDuration = steps.reduce((s, step) => s + step.duration, 0);
 
+	function retrySeed() {
+		// Hard reload to restart the full flow.
+		window.location.reload();
+	}
+
 	onMount(() => {
 		trackEvent(EVENTS.DEMO_SEED_START);
-		// Launch API call immediately (runs in background)
-		const seedPromise = seedDemo().catch((err) => {
-			console.error('Demo seed failed:', err);
-			error = err?.message || 'Erreur lors du chargement des données.';
-		});
+		// Launch API call immediately (runs in background). Track outcome so we
+		// can block the /dashboard redirect when the seed actually failed —
+		// otherwise the user lands on an empty dashboard with no explanation.
+		const seedPromise = seedDemo()
+			.then(() => true)
+			.catch((err) => {
+				console.error('Demo seed failed:', err);
+				error = err?.message || 'Erreur lors du chargement des données.';
+				seedFailed = true;
+				return false;
+			});
 
 		// Animate steps on fixed timer (independent of API)
 		let elapsed = 0;
@@ -55,7 +67,11 @@
 			clearInterval(interval);
 			clearInterval(factTimer);
 			progress = 100;
-			await seedPromise;
+			const seedOk = await seedPromise;
+			if (!seedOk) {
+				// Do NOT redirect — surface the error and let the user retry.
+				return;
+			}
 			trackEvent(EVENTS.DEMO_SEED_COMPLETE);
 			// Small delay for 100% to render
 			setTimeout(() => {
@@ -116,7 +132,29 @@
 		</div>
 
 		{#if error}
-			<p class="mt-4 text-xs text-rose-500">{error}</p>
+			<div class="mt-6 rounded-lg border border-rose-200 bg-rose-50 p-4 text-left dark:border-rose-900 dark:bg-rose-950">
+				<p class="text-sm font-medium text-rose-700 dark:text-rose-300">
+					Le chargement des données de démonstration a échoué.
+				</p>
+				<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p>
+				{#if seedFailed}
+					<div class="mt-3 flex gap-2">
+						<button
+							type="button"
+							onclick={retrySeed}
+							class="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700"
+						>
+							Réessayer
+						</button>
+						<a
+							href="/dashboard"
+							class="rounded-md border border-rose-300 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-900"
+						>
+							Continuer sans démo
+						</a>
+					</div>
+				{/if}
+			</div>
 		{/if}
 	</div>
 </div>

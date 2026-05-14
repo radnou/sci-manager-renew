@@ -336,8 +336,8 @@ async def create_checkout_session(
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
     checkout_mode = payload.mode or resolved_plan.checkout_mode
-    # Allow fondateur to use 'payment' mode
-    if checkout_mode != resolved_plan.checkout_mode and payload.plan_key != PlanKey.FONDATEUR:
+    # Allow fondateur/lifetime to use 'payment' mode
+    if checkout_mode != resolved_plan.checkout_mode and payload.plan_key not in (PlanKey.FONDATEUR, PlanKey.LIFETIME):
         raise ValidationError("Checkout mode does not match the selected plan")
 
     logger.info(
@@ -408,19 +408,19 @@ async def create_guest_checkout(
             flag_name="feature_stripe_payments",
         )
 
-    if payload.plan_key not in ("starter", "pro", "fondateur"):
-        raise ValidationError("plan_key must be 'starter', 'pro', or 'fondateur'.")
+    if payload.plan_key not in ("starter", "pro", "fondateur", "lifetime"):
+        raise ValidationError("plan_key must be 'starter', 'pro', 'fondateur', or 'lifetime'.")
 
-    is_fondateur = payload.plan_key == "fondateur"
+    is_one_time = payload.plan_key in ("fondateur", "lifetime")
 
-    if not is_fondateur and payload.billing_period not in ("month", "year"):
+    if not is_one_time and payload.billing_period not in ("month", "year"):
         raise ValidationError("billing_period must be 'month' or 'year'.")
 
     price_id = resolve_price_id_for_plan(payload.plan_key, billing_period=payload.billing_period)
     if not price_id:
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
-    checkout_mode = "payment" if is_fondateur else "subscription"
+    checkout_mode = "payment" if is_one_time else "subscription"
 
     logger.info(
         "creating_guest_checkout_session",

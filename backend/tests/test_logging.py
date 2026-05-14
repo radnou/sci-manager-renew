@@ -135,11 +135,11 @@ def test_create_bien_logs_creation():
 
     try:
         with (
-            patch("app.api.v1.biens.logger") as mock_logger,
-            patch("app.api.v1.biens._get_client") as mock_get_client,
-            patch("app.api.v1.biens._get_write_client") as mock_get_write_client,
-            patch("app.api.v1.biens._get_user_sci_ids", return_value=["sci123"]),
-            patch("app.api.v1.biens.SubscriptionService.enforce_limit", return_value={"plan_key": "pro", "is_active": True}),
+            patch("app.api.v1.biens_flat.logger") as mock_logger,
+            patch("app.api.v1.biens_flat._get_client") as mock_get_client,
+            patch("app.api.v1.biens_flat._get_write_client") as mock_get_write_client,
+            patch("app.api.v1.biens_flat._get_user_sci_ids", return_value=["sci123"]),
+            patch("app.api.v1.biens_flat.SubscriptionService.enforce_limit", return_value={"plan_key": "pro", "is_active": True}),
         ):
 
             # Mock Supabase response
@@ -304,9 +304,9 @@ def test_update_bien_logs_operation():
 
     try:
         with (
-            patch("app.api.v1.biens.logger") as mock_logger,
-            patch("app.api.v1.biens._get_client") as mock_get_client,
-            patch("app.api.v1.biens._get_user_sci_ids", return_value=["sci123"]),
+            patch("app.api.v1.biens_flat.logger") as mock_logger,
+            patch("app.api.v1.biens_flat._get_client") as mock_get_client,
+            patch("app.api.v1.biens_flat._get_user_sci_ids", return_value=["sci123"]),
         ):
 
             existing_result = MagicMock()

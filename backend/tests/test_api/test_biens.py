@@ -397,7 +397,7 @@ def test_select_by_sci_scope_fallback_loop(client, auth_headers, fake_supabase):
 
 def test_select_by_sci_scope_empty():
     """Cover line 31: _select_by_sci_scope with empty sci_ids returns []."""
-    from app.api.v1.biens import _select_by_sci_scope
+    from app.api.v1.biens_flat import _select_by_sci_scope
     assert _select_by_sci_scope(None, "biens", []) == []
 
 
@@ -445,7 +445,7 @@ def test_select_by_sci_scope_fallback_error(client, auth_headers, fake_supabase)
 
 def test_select_by_sci_scope_in_error():
     """Cover line 37: error in _select_by_sci_scope in_ path."""
-    from app.api.v1.biens import _select_by_sci_scope
+    from app.api.v1.biens_flat import _select_by_sci_scope
     from tests.conftest import FakeResult, FakeSupabaseClient, FakeQuery
     from app.core.exceptions import DatabaseError
     import pytest as _pytest
@@ -472,7 +472,7 @@ def test_select_by_sci_scope_in_error():
 
 def test_require_sci_access_missing_id_sci():
     """Cover line 52: _require_sci_access with empty id_sci raises DatabaseError."""
-    from app.api.v1.biens import _require_sci_access
+    from app.api.v1.biens_flat import _require_sci_access
     from app.core.exceptions import DatabaseError
     import pytest as _pytest
 
@@ -482,7 +482,7 @@ def test_require_sci_access_missing_id_sci():
 
 def test_require_sci_access_unauthorized():
     """Cover line 54: _require_sci_access with wrong id_sci raises AuthorizationError."""
-    from app.api.v1.biens import _require_sci_access
+    from app.api.v1.biens_flat import _require_sci_access
     from app.core.exceptions import AuthorizationError
     import pytest as _pytest
 
