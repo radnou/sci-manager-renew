@@ -627,19 +627,69 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
 
     # Content Security Policy (CSP)
+    # connect-src must include every origin the browser is allowed to fetch from
+    # (API, Supabase REST + Realtime WSS, Stripe, analytics, error reporting).
+    # Browser blocks fetch BEFORE sending the request when an origin is missing,
+    # surfacing as "Failed to fetch" with no backend log entry.
     matomo_url = os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr")
-    # In development, allow connect to backend on different port
-    dev_connect = ""
+    api_public_url = os.environ.get("VITE_API_URL", "https://api.gerersci.fr").strip().rstrip("/")
+    supabase_public_url = (
+        os.environ.get("SUPABASE_PUBLIC_URL")
+        or os.environ.get("VITE_SUPABASE_URL")
+        or settings.supabase_url
+    ).strip().rstrip("/")
+    sentry_dsn = os.environ.get("SENTRY_DSN") or os.environ.get("VITE_SENTRY_DSN", "")
+    sentry_origin = ""
+    if sentry_dsn:
+        try:
+            parsed = urlparse(sentry_dsn)
+            if parsed.scheme and parsed.netloc:
+                # Strip credentials from the DSN; we only need scheme://host
+                host = parsed.hostname or ""
+                if host:
+                    sentry_origin = f"https://{host}"
+        except Exception:
+            sentry_origin = ""
+
+    connect_sources = ["'self'"]
+    if api_public_url:
+        connect_sources.append(api_public_url)
+    if supabase_public_url:
+        connect_sources.append(supabase_public_url)
+        # Supabase Realtime uses WebSocket — derive wss:// equivalent.
+        if supabase_public_url.startswith("https://"):
+            connect_sources.append("wss://" + supabase_public_url[len("https://"):])
+        elif supabase_public_url.startswith("http://"):
+            connect_sources.append("ws://" + supabase_public_url[len("http://"):])
+    connect_sources.extend([
+        "https://api.stripe.com",
+        "https://*.stripe.com",
+        matomo_url,
+    ])
+    if sentry_origin:
+        connect_sources.append(sentry_origin)
+
     if settings.app_env != Environment.PRODUCTION:
-        dev_connect = "http://localhost:8001 http://127.0.0.1:8001 http://localhost:8000 http://127.0.0.1:8000 ws://localhost:5173 "
+        connect_sources.extend([
+            "http://localhost:8001",
+            "http://127.0.0.1:8001",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "ws://localhost:5173",
+            "ws://127.0.0.1:5173",
+        ])
+
+    # Deduplicate while preserving order
+    connect_src = " ".join(dict.fromkeys(s for s in connect_sources if s))
+
     csp_policy = (
         "default-src 'self'; "
         f"script-src 'self' https://js.stripe.com {matomo_url}; "
         "style-src 'self' 'unsafe-inline'; "  # Tailwind nécessite unsafe-inline
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "
-        f"connect-src 'self' {dev_connect}{settings.supabase_url} https://api.stripe.com {matomo_url}; "
-        "frame-src https://js.stripe.com; "
+        f"connect-src {connect_src}; "
+        "frame-src https://js.stripe.com https://hooks.stripe.com; "
         "object-src 'none'; "
         "base-uri 'self'; "
         "form-action 'self'; "
