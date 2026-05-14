@@ -1,25 +1,7 @@
 /**
- * Umami analytics event tracking helper.
- * Wraps window.umami?.track() with type safety.
+ * Pre-defined event names used across the app.
+ * Keep this list stable — event names are reported to analytics providers.
  */
-
-declare global {
-	interface Window {
-		umami?: {
-			track: (event: string, data?: Record<string, string | number | boolean>) => void;
-		};
-	}
-}
-
-export function trackEvent(event: string, data?: Record<string, string | number | boolean>): void {
-	try {
-		window.umami?.track(event, data);
-	} catch {
-		// Silent fail — analytics should never break the app
-	}
-}
-
-// Pre-defined event names for consistency
 export const EVENTS = {
 	// Landing page
 	LANDING_CTA_CLICK: 'landing_cta_click',
@@ -80,5 +62,8 @@ export const EVENTS = {
 	// Celebrations
 	MILESTONE_FIRST_LOYER: 'milestone_first_loyer',
 	MILESTONE_FIRST_QUITTANCE: 'milestone_first_quittance',
-	MILESTONE_DASHBOARD_COMPLETE: 'milestone_dashboard_complete',
+	MILESTONE_DASHBOARD_COMPLETE: 'milestone_dashboard_complete'
 } as const;
+
+export type EventName = (typeof EVENTS)[keyof typeof EVENTS] | string;
+export type EventProps = Record<string, string | number | boolean>;

@@ -3,12 +3,27 @@
 	import { writable } from 'svelte/store';
 	import { Button } from '$lib/components/ui/button';
 	import { Card } from '$lib/components/ui/card';
-	import { grantMatomoConsent, revokeMatomoConsent } from '$lib/matomo';
+	import {
+		grantAnalyticsConsent,
+		revokeAnalyticsConsent,
+		activeAnalyticsProviders
+	} from '$lib/analytics';
 
 	const showBanner = writable(false);
 	const consentGiven = writable(false);
 
 	const CONSENT_KEY = 'gerersci_cookie_consent';
+
+	// Active providers determine the wording shown to the user.
+	const providers = activeAnalyticsProviders();
+	const hasMatomo = providers.includes('matomo');
+	const hasPlausible = providers.includes('plausible');
+	const analyticsLabel = (() => {
+		if (hasPlausible && hasMatomo) return 'Plausible et Matomo';
+		if (hasPlausible) return 'Plausible (sans cookies)';
+		if (hasMatomo) return 'Matomo, auto-hébergé en France';
+		return 'aucun';
+	})();
 
 	onMount(() => {
 		// Vérifier si le consentement a déjà été donné
@@ -20,7 +35,7 @@
 			try {
 				const parsed = JSON.parse(savedConsent);
 				if (parsed.analytics) {
-					grantMatomoConsent();
+					grantAnalyticsConsent();
 				}
 			} catch {
 				// ignore parse errors
@@ -44,7 +59,7 @@
 		localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
 		consentGiven.set(true);
 		showBanner.set(false);
-		grantMatomoConsent();
+		grantAnalyticsConsent();
 	}
 
 	function acceptNecessary() {
@@ -58,7 +73,7 @@
 		localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
 		consentGiven.set(true);
 		showBanner.set(false);
-		revokeMatomoConsent();
+		revokeAnalyticsConsent();
 	}
 
 	// Pour debug en dev: permet de réinitialiser le consentement
@@ -88,11 +103,12 @@
 						</h2>
 						<p class="text-sm text-slate-600 dark:text-slate-400">
 							Nous utilisons des <strong>cookies essentiels</strong> pour l'authentification et le
-							fonctionnement du service, ainsi que des <strong>cookies d'analyse</strong> (Matomo,
-							auto-hébergé en France) pour améliorer votre expérience. Aucun tracking publicitaire.
+							fonctionnement du service, ainsi que des <strong>statistiques d'usage</strong>
+							({analyticsLabel}) pour améliorer votre expérience. Aucun tracking publicitaire,
+							aucun partage de données.
 						</p>
 						<p class="text-xs text-slate-500 dark:text-slate-500">
-							Vos données d'analyse restent sur nos serveurs en France et ne sont jamais partagées.
+							Nous ne revendons aucune donnée et n'utilisons aucun pixel publicitaire.
 							<a href="/confidentialite" class="text-blue-600 dark:text-blue-400 hover:underline ml-1">
 								En savoir plus →
 							</a>
