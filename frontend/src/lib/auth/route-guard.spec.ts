@@ -73,9 +73,16 @@ describe('route guard helpers', () => {
 
 		it('marks legal pages as public', () => {
 			expect(isPublicRoute('/cgu')).toBe(true);
+			expect(isPublicRoute('/cgv')).toBe(true);
 			expect(isPublicRoute('/confidentialite')).toBe(true);
 			expect(isPublicRoute('/mentions-legales')).toBe(true);
 			expect(isPublicRoute('/privacy')).toBe(true);
+			expect(isPublicRoute('/rgpd')).toBe(true);
+		});
+
+		it('marks alias/redirect routes as public', () => {
+			expect(isPublicRoute('/tarifs')).toBe(true);
+			expect(isPublicRoute('/faq')).toBe(true);
 		});
 
 		it('marks auth callback as public', () => {

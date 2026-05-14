@@ -23,7 +23,6 @@
     import GuaranteeSection from "$lib/landing/GuaranteeSection.svelte";
     import CTASection from "$lib/landing/CTASection.svelte";
     import FAQSection from "$lib/landing/FAQSection.svelte";
-    import FooterSection from "$lib/landing/FooterSection.svelte";
     import TrustBar from "$lib/landing/TrustBar.svelte";
     import CookieBanner from "$lib/components/CookieBanner.svelte";
 
@@ -146,7 +145,6 @@
 <GuaranteeSection />
 <CTASection />
 <FAQSection bind:openFaqIndex />
-<FooterSection />
 
 {#if lightboxOpen}
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

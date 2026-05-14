@@ -24,7 +24,19 @@
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 	let showCheckEmail = $state(false);
+	let emailTouched = $state(false);
+	let passwordTouched = $state(false);
+	let submitAttempted = $state(false);
 	const isDevMode = import.meta.env.DEV;
+
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	let emailEmpty = $derived(email.trim() === '');
+	let emailInvalid = $derived(!emailEmpty && !emailRegex.test(email.trim()));
+	let showEmailEmptyError = $derived((emailTouched || submitAttempted) && emailEmpty);
+	let showEmailInvalidError = $derived((emailTouched || submitAttempted) && emailInvalid);
+	let showPasswordEmptyError = $derived(
+		(passwordTouched || submitAttempted) && mode === 'password' && password.length === 0
+	);
 
 	function getRedirectTarget(): string {
 		const next = page.url.searchParams.get('next');
@@ -97,6 +109,22 @@
 
 	function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
+		submitAttempted = true;
+		errorMessage = '';
+
+		if (emailEmpty) {
+			errorMessage = "Veuillez saisir votre adresse email.";
+			return;
+		}
+		if (emailInvalid) {
+			errorMessage = "Veuillez saisir une adresse email valide.";
+			return;
+		}
+		if (mode === 'password' && password.length === 0) {
+			errorMessage = "Veuillez saisir votre mot de passe.";
+			return;
+		}
+
 		if (mode === 'password') {
 			handlePasswordLogin();
 		} else {
@@ -146,7 +174,7 @@
 
 					<Button href="/" variant="outline" class="w-full">Retour à l'accueil</Button>
 				{:else}
-					<form class="space-y-4" onsubmit={handleSubmit}>
+					<form class="space-y-4" onsubmit={handleSubmit} novalidate>
 						<label class="sci-field">
 							<span class="sci-field-label">Email</span>
 							<Input
@@ -156,7 +184,19 @@
 								placeholder="vous@sci.fr"
 								disabled={isLoading}
 								autocomplete="email"
+								aria-invalid={showEmailEmptyError || showEmailInvalidError}
+								aria-describedby={showEmailEmptyError ? 'login-email-empty' : showEmailInvalidError ? 'login-email-invalid' : undefined}
+								onblur={() => (emailTouched = true)}
 							/>
+							{#if showEmailEmptyError}
+								<span id="login-email-empty" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+									L'email est requis.
+								</span>
+							{:else if showEmailInvalidError}
+								<span id="login-email-invalid" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+									Adresse email invalide (ex : vous@sci.fr).
+								</span>
+							{/if}
 						</label>
 
 						{#if mode === 'password'}
@@ -169,7 +209,14 @@
 									placeholder="••••••••"
 									disabled={isLoading}
 									autocomplete="current-password"
+									aria-invalid={showPasswordEmptyError}
+									onblur={() => (passwordTouched = true)}
 								/>
+								{#if showPasswordEmptyError}
+									<span role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+										Le mot de passe est requis.
+									</span>
+								{/if}
 							</label>
 
 							<div class="flex justify-end">
@@ -194,7 +241,7 @@
 						<Button
 							type="submit"
 							class="w-full"
-							disabled={isLoading || !email || (mode === 'password' && !password)}
+							disabled={isLoading}
 						>
 							{#if isLoading}
 								{mode === 'password' ? 'Connexion en cours...' : 'Envoi en cours...'}
