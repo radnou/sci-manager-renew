@@ -5,8 +5,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Menu, X } from 'lucide-svelte';
-	import { initMatomo, trackPageView } from '$lib/matomo';
-	import { trackEvent, EVENTS } from '$lib/analytics';
+	import { initAnalytics, trackPageView, trackEvent, EVENTS } from '$lib/analytics';
 	import { supabase } from '$lib/supabase';
 	import {
 		clearFakeSession,
@@ -62,8 +61,8 @@
 		// Initialize theme
 		theme.initialize();
 
-		// Initialize Matomo analytics
-		initMatomo();
+		// Initialize analytics providers (Plausible / Matomo if configured)
+		initAnalytics();
 
 		// Reset session resolution on each page mount so that
 		// getCurrentSession() will wait for INITIAL_SESSION if needed.

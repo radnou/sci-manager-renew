@@ -76,8 +76,14 @@ services:
         VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-${STRIPE_PUBLISHABLE_KEY}}
         PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2: ${PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2:-true}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
-        VITE_MATOMO_URL: ${VITE_MATOMO_URL:-https://analytics.gerersci.fr}
-        VITE_MATOMO_SITE_ID: ${VITE_MATOMO_SITE_ID:-1}
+        # Legacy Matomo (kept during migration; unset to disable)
+        VITE_MATOMO_URL: ${VITE_MATOMO_URL:-}
+        VITE_MATOMO_SITE_ID: ${VITE_MATOMO_SITE_ID:-}
+        # Plausible Analytics (cookieless, recommended)
+        VITE_PLAUSIBLE_DOMAIN: ${VITE_PLAUSIBLE_DOMAIN:-}
+        VITE_PLAUSIBLE_SRC: ${VITE_PLAUSIBLE_SRC:-https://plausible.io/js/script.js}
+        VITE_PLAUSIBLE_API_HOST: ${VITE_PLAUSIBLE_API_HOST:-}
+        VITE_ANALYTICS_REQUIRE_CONSENT: ${VITE_ANALYTICS_REQUIRE_CONSENT:-true}
     container_name: gerersci_frontend
     restart: unless-stopped
     logging:
