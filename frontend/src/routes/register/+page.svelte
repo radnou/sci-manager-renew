@@ -23,6 +23,21 @@
 	let errorMessage = $state('');
 	let showConfirmEmail = $state(false);
 
+	let emailTouched = $state(false);
+	let passwordTouched = $state(false);
+	let passwordConfirmTouched = $state(false);
+	let submitAttempted = $state(false);
+
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	let emailEmpty = $derived(email.trim() === '');
+	let emailInvalid = $derived(!emailEmpty && !emailRegex.test(email.trim()));
+	let showEmailEmptyError = $derived((emailTouched || submitAttempted) && emailEmpty);
+	let showEmailInvalidError = $derived((emailTouched || submitAttempted) && emailInvalid);
+	let showPasswordEmptyError = $derived((passwordTouched || submitAttempted) && password.length === 0);
+	let showPasswordConfirmEmptyError = $derived(
+		(passwordConfirmTouched || submitAttempted) && passwordConfirm.length === 0
+	);
+
 	const planLabels: Record<string, { name: string; features: string }> = {
 		starter: { name: 'Gestion', features: '1 SCI, 5 biens, quittances PDF, CERFA 2044' },
 		pro: { name: 'Pilotage', features: 'SCI illimitées, CERFA 2044, fiscalité complète' },
@@ -46,6 +61,22 @@
 	async function handleRegister(event: SubmitEvent) {
 		event.preventDefault();
 		errorMessage = '';
+		submitAttempted = true;
+
+		if (emailEmpty) {
+			errorMessage = "Veuillez saisir votre adresse email.";
+			return;
+		}
+
+		if (emailInvalid) {
+			errorMessage = "Veuillez saisir une adresse email valide.";
+			return;
+		}
+
+		if (password.length === 0 || passwordConfirm.length === 0) {
+			errorMessage = "Veuillez renseigner et confirmer votre mot de passe.";
+			return;
+		}
 
 		if (password !== passwordConfirm) {
 			errorMessage = 'Les mots de passe ne correspondent pas.';
@@ -127,7 +158,7 @@
 
 					<Button href="/login" variant="outline" class="w-full">Aller à la connexion</Button>
 				{:else}
-					<form class="space-y-4" onsubmit={handleRegister}>
+					<form class="space-y-4" onsubmit={handleRegister} novalidate>
 						<label class="sci-field">
 							<span class="sci-field-label">Email</span>
 							<Input
@@ -137,7 +168,19 @@
 								placeholder="vous@sci.fr"
 								disabled={isLoading}
 								autocomplete="email"
+								aria-invalid={showEmailEmptyError || showEmailInvalidError}
+								aria-describedby={showEmailEmptyError ? 'register-email-empty' : showEmailInvalidError ? 'register-email-invalid' : undefined}
+								onblur={() => (emailTouched = true)}
 							/>
+							{#if showEmailEmptyError}
+								<span id="register-email-empty" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+									L'email est requis.
+								</span>
+							{:else if showEmailInvalidError}
+								<span id="register-email-invalid" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+									Adresse email invalide (ex : vous@sci.fr).
+								</span>
+							{/if}
 						</label>
 
 						<label class="sci-field">
@@ -150,8 +193,14 @@
 								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
+								aria-invalid={showPasswordEmptyError || passwordTooShort}
+								onblur={() => (passwordTouched = true)}
 							/>
-							{#if passwordTooShort}
+							{#if showPasswordEmptyError}
+								<span role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+									Le mot de passe est requis.
+								</span>
+							{:else if passwordTooShort}
 								<span role="alert" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
 									{passwordMinLength} caractères minimum
 								</span>
@@ -168,8 +217,14 @@
 								placeholder="••••••••"
 								disabled={isLoading}
 								autocomplete="new-password"
+								aria-invalid={showPasswordConfirmEmptyError || passwordMismatch}
+								onblur={() => (passwordConfirmTouched = true)}
 							/>
-							{#if passwordMismatch}
+							{#if showPasswordConfirmEmptyError}
+								<span role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+									Veuillez confirmer votre mot de passe.
+								</span>
+							{:else if passwordMismatch}
 								<span role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
 									Les mots de passe ne correspondent pas
 								</span>
@@ -203,7 +258,7 @@
 						<Button
 							type="submit"
 							class="w-full"
-							disabled={isLoading || !email || !password || !passwordConfirm || passwordMismatch || passwordTooShort || !consentCgu}
+							disabled={isLoading || !consentCgu}
 						>
 							{isLoading ? 'Inscription en cours...' : "S'inscrire"}
 						</Button>

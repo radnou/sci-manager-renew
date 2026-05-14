@@ -260,15 +260,20 @@
 									for="date-acquisition"
 									class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 								>
-									Date d'acquisition
+									Date d'acquisition <span class="font-normal text-slate-500 dark:text-slate-400">(jj/mm/aaaa)</span>
 								</label>
 								<input
 									id="date-acquisition"
 									type="date"
+									lang="fr-FR"
 									bind:value={dateAcquisition}
 									max={dateCession}
+									aria-describedby="date-acquisition-hint"
 									class="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-900 shadow-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-emerald-400"
 								/>
+								<p id="date-acquisition-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+									Format français : jour / mois / année (ex : 15/03/2010).
+								</p>
 							</div>
 
 							<!-- Prix d'acquisition -->
@@ -481,15 +486,20 @@
 									for="date-cession"
 									class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
 								>
-									Date de cession
+									Date de cession <span class="font-normal text-slate-500 dark:text-slate-400">(jj/mm/aaaa)</span>
 								</label>
 								<input
 									id="date-cession"
 									type="date"
+									lang="fr-FR"
 									bind:value={dateCession}
 									min={dateAcquisition}
+									aria-describedby="date-cession-hint"
 									class="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-900 shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-400"
 								/>
+								<p id="date-cession-hint" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+									Format français : jour / mois / année (ex : 15/03/2026).
+								</p>
 							</div>
 
 							<!-- Prix de cession -->

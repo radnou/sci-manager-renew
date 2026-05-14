@@ -45,13 +45,13 @@
 						<ArrowRight class="h-4 w-4" />
 					</Button>
 				{:else}
-					<Button size="lg" onclick={() => goto('/login')} class="gap-2">
+					<Button size="lg" onclick={() => goto('/register')} class="gap-2">
 						Essayer gratuitement
 						<ArrowRight class="h-4 w-4" />
 					</Button>
-					<Button variant="outline" size="lg" onclick={() => scrollToSection('comment-ca-marche')} class="gap-2">
+					<Button variant="outline" size="lg" onclick={() => scrollToSection('comment-ca-marche')} class="gap-2" aria-label="Voir la présentation interactive (descendre à la section démo)">
 						<Play class="h-4 w-4" />
-						Voir la démo
+						Voir la présentation
 					</Button>
 				{/if}
 			</div>
