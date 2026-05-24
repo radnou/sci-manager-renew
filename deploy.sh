@@ -170,8 +170,9 @@ echo ""
 check_service() {
     local name=$1
     local url=$2
+    local extra_args=$3
     local result
-    result=$(curl -sf --max-time 10 "$url" 2>/dev/null || echo "FAIL")
+    result=$(curl -sf $extra_args --max-time 10 "$url" 2>/dev/null || echo "FAIL")
     if echo "$result" | grep -qi "FAIL\|error\|refused"; then
         echo -e "  ${RED}✗${NC} $name — FAILED"
         return 1
@@ -181,10 +182,18 @@ check_service() {
     fi
 }
 
+# Resolve container IPs for internal health checks if not mapping ports
+BACKEND_IP=$(docker inspect -f '{{.NetworkSettings.Networks.vps_internal.IPAddress}}' gerersci_backend 2>/dev/null || echo "localhost")
+FRONTEND_IP=$(docker inspect -f '{{.NetworkSettings.Networks.vps_internal.IPAddress}}' gerersci_frontend 2>/dev/null || echo "localhost")
+
+# Fallback to localhost if IP is empty
+if [ -z "$BACKEND_IP" ]; then BACKEND_IP="localhost"; fi
+if [ -z "$FRONTEND_IP" ]; then FRONTEND_IP="localhost"; fi
+
 FAILURES=0
-check_service "Backend liveness" "http://localhost:8000/health/live" || ((FAILURES++))
-check_service "Backend readiness" "http://localhost:8000/health/ready" || ((FAILURES++))
-check_service "Frontend" "http://localhost:4173/" || ((FAILURES++))
+check_service "Backend liveness" "http://${BACKEND_IP}:8000/health/live" "-H Host:localhost" || ((FAILURES++))
+check_service "Backend readiness" "http://${BACKEND_IP}:8000/health/ready" "-H Host:localhost" || ((FAILURES++))
+check_service "Frontend" "http://${FRONTEND_IP}:4173/" || ((FAILURES++))
 
 if [ "$USE_CADDY" = true ]; then
     check_service "Caddy" "http://localhost:80" || ((FAILURES++))
