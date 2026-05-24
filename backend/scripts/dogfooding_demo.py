@@ -151,6 +151,7 @@ def run_dogfooding():
         "ville": "Sainte-Suzanne",
         "code_postal": "97441",
         "type_bien": "appartement",
+        "type_locatif": "meuble",
         "surface_m2": 65.5,
         "loyer_cc": 850.00,
         "prix_acquisition": 180000.00,
@@ -188,10 +189,13 @@ def run_dogfooding():
         "date_debut": "2024-01-01",
         "date_fin": "2026-12-31",
         "loyer_mensuel": 850.00,
+        "loyer_hc": 730.00,
         "charges_mensuelles": 120.00,
-        "depot_garantie": 1700.00,
+        "depot_garantie": 1460.00,  # 2 mois loyer HC (bail meublé)
         "type_bail": "bail_meuble",
-        "indexation_ilm": True
+        "indexation_ilm": True,
+        "locataire_nom": "Martin Dupont",
+        "locataire_email": "martin.dupont@example.com"
     }
     r = api_call("POST", f"/api/v1/scis/{sci_id}/biens/{bien_id}/baux", token, json=bail_data)
     print(f"   Status: {r.status_code}")
