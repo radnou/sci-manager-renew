@@ -61,11 +61,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _recalculate_associe_parts(
     write_client,
     sci_id: str,
@@ -185,7 +180,7 @@ async def create_mouvement_parts(
         insert_data = payload.model_dump(mode="json")
         insert_data["id_sci"] = str(sci_id)
 
-        write_client = _get_write_client()
+        write_client = _get_client(request)
         result = write_client.table("mouvements_parts").insert(insert_data).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))

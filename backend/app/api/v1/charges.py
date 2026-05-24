@@ -20,11 +20,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/charges", tags=["charges"])
 
 
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _execute_select(query):
     result = query.execute()
     if getattr(result, "error", None):
@@ -149,7 +144,7 @@ async def create_charge(payload: ChargeCreate, request: Request, user_id: str = 
         id_sci = str(bien.get("id_sci") or "")
         _require_sci_access(user_sci_ids, id_sci)
 
-        write_client = _get_write_client()
+        write_client = get_supabase_user_client(request)
         result = write_client.table("charges").insert(payload.model_dump(mode="json")).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))

@@ -34,10 +34,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    return get_supabase_service_client()
-
-
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
     result = client.table("biens").select("*").eq("id", bien_id).execute()
     if getattr(result, "error", None):
@@ -98,7 +94,7 @@ async def create_bien_charge(
     row["id_bien"] = bien_id
     # Note: charges table has no id_sci column — scoping is via id_bien → biens.id_sci
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = write_client.table("charges").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))

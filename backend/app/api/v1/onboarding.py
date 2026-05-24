@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.services.associe_linking import link_user_to_pending_associes
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
@@ -33,9 +33,9 @@ class OnboardingCompleteResponse(BaseModel):
     completed: bool
 
 
-def _check_onboarding_progress(user_id: str) -> OnboardingStatus:
+def _check_onboarding_progress(request: Request, user_id: str) -> OnboardingStatus:
     """Check real progress based on existing data."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
 
     # Check onboarding_completed flag
     sub_result = (
@@ -125,10 +125,11 @@ def _check_onboarding_progress(user_id: str) -> OnboardingStatus:
 
 @router.get("", response_model=OnboardingStatus)
 async def get_onboarding_status(
+    request: Request,
     user_id: str = Depends(get_current_user),
 ) -> OnboardingStatus:
     logger.info("fetching_onboarding_status", user_id=user_id)
-    return _check_onboarding_progress(user_id)
+    return _check_onboarding_progress(request, user_id)
 
 
 @router.post("/complete", response_model=OnboardingCompleteResponse)
@@ -140,7 +141,7 @@ async def complete_onboarding(
     """Mark onboarding as completed for the user."""
     logger.info("completing_onboarding", user_id=user_id)
 
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     # Check if row exists first — if not, create with status='free'
     existing = (
         client.table("subscriptions")

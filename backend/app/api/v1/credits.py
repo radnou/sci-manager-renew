@@ -31,11 +31,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
     """Fetch a bien and verify it belongs to the given SCI."""
     result = client.table("biens").select("*").eq("id", bien_id).execute()
@@ -100,7 +95,7 @@ async def create_credit(
     row = payload.model_dump(mode="json")
     row["id_bien"] = bien_id
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = write_client.table("credits_immobiliers").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -138,7 +133,7 @@ async def update_credit(
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = (
         write_client.table("credits_immobiliers")
         .update(update_payload)
@@ -176,7 +171,7 @@ async def delete_credit(
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = (
         write_client.table("credits_immobiliers")
         .delete()

@@ -256,7 +256,7 @@ def test_create_locataire_generic_exception(client, auth_headers, fake_supabase)
                 raise TypeError("unexpected type error")
             return fake_supabase.table(name)
 
-    with patch.object(loc_mod, "_get_write_client", lambda: BoomClient()):
+    with patch.object(loc_mod, "get_supabase_user_client", lambda request=None: BoomClient()):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "Boom", "date_debut": "2026-01-01"},
@@ -311,7 +311,7 @@ def test_create_locataire_insert_db_error(client, auth_headers, fake_supabase):
                 def execute(self): return FakeResult(data=[], error="insert failed")
             return Q()
 
-    with patch.object(loc_mod, "_get_write_client", lambda: InsertErrorClient()):
+    with patch.object(loc_mod, "get_supabase_user_client", lambda request=None: InsertErrorClient()):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "DB Error", "date_debut": "2026-01-01"},
@@ -332,7 +332,7 @@ def test_create_locataire_insert_returns_empty(client, auth_headers, fake_supaba
                 def execute(self): return FakeResult(data=[])
             return Q()
 
-    with patch.object(loc_mod, "_get_write_client", lambda: InsertEmptyClient()):
+    with patch.object(loc_mod, "get_supabase_user_client", lambda request=None: InsertEmptyClient()):
         response = client.post(
             "/api/v1/locataires/",
             json={"id_bien": "bien-1", "nom": "Empty Result", "date_debut": "2026-01-01"},

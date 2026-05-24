@@ -107,7 +107,6 @@ class TestCreateSciBienError:
             type_locatif="nu", loyer_cc=500, charges=50, tmi=30,
         )
         with patch("app.api.v1.biens.biens_core._get_client", return_value=ErrorClient()), \
-             patch("app.api.v1.biens.biens_core._get_write_client", return_value=ErrorClient()), \
              patch("app.api.v1.biens.biens_core.SubscriptionService.enforce_limit", return_value={}):
             with pytest.raises(DatabaseError):
                 await create_sci_bien(SCI_UUID, payload, request, MEMBERSHIP)
@@ -132,7 +131,6 @@ class TestCreateSciBienError:
             type_locatif="nu", loyer_cc=500, charges=50, tmi=30,
         )
         with patch("app.api.v1.biens.biens_core._get_client", return_value=EmptyInsertClient()), \
-             patch("app.api.v1.biens.biens_core._get_write_client", return_value=EmptyInsertClient()), \
              patch("app.api.v1.biens.biens_core.SubscriptionService.enforce_limit", return_value={}):
             with pytest.raises(DatabaseError, match="Unable to create bien"):
                 await create_sci_bien(SCI_UUID, payload, request, MEMBERSHIP)
@@ -180,7 +178,6 @@ async def test_create_bail_error():
     request = _mock_request()
     payload = BailCreate(date_debut="2026-01-01", loyer_hc=800, charges_provisions=100, type_bail="nu")
     with patch("app.api.v1.biens.biens_baux._get_client", return_value=_bien_ok_then_error()), \
-         patch("app.api.v1.biens.biens_baux._get_write_client", return_value=ErrorClient()), \
          patch("app.api.v1.biens.biens_baux.SubscriptionService.enforce_limit", return_value={}):
         with pytest.raises(DatabaseError):
             await create_bien_bail(SCI_UUID, str(BIEN_UUID), payload, request, MEMBERSHIP)
@@ -193,7 +190,6 @@ async def test_create_loyer_error():
     request = _mock_request()
     payload = LoyerCreate(id_bien="b1", id_sci="s1", date_loyer="2026-01-01", montant=800, statut="en_attente")
     with patch("app.api.v1.biens.biens_loyers._get_client", return_value=_bien_ok_then_error()), \
-         patch("app.api.v1.biens.biens_loyers._get_write_client", return_value=ErrorClient()), \
          patch("app.api.v1.biens.biens_loyers.SubscriptionService.enforce_limit", return_value={}):
         with pytest.raises(DatabaseError):
             await create_bien_loyer(SCI_UUID, str(BIEN_UUID), payload, request, MEMBERSHIP)
@@ -205,7 +201,6 @@ async def test_create_charge_error():
     from app.models.charges import ChargeCreate
     request = _mock_request()
     payload = ChargeCreate(id_bien="b1", type_charge="copropriete", montant=200, date_paiement="2026-01-01")
-    with patch("app.api.v1.biens.biens_charges._get_client", return_value=_bien_ok_then_error()), \
-         patch("app.api.v1.biens.biens_charges._get_write_client", return_value=ErrorClient()):
+    with patch("app.api.v1.biens.biens_charges._get_client", return_value=_bien_ok_then_error()):
         with pytest.raises(DatabaseError):
             await create_bien_charge(SCI_UUID, BIEN_UUID, payload, request, MEMBERSHIP)

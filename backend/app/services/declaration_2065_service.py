@@ -115,8 +115,8 @@ class Declaration2065:
 class Declaration2065Service:
     """Service de génération et validation de la déclaration 2065."""
 
-    def __init__(self):
-        self.client = get_supabase_service_client()
+    def __init__(self, client=None):
+        self.client = client or get_supabase_service_client()
 
     async def get_bilan_data(self, sci_id: UUID, exercice: int) -> dict:
         """Récupère les données comptables pour le bilan.
@@ -177,6 +177,7 @@ class Declaration2065Service:
         biens_ids = [b["id"] for b in (biens_ids_result.data or [])]
         
         emprunts = Decimal("0")
+        credits_data = []
         if biens_ids:
             credits_result = (
                 self.client.table("credits_immobiliers")
@@ -184,7 +185,8 @@ class Declaration2065Service:
                 .in_("id_bien", biens_ids)
                 .execute()
             )
-        for cr in credits_result.data or []:
+            credits_data = credits_result.data or []
+        for cr in credits_data:
             # Si capital_restant_du est déjà calculé, l'utiliser
             crd = cr.get("capital_restant_du")
             if crd is not None:

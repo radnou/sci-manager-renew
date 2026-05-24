@@ -34,10 +34,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    return get_supabase_service_client()
-
-
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
     result = client.table("biens").select("*").eq("id", bien_id).execute()
     if getattr(result, "error", None):
@@ -164,7 +160,7 @@ async def create_bien_bail(
         .eq("statut", "en_cours")
         .execute()
     )
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     if not getattr(existing, "error", None) and existing.data:
         for old_bail in existing.data:
@@ -567,7 +563,7 @@ async def attach_locataire_to_bail(
         raise ResourceNotFoundError("Bail", str(bail_id))
 
     join_row = {"id_bail": bail_id, "id_locataire": locataire_id}
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = write_client.table("bail_locataires").insert(join_row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -662,7 +658,7 @@ async def confirm_regularisation_endpoint(
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     try:
         result = confirm_regularisation(
             write_client,
