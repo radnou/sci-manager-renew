@@ -700,7 +700,7 @@
 						{:else if notifError}
 							<p class="sci-inline-alert sci-inline-alert-error">{notifError}</p>
 						{:else}
-							<div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+							<div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
 								<table class="w-full text-sm">
 									<thead>
 										<tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { ArrowRight, Play, ChevronDown } from '@lucide/svelte';
-	import { goto } from '$app/navigation';
+	import { ArrowRight, ChevronDown } from '@lucide/svelte';
 	import { supabase } from '$lib/supabase';
 
 	let isLoggedIn = $state(false);
@@ -32,7 +31,8 @@
 			>
 				Gérez votre
 				<span class="text-blue-600 dark:text-blue-400">SCI</span>
-				comme un pro
+				comme un pro.
+				<span class="block text-3xl sm:text-4xl md:text-5xl text-slate-500 font-normal mt-2">Votre SCI sous contrôle.</span>
 			</h1>
 			<p class="mx-auto mt-6 max-w-2xl text-lg text-slate-600 dark:text-slate-300">
 				Suivi des loyers, quittances automatiques, déclarations fiscales, gestion des associés
@@ -40,24 +40,23 @@
 			</p>
 			<div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
 				{#if isLoggedIn}
-					<Button size="lg" onclick={() => goto('/dashboard')} class="gap-2">
+					<Button size="lg" href="/dashboard" class="gap-2">
 						Mon tableau de bord
 						<ArrowRight class="h-4 w-4" />
 					</Button>
 				{:else}
-					<Button size="lg" onclick={() => goto('/register')} class="gap-2">
-						Essayer gratuitement
+					<Button size="lg" href="/pricing" class="gap-2">
+						Démarrer maintenant
 						<ArrowRight class="h-4 w-4" />
 					</Button>
-					<Button variant="outline" size="lg" onclick={() => scrollToSection('comment-ca-marche')} class="gap-2" aria-label="Voir la présentation interactive (descendre à la section démo)">
-						<Play class="h-4 w-4" />
-						Voir la présentation
+					<Button variant="outline" size="lg" href="#pricing" class="gap-2" aria-label="Comparer les plans de tarification">
+						Comparer les plans
 					</Button>
 				{/if}
 			</div>
 		</div>
 		<div class="mt-16 flex justify-center">
-			<button onclick={() => scrollToSection('comment-ca-marche')} class="animate-bounce">
+			<button onclick={() => scrollToSection('comment-ca-marche')} class="animate-bounce" aria-label="Descendre à la section démo">
 				<ChevronDown class="h-8 w-8 text-slate-400" />
 			</button>
 		</div>

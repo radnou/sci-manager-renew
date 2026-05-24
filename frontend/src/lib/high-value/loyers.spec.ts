@@ -102,10 +102,10 @@ describe('high-value loyers helpers', () => {
 		expect(mapLoyerStatusLabel('en_attente')).toBe('En attente');
 		expect(mapLoyerStatusLabel('retard')).toBe('En retard');
 		expect(mapLoyerStatusLabel(undefined)).toBe('Enregistré');
-		expect(mapLoyerStatusClass('paye')).toBe('bg-emerald-100 text-emerald-800');
-		expect(mapLoyerStatusClass('en_attente')).toBe('bg-amber-100 text-amber-800');
-		expect(mapLoyerStatusClass('en_retard')).toBe('bg-rose-100 text-rose-800');
-		expect(mapLoyerStatusClass('autre')).toBe('bg-cyan-100 text-cyan-800');
+		expect(mapLoyerStatusClass('paye')).toBe('bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300');
+		expect(mapLoyerStatusClass('en_attente')).toBe('bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300');
+		expect(mapLoyerStatusClass('en_retard')).toBe('bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300');
+		expect(mapLoyerStatusClass('autre')).toBe('bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300');
 	});
 
 	it('calculates revenue metrics and late count', () => {
@@ -227,12 +227,12 @@ describe('high-value loyers helpers', () => {
 	});
 
 	it('maps null/undefined status class to default', () => {
-		expect(mapLoyerStatusClass(null)).toBe('bg-cyan-100 text-cyan-800');
-		expect(mapLoyerStatusClass(undefined)).toBe('bg-cyan-100 text-cyan-800');
+		expect(mapLoyerStatusClass(null)).toBe('bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300');
+		expect(mapLoyerStatusClass(undefined)).toBe('bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300');
 	});
 
 	it('maps "retard" status label to "En retard"', () => {
 		expect(mapLoyerStatusLabel('retard')).toBe('En retard');
-		expect(mapLoyerStatusClass('retard')).toBe('bg-rose-100 text-rose-800');
+		expect(mapLoyerStatusClass('retard')).toBe('bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300');
 	});
 });

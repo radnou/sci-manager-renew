@@ -24,8 +24,9 @@
 			declaration = await generateDeclaration2065(sciId, { exercice: annee });
 			addToast({ title: 'Déclaration 2065 générée', variant: 'success' });
 		} catch (err: any) {
-			error = err?.message ?? 'Impossible de générer la déclaration.';
-			addToast({ title: error, variant: 'error' });
+			const errMsg = err?.message ?? 'Impossible de générer la déclaration.';
+			error = errMsg;
+			addToast({ title: errMsg, variant: 'error' });
 		} finally {
 			loading = false;
 		}
@@ -183,7 +184,7 @@
 					<h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
 						Bilan Actif
 					</h3>
-					{#each bilanItems(declaration.actif) as item}
+					{#each bilanItems(declaration.actif as any) as item}
 						<div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
 							<span class="text-sm text-slate-700 dark:text-slate-300">{item.label}</span>
 							<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{formatEur(item.value)}</span>
@@ -191,7 +192,7 @@
 					{/each}
 					<div class="mt-2 flex items-center justify-between border-t border-slate-300 pt-2 dark:border-slate-600">
 						<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Total Actif</span>
-						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(bilanTotal(declaration.actif))}</span>
+						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(bilanTotal(declaration.actif as any))}</span>
 					</div>
 				</div>
 
@@ -200,7 +201,7 @@
 					<h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
 						Bilan Passif
 					</h3>
-					{#each bilanItems(declaration.passif) as item}
+					{#each bilanItems(declaration.passif as any) as item}
 						<div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
 							<span class="text-sm text-slate-700 dark:text-slate-300">{item.label}</span>
 							<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{formatEur(item.value)}</span>
@@ -208,7 +209,7 @@
 					{/each}
 					<div class="mt-2 flex items-center justify-between border-t border-slate-300 pt-2 dark:border-slate-600">
 						<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Total Passif</span>
-						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(bilanTotal(declaration.passif))}</span>
+						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(bilanTotal(declaration.passif as any))}</span>
 					</div>
 				</div>
 			</div>

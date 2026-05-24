@@ -118,17 +118,15 @@
 <!-- Checkout Modal -->
 <CheckoutConfirmModal
     open={modalOpen}
-    planKey={modalPlanKey}
     planName={modalPlanName}
     planPrice={modalPlanPrice}
     planPeriod={modalPlanPeriod}
     planFeatures={modalPlanFeatures}
-    onClose={() => modalOpen = false}
+    loading={checkoutLoading !== null}
+    onCancel={() => modalOpen = false}
     onConfirm={handleModalConfirm}
 />
 
-<!-- Cookie Banner RGPD -->
-<CookieBanner />
 
 <!-- Sections Landing -->
 <HeroSection />

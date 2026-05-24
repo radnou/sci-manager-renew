@@ -116,7 +116,7 @@
 					</div>
 					<span class="text-sm font-semibold text-white">GérerSCI Admin</span>
 					<span
-						class="rounded-full bg-red-900/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-400"
+						class="rounded-full bg-red-950/60 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-200 border border-red-800/30"
 					>
 						Production
 					</span>
