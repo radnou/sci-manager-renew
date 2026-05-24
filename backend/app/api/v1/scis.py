@@ -88,15 +88,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    """Service client for INSERT operations that require elevated privileges.
-
-    RLS policies require the user to already be a member of the SCI,
-    which is impossible for the initial INSERT (creating a new SCI + first associé).
-    """
-    return get_supabase_service_client()
-
-
 def _execute_select(query):
     result = query.execute()
     if getattr(result, "error", None):
@@ -281,7 +272,7 @@ async def create_sci(payload: SCICreate, request: Request, user_id: str = Depend
         )
 
     # Use service client for INSERT — RLS blocks new SCI creation (user not yet associated)
-    client = _get_write_client()
+    client = get_supabase_user_client(request)
     sci_data = payload.model_dump(mode="json", exclude={"date_cloture_exercice"})
     result = client.table("sci").insert(sci_data).execute()
     if getattr(result, "error", None):
@@ -460,7 +451,7 @@ async def invite_sci_associe(
     logger.info("inviting_associe", sci_id=sci_id, nom=payload.nom)
 
     # Use service client — RLS on associes requires existing membership
-    client = _get_write_client()
+    client = get_supabase_user_client(request)
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
 

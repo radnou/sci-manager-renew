@@ -41,11 +41,6 @@ LOYERS_TEMPLATE = """adresse_bien,date_loyer,montant,statut
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
-def _get_write_client():
-    """Service client for INSERT operations -- RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _sanitize(value: str) -> str:
     """Strip whitespace and remove HTML tags from a value."""
     value = value.strip()
@@ -207,7 +202,7 @@ async def import_csv(
     if len(rows) > MAX_ROWS:
         raise ValidationError(f"Trop de lignes ({len(rows)}). Maximum autorisé: {MAX_ROWS}.")
 
-    write_client = _get_write_client()
+    write_client = get_supabase_user_client(request)
     imported = 0
     skipped = 0
     errors: list[str] = []

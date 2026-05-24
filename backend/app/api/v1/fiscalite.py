@@ -24,11 +24,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _execute_select(query):
     result = query.execute()
     if getattr(result, "error", None):
@@ -142,7 +137,7 @@ async def create_fiscalite(payload: FiscaliteCreate, request: Request, user_id: 
 
         insert_payload = payload.model_dump(mode="json")
         insert_payload["resultat_fiscal"] = payload.resultat_fiscal
-        write_client = _get_write_client()
+        write_client = _get_client(request)
         result = write_client.table("fiscalite").insert(insert_payload).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
@@ -236,7 +231,7 @@ async def prefill_fiscalite_endpoint(
 
         from app.services.resume_fiscal_service import ResumeFiscalService
         service = ResumeFiscalService()
-        write_client = _get_write_client()
+        write_client = _get_client(request)
 
         results = []
         for sci_id in target_sci_ids:

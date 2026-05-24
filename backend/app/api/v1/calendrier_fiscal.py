@@ -24,10 +24,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    return get_supabase_service_client()
-
-
 # ──────────────────────────────────────────────────────────────
 # Pydantic models
 # ──────────────────────────────────────────────────────────────
@@ -224,7 +220,7 @@ async def marquer_echeance_faite(
         from app.core.exceptions import ValidationError
         raise ValidationError(f"Clé d'échéance invalide : {key}. Valeurs acceptées : {', '.join(sorted(valid_keys))}")
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     # Check if already exists (upsert)
     existing = (

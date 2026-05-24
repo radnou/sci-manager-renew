@@ -21,11 +21,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/locataires", tags=["locataires"])
 
 
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
     result = client.table("associes").select("id_sci").eq("user_id", user_id).execute()
     if getattr(result, "error", None):
@@ -163,7 +158,7 @@ async def create_locataire(payload: LocataireCreate, request: Request, user_id: 
         bien_sci_id = str(bien.get("id_sci") or "")
         _require_sci_access(user_sci_ids, bien_sci_id)
 
-        write_client = _get_write_client()
+        write_client = get_supabase_user_client(request)
         result = write_client.table("locataires").insert(payload.model_dump(mode="json")).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))

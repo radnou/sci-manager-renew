@@ -6,7 +6,7 @@ import structlog
 from fastapi import APIRouter, Depends, Request
 
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.core.rate_limit import limiter
 from app.services.demo_service import seed_demo_data, cleanup_demo_data
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/demo", tags=["demo"])
 @limiter.limit("10/hour")
 async def seed_demo(request: Request, user=Depends(get_current_user)):
     """Seed demo data for a new user. Only works once (idempotent)."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
 
     # Check if already seeded
     sub_res = (
@@ -43,6 +43,6 @@ async def seed_demo(request: Request, user=Depends(get_current_user)):
 @limiter.limit("1/minute")
 async def cleanup_demo(request: Request, user=Depends(get_current_user)):
     """Remove all demo data for the current user."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     deleted = await cleanup_demo_data(client, user)
     return {"message": f"{deleted} enregistrements de démonstration supprimés.", "deleted": deleted}

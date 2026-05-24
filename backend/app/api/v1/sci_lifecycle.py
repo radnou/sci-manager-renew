@@ -25,10 +25,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    return get_supabase_service_client()
-
-
 def _execute_select(query):
     result = query.execute()
     if getattr(result, "error", None):
@@ -85,7 +81,7 @@ async def dissoudre_sci(
     logger.info("dissolving_sci", sci_id=str(sci_id), motif=payload.motif)
 
     client = _get_client(request)
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     # Verify SCI exists
     sci_rows = _execute_select(client.table("sci").select("*").eq("id", str(sci_id)))
@@ -180,7 +176,7 @@ async def changer_gerant(
     logger.info("changing_gerant", sci_id=str(sci_id), new_gerant_id=payload.nouveau_gerant_associe_id)
 
     client = _get_client(request)
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     # Verify the new gérant is an associé of this SCI
     new_gerant_rows = _execute_select(
@@ -271,7 +267,7 @@ async def modifier_capital(
     logger.info("modifying_capital", sci_id=str(sci_id), type=payload.type, nouveau_capital=payload.nouveau_capital)
 
     client = _get_client(request)
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     # Get current SCI
     sci_rows = _execute_select(client.table("sci").select("*").eq("id", str(sci_id)))
@@ -381,7 +377,7 @@ async def ceder_bien(
     logger.info("ceding_bien", bien_id=bien_id, sci_id=str(sci_id), prix=payload.prix_cession)
 
     client = _get_client(request)
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     # Verify bien exists and belongs to SCI
     bien_rows = _execute_select(

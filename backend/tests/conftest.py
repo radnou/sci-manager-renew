@@ -395,7 +395,8 @@ def _fake_supabase_session() -> FakeSupabaseClient:
 @pytest.fixture(scope="session")
 def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient:
     """Boot TestClient + monkeypatch once per xdist worker."""
-    from app.api.v1 import associes, biens, biens_flat, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis
+    from app.api.v1 import associes, biens, biens_flat, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis, declarations
+    from app.services import declaration_2065_service
     from app.api.v1 import dashboard, notification_preferences
     from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle, calendrier_fiscal, leads
     from app.api.v1.biens import (
@@ -428,7 +429,8 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
                     assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle,
                     calendrier_fiscal, leads, declarations,
                     biens_core, biens_loyers, biens_baux, biens_charges,
-                    biens_pno, biens_frais, biens_documents, biens_evenements]:
+                    biens_pno, biens_frais, biens_documents, biens_evenements,
+                    declarations, declaration_2065_service]:
             mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
             mp.setattr(mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
 

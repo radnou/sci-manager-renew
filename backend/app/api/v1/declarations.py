@@ -11,7 +11,8 @@ from uuid import UUID
 from typing import Optional
 import io
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from app.core.supabase_client import get_supabase_user_client
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -51,18 +52,20 @@ class Declaration2065Response(BaseModel):
 @router.post("/generate", response_model=Declaration2065Response)
 async def generate_declaration_2065(
     sci_id: UUID,
-    request: Declaration2065GenerateRequest,
+    payload: Declaration2065GenerateRequest,
+    request: Request,
     _=Depends(require_sci_membership),
 ):
     """Génère une déclaration 2065 pré-remplie pour une SCI."""
-    service = Declaration2065Service()
+    client = get_supabase_user_client(request)
+    service = Declaration2065Service(client=client)
     
     try:
         declaration = await service.generate_declaration(
             sci_id=sci_id,
-            exercice=request.exercice,
-            trésorerie=request.tresorerie,
-            réserves=request.reserves,
+            exercice=payload.exercice,
+            trésorerie=payload.tresorerie,
+            réserves=payload.reserves,
         )
         
         # Sauvegarde en base
@@ -96,10 +99,12 @@ async def generate_declaration_2065(
 async def get_declaration_2065(
     sci_id: UUID,
     exercice: int,
+    request: Request,
     _=Depends(require_sci_membership),
 ):
     """Récupère une déclaration 2065 existante (la génère si absente)."""
-    service = Declaration2065Service()
+    client = get_supabase_user_client(request)
+    service = Declaration2065Service(client=client)
     
     # Essayer de récupérer depuis la base
     try:
@@ -167,10 +172,12 @@ async def get_declaration_2065(
 async def get_declaration_2065_pdf(
     sci_id: UUID,
     exercice: int,
+    request: Request,
     _=Depends(require_sci_membership),
 ):
     """Télécharge la déclaration 2065 au format PDF CERFA."""
-    service = Declaration2065Service()
+    client = get_supabase_user_client(request)
+    service = Declaration2065Service(client=client)
     
     # Récupérer le nom de la SCI
     sci_result = service.client.table("sci").select("nom").eq("id", str(sci_id)).execute()

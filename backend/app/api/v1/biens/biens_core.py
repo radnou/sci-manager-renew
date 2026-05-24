@@ -34,10 +34,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    return get_supabase_service_client()
-
-
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
     result = client.table("biens").select("*").eq("id", bien_id).execute()
     if getattr(result, "error", None):
@@ -218,7 +214,7 @@ async def create_sci_bien(
     # Force the sci_id from the URL path
     row["id_sci"] = str(sci_id)
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = write_client.table("biens").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))

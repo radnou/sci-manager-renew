@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from io import BytesIO
 
 from app.core.paywall import SubscriptionInfo, require_active_subscription
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 from app.services.bilan_mensuel_service import (
     get_or_generate_bilan,
     list_periodes,
@@ -61,7 +61,7 @@ async def get_bilan(
     _validate_periode(periode)
     _validate_scope(scope, scope_id)
 
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     data = await get_or_generate_bilan(
         client,
         subscription.user_id,
@@ -85,7 +85,7 @@ async def get_bilan_pdf(
     _validate_periode(periode)
     _validate_scope(scope, scope_id)
 
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     data = await get_or_generate_bilan(
         client,
         subscription.user_id,
@@ -112,6 +112,6 @@ async def get_periodes(
     subscription: SubscriptionInfo = Depends(require_active_subscription),
 ):
     """Return list of available YYYY-MM periods based on loyers data."""
-    client = get_supabase_service_client()
+    client = get_supabase_user_client(request)
     periodes = await list_periodes(client, subscription.user_id)
     return {"periodes": periodes}

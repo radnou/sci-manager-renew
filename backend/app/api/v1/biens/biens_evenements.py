@@ -35,10 +35,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    return get_supabase_service_client()
-
-
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
     result = client.table("biens").select("*").eq("id", bien_id).execute()
     if getattr(result, "error", None):
@@ -103,7 +99,7 @@ async def create_bien_evenement(
     row = payload.model_dump(mode="json")
     row["id_bien"] = bien_id
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = write_client.table("evenements_bien").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -268,7 +264,7 @@ async def create_avenant(
     elif payload.type_avenant == "modification_charges" and payload.nouvelles_charges is not None:
         bail_update["charges_locatives"] = payload.nouvelles_charges
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
 
     # Update the bail if there are changes (must use write_client — RLS read-only on baux)
     if bail_update:
@@ -394,7 +390,7 @@ async def declare_sinistre(
         "deductible_fiscalement": False,
     }
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     try:
         evt_result = write_client.table("evenements_bien").insert(evenement_row).execute()
         created_event = (evt_result.data or [{}])[0]

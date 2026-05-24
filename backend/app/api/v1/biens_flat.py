@@ -19,11 +19,6 @@ def _get_client(request: Request):
     return get_supabase_user_client(request)
 
 
-def _get_write_client():
-    """Service client for INSERT operations — RLS blocks inserts before membership exists."""
-    return get_supabase_service_client()
-
-
 def _get_user_sci_ids(client, user_id: str) -> list[str]:
     result = client.table("associes").select("id_sci").eq("user_id", user_id).execute()
     if getattr(result, "error", None):
@@ -91,7 +86,7 @@ async def create_bien(payload: BienCreate, request: Request, user_id: str = Depe
     # Calculate rentabilite for response only (not DB columns)
     rentabilite = SCIService.calculate_rentabilite(row)
 
-    write_client = _get_write_client()
+    write_client = _get_client(request)
     result = write_client.table("biens").insert(row).execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))

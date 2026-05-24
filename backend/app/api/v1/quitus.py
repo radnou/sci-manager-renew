@@ -338,7 +338,7 @@ async def batch_generate_quitus(
     date_end = f"{payload.mois}-{last_day:02d}"
 
     client = get_supabase_user_client(request)
-    write_client = get_supabase_service_client()
+    
 
     # Fetch all loyers paye for that month accessible to this user
     # We join via biens → associes to enforce ownership (RLS handles this via user client)
@@ -440,7 +440,7 @@ async def batch_generate_quitus(
             )
 
             # Store filename on the loyer row
-            write_client.table("loyers").update(
+            client.table("loyers").update(
                 {"quittance_filename": filename}
             ).eq("id", id_loyer).execute()
 

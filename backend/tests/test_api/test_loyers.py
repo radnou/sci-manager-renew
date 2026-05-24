@@ -813,7 +813,7 @@ def test_create_loyer_insert_db_error(client, auth_headers, monkeypatch):
                 })(),
             })()
 
-    monkeypatch.setattr(loyers_mod, "_get_write_client", lambda: InsertErrorClient())
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", lambda request=None: InsertErrorClient())
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
@@ -836,7 +836,7 @@ def test_create_loyer_insert_empty_result(client, auth_headers, monkeypatch):
                 })(),
             })()
 
-    monkeypatch.setattr(loyers_mod, "_get_write_client", lambda: InsertEmptyClient())
+    monkeypatch.setattr(loyers_mod, "get_supabase_user_client", lambda request=None: InsertEmptyClient())
     payload = {
         "id_bien": "bien-1",
         "date_loyer": "2026-06-01",
