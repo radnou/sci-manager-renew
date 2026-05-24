@@ -8,11 +8,13 @@ from fastapi.testclient import TestClient
 import jwt
 
 from app.core.config import settings
-from app.core.rate_limit import limiter
-from app.main import app
 
 # Override settings for tests
 settings.cors_origins = ["http://testserver"]
+settings.allowed_hosts = ["testserver", "localhost", "*.gerersci.fr"]
+
+from app.core.rate_limit import limiter
+from app.main import app
 
 # Disable rate limiting in tests to avoid 429 errors
 limiter.enabled = False
@@ -407,8 +409,8 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         biens_evenements,
     )
     from app import main
-    from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin
-    from app.services import subscription_service
+    from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin, declarations
+    from app.services import subscription_service, declaration_2065_service
     from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
     fake_supabase = _fake_supabase_session
@@ -424,7 +426,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         for mod in [associes, biens_flat, charges, export, fiscalite, loyers, locataires, scis,
                     notifications, dashboard, notification_preferences, quitus,
                     assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle,
-                    calendrier_fiscal, leads,
+                    calendrier_fiscal, leads, declarations,
                     biens_core, biens_loyers, biens_baux, biens_charges,
                     biens_pno, biens_frais, biens_documents, biens_evenements]:
             mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
@@ -437,7 +439,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         def fake_user_client(request=None):
             return fake_supabase
 
-        for _mod in [auth, files, gdpr, stripe, subscription_service, onboarding, finances]:
+        for _mod in [auth, files, gdpr, stripe, subscription_service, onboarding, finances, declaration_2065_service]:
             mp.setattr(_mod, "get_supabase_service_client", fake_service, raising=False)
             mp.setattr(_mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
         mp.setattr(admin, "get_service_client", fake_service, raising=False)

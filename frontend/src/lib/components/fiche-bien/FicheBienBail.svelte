@@ -5,6 +5,8 @@
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock, AlertTriangle, RefreshCw, Calculator, FileSignature, Loader2, ClipboardCheck, Upload, FileText } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
+	import FicheBienBailRegularisation from './FicheBienBailRegularisation.svelte';
+	import FicheBienBailAvenant from './FicheBienBailAvenant.svelte';
 	import {
 		announceFicheBienModal,
 		subscribeExclusiveFicheBienModal
@@ -210,54 +212,6 @@
 		return d.toISOString().split('T')[0];
 	});
 
-	// ── Régularisation charges ─────────────────────────
-	let showRegularisation = $state(false);
-	let regularisationAnnee = $state(new Date().getFullYear() - 1);
-	let regularisationLoading = $state(false);
-	let regularisationResult = $state<RegularisationResult | null>(null);
-	let regularisationConfirming = $state(false);
-	let regularisationNotes = $state('');
-
-	async function handleRegularisation() {
-		if (!bail) return;
-		regularisationLoading = true;
-		regularisationResult = null;
-		try {
-			regularisationResult = await fetchRegularisation(
-				sciId,
-				String(bienId),
-				String(bail.id),
-				regularisationAnnee
-			);
-		} catch {
-			addToast({ title: 'Erreur lors du calcul de la régularisation', variant: 'error' });
-		} finally {
-			regularisationLoading = false;
-		}
-	}
-
-	async function handleConfirmRegularisation() {
-		if (!bail || !regularisationResult) return;
-		regularisationConfirming = true;
-		try {
-			await confirmRegularisation(
-				sciId,
-				String(bienId),
-				String(bail.id),
-				regularisationAnnee,
-				regularisationNotes || undefined
-			);
-			addToast({ title: 'Régularisation confirmée', variant: 'success' });
-			// Refresh to show saved status
-			await handleRegularisation();
-			regularisationNotes = '';
-		} catch {
-			addToast({ title: 'Erreur lors de la confirmation', variant: 'error' });
-		} finally {
-			regularisationConfirming = false;
-		}
-	}
-
 	const motifOptions: Array<{ value: ClotureBailPayload['motif']; label: string }> = [
 		{ value: 'conge_locataire', label: 'Conge locataire' },
 		{ value: 'conge_bailleur', label: 'Conge bailleur' },
@@ -299,51 +253,9 @@
 		}
 	}
 
-	// ── Avenant bail ─────────────────────────
 	let showAvenantForm = $state(false);
-	let avenantSaving = $state(false);
-	let avenantType = $state<AvenantBailPayload['type_avenant']>('revision_loyer');
-	let avenantNouvelleValeur = $state('');
-	let avenantDateEffet = $state('');
-	let avenantMotif = $state('');
-
-	const avenantTypeOptions: Array<{ value: AvenantBailPayload['type_avenant']; label: string; placeholder: string }> = [
-		{ value: 'revision_loyer', label: 'Révision de loyer', placeholder: 'Nouveau loyer HC (ex: 850)' },
-		{ value: 'modif_charges', label: 'Modification des charges', placeholder: 'Nouvelles charges (ex: 180)' },
-		{ value: 'ajout_locataire', label: 'Ajout de locataire', placeholder: 'Nom du nouveau locataire' },
-		{ value: 'autre', label: 'Autre modification', placeholder: 'Détail de la modification' }
-	];
-
-	const avenantPlaceholder = $derived(
-		avenantTypeOptions.find(o => o.value === avenantType)?.placeholder ?? ''
-	);
-
 	function openAvenantForm() {
-		avenantType = 'revision_loyer';
-		avenantNouvelleValeur = '';
-		avenantDateEffet = new Date().toISOString().split('T')[0];
-		avenantMotif = '';
 		showAvenantForm = true;
-	}
-
-	async function submitAvenant() {
-		if (!bail || !avenantNouvelleValeur.trim() || !avenantDateEffet) return;
-		avenantSaving = true;
-		try {
-			await creerAvenant(sciId, String(bienId), String(bail.id), {
-				type_avenant: avenantType,
-				nouvelle_valeur: avenantNouvelleValeur,
-				date_effet: avenantDateEffet,
-				motif: avenantMotif
-			});
-			addToast({ title: 'Avenant créé', description: 'L\'avenant au bail a été enregistré.', variant: 'success' });
-			showAvenantForm = false;
-			onRefresh();
-		} catch {
-			addToast({ title: 'Erreur', description: 'Impossible de créer l\'avenant.', variant: 'error' });
-		} finally {
-			avenantSaving = false;
-		}
 	}
 
 	// ── État des lieux d'entrée ─────────────────────────
@@ -620,204 +532,10 @@
 			{/if}
 
 			<!-- Avenant au bail -->
-			{#if showAvenantForm}
-				<div class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-5 dark:border-indigo-800/50 dark:bg-indigo-950/20">
-					<h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-						<FileSignature class="h-4 w-4 text-indigo-500" />
-						Créer un avenant
-					</h3>
-					<div class="grid gap-4 sm:grid-cols-2">
-						<div>
-							<label for="avenant-type" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Type d'avenant</label>
-							<select
-								id="avenant-type"
-								bind:value={avenantType}
-								class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-							>
-								{#each avenantTypeOptions as opt}
-									<option value={opt.value}>{opt.label}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label for="avenant-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Date d'effet</label>
-							<input
-								id="avenant-date"
-								type="date"
-								bind:value={avenantDateEffet}
-								class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-							/>
-						</div>
-						<div>
-							<label for="avenant-valeur" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Nouvelle valeur</label>
-							<input
-								id="avenant-valeur"
-								type="text"
-								bind:value={avenantNouvelleValeur}
-								placeholder={avenantPlaceholder}
-								class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-							/>
-						</div>
-						<div>
-							<label for="avenant-motif" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Motif</label>
-							<input
-								id="avenant-motif"
-								type="text"
-								bind:value={avenantMotif}
-								placeholder="Motif de l'avenant"
-								class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-							/>
-						</div>
-					</div>
-					<div class="mt-4 flex items-center justify-end gap-2">
-						<button onclick={() => { showAvenantForm = false; }} class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
-							Annuler
-						</button>
-						<button
-							onclick={submitAvenant}
-							disabled={avenantSaving || !avenantNouvelleValeur.trim()}
-							class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-						>
-							{#if avenantSaving}<Loader2 class="h-4 w-4 animate-spin" />{/if}
-							Créer l'avenant
-						</button>
-					</div>
-				</div>
-			{/if}
+			<FicheBienBailAvenant bind:showForm={showAvenantForm} {bail} {sciId} {bienId} {onRefresh} />
 
 			<!-- Régularisation des charges -->
-			{#if bail.statut === 'en_cours'}
-				<div>
-					<div class="flex items-center justify-between">
-						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
-							Régularisation des charges
-						</p>
-						{#if isGerant}
-							<button
-								onclick={() => { showRegularisation = !showRegularisation; }}
-								class="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
-							>
-								<Calculator class="h-3.5 w-3.5" />
-								{showRegularisation ? 'Masquer' : 'Régulariser'}
-							</button>
-						{/if}
-					</div>
-
-					{#if showRegularisation}
-						<div class="mt-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
-							<div class="flex items-end gap-3">
-								<label class="block flex-1">
-									<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Année</span>
-									<select
-										bind:value={regularisationAnnee}
-										class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-									>
-										{#each Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 - i) as annee (annee)}
-											<option value={annee}>{annee}</option>
-										{/each}
-									</select>
-								</label>
-								<button
-									onclick={handleRegularisation}
-									disabled={regularisationLoading}
-									class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
-								>
-									<Calculator class="h-3.5 w-3.5" />
-									{regularisationLoading ? 'Calcul...' : 'Calculer la régularisation'}
-								</button>
-							</div>
-
-							{#if regularisationResult}
-								<div class="mt-4 space-y-3">
-									<div class="grid gap-3 sm:grid-cols-3">
-										<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
-											<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Provisions annuelles</p>
-											<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(regularisationResult.provisions_annuelles)}</p>
-										</div>
-										<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
-											<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Charges réelles</p>
-											<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(regularisationResult.charges_reelles)}</p>
-										</div>
-										<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
-											<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Solde</p>
-											<p class="mt-1 text-lg font-bold {regularisationResult.solde > 0 ? 'text-emerald-600 dark:text-emerald-400' : regularisationResult.solde < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'}">
-												{formatEur(Math.abs(regularisationResult.solde))}
-											</p>
-										</div>
-									</div>
-									{#if regularisationResult.solde > 0}
-										<div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
-											<p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-												Le locataire a trop payé de {formatEur(regularisationResult.solde)}
-											</p>
-											<p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-												Un remboursement est dû au locataire.
-											</p>
-										</div>
-									{:else if regularisationResult.solde < 0}
-										<div class="rounded-lg border border-rose-200 bg-rose-50 p-3 dark:border-rose-800 dark:bg-rose-950/30">
-											<p class="text-sm font-medium text-rose-800 dark:text-rose-200">
-												Le locataire doit un complément de {formatEur(Math.abs(regularisationResult.solde))}
-											</p>
-											<p class="mt-1 text-xs text-rose-600 dark:text-rose-400">
-												Un appel de régularisation peut être émis.
-											</p>
-										</div>
-									{:else}
-										<div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
-											<p class="text-sm font-medium text-slate-700 dark:text-slate-300">
-												Aucun écart — les provisions correspondent aux charges réelles.
-											</p>
-										</div>
-									{/if}
-
-									<!-- Saved status or confirm button -->
-									{#if regularisationResult.saved?.statut === 'confirme'}
-										<div class="rounded-lg border border-sky-200 bg-sky-50 p-3 dark:border-sky-800 dark:bg-sky-950/30">
-											<div class="flex items-center gap-2">
-												<CheckCircle class="h-4 w-4 text-sky-600 dark:text-sky-400" />
-												<p class="text-sm font-medium text-sky-800 dark:text-sky-200">
-													Régularisation confirmée le {formatFrDate(regularisationResult.saved.date_regularisation)}
-												</p>
-											</div>
-											{#if regularisationResult.saved.notes}
-												<p class="mt-1 text-xs text-sky-600 dark:text-sky-400">
-													{regularisationResult.saved.notes}
-												</p>
-											{/if}
-										</div>
-									{:else if isGerant}
-										<div class="space-y-3">
-											<label class="block">
-												<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Notes (optionnel)</span>
-												<input
-													type="text"
-													bind:value={regularisationNotes}
-													placeholder="Ex : remboursement effectué par virement le..."
-													class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-												/>
-											</label>
-											<button
-												onclick={handleConfirmRegularisation}
-												disabled={regularisationConfirming}
-												class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-											>
-												<CheckCircle class="h-3.5 w-3.5" />
-												{regularisationConfirming ? 'Confirmation...' : 'Confirmer la régularisation'}
-											</button>
-										</div>
-									{/if}
-
-									<!-- Loi ALUR notice -->
-									<p class="text-xs text-slate-400 dark:text-slate-500">
-										Obligation annuelle (loi ALUR art. 23). Le bailleur doit régulariser au moins une fois par an.
-									</p>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
-			{/if}
+			<FicheBienBailRegularisation {bail} {sciId} {bienId} {isGerant} {onRefresh} />
 
 			<!-- Locataires Cards -->
 			<div>

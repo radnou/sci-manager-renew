@@ -24,6 +24,7 @@ from app.schemas.fiche_bien import FicheBienResponse, RentabiliteCalculee
 from app.schemas.frais_agence import FraisAgenceCreate, FraisAgenceResponse
 from app.services.document_links import create_document_signed_url, extract_document_storage_path
 from app.services.rentabilite_service import calculate_rentabilite
+from app.services.notification_service import create_notification_with_email
 
 logger = structlog.get_logger(__name__)
 
@@ -304,7 +305,6 @@ async def create_avenant(
         created_event = {"id": None, "type": "avenant", "titre": evenement_row["titre"]}
 
     # Create notification for SCI owners
-    from app.services.notification_service import create_notification_with_email
 
     owners = (
         client.table("associes")

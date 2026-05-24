@@ -151,21 +151,26 @@ def test_simple_health_endpoint():
 
 
 @pytest.mark.asyncio
-async def test_stripe_check_live_key():
+async def test_stripe_check_live_key(monkeypatch):
     """Stripe check with sk_live key returns healthy + mode live."""
-    from unittest.mock import patch
+    from app.core.config import settings
     from app.api.v1.health import _check_stripe
+    from unittest.mock import patch
 
-    with patch("app.api.v1.health.settings") as mock_settings:
-        mock_settings.stripe_secret_key = "sk_live_abc123"
-        mock_settings.stripe_starter_price_id = "price_starter_month"
-        mock_settings.stripe_starter_annual_price_id = "price_starter_year"
-        mock_settings.stripe_pro_price_id = "price_pro_month"
-        mock_settings.stripe_pro_annual_price_id = "price_pro_year"
-        mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
-        mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
-        with patch("app.api.v1.health.stripe.Price.retrieve_async", return_value={"active": True}) as retrieve:
-            result = await _check_stripe()
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_live_abc123")
+    monkeypatch.setattr(settings, "stripe_starter_price_id", "price_starter_month")
+    monkeypatch.setattr(settings, "stripe_starter_annual_price_id", "price_starter_year")
+    monkeypatch.setattr(settings, "stripe_pro_price_id", "price_pro_month")
+    monkeypatch.setattr(settings, "stripe_pro_annual_price_id", "price_pro_year")
+    monkeypatch.setattr(settings, "stripe_cabinet_price_id", "price_cabinet_month")
+    monkeypatch.setattr(settings, "stripe_cabinet_annual_price_id", "price_cabinet_year")
+    monkeypatch.setattr(settings, "stripe_gestion_monthly_price_id", None)
+    monkeypatch.setattr(settings, "stripe_gestion_annual_price_id", None)
+    monkeypatch.setattr(settings, "stripe_pilotage_monthly_price_id", None)
+    monkeypatch.setattr(settings, "stripe_pilotage_annual_price_id", None)
+
+    with patch("app.api.v1.health.stripe.Price.retrieve_async", return_value={"active": True}) as retrieve:
+        result = await _check_stripe()
     assert retrieve.call_count == 6
     assert result["healthy"] is True
     assert result["mode"] == "live"
@@ -173,37 +178,36 @@ async def test_stripe_check_live_key():
 
 
 @pytest.mark.asyncio
-async def test_stripe_check_invalid_key():
+async def test_stripe_check_invalid_key(monkeypatch):
     """Stripe check with invalid key format returns unhealthy."""
-    from unittest.mock import patch
+    from app.core.config import settings
     from app.api.v1.health import _check_stripe
 
-    with patch("app.api.v1.health.settings") as mock_settings:
-        mock_settings.stripe_secret_key = "rk_invalid_format"
-        result = await _check_stripe()
+    monkeypatch.setattr(settings, "stripe_secret_key", "rk_invalid_format")
+    result = await _check_stripe()
     assert result["healthy"] is False
     assert "invalid stripe key format" in result["error"]
 
 
 @pytest.mark.asyncio
-async def test_stripe_check_missing_key():
+async def test_stripe_check_missing_key(monkeypatch):
     """Stripe check with no key returns unhealthy."""
-    from unittest.mock import patch
+    from app.core.config import settings
     from app.api.v1.health import _check_stripe
 
-    with patch("app.api.v1.health.settings") as mock_settings:
-        mock_settings.stripe_secret_key = ""
-        result = await _check_stripe()
+    monkeypatch.setattr(settings, "stripe_secret_key", "")
+    result = await _check_stripe()
     assert result["healthy"] is False
     assert "missing" in result["error"]
 
 
 @pytest.mark.asyncio
-async def test_stripe_check_detects_invalid_price_id():
+async def test_stripe_check_detects_invalid_price_id(monkeypatch):
     """Stripe readiness fails when one configured price id cannot be retrieved."""
-    from unittest.mock import patch
+    from app.core.config import settings
     from app.api.v1.health import _check_stripe
     from app.core.entitlements import PlanKey
+    from unittest.mock import patch
 
     def mock_resolve(plan_key, billing_period="month"):
         mapping = {
@@ -216,9 +220,8 @@ async def test_stripe_check_detects_invalid_price_id():
         }
         return mapping.get((plan_key, billing_period))
 
-    with patch("app.api.v1.health.settings") as mock_settings,          patch("app.api.v1.health.resolve_price_id_for_plan", side_effect=mock_resolve):
-        mock_settings.stripe_secret_key = "sk_live_abc123"
-
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_live_abc123")
+    with patch("app.api.v1.health.resolve_price_id_for_plan", side_effect=mock_resolve):
         async def retrieve(price_id: str):
             if price_id == "price_starter_month":
                 raise Exception("No such price")
@@ -234,27 +237,25 @@ async def test_stripe_check_detects_invalid_price_id():
 
 
 @pytest.mark.asyncio
-async def test_resend_check_invalid_key():
-    """Resend check with invalid key returns unhealthy."""
-    from unittest.mock import patch
+async def test_resend_check_invalid_key(monkeypatch):
+    """Resend check with invalid key format returns unhealthy."""
+    from app.core.config import settings
     from app.api.v1.health import _check_resend
 
-    with patch("app.api.v1.health.settings") as mock_settings:
-        mock_settings.resend_api_key = "invalid_key"
-        result = await _check_resend()
+    monkeypatch.setattr(settings, "resend_api_key", "invalid_key")
+    result = await _check_resend()
     assert result["healthy"] is False
     assert "invalid resend key format" in result["error"]
 
 
 @pytest.mark.asyncio
-async def test_resend_check_valid_key():
+async def test_resend_check_valid_key(monkeypatch):
     """Resend check with re_ prefixed key returns healthy."""
-    from unittest.mock import patch
+    from app.core.config import settings
     from app.api.v1.health import _check_resend
 
-    with patch("app.api.v1.health.settings") as mock_settings:
-        mock_settings.resend_api_key = "re_valid_key_123"
-        result = await _check_resend()
+    monkeypatch.setattr(settings, "resend_api_key", "re_valid_key_123")
+    result = await _check_resend()
     assert result["healthy"] is True
 
 

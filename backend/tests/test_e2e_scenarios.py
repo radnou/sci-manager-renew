@@ -10,6 +10,7 @@ NOTE: Endpoints under /scis/{sci_id}/biens require UUID-formatted sci_id.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import csv
 import io
 
@@ -105,8 +106,8 @@ GERANT_ASSOC_2 = {
 
 def _seed_pro(fake_supabase):
     """Standard setup: pro subscription + gerant membership on SCI_UUID."""
-    fake_supabase.store["subscriptions"] = [PRO_SUB]
-    fake_supabase.store["associes"] = [GERANT_ASSOC, ASSOC_ONLY]
+    fake_supabase.store["subscriptions"] = [deepcopy(PRO_SUB)]
+    fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC), deepcopy(ASSOC_ONLY)]
     fake_supabase.store["sci"] = [
         {"id": SCI_UUID, "nom": "SCI E2E Test", "siren": "123456789", "regime_fiscal": "IR"},
     ]
@@ -118,7 +119,7 @@ def _seed_pro_two_scis(fake_supabase):
     fake_supabase.store["sci"].append(
         {"id": SCI_UUID_2, "nom": "SCI E2E Deux", "siren": "987654321", "regime_fiscal": "IS"},
     )
-    fake_supabase.store["associes"].append(GERANT_ASSOC_2)
+    fake_supabase.store["associes"].append(deepcopy(GERANT_ASSOC_2))
 
 
 def _seed_bien(fake_supabase, bien_id=BIEN_ID, sci_id=SCI_UUID):
@@ -215,7 +216,7 @@ class TestOnboardingJourney:
         assert status["sci_created"] is False
 
         # 2. Create SCI
-        fake_supabase.store["associes"].append(GERANT_ASSOC)
+        fake_supabase.store["associes"].append(deepcopy(GERANT_ASSOC))
         fake_supabase.store["sci"].append(
             {"id": SCI_UUID, "nom": "SCI Onboard", "siren": "111222333", "regime_fiscal": "IR"},
         )
@@ -254,8 +255,8 @@ class TestOnboardingJourney:
         assert resp.json()["completed"] is True
 
     def test_onboarding_status_reflects_notification_prefs(self, client, auth_headers, fake_supabase):
-        fake_supabase.store["subscriptions"] = [PRO_SUB]
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["subscriptions"] = [deepcopy(PRO_SUB)]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
         fake_supabase.store["sci"] = [{"id": SCI_UUID, "nom": "SCI NP", "siren": "111", "regime_fiscal": "IR"}]
         fake_supabase.store["notification_preferences"] = []
 
@@ -271,7 +272,7 @@ class TestOnboardingJourney:
 
     def test_complete_onboarding_creates_subscription_if_missing(self, client, auth_headers, fake_supabase):
         fake_supabase.store["subscriptions"] = []
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
 
         resp = client.post("/api/v1/onboarding/complete", headers=auth_headers)
         assert resp.status_code == 200
@@ -292,7 +293,7 @@ class TestSCILifecycle:
     """Create SCI -> update -> add associe -> add bien -> list everything -> delete."""
 
     def test_create_update_delete_sci(self, client, auth_headers, fake_supabase):
-        fake_supabase.store["subscriptions"] = [PRO_SUB]
+        fake_supabase.store["subscriptions"] = [deepcopy(PRO_SUB)]
 
         # 1. Create SCI
         resp = client.post(
@@ -649,7 +650,7 @@ class TestFinancialJourney:
             "status": "cancelled",
             "is_active": False,
         }]
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
 
         resp = client.get("/api/v1/finances", headers=auth_headers)
         assert resp.status_code == 402
@@ -859,7 +860,7 @@ class TestPaywallEnforcement:
             "max_biens": 5,
             "features": {"multi_sci_enabled": False},
         }]
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
         fake_supabase.store["sci"] = [
             {"id": SCI_UUID, "nom": "SCI One", "siren": "111222333", "regime_fiscal": "IR"},
         ]
@@ -884,7 +885,7 @@ class TestPaywallEnforcement:
     def test_finances_with_no_subscription_returns_402(self, client, auth_headers, fake_supabase):
         """Payment-first: no subscription → 402 (must subscribe)."""
         fake_supabase.store["subscriptions"] = []
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
 
         resp = client.get("/api/v1/finances", headers=auth_headers)
         assert resp.status_code == 402
@@ -897,7 +898,7 @@ class TestPaywallEnforcement:
             "status": "cancelled",
             "is_active": False,
         }]
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
 
         resp = client.get("/api/v1/finances", headers=auth_headers)
         assert resp.status_code == 402
@@ -908,7 +909,7 @@ class TestPaywallEnforcement:
             **FREE_SUB,
             "features": {"quitus_enabled": False},
         }]
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
         fake_supabase.store["sci"] = [
             {"id": SCI_UUID, "nom": "SCI Q", "siren": "111222333", "regime_fiscal": "IR"},
         ]

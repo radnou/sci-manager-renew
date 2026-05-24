@@ -21,6 +21,8 @@ describe('/login/+page.svelte', () => {
 	it('should render password input field in password mode', async () => {
 		render(Page);
 
+		await page.getByRole('button', { name: /Connexion par mot de passe/ }).click();
+
 		const passwordInput = page.getByPlaceholder('••••••••');
 		await expect.element(passwordInput).toBeInTheDocument();
 	});
@@ -35,6 +37,8 @@ describe('/login/+page.svelte', () => {
 	it('should have a link to /forgot-password', async () => {
 		render(Page);
 
+		await page.getByRole('button', { name: /Connexion par mot de passe/ }).click();
+
 		const forgotLink = page.getByRole('link', { name: /Mot de passe oublié/ });
 		await expect.element(forgotLink).toHaveAttribute('href', '/forgot-password');
 	});
@@ -42,23 +46,23 @@ describe('/login/+page.svelte', () => {
 	it('should toggle between password and magic-link mode', async () => {
 		render(Page);
 
-		// Initially in password mode — should show magic link toggle button
-		const magicLinkButton = page.getByRole('button', { name: /Connexion par lien magique/ });
-		await expect.element(magicLinkButton).toBeInTheDocument();
-
-		// Click to switch to magic-link mode
-		await magicLinkButton.click();
-
-		// Now should show password mode toggle button
+		// Initially in magic-link mode — should show password toggle button
 		const passwordButton = page.getByRole('button', { name: /Connexion par mot de passe/ });
 		await expect.element(passwordButton).toBeInTheDocument();
 
-		// Password field should no longer be visible
+		// Click to switch to password mode
+		await passwordButton.click();
+
+		// Now should show magic-link toggle button
+		const magicLinkButton = page.getByRole('button', { name: /Connexion par lien magique/ });
+		await expect.element(magicLinkButton).toBeInTheDocument();
+
+		// Password field should be visible
 		const passwordInput = page.getByPlaceholder('••••••••');
-		await expect.element(passwordInput).not.toBeInTheDocument();
+		await expect.element(passwordInput).toBeInTheDocument();
 
 		// Submit button text should change
-		const submitButton = page.getByRole('button', { name: /Recevoir le lien de connexion/ });
+		const submitButton = page.getByRole('button', { name: /Se connecter/ });
 		await expect.element(submitButton).toBeInTheDocument();
 	});
 });

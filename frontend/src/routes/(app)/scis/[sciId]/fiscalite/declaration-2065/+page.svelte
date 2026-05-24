@@ -25,7 +25,7 @@
 			addToast({ title: 'Déclaration 2065 générée', variant: 'success' });
 		} catch (err: any) {
 			error = err?.message ?? 'Impossible de générer la déclaration.';
-			addToast({ title: error, variant: 'error' });
+			addToast({ title: error as string, variant: 'error' });
 		} finally {
 			loading = false;
 		}
@@ -52,7 +52,7 @@
 		}
 	}
 
-	function bilanItems(bilan: Record<string, number | undefined>): Array<{ label: string; value: number }> {
+	function bilanItems(bilan: any): Array<{ label: string; value: number }> {
 		const libelles: Record<string, string> = {
 			immobilisations: 'Immobilisations',
 			travaux_en_cours: 'Travaux en cours',
@@ -74,7 +74,7 @@
 			.sort((a, b) => b.value - a.value);
 	}
 
-	function bilanTotal(bilan: Record<string, number | undefined>): number {
+	function bilanTotal(bilan: any): number {
 		return Object.values(bilan)
 			.filter((v): v is number => v != null)
 			.reduce((sum, v) => sum + v, 0);

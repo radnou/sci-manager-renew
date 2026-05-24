@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import pytest
 
 # ──────────────────────────────────────────────────────────────
@@ -47,8 +48,8 @@ def _seed(fake_supabase):
     fake_supabase.store["sci"] = [
         {"id": SCI_UUID, "nom": "SCI Test Lifecycle", "siren": "111222333", "regime_fiscal": "IR", "adresse_siege": "1 rue Test", "capital_social": 10000, "nom_gerant": "Test Gerant"},
     ]
-    fake_supabase.store["associes"] = [GERANT_ASSOCIE, ASSOC_B]
-    fake_supabase.store["subscriptions"] = [ACTIVE_SUB]
+    fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOCIE), deepcopy(ASSOC_B)]
+    fake_supabase.store["subscriptions"] = [deepcopy(ACTIVE_SUB)]
     fake_supabase.store["biens"] = [
         {"id": BIEN_ID, "id_sci": SCI_UUID, "adresse": "10 rue de la Paix", "ville": "Paris", "code_postal": "75001", "type_bien": "appartement", "type_locatif": "nu", "surface_m2": 50},
     ]

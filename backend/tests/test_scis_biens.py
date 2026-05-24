@@ -11,6 +11,7 @@ NOTE: sci_id must be a valid UUID because the router declares `sci_id: UUID`.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import pytest
 
 # ──────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ ASSOC_ONLY = {
 
 def seed_associes(fake_supabase):
     """Replace the default associes store with UUID-keyed records."""
-    fake_supabase.store["associes"] = [GERANT_ASSOCIE, ASSOC_ONLY]
+    fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOCIE), deepcopy(ASSOC_ONLY)]
 
 
 def seed_bien_int(fake_supabase, bien_id: int = 123, sci_id: int = 1) -> dict:
@@ -109,7 +110,7 @@ def seed_bien(fake_supabase, bien_id: str = BIEN_ID, sci_id: str = SCI_UUID) -> 
 
 def setup(fake_supabase):
     """Seed subscriptions and associes for an authenticated gerant scenario."""
-    fake_supabase.store["subscriptions"] = [ACTIVE_SUB]
+    fake_supabase.store["subscriptions"] = [deepcopy(ACTIVE_SUB)]
     seed_associes(fake_supabase)
 
 

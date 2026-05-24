@@ -284,6 +284,11 @@ class Declaration2065Service:
         réserves: Optional[Decimal] = None,
     ) -> Declaration2065:
         """Génère une déclaration 2065 pré-remplie."""
+        if trésorerie is not None:
+            trésorerie = Decimal(str(trésorerie))
+        if réserves is not None:
+            réserves = Decimal(str(réserves))
+
         data = await self.get_bilan_data(sci_id, exercice)
 
         # Récupérer la date de clôture (colonne optionnelle)

@@ -3,6 +3,7 @@
 
 	interface Props {
 		open: boolean;
+		planKey: string;
 		planName: string;
 		planPrice: string;
 		planPeriod: string;
@@ -14,6 +15,7 @@
 
 	let {
 		open,
+		planKey,
 		planName,
 		planPrice,
 		planPeriod,

@@ -360,6 +360,7 @@
 
 	<CheckoutConfirmModal
 		open={modalOpen}
+		planKey={modalPlanKey}
 		planName={modalPlanName}
 		planPrice={modalPlanPrice}
 		planPeriod={modalPlanPeriod}

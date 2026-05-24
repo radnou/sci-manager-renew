@@ -123,7 +123,8 @@
     planPrice={modalPlanPrice}
     planPeriod={modalPlanPeriod}
     planFeatures={modalPlanFeatures}
-    onClose={() => modalOpen = false}
+    loading={checkoutLoading !== null}
+    onCancel={() => modalOpen = false}
     onConfirm={handleModalConfirm}
 />
 

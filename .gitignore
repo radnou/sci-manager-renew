@@ -62,3 +62,5 @@ marketing-*.png
 .claude/
 playwright-report/
 .playwright-mcp/
+
+.remember/
