@@ -118,7 +118,7 @@ def run_dogfooding():
         "adresse": "12 Rue de la Paix, 75002 Paris",
         "capital_social": 15000,
         "date_creation": "2024-01-15",
-        "regime_fiscal": "ir",
+        "regime_fiscal": "IR",
         "type_sci": "familiale",
         "siret": "12345678900013"
     }
