@@ -13,6 +13,7 @@ from __future__ import annotations
 from copy import deepcopy
 import csv
 import io
+from copy import deepcopy
 
 import pytest
 
@@ -1096,6 +1097,9 @@ class TestChargesJourney:
     def test_charges_crud(self, client, auth_headers, fake_supabase):
         _seed_pro(fake_supabase)
         _seed_bien(fake_supabase)
+        from app.core.paywall import check_write_access
+        print("DEBUG: subscriptions in store =", fake_supabase.store["subscriptions"])
+        print("DEBUG: check_write_access =", check_write_access("user-123"))
 
         # Create charge
         resp = client.post(

@@ -251,7 +251,7 @@ class ResumeFiscalService:
         # 2. Fetch associés with parts (include id and email for report-2042)
         associe_rows = self._execute_select(
             client.table("associes")
-            .select("id, nom, email, part")
+            .select("id, nom, email, part, nb_parts")
             .eq("id_sci", sci_id)
         )
 
@@ -512,12 +512,19 @@ class ResumeFiscalService:
 
         # 6. Quote-part per associé
         associes_qp: list[AssocieQuotePart] = []
-        total_parts = sum(self._safe_float(a.get("part")) for a in associe_rows)
+        
+        # Get the sci's nb_parts_total
+        sci_rows = client.table("sci").select("nb_parts_total").eq("id", sci_id).execute()
+        nb_parts_total = 1000
+        if getattr(sci_rows, "data", None) and sci_rows.data and sci_rows.data[0].get("nb_parts_total") is not None:
+            nb_parts_total = int(sci_rows.data[0]["nb_parts_total"])
+            
+        total_parts = sum(int(a.get("nb_parts") or 0) for a in associe_rows)
 
-        # Validate that parts sum to 100 (tolerance: ±0.01)
-        if associe_rows and total_parts > 0 and abs(total_parts - 100.0) > 0.01:
+        # Validate that parts sum to nb_parts_total
+        if associe_rows and total_parts > 0 and total_parts != nb_parts_total:
             warning_msg = (
-                f"Les parts des associés totalisent {total_parts:.2f} % au lieu de 100 %. "
+                f"Les parts des associés totalisent {total_parts} au lieu de {nb_parts_total}. "
                 f"Les quote-parts fiscales peuvent être incorrectes."
             )
             alertes.append(warning_msg)
@@ -530,7 +537,7 @@ class ResumeFiscalService:
 
         if total_parts > 0:
             for a in associe_rows:
-                part = self._safe_float(a.get("part"))
+                part = int(a.get("nb_parts") or 0)
                 pct = round((part / total_parts) * 100, 2)
                 qp = round(resultat_global * (part / total_parts), 2)
 

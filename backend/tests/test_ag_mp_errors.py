@@ -79,7 +79,8 @@ class TestAGCreateError:
     async def test_create_ag_error(self):
         from app.api.v1.assemblees_generales import create_assemblee_generale, AGCreate
         payload = AGCreate(date_ag="2026-01-01", type_ag="ordinaire", exercice_annee=2025)
-        with patch("app.api.v1.assemblees_generales._get_client", return_value=ErrorClient()):
+        with patch("app.api.v1.assemblees_generales._get_client", return_value=ErrorClient()), \
+             patch("app.api.v1.assemblees_generales._get_write_client", return_value=ErrorClient()):
             with pytest.raises(DatabaseError):
                 await create_assemblee_generale(_mock_request(), SCI_UUID, payload, MEMBERSHIP)
 
@@ -87,7 +88,8 @@ class TestAGCreateError:
     async def test_create_ag_empty_result(self):
         from app.api.v1.assemblees_generales import create_assemblee_generale, AGCreate
         payload = AGCreate(date_ag="2026-01-01", type_ag="ordinaire", exercice_annee=2025)
-        with patch("app.api.v1.assemblees_generales._get_client", return_value=EmptyInsertClient()):
+        with patch("app.api.v1.assemblees_generales._get_client", return_value=EmptyInsertClient()), \
+             patch("app.api.v1.assemblees_generales._get_write_client", return_value=EmptyInsertClient()):
             with pytest.raises(DatabaseError, match="Unable to create"):
                 await create_assemblee_generale(_mock_request(), SCI_UUID, payload, MEMBERSHIP)
 
@@ -100,7 +102,8 @@ class TestAGCreateError:
                 raise RuntimeError("crash")
 
         payload = AGCreate(date_ag="2026-01-01", type_ag="ordinaire", exercice_annee=2025)
-        with patch("app.api.v1.assemblees_generales._get_client", return_value=CrashClient()):
+        with patch("app.api.v1.assemblees_generales._get_client", return_value=CrashClient()), \
+             patch("app.api.v1.assemblees_generales._get_write_client", return_value=CrashClient()):
             with pytest.raises(DatabaseError, match="Unable to create"):
                 await create_assemblee_generale(_mock_request(), SCI_UUID, payload, MEMBERSHIP)
 
@@ -246,7 +249,8 @@ class TestMPCreateError:
             cedant_nom="A", cessionnaire_nom="B", nb_parts=10,
             prix_unitaire=100, prix_total=1000,
         )
-        with patch("app.api.v1.mouvements_parts._get_client", return_value=ErrorClient()):
+        with patch("app.api.v1.mouvements_parts._get_client", return_value=ErrorClient()), \
+             patch("app.api.v1.mouvements_parts._get_write_client", return_value=ErrorClient()):
             with pytest.raises(DatabaseError):
                 await create_mouvement_parts(SCI_UUID, payload, _mock_request(), MEMBERSHIP)
 
@@ -258,7 +262,8 @@ class TestMPCreateError:
             cedant_nom="A", cessionnaire_nom="B", nb_parts=10,
             prix_unitaire=100, prix_total=1000,
         )
-        with patch("app.api.v1.mouvements_parts._get_client", return_value=EmptyInsertClient()):
+        with patch("app.api.v1.mouvements_parts._get_client", return_value=EmptyInsertClient()), \
+             patch("app.api.v1.mouvements_parts._get_write_client", return_value=EmptyInsertClient()):
             with pytest.raises(DatabaseError, match="Unable to create"):
                 await create_mouvement_parts(SCI_UUID, payload, _mock_request(), MEMBERSHIP)
 
@@ -275,7 +280,8 @@ class TestMPCreateError:
             cedant_nom="A", cessionnaire_nom="B", nb_parts=10,
             prix_unitaire=100, prix_total=1000,
         )
-        with patch("app.api.v1.mouvements_parts._get_client", return_value=CrashClient()):
+        with patch("app.api.v1.mouvements_parts._get_client", return_value=CrashClient()), \
+             patch("app.api.v1.mouvements_parts._get_write_client", return_value=CrashClient()):
             with pytest.raises(DatabaseError, match="Unable to create"):
                 await create_mouvement_parts(SCI_UUID, payload, _mock_request(), MEMBERSHIP)
 

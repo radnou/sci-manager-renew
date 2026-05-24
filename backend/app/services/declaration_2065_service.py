@@ -23,7 +23,7 @@ from dataclasses import dataclass
 import structlog
 from fastapi import HTTPException, status
 
-from app.core.exceptions import ResourceNotFoundError, ValidationError
+from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.supabase_client import get_supabase_service_client
 from app.models.sci import SCIResponse
 
@@ -286,6 +286,12 @@ class Declaration2065Service:
         réserves: Optional[Decimal] = None,
     ) -> Declaration2065:
         """Génère une déclaration 2065 pré-remplie."""
+        sci_check = self.client.table("sci").select("id").eq("id", str(sci_id)).execute()
+        if getattr(sci_check, "error", None):
+            raise DatabaseError(str(sci_check.error))
+        if not sci_check.data:
+            raise ResourceNotFoundError("SCI", str(sci_id))
+
         if trésorerie is not None:
             trésorerie = Decimal(str(trésorerie))
         if réserves is not None:
@@ -313,12 +319,12 @@ class Declaration2065Service:
             immobilisations_corporelles=data["immobilisations"],
             travaux_en_cours=data["travaux"] if data["travaux"] > 0 else None,
             créances_clients=data["créances"],
-            trésorerie_actif=trésorerie or Decimal("0"),
+            trésorerie_actif=Decimal(str(trésorerie)) if trésorerie is not None else Decimal("0"),
         )
 
         passif = BilanPassif(
             capital_social=data["capital"],
-            réserves=réserves,
+            réserves=Decimal(str(réserves)) if réserves is not None else None,
             résultat_exercice=data["résultat"],
             emprunts=data["emprunts"],
         )
