@@ -66,28 +66,28 @@ api.gerersci.fr {
 
 	# ---- Supabase proxy (browser → Kong) ----
 	handle /auth/* {
-		reverse_proxy host.docker.internal:54321 {
+		reverse_proxy 172.19.0.9:8000 {
 			header_up apikey {header.apikey}
 			header_up Authorization {header.Authorization}
 		}
 	}
 
 	handle /rest/* {
-		reverse_proxy host.docker.internal:54321 {
+		reverse_proxy 172.19.0.9:8000 {
 			header_up apikey {header.apikey}
 			header_up Authorization {header.Authorization}
 		}
 	}
 
 	handle /realtime/* {
-		reverse_proxy host.docker.internal:54321 {
+		reverse_proxy 172.19.0.9:8000 {
 			header_up apikey {header.apikey}
 			header_up Authorization {header.Authorization}
 		}
 	}
 
 	handle /storage/* {
-		reverse_proxy host.docker.internal:54321 {
+		reverse_proxy 172.19.0.9:8000 {
 			header_up apikey {header.apikey}
 			header_up Authorization {header.Authorization}
 		}
@@ -97,7 +97,7 @@ api.gerersci.fr {
 	}
 
 	handle /functions/* {
-		reverse_proxy host.docker.internal:54321 {
+		reverse_proxy 172.19.0.9:8000 {
 			header_up apikey {header.apikey}
 			header_up Authorization {header.Authorization}
 		}
