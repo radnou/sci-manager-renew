@@ -147,7 +147,9 @@ def run_dogfooding():
     # 3. CRÉER BIEN
     print("\n📍 ÉTAPE 3: Création bien")
     bien_data = {
-        "adresse": "42 Rue du Commerce, 97441 Sainte-Suzanne",
+        "adresse": "42 Rue du Commerce",
+        "ville": "Sainte-Suzanne",
+        "code_postal": "97441",
         "type_bien": "appartement",
         "surface": 65.5,
         "loyer_cc": 850.00,
