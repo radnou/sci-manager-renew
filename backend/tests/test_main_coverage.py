@@ -139,15 +139,21 @@ class TestPydanticValidationExceptionHandler:
 class TestGlobalExceptionHandler:
     @pytest.mark.asyncio
     async def test_dev_mode_shows_details(self):
-        exc = RuntimeError("kaboom")
-        request = _make_request()
-        response = await global_exception_handler(request, exc)
-        assert response.status_code == 500
-        import json
-        body = json.loads(response.body)
-        assert "RuntimeError" in body["error"]
-        assert "kaboom" in body["error"]
-        assert body["code"] == "internal_error"
+        from app.core.config import Environment, settings
+        original = settings.app_env
+        try:
+            settings.app_env = Environment.DEVELOPMENT
+            exc = RuntimeError("kaboom")
+            request = _make_request()
+            response = await global_exception_handler(request, exc)
+            assert response.status_code == 500
+            import json
+            body = json.loads(response.body)
+            assert "RuntimeError" in body["error"]
+            assert "kaboom" in body["error"]
+            assert body["code"] == "internal_error"
+        finally:
+            settings.app_env = original
 
     @pytest.mark.asyncio
     async def test_production_hides_details(self):
