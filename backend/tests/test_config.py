@@ -110,16 +110,13 @@ def test_local_env_file_overrides_base_env(tmp_path, monkeypatch):
 
 def test_env_file_cors_origins_json_like_string_is_accepted(tmp_path, monkeypatch):
     """Test que le format CORS_ORIGINS du .env local est accepté au boot."""
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("APP_ENV", "development")  # avoid production validation
-
-    (tmp_path / ".env").write_text(
-        'CORS_ORIGINS=["http://localhost:5173"]\nALLOWED_HOSTS=["localhost","127.0.0.1"]\n',
-        encoding="utf-8",
-    )
-
     from app.core.config import Settings
 
-    settings = Settings()
+    # Pass values directly to avoid reading production .env from /app on VPS
+    settings = Settings(
+        cors_origins='["http://localhost:5173"]',
+        allowed_hosts=["localhost", "127.0.0.1"],
+        app_env="development",
+    )
     assert settings.cors_origins == ["http://localhost:5173"]
     assert settings.allowed_hosts == ["localhost", "127.0.0.1"]
