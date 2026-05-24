@@ -151,7 +151,7 @@ def run_dogfooding():
         "ville": "Sainte-Suzanne",
         "code_postal": "97441",
         "type_bien": "appartement",
-        "surface": 65.5,
+        "surface_m2": 65.5,
         "loyer_cc": 850.00,
         "prix_acquisition": 180000.00,
         "acquisition_date": "2023-03-15",
@@ -166,7 +166,7 @@ def run_dogfooding():
         bien = r.json()
         bien_id = bien["id"]
         print(f"   ✅ Bien créé: {bien_id}")
-        print(f"   💰 Loyer: {bien['loyer_cc']}€ | Surface: {bien['surface']}m²")
+        print(f"   💰 Loyer: {bien['loyer_cc']}€ | Surface: {bien['surface_m2']}m²")
     elif r.status_code == 409:
         r = api_call("GET", f"/api/v1/scis/{sci_id}/biens/", token)
         biens = r.json()
