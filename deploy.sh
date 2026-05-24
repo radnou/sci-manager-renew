@@ -138,6 +138,18 @@ fi
 $COMPOSE_CMD build
 $COMPOSE_CMD up -d
 
+# Ensure containers are connected to the shared vps_internal network (Caddy needs it)
+echo -e "${CYAN}Ensuring network connectivity with Caddy...${NC}"
+for container in gerersci_backend gerersci_frontend; do
+    if ! docker network inspect vps_internal --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null | grep -q "$container"; then
+        docker network connect vps_internal "$container" 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} $container → vps_internal" || \
+            echo -e "  ${YELLOW}⚠${NC} $container already connected to vps_internal"
+    else
+        echo -e "  ${GREEN}✓${NC} $container already in vps_internal"
+    fi
+done
+
 # Wait for services to become healthy
 echo -e "${GREEN}Waiting for services to become healthy...${NC}"
 TIMEOUT=120
