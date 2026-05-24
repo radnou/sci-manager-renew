@@ -36,7 +36,19 @@ def get_demo_token():
     """Crée ou récupère un compte démo et retourne un token valide."""
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-    # Essayer de créer l'utilisateur
+    # Essayer de supprimer l'utilisateur s'il existe pour s'assurer des identifiants frais
+    try:
+        res = supabase.auth.admin.list_users()
+        user_list = res.users if hasattr(res, 'users') else res
+        for u in user_list:
+            if u.email == DEMO_EMAIL:
+                supabase.auth.admin.delete_user(u.id)
+                print(f"🗑️ Utilisateur démo existant supprimé")
+                break
+    except Exception as e:
+         print(f"⚠️ Erreur lors du nettoyage de l'ancien compte démo: {e}")
+
+    # Créer l'utilisateur
     try:
         result = supabase.auth.admin.create_user({
             "email": DEMO_EMAIL,
@@ -46,10 +58,7 @@ def get_demo_token():
         })
         print(f"✅ Utilisateur créé: {result.user.id}")
     except Exception as e:
-        if "already been registered" in str(e):
-            print(f"ℹ️ Utilisateur existant")
-        else:
-            print(f"⚠️ Erreur création: {e}")
+        print(f"⚠️ Erreur création: {e}")
 
     # Se connecter pour obtenir un token frais
     result = supabase.auth.sign_in_with_password({
