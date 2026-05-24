@@ -273,7 +273,7 @@ async def create_sci(payload: SCICreate, request: Request, user_id: str = Depend
         )
 
     # Use service client for INSERT — RLS blocks new SCI creation (user not yet associated)
-    client = get_supabase_user_client(request)
+    client = get_supabase_service_client()
     sci_data = payload.model_dump(mode="json", exclude={"date_cloture_exercice"})
     result = client.table("sci").insert(sci_data).execute()
     if getattr(result, "error", None):
