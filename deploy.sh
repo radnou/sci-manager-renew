@@ -171,14 +171,12 @@ check_service() {
     local name=$1
     local url=$2
     local extra_args=$3
-    local result
-    result=$(curl -sf $extra_args --max-time 10 "$url" 2>/dev/null || echo "FAIL")
-    if echo "$result" | grep -qi "FAIL\|error\|refused"; then
-        echo -e "  ${RED}✗${NC} $name — FAILED"
-        return 1
-    else
+    if curl -sf $extra_args --max-time 10 "$url" >/dev/null 2>&1; then
         echo -e "  ${GREEN}✓${NC} $name — OK"
         return 0
+    else
+        echo -e "  ${RED}✗${NC} $name — FAILED"
+        return 1
     fi
 }
 
