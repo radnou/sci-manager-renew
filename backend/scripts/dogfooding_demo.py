@@ -69,6 +69,23 @@ def get_demo_token():
     token = result.session.access_token
     user_id = result.user.id
     print(f"🔑 Token obtenu (expire: {result.session.expires_in}s)")
+
+    # Activer l'abonnement démo (Plan Pro)
+    try:
+        sub_data = {
+            "user_id": user_id,
+            "status": "active",
+            "is_active": True,
+            "plan_key": "pro",
+            "mode": "subscription",
+            "current_period_end": "2030-01-01T00:00:00+00:00",
+            "onboarding_completed": True
+        }
+        supabase.table("subscriptions").upsert(sub_data, on_conflict="user_id").execute()
+        print("💳 Abonnement démo activé (Plan Pro).")
+    except Exception as e:
+        print(f"⚠️ Erreur activation abonnement: {e}")
+
     return token, user_id
 
 
