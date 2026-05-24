@@ -218,8 +218,12 @@ async def lifespan(app: FastAPI):
 
     # Start the notification cron background task
     global _cron_task  # noqa: PLW0603
-    _cron_task = asyncio.create_task(_notification_cron_loop())
-    logger.info("notification_cron_started")
+    import sys
+    if "pytest" not in sys.modules:
+        _cron_task = asyncio.create_task(_notification_cron_loop())
+        logger.info("notification_cron_started")
+    else:
+        logger.info("notification_cron_skipped_in_tests")
 
     yield
 

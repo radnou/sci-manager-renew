@@ -156,7 +156,8 @@ async def test_stripe_check_live_key():
     from unittest.mock import patch
     from app.api.v1.health import _check_stripe
 
-    with patch("app.api.v1.health.settings") as mock_settings:
+    with patch("app.api.v1.health.settings") as mock_settings, \
+         patch("app.core.entitlements.settings", mock_settings):
         mock_settings.stripe_secret_key = "sk_live_abc123"
         mock_settings.stripe_starter_price_id = "price_starter_month"
         mock_settings.stripe_starter_annual_price_id = "price_starter_year"
@@ -164,6 +165,12 @@ async def test_stripe_check_live_key():
         mock_settings.stripe_pro_annual_price_id = "price_pro_year"
         mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
         mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
+        mock_settings.stripe_gestion_monthly_price_id = None
+        mock_settings.stripe_gestion_annual_price_id = None
+        mock_settings.stripe_pilotage_monthly_price_id = None
+        mock_settings.stripe_pilotage_annual_price_id = None
+        mock_settings.stripe_fondateur_price_id = None
+        mock_settings.stripe_lifetime_price_id = None
         with patch("app.api.v1.health.stripe.Price.retrieve_async", return_value={"active": True}) as retrieve:
             result = await _check_stripe()
     assert retrieve.call_count == 6

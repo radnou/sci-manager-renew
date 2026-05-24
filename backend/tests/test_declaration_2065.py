@@ -25,28 +25,97 @@ ACTIVE_SUB = {
 }
 
 
+@pytest.fixture(autouse=True)
+def mock_supabase(monkeypatch):
+    from unittest.mock import MagicMock
+    mock_client = MagicMock()
+    
+    tables = {}
+    def get_table(name):
+        if name not in tables:
+            tables[name] = MagicMock()
+        return tables[name]
+    mock_client.table.side_effect = get_table
+
+    import app.core.supabase_client as s_client
+    monkeypatch.setattr(s_client, "_test_client", mock_client)
+    monkeypatch.setattr("app.core.supabase_client.get_supabase_service_client", lambda: mock_client)
+    monkeypatch.setattr("app.core.supabase_client.get_supabase_user_client", lambda request=None: mock_client)
+    
+    from app.main import app
+    from app.core.paywall import require_sci_membership, AssocieMembership
+    from app.core.security import get_current_user
+    
+    async def fake_membership(sci_id, user_id="user-123"):
+        return AssocieMembership(
+            user_id="user-123",
+            sci_id=str(sci_id),
+            role="gerant",
+            associe_id="associe-1",
+        )
+        
+    app.dependency_overrides[require_sci_membership] = fake_membership
+    app.dependency_overrides[get_current_user] = lambda: "user-123"
+    
+    yield mock_client
+    
+    app.dependency_overrides.pop(require_sci_membership, None)
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+def mock_successful_declaration_data(mock_supabase):
+    mock_supabase.table("sci").select().eq().execute.return_value = type("Result", (), {
+        "data": [{"nom": "SCI Test", "capital_social": 10000, "date_cloture_exercice": "2025-12-31"}]
+    })()
+    mock_supabase.table("biens").select().eq().execute.return_value = type("Result", (), {
+        "data": [{"id": "bien-1", "prix_acquisition": 250000, "frais_notaire": 15000, "frais_agence_acquisition": 0}]
+    })()
+    mock_supabase.table("loyers").select().eq().eq().gte().lte().execute.return_value = type("Result", (), {
+        "data": [{"montant": 800}, {"montant": 800}]
+    })()
+    mock_supabase.table("credits_immobiliers").select().eq().execute.return_value = type("Result", (), {
+        "data": [
+            {"id": "cred-1", "montant_emprunte": 100000, "taux_nominal": 2.5, "duree_mois": 240, "date_debut": "2020-01-01", "mensualite": 500, "capital_restant_du": 258400}
+        ]
+    })()
+    mock_supabase.table("fiscalite").select().eq().eq().execute.return_value = type("Result", (), {
+        "data": [{"resultat_fiscal": 1200}]
+    })()
+    mock_supabase.table("declarations_2065").upsert().execute.return_value = type("Result", (), {
+        "data": [{}],
+        "error": None
+    })()
+
+
+def mock_successful_declaration_data(mock_supabase):
+    mock_supabase.table("sci").select().eq().execute.return_value = type("Result", (), {
+        "data": [{"nom": "SCI Test", "capital_social": 10000, "date_cloture_exercice": "2025-12-31"}]
+    })()
+    mock_supabase.table("biens").select().eq().execute.return_value = type("Result", (), {
+        "data": [{"id": "bien-1", "prix_acquisition": 250000, "frais_notaire": 15000, "frais_agence_acquisition": 0}]
+    })()
+    mock_supabase.table("loyers").select().eq().eq().gte().lte().execute.return_value = type("Result", (), {
+        "data": [{"montant": 800}, {"montant": 800}]
+    })()
+    mock_supabase.table("fiscalite").select().eq().eq().execute.return_value = type("Result", (), {
+        "data": [{"resultat_fiscal": 1200}]
+    })()
+    mock_supabase.table("declarations_2065").upsert().execute.return_value = type("Result", (), {
+        "data": [{}],
+        "error": None
+    })()
+
+
 class TestGenerateDeclaration2065:
     """Tests pour POST /generate."""
 
     def test_generate_2065_success(self, client, mock_supabase):
         """✅ Génération réussie d'une déclaration 2065."""
-        # Arrange
-        mock_supabase.table("sci").select().eq().execute.return_value = type("Result", (), {
-            "data": [{"capital_social": 10000, "date_cloture_exercice": "2025-12-31"}]
-        })()
-        mock_supabase.table("biens").select().eq().execute.return_value = type("Result", (), {
-            "data": [{"acquisition_prix": 250000, "travaux_montant": 15000}]
-        })()
-        mock_supabase.table("loyers").select().eq().eq().gte().lte().execute.return_value = type("Result", (), {
-            "data": [{"montant": 800}, {"montant": 800}]
-        })()
-        mock_supabase.table("credits_immobiliers").select().eq().execute.return_value = type("Result", (), {
+        mock_successful_declaration_data(mock_supabase)
+        mock_supabase.table("credits_immobiliers").select().in_().execute.return_value = type("Result", (), {
             "data": [
-                {"id": "cred-1", "montant_emprunte": 100000, "taux_nominal": 2.5, "duree_mois": 240, "date_debut": "2020-01-01", "mensualite": 500, "capital_restant_du": 60000}
+                {"id": "cred-1", "montant_emprunte": 100000, "taux_nominal": 2.5, "duree_mois": 240, "date_debut": "2020-01-01", "mensualite": 500, "capital_restant_du": 258400}
             ]
-        })()
-        mock_supabase.table("fiscalite").select().eq().eq().execute.return_value = type("Result", (), {
-            "data": [{"resultat_fiscal": 1200}]
         })()
 
         payload = {
@@ -112,6 +181,9 @@ class TestGetDeclaration2065:
         mock_supabase.table("declarations_2065").select().eq().eq().execute.return_value = type("Result", (), {
             "data": []
         })()
+        mock_supabase.table("sci").select().eq().execute.return_value = type("Result", (), {
+            "data": []
+        })()
 
         response = client.get(f"{BASE}/2020", headers={"x-test-auth": "user-123"})
 
@@ -128,22 +200,11 @@ class TestGetDeclaration2065PDF:
 
     def test_get_pdf_success(self, client, mock_supabase):
         """✅ PDF généré avec succès."""
-        mock_supabase.table("declarations_2065").select().eq().eq().execute.return_value = type("Result", (), {
-            "data": [{
-                "id_sci": SCI_UUID,
-                "exercice": 2025,
-                "date_cloture": "2025-12-31",
-                "actif_immobilisations": 250000,
-                "actif_creances": 1600,
-                "actif_tresorerie": 5000,
-                "passif_capital": 10000,
-                "passif_resultat": 1200,
-                "passif_emprunts": 60000,
-                "ecart": 0,
-            }]
-        })()
-        mock_supabase.table("sci").select().eq().execute.return_value = type("Result", (), {
-            "data": [{"nom": "SCI Test", "capital_social": 10000, "date_cloture_exercice": "2025-12-31"}]
+        mock_successful_declaration_data(mock_supabase)
+        mock_supabase.table("credits_immobiliers").select().in_().execute.return_value = type("Result", (), {
+            "data": [
+                {"id": "cred-1", "montant_emprunte": 100000, "taux_nominal": 2.5, "duree_mois": 240, "date_debut": "2020-01-01", "mensualite": 500, "capital_restant_du": 255400}
+            ]
         })()
 
         response = client.get(f"{BASE}/2025/pdf", headers={"x-test-auth": "user-123"})
@@ -154,7 +215,7 @@ class TestGetDeclaration2065PDF:
 
     def test_get_pdf_not_found(self, client, mock_supabase):
         """❌ Déclaration non trouvée pour PDF."""
-        mock_supabase.table("declarations_2065").select().eq().eq().execute.return_value = type("Result", (), {
+        mock_supabase.table("sci").select().eq().execute.return_value = type("Result", (), {
             "data": []
         })()
 

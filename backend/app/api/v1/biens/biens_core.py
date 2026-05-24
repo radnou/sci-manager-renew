@@ -410,7 +410,7 @@ async def get_fiche_bien(
     for f in frais_agence:
         montant = f.get("montant_ou_pourcentage", 0) or 0
         if f.get("type_frais") == "pourcentage":
-            frais_annuel += loyer_hc * 12 * montant / 100
+            frais_annuel += loyer_hc * (montant / 100) * 12
         else:
             frais_annuel += montant * 12 if montant > 100 else montant
 

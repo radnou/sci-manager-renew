@@ -339,6 +339,8 @@ class FakeSupabaseClient:
         self.auth = FakeAuth()
         self.storage = _FakeStorageProxy()
         self.store: dict[str, list[dict]] = deepcopy(_INITIAL_STORE)
+        import app.core.supabase_client as s_client
+        s_client._test_client = self
 
     def reset_store(self):
         """Reset store to initial seed data (called between tests)."""

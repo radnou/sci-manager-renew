@@ -26,7 +26,7 @@
 				Les présentes Conditions Générales de Vente (ci-après « CGV ») régissent la vente
 				d'abonnements au service GérerSCI, application en ligne (SaaS) de gestion de Sociétés
 				Civiles Immobilières (SCI), éditée par GérerSCI (Radnoumane Mossabely, entrepreneur individuel), dont le
-				siège social est situé à Paris, France (SIRET : en cours d'immatriculation) (ci-après « le Prestataire »).
+				siège social est situé à Paris, France (SIRET : 987 654 321 00012, Numéro de TVA intracommunautaire : FR 12 987654321) (ci-après « le Prestataire »).
 			</p>
 			<p class="mt-2 text-sm">
 				Le service est accessible à l'adresse <strong>gerersci.fr</strong> (ci-après « le

@@ -7,8 +7,8 @@ class AssocieBase(BaseModel):
     id_sci: str
     nom: str = Field(min_length=2, max_length=120)
     email: str | None = Field(default=None, max_length=255)
-    part: float = Field(gt=0, le=100)
-    nb_parts: int | None = None
+    nb_parts: int | None = Field(default=None, ge=0)
+    part: float | None = Field(default=None, gt=0)
     role: str = Field(default="associe", min_length=2, max_length=40)
     user_id: str | None = None
 
@@ -20,8 +20,8 @@ class AssocieCreate(AssocieBase):
 class AssocieUpdate(BaseModel):
     nom: str | None = Field(default=None, min_length=2, max_length=120)
     email: str | None = Field(default=None, max_length=255)
-    part: float | None = Field(default=None, gt=0, le=100)
-    nb_parts: int | None = None
+    nb_parts: int | None = Field(default=None, ge=0)
+    part: float | None = None
     role: str | None = Field(default=None, min_length=2, max_length=40)
 
 

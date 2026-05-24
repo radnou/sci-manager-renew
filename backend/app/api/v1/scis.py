@@ -28,6 +28,7 @@ class AssocieOverview(BaseModel):
     user_id: str | None = None
     nom: str
     email: str | None = None
+    nb_parts: int | None = Field(default=None)
     part: float | None = None
     role: str | None = None
 
@@ -302,13 +303,18 @@ async def create_sci(payload: SCICreate, request: Request, user_id: str = Depend
     except Exception:
         pass
 
+    nb_parts_total = 1000
+    if created.get("nb_parts_total") is not None:
+        nb_parts_total = int(created["nb_parts_total"])
+
     associe_result = client.table("associes").insert(
         {
             "id_sci": created["id"],
             "user_id": user_id,
             "nom": _associe_nom,
             "email": None,
-            "part": 100,
+            "nb_parts": nb_parts_total,
+            "part": 100.0,
             "role": "gerant",
         }
     ).execute()
@@ -429,8 +435,27 @@ async def list_sci_associes(
 ):
     """Liste les associés d'une SCI (membre requis)."""
     client = _get_client(request)
+    sci_rows = _execute_select(client.table("sci").select("nb_parts_total").eq("id", sci_id))
+    nb_parts_total = 1000
+    if sci_rows and sci_rows[0].get("nb_parts_total") is not None:
+        nb_parts_total = int(sci_rows[0]["nb_parts_total"])
+
     rows = _execute_select(client.table("associes").select("*").eq("id_sci", sci_id))
-    return [AssocieOverview(**row) for row in rows]
+    res = []
+    for row in rows:
+        nb_parts = row.get("nb_parts")
+        if nb_parts is None and row.get("part") is not None:
+            try:
+                nb_parts = int(round((float(row["part"]) / 100.0) * nb_parts_total))
+            except (ValueError, TypeError):
+                nb_parts = 100
+        elif nb_parts is None:
+            nb_parts = 100
+        part_percent = round((nb_parts / nb_parts_total) * 100.0, 2) if nb_parts_total > 0 else 0.0
+        row["nb_parts"] = nb_parts
+        row["part"] = part_percent
+        res.append(AssocieOverview(**row))
+    return res
 
 
 # ──────────────────────────────────────────────────────────────
@@ -440,7 +465,7 @@ async def list_sci_associes(
 class InviteAssociePayload(BaseModel):
     nom: str
     email: str | None = None
-    part: float = 0
+    nb_parts: int = 100
     role: str = "associe"
 
 
@@ -459,8 +484,20 @@ async def invite_sci_associe(
     """Invite un associé à la SCI (gérant uniquement)."""
     logger.info("inviting_associe", sci_id=sci_id, nom=payload.nom)
 
-    # Use service client — RLS on associes requires existing membership
     client = _get_write_client()
+    sci_rows = _execute_select(client.table("sci").select("nb_parts_total").eq("id", sci_id))
+    nb_parts_total = 1000
+    if sci_rows and sci_rows[0].get("nb_parts_total") is not None:
+        nb_parts_total = int(sci_rows[0]["nb_parts_total"])
+
+    # Ensure bounds checking:
+    rows = _execute_select(client.table("associes").select("nb_parts").eq("id_sci", sci_id))
+    total = 0
+    for r in rows:
+        total += int(r.get("nb_parts") or 0)
+    if total + payload.nb_parts > nb_parts_total:
+        raise ValidationError(f"La répartition des parts ne peut pas dépasser le total des parts de la SCI ({nb_parts_total}).")
+
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
 
@@ -473,6 +510,9 @@ async def invite_sci_associe(
         raise DatabaseError("Unable to create associe")
 
     created = data[0]
+    nb_parts = int(created.get("nb_parts") or 0)
+    part_percent = round((nb_parts / nb_parts_total) * 100.0, 2) if nb_parts_total > 0 else 0.0
+    created["part"] = part_percent
     logger.info("associe_invited", associe_id=created.get("id"), sci_id=sci_id)
 
     # Best-effort email invitation

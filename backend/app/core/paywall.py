@@ -19,8 +19,11 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_service_client
 from app.services.subscription_service import ACTIVE_SUBSCRIPTION_STATUSES, SubscriptionService
+
+def get_supabase_service_client():
+    from app.core.supabase_client import get_supabase_service_client as _real
+    return _real()
 
 
 @dataclass
@@ -61,6 +64,7 @@ async def require_active_subscription(
     summary = SubscriptionService.get_subscription_summary(user_id)
 
     # Load onboarding_completed from DB
+    from app.core.supabase_client import get_supabase_service_client
     client = get_supabase_service_client()
     result = (
         client.table("subscriptions")
@@ -99,6 +103,7 @@ async def require_sci_membership(
     Returns the membership with role info.
     Raises HTTP 404 if not a member.
     """
+    from app.core.supabase_client import get_supabase_service_client
     client = get_supabase_service_client()
     result = (
         client.table("associes")

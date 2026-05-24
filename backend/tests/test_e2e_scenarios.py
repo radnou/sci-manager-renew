@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import csv
 import io
+from copy import deepcopy
 
 import pytest
 
@@ -105,8 +106,8 @@ GERANT_ASSOC_2 = {
 
 def _seed_pro(fake_supabase):
     """Standard setup: pro subscription + gerant membership on SCI_UUID."""
-    fake_supabase.store["subscriptions"] = [PRO_SUB]
-    fake_supabase.store["associes"] = [GERANT_ASSOC, ASSOC_ONLY]
+    fake_supabase.store["subscriptions"] = [deepcopy(PRO_SUB)]
+    fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC), deepcopy(ASSOC_ONLY)]
     fake_supabase.store["sci"] = [
         {"id": SCI_UUID, "nom": "SCI E2E Test", "siren": "123456789", "regime_fiscal": "IR"},
     ]
@@ -254,8 +255,8 @@ class TestOnboardingJourney:
         assert resp.json()["completed"] is True
 
     def test_onboarding_status_reflects_notification_prefs(self, client, auth_headers, fake_supabase):
-        fake_supabase.store["subscriptions"] = [PRO_SUB]
-        fake_supabase.store["associes"] = [GERANT_ASSOC]
+        fake_supabase.store["subscriptions"] = [deepcopy(PRO_SUB)]
+        fake_supabase.store["associes"] = [deepcopy(GERANT_ASSOC)]
         fake_supabase.store["sci"] = [{"id": SCI_UUID, "nom": "SCI NP", "siren": "111", "regime_fiscal": "IR"}]
         fake_supabase.store["notification_preferences"] = []
 
@@ -292,7 +293,7 @@ class TestSCILifecycle:
     """Create SCI -> update -> add associe -> add bien -> list everything -> delete."""
 
     def test_create_update_delete_sci(self, client, auth_headers, fake_supabase):
-        fake_supabase.store["subscriptions"] = [PRO_SUB]
+        fake_supabase.store["subscriptions"] = [deepcopy(PRO_SUB)]
 
         # 1. Create SCI
         resp = client.post(
@@ -1095,6 +1096,9 @@ class TestChargesJourney:
     def test_charges_crud(self, client, auth_headers, fake_supabase):
         _seed_pro(fake_supabase)
         _seed_bien(fake_supabase)
+        from app.core.paywall import check_write_access
+        print("DEBUG: subscriptions in store =", fake_supabase.store["subscriptions"])
+        print("DEBUG: check_write_access =", check_write_access("user-123"))
 
         # Create charge
         resp = client.post(
