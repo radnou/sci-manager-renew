@@ -118,7 +118,6 @@
 <!-- Checkout Modal -->
 <CheckoutConfirmModal
     open={modalOpen}
-    planKey={modalPlanKey}
     planName={modalPlanName}
     planPrice={modalPlanPrice}
     planPeriod={modalPlanPeriod}
@@ -128,8 +127,6 @@
     onConfirm={handleModalConfirm}
 />
 
-<!-- Cookie Banner RGPD -->
-<CookieBanner />
 
 <!-- Sections Landing -->
 <HeroSection />

@@ -102,17 +102,17 @@
 			<div
 				class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
 			>
-				<div class="flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg {card.bgIcon}">
+				<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+					<div class="flex h-10 w-10 items-center justify-center rounded-lg {card.bgIcon} shrink-0">
 						<card.icon class="h-5 w-5 {card.iconColor}" />
 					</div>
 					<div class="min-w-0">
 						<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
 							{card.label}<FieldHint text={card.tooltip} />
 						</p>
-						<p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
+						<p class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
 						{#if card.hint}
-							<p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{card.hint}</p>
+							<p class="mt-0.5 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">{card.hint}</p>
 						{/if}
 					</div>
 				</div>

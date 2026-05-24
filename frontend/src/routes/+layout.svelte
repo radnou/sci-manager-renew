@@ -23,7 +23,7 @@
 	import { Toaster } from '$lib/components/ui/toast';
 	import { theme } from '$lib/stores/theme';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import CookieConsent from '$lib/components/CookieConsent.svelte';
+	import CookieBanner from '$lib/components/CookieBanner.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import OfflineBanner from '$lib/components/OfflineBanner.svelte';
 	import './layout.css';
@@ -491,7 +491,7 @@
 	{/if}
 
 	<Toaster />
-	<CookieConsent />
+	<CookieBanner />
 	<OfflineBanner />
 </div>
 

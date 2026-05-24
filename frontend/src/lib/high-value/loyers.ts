@@ -51,15 +51,17 @@ export function mapLoyerStatusLabel(status: string | null | undefined) {
 	if (normalized === 'paye') return 'Payé';
 	if (normalized === 'en_retard') return 'En retard';
 	if (normalized === 'en_attente') return 'En attente';
+	if (normalized === 'impaye' || normalized === 'impayé') return 'Impayé';
 	return 'Enregistré';
 }
 
 export function mapLoyerStatusClass(status: string | null | undefined) {
 	const normalized = normalizeLoyerStatus(status);
-	if (normalized === 'paye') return 'bg-emerald-100 text-emerald-800';
-	if (normalized === 'en_retard') return 'bg-rose-100 text-rose-800';
-	if (normalized === 'en_attente') return 'bg-amber-100 text-amber-800';
-	return 'bg-cyan-100 text-cyan-800';
+	if (normalized === 'paye') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300';
+	if (normalized === 'en_retard') return 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300';
+	if (normalized === 'en_attente') return 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300';
+	if (normalized === 'impaye' || normalized === 'impayé') return 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300';
+	return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300';
 }
 
 export function calculateLoyerMetrics(loyers: Loyer[]) {
