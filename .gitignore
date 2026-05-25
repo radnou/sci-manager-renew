@@ -64,3 +64,4 @@ playwright-report/
 .playwright-mcp/
 
 .remember/
+.memory-bank/
