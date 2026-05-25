@@ -20,8 +20,7 @@ services:
 
 networks:
   internal:
-    external: true
-    name: gerersci_internal
+    name: gerersci_internal_dev
 
 volumes:
   caddy_dev_data:

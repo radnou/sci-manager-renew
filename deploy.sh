@@ -18,7 +18,6 @@ NC='\033[0m'
 
 INITIAL=false
 NO_MAINTENANCE=false
-MAINTENANCE_FILE="/tmp/gerersci-maintenance"
 
 for arg in "$@"; do
     case $arg in
@@ -35,16 +34,14 @@ echo -e "${GREEN}=== GererSCI Deployment ===${NC}"
 enable_maintenance() {
     if [ "$NO_MAINTENANCE" = true ]; then return; fi
     echo -e "${CYAN}Enabling maintenance page...${NC}"
-    touch "$MAINTENANCE_FILE"
-    # Signal host Caddy to serve maintenance; nginx fallback for local dev
-    docker exec gerersci_nginx sh -c 'touch /tmp/maintenance' 2>/dev/null || true
+    sudo touch /srv/maintenance/index.html
+    echo "Maintenance mode ON (host Caddy will serve /srv/maintenance/index.html until disabled)"
 }
 
 disable_maintenance() {
     if [ "$NO_MAINTENANCE" = true ]; then return; fi
     echo -e "${CYAN}Disabling maintenance page...${NC}"
-    rm -f "$MAINTENANCE_FILE"
-    docker exec gerersci_nginx sh -c 'rm -f /tmp/maintenance' 2>/dev/null || true
+    sudo rm -f /srv/maintenance/index.html
 }
 
 # Ensure maintenance is disabled on exit (even on error)
