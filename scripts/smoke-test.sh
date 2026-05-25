@@ -43,7 +43,7 @@ check "Readiness" GET "$BASE/health/ready" "200"
 
 echo ""
 echo "── Auth (unauthenticated) ──"
-check "Login page reachable"   GET "$BASE/api/v1/auth/login" "405"
+check "Magic link endpoint GET"   GET "$BASE/api/v1/auth/magic-link/send" "405"
 check "SCIs without auth"      GET "$BASE/api/v1/scis" "401"
 check "Dashboard without auth" GET "$BASE/api/v1/dashboard" "401"
 check "Export without auth"    GET "$BASE/api/v1/export/loyers" "401"

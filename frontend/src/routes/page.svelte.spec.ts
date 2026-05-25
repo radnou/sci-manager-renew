@@ -11,10 +11,10 @@ describe('/+page.svelte', () => {
 		await expect.element(heading).toBeInTheDocument();
 		await expect.element(heading).toHaveTextContent(/Gérez votre/i);
 		await expect
-			.element(page.getByRole('button', { name: /Essayer gratuitement/i }))
+			.element(page.getByRole('link', { name: /Démarrer maintenant/i }))
 			.toBeInTheDocument();
 		await expect
-			.element(page.getByRole('button', { name: /Voir la présentation/i }))
+			.element(page.getByRole('link', { name: /Comparer les plans/i }))
 			.toBeInTheDocument();
 	});
 });
