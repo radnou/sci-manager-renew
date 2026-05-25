@@ -231,6 +231,18 @@ class SubscriptionService:
     ) -> dict[str, Any]:
         resolved_plan_key = plan_key or resolve_plan_key_from_price_id(session_data.get("price_id")) or PlanKey.FREE.value
         snapshot = build_plan_snapshot(resolved_plan_key)
+
+        formatted_period_end = None
+        if current_period_end is not None:
+            try:
+                if isinstance(current_period_end, (int, float)):
+                    from datetime import datetime, timezone
+                    formatted_period_end = datetime.fromtimestamp(current_period_end, tz=timezone.utc).isoformat()
+                else:
+                    formatted_period_end = str(current_period_end)
+            except Exception:
+                formatted_period_end = None
+
         return {
             "user_id": session_data.get("client_reference_id"),
             "stripe_customer_id": session_data.get("customer"),
@@ -238,7 +250,7 @@ class SubscriptionService:
             "stripe_price_id": session_data.get("price_id"),
             "mode": session_data.get("mode") or get_plan(resolved_plan_key).checkout_mode,
             "status": status_value,
-            "current_period_end": current_period_end,
+            "current_period_end": formatted_period_end,
             "plan_key": snapshot["plan_key"],
             "entitlements_version": snapshot["entitlements_version"],
             "max_scis": snapshot["max_scis"],
