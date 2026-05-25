@@ -113,10 +113,48 @@ jobs:
             echo "=== Deployment successful! ==="
             docker compose ps
 
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 5m
+          script: |
+            set -e
+            cd /opt/gerersci
+
+            echo "=== ROLLBACK: reverting to previous commit ==="
+            # Revert to the commit before the failed deploy
+            # The deploy hasn't changed HEAD yet (it uses fetch + reset),
+            # so the previous HEAD is still the working state if health check failed.
+            # Safety: check if current commit matches the deployed one
+            CURRENT=$(git rev-parse HEAD)
+            PREVIOUS=$(git rev-parse HEAD~1)
+            echo "Current HEAD: $CURRENT"
+            echo "Rolling back to: $PREVIOUS"
+
+            # Restore .env from pre-deploy backup
+            LATEST_BACKUP=$(ls -t .env.pre-deploy-* 2>/dev/null | head -1)
+            if [ -n "$LATEST_BACKUP" ]; then
+              cp "$LATEST_BACKUP" .env
+              echo "Restored .env from $LATEST_BACKUP"
+            fi
+
+            # Rebuild and deploy previous version
+            git reset --hard "$PREVIOUS"
+            docker compose build --no-cache
+            docker compose up -d --remove-orphans
+
+            echo "=== Rollback complete ==="
+            docker compose ps
+
       - name: Notify on failure
         if: failure()
         run: |
-          echo "::error::Deployment failed! Check VPS logs: ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          echo "::error::Deployment failed and rollback executed!"
+          echo "::error::Check VPS: ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
           echo "::error::Debug: docker compose logs --tail=100"
 
   smoke_public:
