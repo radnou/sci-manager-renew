@@ -19,9 +19,9 @@ check() {
     local body="${5:-}"
 
     if [ "$method" = "GET" ]; then
-        status=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 "$url" 2>/dev/null || echo "000")
+        status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" 2>/dev/null || echo "000")
     else
-        status=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 -X "$method" \
+        status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X "$method" \
             -H "Content-Type: application/json" -d "$body" "$url" 2>/dev/null || echo "000")
     fi
 
