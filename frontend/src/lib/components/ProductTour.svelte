@@ -136,6 +136,9 @@
 		}
 
 		try {
+			if (localStorage.getItem('gerersci.e2e-fake-session')) {
+				return;
+			}
 			if (localStorage.getItem(STORAGE_KEY) !== 'true') {
 				// First time: wait for dashboard to render, then start
 				setTimeout(runTour, 1500);

@@ -8,7 +8,7 @@ export default defineConfig({
   reporter: [['html', { outputFolder: '../playwright-report/showcase' }], ['list']],
   outputDir: '../../marketing',
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5173',
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
     screenshot: 'on',
     video: 'on',
     viewport: { width: 1440, height: 900 },

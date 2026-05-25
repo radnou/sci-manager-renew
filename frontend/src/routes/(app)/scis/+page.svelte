@@ -7,6 +7,7 @@
 	import SciModal from '$lib/components/fiche-bien/modals/SciModal.svelte';
 	import { addToast } from '$lib/components/ui/toast';
 	import LockedAction from '$lib/components/LockedAction.svelte';
+	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 
 	const subscription = getContext<SubscriptionEntitlements>('subscription');
 	const isDemo = !subscription?.is_active;
@@ -21,10 +22,13 @@
 		!entitlements || entitlements.remaining_scis == null || entitlements.remaining_scis > 0
 	);
 
+	let showUpgradePrompt = $state(false);
+
 	function handleNewSciClick() {
 		if (canCreateSci) {
 			showSciModal = true;
 		} else if (entitlements) {
+			showUpgradePrompt = true;
 			addToast({
 				title: 'Limite atteinte',
 				description: `Votre plan ${entitlements.plan_name} est limité à ${entitlements.max_scis} SCI. Passez au plan supérieur pour en créer davantage.`,
@@ -130,4 +134,5 @@
 	{/if}
 
 	<SciModal bind:open={showSciModal} />
+	<UpgradePrompt open={showUpgradePrompt} action="créer une nouvelle SCI" onClose={() => (showUpgradePrompt = false)} />
 </section>

@@ -76,6 +76,9 @@
 
 	onMount(() => {
 		try {
+			if (localStorage.getItem('gerersci.e2e-fake-session')) {
+				return;
+			}
 			const completed = localStorage.getItem(STORAGE_KEY);
 			if (completed !== 'true') {
 				visible = true;

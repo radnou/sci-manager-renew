@@ -31,6 +31,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
 	import { breadcrumbNames } from '$lib/stores/breadcrumb-names';
+	import { clearFakeSession } from '$lib/auth/session';
 
 	interface Props {
 		user: { email?: string } | null;
@@ -140,6 +141,7 @@
 		} catch {
 			// Supabase may throw if session already expired
 		}
+		clearFakeSession();
 		// Brief visual feedback before redirect
 		await new Promise((r) => setTimeout(r, 500));
 		window.location.href = '/';

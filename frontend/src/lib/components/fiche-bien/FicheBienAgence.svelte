@@ -27,9 +27,8 @@
 	$effect(() => subscribeExclusiveFicheBienModal('agence', () => { showDetails = false; }));
 
 	const typeFraisLabels: Record<string, string> = {
-		gestion_locative: 'Gestion locative',
-		mise_en_location: 'Mise en location',
-		autre: 'Autre'
+		pourcentage: 'Pourcentage (%)',
+		fixe: 'Frais fixe (€)'
 	};
 
 	function getFraisLabel(type: string): string {
@@ -53,16 +52,22 @@
 	// Derive agency summary from frais list
 	const agencySummary = $derived.by(() => {
 		if (fraisAgence.length === 0) return null;
-		const totalFrais = fraisAgence.reduce((sum, f) => sum + Number(f.montant ?? 0), 0);
+		
 		const byType = new Map<string, number>();
 		for (const f of fraisAgence) {
-			byType.set(f.type_frais, (byType.get(f.type_frais) ?? 0) + Number(f.montant ?? 0));
+			byType.set(f.type_frais, (byType.get(f.type_frais) ?? 0) + 1);
 		}
-		const primaryType = [...byType.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'gestion_locative';
-		return { totalFrais, count: fraisAgence.length, primaryType };
+		const primaryType = [...byType.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'pourcentage';
+
+		const totalFixe = fraisAgence
+			.filter(f => f.type_frais === 'fixe')
+			.reduce((sum, f) => sum + Number(f.montant_ou_pourcentage ?? 0), 0);
+		const pctCount = fraisAgence.filter(f => f.type_frais === 'pourcentage').length;
+
+		return { totalFixe, pctCount, count: fraisAgence.length, primaryType };
 	});
 
-	function handleDeleteFrais(fraisId: number) {
+	function handleDeleteFrais(fraisId: string | number) {
 		const item = fraisAgence.find(f => f.id === fraisId);
 		if (!item) return;
 		fraisAgence = fraisAgence.filter(f => f.id !== fraisId);
@@ -71,11 +76,15 @@
 			variant: 'undo',
 			undoCallbacks: {
 				onUndo: () => {
-					fraisAgence = [...fraisAgence, item].sort((a, b) => a.id - b.id);
+					fraisAgence = [...fraisAgence, item].sort((a, b) => {
+						const aId = String(a.id);
+						const bId = String(b.id);
+						return aId.localeCompare(bId);
+					});
 				},
 				onExpire: async () => {
 					try {
-						await deleteFraisForBien(sciId, bienId, fraisId);
+						await deleteFraisForBien(sciId, bienId, Number(fraisId));
 						onRefresh();
 					} catch (err: any) {
 						addToast({ title: err?.message ?? 'Erreur suppression', variant: 'error' });
@@ -136,10 +145,10 @@
 							</div>
 							<div>
 								<p class="text-base font-semibold text-slate-900 dark:text-slate-100">
-									Mandat de {getFraisLabel(agencySummary.primaryType).toLowerCase()}
+									Frais d'agence enregistrés
 								</p>
 								<p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-									{agencySummary.count} frais enregistré{agencySummary.count > 1 ? 's' : ''}
+									{agencySummary.count} structure{agencySummary.count > 1 ? 's' : ''} de frais
 								</p>
 							</div>
 						</div>
@@ -161,12 +170,14 @@
 
 					<div class="mt-4 grid gap-3 sm:grid-cols-2">
 						<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
-							<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total frais</p>
-							<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(agencySummary.totalFrais)}</p>
+							<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Frais fixes cumulés</p>
+							<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{formatEur(agencySummary.totalFixe)}</p>
 						</div>
 						<div class="rounded-lg bg-white p-3 dark:bg-slate-800">
-							<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Type principal</p>
-							<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{getFraisLabel(agencySummary.primaryType)}</p>
+							<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Frais en pourcentage</p>
+							<p class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+								{agencySummary.pctCount} enregistré{agencySummary.pctCount > 1 ? 's' : ''}
+							</p>
 						</div>
 					</div>
 				</div>
@@ -177,10 +188,10 @@
 					<table class="w-full text-left text-sm">
 						<thead>
 							<tr class="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
+								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Agence</th>
 								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Type</th>
-								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Montant</th>
-								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Date</th>
-								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Description</th>
+								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Valeur</th>
+								<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Contact</th>
 								{#if isGerant}
 									<th class="px-4 pb-3 pt-3 text-xs font-medium text-slate-500">Actions</th>
 								{/if}
@@ -190,16 +201,16 @@
 							{#each fraisAgence as frais (frais.id)}
 								<tr class="border-b border-slate-100 last:border-0 dark:border-slate-800">
 									<td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+										{frais.nom_agence}
+									</td>
+									<td class="px-4 py-3 text-slate-700 dark:text-slate-300">
 										{getFraisLabel(frais.type_frais)}
 									</td>
 									<td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-										{formatEur(frais.montant)}
+										{frais.type_frais === 'pourcentage' ? `${frais.montant_ou_pourcentage} %` : formatEur(frais.montant_ou_pourcentage)}
 									</td>
 									<td class="px-4 py-3 text-slate-500 dark:text-slate-400">
-										{formatFrDate(frais.date_frais)}
-									</td>
-									<td class="px-4 py-3 text-slate-500 dark:text-slate-400">
-										{frais.description ?? '—'}
+										{frais.contact ?? '—'}
 									</td>
 									{#if isGerant}
 										<td class="px-4 py-3">

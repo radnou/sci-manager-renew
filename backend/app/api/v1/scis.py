@@ -598,7 +598,9 @@ async def list_sci_documents(
     # Enrich with bien address
     for doc in docs:
         doc["bien_adresse"] = bien_map.get(str(doc.get("id_bien", "")), "")
-        if isinstance(doc.get("url"), str) and doc["url"]:
-            doc["url"] = create_document_signed_url(bucket, doc["url"])
+        url = doc.get("file_url") or doc.get("url")
+        if isinstance(url, str) and url:
+            doc["url"] = create_document_signed_url(bucket, url)
 
     return docs
+

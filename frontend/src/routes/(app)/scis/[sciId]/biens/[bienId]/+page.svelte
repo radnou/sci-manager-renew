@@ -58,6 +58,14 @@
 		}
 	});
 
+	$effect(() => {
+		const hash = page.url.hash?.replace('#', '').replace('section-', '');
+		if (hash && sections.some((section) => section.id === hash)) {
+			activeSection = hash;
+		}
+	});
+
+
 	async function loadFicheBien() {
 		loading = true;
 		bien = null; // Clear stale data on navigation

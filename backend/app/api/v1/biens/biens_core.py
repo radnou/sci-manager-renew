@@ -118,11 +118,12 @@ def _refresh_documents_urls(client, docs: list[dict]) -> list[dict]:
     refreshed_docs: list[dict] = []
     for doc in docs:
         refreshed = dict(doc)
-        url = refreshed.get("url")
+        url = refreshed.get("file_url") or refreshed.get("url")
         if isinstance(url, str) and url:
             refreshed["url"] = create_document_signed_url(bucket, url)
         refreshed_docs.append(refreshed)
     return refreshed_docs
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -402,13 +403,15 @@ async def get_fiche_bien(
     loyer_hc = 0
     if bail_actif:
         loyer_hc = bail_actif.get("loyer_hc", 0) or 0
+    if not loyer_hc:
+        loyer_hc = float(bien.get("loyer_cc", 0) or 0)
     frais_annuel = 0
     for f in frais_agence:
         montant = f.get("montant_ou_pourcentage", 0) or 0
         if f.get("type_frais") == "pourcentage":
             frais_annuel += loyer_hc * (montant / 100) * 12
         else:
-            frais_annuel += montant * 12 if montant > 100 else montant
+            frais_annuel += montant * 12
 
     loyer_mensuel = bien.get("loyer_cc", 0) or bien.get("loyer", 0) or 0
     charges_mensuelles = bien.get("charges", 0) or 0

@@ -67,14 +67,14 @@ test.describe.serial('GererSCI — Démonstration Produit', () => {
 
     // Scroll down slowly to show features
     for (let i = 0; i < 5; i++) {
-      await page.mouse.wheel(0, 400);
+      await page.evaluate(() => window.scrollBy(0, 400));
       await pause(page, 800);
     }
 
     await screenshot(page, '02-landing-features');
 
     // Scroll to pricing
-    await page.mouse.wheel(0, 600);
+    await page.evaluate(() => window.scrollBy(0, 600));
     await pause(page, 1000);
     await screenshot(page, '03-landing-pricing');
 
@@ -142,7 +142,7 @@ test.describe.serial('GererSCI — Démonstration Produit', () => {
     await screenshot(page, '08-dashboard-kpis');
 
     // Scroll down to see SCI cards
-    await page.mouse.wheel(0, 400);
+    await page.evaluate(() => window.scrollBy(0, 400));
     await pause(page, 1500);
 
     await screenshot(page, '09-dashboard-scis');
@@ -197,7 +197,7 @@ test.describe.serial('GererSCI — Démonstration Produit', () => {
       await screenshot(page, '13-fiche-bien');
 
       // Scroll through the fiche bien
-      await page.mouse.wheel(0, 400);
+      await page.evaluate(() => window.scrollBy(0, 400));
       await pause(page, 1500);
       await screenshot(page, '14-fiche-bien-scroll');
     }
@@ -220,7 +220,7 @@ test.describe.serial('GererSCI — Démonstration Produit', () => {
     await screenshot(page, '15-finances');
 
     // Scroll to see charts/tables
-    await page.mouse.wheel(0, 400);
+    await page.evaluate(() => window.scrollBy(0, 400));
     await pause(page, 1500);
     await screenshot(page, '16-finances-details');
   });
@@ -262,7 +262,7 @@ test.describe.serial('GererSCI — Démonstration Produit', () => {
       await screenshot(page, '18-fiscalite');
 
       // Scroll to see CERFA section
-      await page.mouse.wheel(0, 300);
+      await page.evaluate(() => window.scrollBy(0, 300));
       await pause(page, 1500);
       await screenshot(page, '19-cerfa');
     }

@@ -340,7 +340,7 @@ test.describe.serial('Showcase: Biens Management', () => {
 		// Click Bail tab
 		const bailTab = page.locator('button, a, [role="tab"]').filter({ hasText: /bail/i }).first();
 		if (await bailTab.isVisible()) {
-			await bailTab.click();
+			await bailTab.click({ force: true });
 			await page.waitForTimeout(800);
 			await capture(page, 'fiche-bail');
 		}
@@ -351,7 +351,7 @@ test.describe.serial('Showcase: Biens Management', () => {
 			.filter({ hasText: /loyers/i })
 			.first();
 		if (await loyersTab.isVisible()) {
-			await loyersTab.click();
+			await loyersTab.click({ force: true });
 			await page.waitForTimeout(800);
 			await capture(page, 'fiche-loyers');
 		}
@@ -362,7 +362,7 @@ test.describe.serial('Showcase: Biens Management', () => {
 			.filter({ hasText: /charges/i })
 			.first();
 		if (await chargesTab.isVisible()) {
-			await chargesTab.click();
+			await chargesTab.click({ force: true });
 			await page.waitForTimeout(800);
 			await capture(page, 'fiche-charges');
 		}
@@ -373,7 +373,7 @@ test.describe.serial('Showcase: Biens Management', () => {
 			.filter({ hasText: /rentabilit/i })
 			.first();
 		if (await rentaTab.isVisible()) {
-			await rentaTab.click();
+			await rentaTab.click({ force: true });
 			await page.waitForTimeout(800);
 			await capture(page, 'fiche-rentabilite');
 		}

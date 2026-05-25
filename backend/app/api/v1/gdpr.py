@@ -118,7 +118,12 @@ async def export_user_data(
 
                 # 8. Documents
                 documents_response = client.table("documents_bien").select("*").in_("id_bien", bien_ids).execute()
-                export_data["data"]["documents"] = documents_response.data or []
+                docs = documents_response.data or []
+                for d in docs:
+                    if "file_url" in d and "url" not in d:
+                        d["url"] = d["file_url"]
+                export_data["data"]["documents"] = docs
+
 
             # 9. Données fiscales
             fiscalite_response = client.table("fiscalite").select("*").in_("id_sci", sci_ids).execute()
@@ -335,21 +340,23 @@ async def delete_user_account(
         if bien_ids:
             # Clean up storage files for documents before deleting records
             try:
-                docs_response = client.table("documents_bien").select("id,url").in_("id_bien", bien_ids).execute()
+                docs_response = client.table("documents_bien").select("*").in_("id_bien", bien_ids).execute()
                 doc_rows = docs_response.data or []
                 for doc in doc_rows:
-                    doc_url = doc.get("url")
+                    doc_url = doc.get("file_url") or doc.get("url")
                     if doc_url:
                         # Extract storage path from URL (format: .../object/public/documents/<path>)
                         try:
+                            storage_path = doc_url
                             path_marker = "/object/public/documents/"
                             if path_marker in str(doc_url):
                                 storage_path = str(doc_url).split(path_marker, 1)[1]
-                                client.storage.from_("documents").remove([storage_path])
+                            client.storage.from_("documents").remove([storage_path])
                         except Exception:
                             logger.warning("gdpr_storage_file_cleanup_failed", doc_id=doc.get("id"))
             except Exception:
                 logger.warning("gdpr_document_cleanup_failed", user_id=user_id, bien_ids=bien_ids)
+
 
             # Documents
             client.table("documents_bien").delete().in_("id_bien", bien_ids).execute()

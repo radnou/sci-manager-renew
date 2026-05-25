@@ -15,6 +15,7 @@
 	} from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import Celebration from '$lib/components/Celebration.svelte';
+	import { connectivity } from '$lib/stores/connectivity';
 	import DemoConversionPrompt from '$lib/components/DemoConversionPrompt.svelte';
 
 	interface Props {
@@ -33,6 +34,13 @@
 	let { loyers, isGerant, sciId, bienId, nomLocataire = '', nomSci = '', adresseBien = '', villeBien = '', onRefresh, isDemo = false }: Props = $props();
 
 	let showCelebration = $state<{ type: 'checkmark' | 'badge' | 'confetti'; title: string; subtitle: string } | null>(null);
+	let isOnline = $state(true);
+	$effect(() => {
+		const unsub = connectivity.subscribe((state) => {
+			isOnline = state === 'online';
+		});
+		return unsub;
+	});
 	let showConversionPrompt = $state(false);
 	let conversionMessage = $state('');
 	let showLoyerComposer = $state(false);
@@ -271,8 +279,10 @@
 			{#if !showLoyerComposer}
 				<LockedAction {isDemo} action="enregistrer un loyer">
 					<button
-						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+						disabled={!isOnline}
+						class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
 						onclick={openLoyerComposer}
+						title={isOnline ? "Enregistrer un loyer" : "La création de loyer est indisponible hors ligne"}
 					>
 						<Plus class="h-4 w-4" />
 						Enregistrer un loyer
@@ -306,6 +316,12 @@
 					<X class="h-4 w-4" />
 				</button>
 			</div>
+
+			{#if !isOnline}
+				<div class="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-400">
+					La création de loyer est indisponible hors ligne. Veuillez vous reconnecter.
+				</div>
+			{/if}
 
 			<div class="grid gap-4 md:grid-cols-3">
 				<label class="block">
@@ -357,7 +373,7 @@
 				</button>
 				<button
 					type="submit"
-					disabled={savingLoyer}
+					disabled={savingLoyer || !isOnline}
 					class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
 				>
 					{savingLoyer ? 'Enregistrement…' : 'Enregistrer'}
@@ -477,8 +493,9 @@
 										{#if loyer.statut !== 'paye'}
 											<div class="relative">
 												<button
-													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
-													title="Marquer comme payé"
+													disabled={!isOnline}
+													class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+													title={isOnline ? "Marquer comme payé" : "Marquage indisponible hors ligne"}
 													onclick={() => { payDateLoyerId = loyer.id; payDateOpen = true; }}
 												>
 													<Check class="h-3 w-3" />
@@ -496,9 +513,9 @@
 										<LockedAction {isDemo} action="générer une quittance">
 											<button
 												onclick={() => handleGenerateQuittance(loyer)}
-												disabled={isGenerating}
+												disabled={isGenerating || !isOnline}
 												class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
-												title="Générer la quittance"
+												title={isOnline ? "Générer la quittance" : "Génération indisponible hors ligne"}
 											>
 												{#if isGenerating}
 													<Loader2 class="h-3 w-3 animate-spin" />
@@ -513,9 +530,9 @@
 											<LockedAction {isDemo} action="envoyer une quittance par email">
 												<button
 													onclick={() => handleSendEmail(loyer)}
-													disabled={isSendingEmail}
+													disabled={isSendingEmail || !isOnline}
 													class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-700 transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-400"
-													title="Envoyer par email au locataire"
+													title={isOnline ? "Envoyer par email au locataire" : "Envoi indisponible hors ligne"}
 												>
 													{#if isSendingEmail}
 														<Loader2 class="h-3 w-3 animate-spin" />

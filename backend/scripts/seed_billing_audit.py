@@ -52,11 +52,12 @@ def create_user(email, password="password123"):
         print(f"  ✅ User {email} → {data['id']}")
         return data["id"]
     # Try to find existing user
-    users = api("GET", f"/auth/v1/admin/users?filter=email%3D{email}")
+    users = api("GET", "/auth/v1/admin/users?page=1&per_page=50")
     if users and isinstance(users, dict) and users.get("users"):
-        uid = users["users"][0]["id"]
-        print(f"  ♻️  User {email} exists → {uid}")
-        return uid
+        for u in users["users"]:
+            if u.get("email") == email:
+                print(f"  ♻️  User {email} exists → {u['id']}")
+                return u["id"]
     print(f"  ❌ Failed to create {email}")
     return None
 
@@ -110,6 +111,7 @@ def seed_account(email, plan_key, plan_config, scis_data):
             "nom": sci_data.get("gerant_nom", "Audit User"),
             "email": email,
             "part": 100,
+            "nb_parts": 1000,
             "role": "gerant",
         })
 

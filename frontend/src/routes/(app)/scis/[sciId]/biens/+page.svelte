@@ -12,6 +12,7 @@
 	import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 	import RoleGate from '$lib/components/RoleGate.svelte';
 	import LockedAction from '$lib/components/LockedAction.svelte';
+	import UpgradePrompt from '$lib/components/UpgradePrompt.svelte';
 
 	const sci = getContext<SCIDetail>('sci');
 	const subscription = getContext<SubscriptionEntitlements>('subscription');
@@ -31,10 +32,13 @@
 		!entitlements || entitlements.remaining_biens == null || entitlements.remaining_biens > 0
 	);
 
+	let showUpgradePrompt = $state(false);
+
 	function handleNewBienClick() {
 		if (canCreateBien) {
 			showBienModal = true;
 		} else if (entitlements) {
+			showUpgradePrompt = true;
 			addToast({
 				title: 'Limite atteinte',
 				description: `Votre plan ${entitlements.plan_name} est limité à ${entitlements.max_biens} biens. Passez au plan supérieur pour en ajouter davantage.`,
@@ -520,6 +524,7 @@
 		{/if}
 
 	<BienModal bind:open={showBienModal} {sciId} />
+	<UpgradePrompt open={showUpgradePrompt} action="ajouter un nouveau bien" onClose={() => (showUpgradePrompt = false)} />
 	<ImportCsvModal
 		open={showImportModal}
 		{sciId}

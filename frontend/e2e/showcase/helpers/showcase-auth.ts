@@ -129,6 +129,9 @@ export async function seedShowcaseUser(page: Page, options: SeedOptions = {}) {
 					timestamp: Date.now()
 				})
 			);
+			localStorage.setItem('gerersci_tour_completed', 'true');
+			localStorage.setItem('gerersci_product_tour_done', 'true');
+			localStorage.setItem('demo_prompt_dismissed', String(Date.now()));
 			localStorage.setItem(activeSciKey, nextSciId);
 			localStorage.setItem(
 				fakeSessionKey,

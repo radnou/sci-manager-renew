@@ -132,7 +132,7 @@ async def upload_document(
         "id_bien": bien_id,
         "nom": nom,
         "categorie": categorie,
-        "url": url,
+        "file_url": storage_path,
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
     }
     write_client = _get_client(request)
@@ -140,13 +140,15 @@ async def upload_document(
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
-    data = result.data or []
+    data = block_data = result.data or []
     if not data:
         raise DatabaseError("Unable to create document record")
 
-    created = data[0]
+    created = dict(data[0])
+    created["url"] = create_document_signed_url(client.storage.from_("documents"), created.get("file_url") or created.get("url") or storage_path, 86400)
     logger.info("document_uploaded", doc_id=created.get("id"), bien_id=bien_id)
     return created
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -175,7 +177,7 @@ async def delete_document(
     # --- Ownership check: confirm the document exists and belongs to this bien ---
     doc_result = (
         client.table("documents_bien")
-        .select("id, id_bien, url")
+        .select("*")
         .eq("id", doc_id)
         .execute()
     )
@@ -193,9 +195,10 @@ async def delete_document(
         raise ResourceNotFoundError("Document", str(doc_id))
 
     # --- Delete the file from Supabase Storage ---
-    doc_url = doc.get("url", "")
+    doc_url = doc.get("file_url") or doc.get("url") or ""
     if doc_url:
         storage_path = extract_document_storage_path(doc_url)
+
         if storage_path:
             try:
                 client.storage.from_("documents").remove([storage_path])

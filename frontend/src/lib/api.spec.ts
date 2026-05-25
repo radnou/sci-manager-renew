@@ -1255,8 +1255,9 @@ describe('api helpers', () => {
 	// --- Frais Agence mutations ---
 
 	it('createFraisForBien posts JSON body', async () => {
-		const data = { type_frais: 'gestion', montant: 150, date_frais: '2026-03-01' };
-		const created = { id: 1, ...data };
+		const data = { nom_agence: 'Foncia', type_frais: 'fixe', montant_ou_pourcentage: 150 };
+		const created = { id: 1, id_bien: 'bien-1', ...data, contact: null };
+
 		const fetchMock = vi
 			.fn()
 			.mockResolvedValue(new Response(JSON.stringify(created), { status: 201 }));

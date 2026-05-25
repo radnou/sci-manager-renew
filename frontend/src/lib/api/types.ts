@@ -494,11 +494,12 @@ export type AssurancePnoEmbed = {
 };
 
 export type FraisAgenceEmbed = {
-	id: number;
+	id: number | string;
+	id_bien: number | string;
+	nom_agence: string;
+	contact: string | null;
 	type_frais: string;
-	montant: number;
-	date_frais: string;
-	description: string | null;
+	montant_ou_pourcentage: number;
 };
 
 export type LoyerEmbed = {
@@ -534,10 +535,10 @@ export type PnoCreate = {
 export type PnoUpdate = Partial<PnoCreate>;
 
 export type FraisCreate = {
+	nom_agence: string;
+	contact?: string;
 	type_frais: string;
-	montant: number;
-	date_frais: string;
-	description?: string;
+	montant_ou_pourcentage: number;
 };
 
 export type CreditImmobilierEmbed = {
