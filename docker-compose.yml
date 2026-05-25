@@ -11,6 +11,8 @@ services:
       dockerfile: Dockerfile
     container_name: gerersci_backend
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:18000:8000"
     logging:
       driver: json-file
       options:
@@ -93,6 +95,8 @@ services:
         VITE_ANALYTICS_REQUIRE_CONSENT: ${VITE_ANALYTICS_REQUIRE_CONSENT:-true}
     container_name: gerersci_frontend
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:14173:4173"
     logging:
       driver: json-file
       options:
@@ -122,48 +126,6 @@ services:
           memory: 256M
 
   # ============================================================
-  # REVERSE PROXY + SSL
-  # ============================================================
-
-  nginx:
-    image: nginx:alpine
-    container_name: gerersci_nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/ssl-params.conf:/etc/nginx/ssl-params.conf:ro
-      - certbot_conf:/etc/letsencrypt:ro
-      - certbot_www:/var/www/certbot:ro
-      - nginx_logs:/var/log/nginx
-    depends_on:
-      frontend:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:80/nginx-health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  certbot:
-    image: certbot/certbot
-    container_name: gerersci_certbot
-    volumes:
-      - certbot_conf:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
-    networks:
-      - internal
-
-  # ============================================================
   # ANALYTICS (Matomo)
   # ============================================================
 
@@ -190,6 +152,8 @@ services:
     image: matomo:5-apache
     container_name: gerersci_matomo
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:18080:80"
     environment:
       MATOMO_DATABASE_HOST: matomo-db
       MATOMO_DATABASE_DBNAME: matomo
@@ -213,6 +177,8 @@ services:
     image: louislam/uptime-kuma:1
     container_name: gerersci_uptime_kuma
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:13001:3001"
     volumes:
       - uptime_kuma_data:/app/data
     networks:
@@ -236,6 +202,8 @@ services:
     image: grafana/grafana:11.6.0
     container_name: gerersci_grafana
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:13000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
@@ -253,13 +221,6 @@ services:
 
 volumes:
   backend_logs:
-  certbot_conf:
-    external: true
-    name: gerersci_certbot_conf
-  certbot_www:
-    external: true
-    name: gerersci_certbot_www
-  nginx_logs:
   matomo_db_data:
   matomo_data:
   uptime_kuma_data:

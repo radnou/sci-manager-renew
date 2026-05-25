@@ -14,10 +14,38 @@ Guide complet pour déployer GererSCI sur un VPS Scaleway en production.
 ## 🏗️ Architecture de Production
 
 ```
-Internet → Nginx (SSL/TLS) → Frontend (SvelteKit)
-                           → Backend (FastAPI)
-                           → Database (PostgreSQL)
+Internet → Host Caddy (systemd, vps-infra) → 127.0.0.1:14173 → Frontend (SvelteKit)
+                                            → 127.0.0.1:18000 → Backend (FastAPI)
+                                            → 127.0.0.1:18080 → Matomo
+                                            → 127.0.0.1:13001 → Uptime Kuma
 ```
+
+All services bind on loopback only. The public reverse proxy is NOT part of this repo.
+
+## Deployment
+
+### Production (VPS)
+
+This repo declares loopback-only host ports. The public-facing reverse proxy is managed
+in the `vps-infra` repo at `caddy/sites/gerersci.caddy`. After pulling here, reload
+host Caddy via `cd /opt/vps-infra && ./scripts/deploy-caddy.sh`.
+
+To roll forward on the VPS:
+
+```bash
+docker compose -f docker-compose.yml up -d --remove-orphans
+# Optional monitoring stack:
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --remove-orphans
+```
+
+### Local dev with TLS
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+This starts `caddy_dev` on `127.0.0.1:8443` with a self-signed CA (Caddy local CA, no ACME).
+Trust the local CA once with: `docker exec gerersci_caddy_dev caddy trust`
 
 ## 🚀 Déploiement Automatique
 
@@ -120,24 +148,13 @@ docker compose down
 supabase stop
 ```
 
-## 🔒 Configuration SSL (Let's Encrypt)
+## 🔒 Configuration SSL / TLS
 
-Après le déploiement initial :
+TLS is fully managed by the host Caddy systemd service in the `vps-infra` repo.
+Caddy handles ACME certificate provisioning automatically — no manual certbot steps needed.
 
-```bash
-# 1. Vérifiez que votre domaine pointe vers le VPS
-ping your-domain.com
-
-# 2. Obtenez le certificat SSL
-sudo certbot certonly --standalone -d your-domain.com
-
-# 3. Copiez les certificats
-sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem docker/ssl/
-sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem docker/ssl/
-
-# 4. Redémarrez Nginx
-docker compose restart nginx
-```
+To add or modify site configuration, edit `vps-infra/caddy/sites/gerersci.caddy`
+and run `./scripts/deploy-caddy.sh` on the VPS.
 
 ## 🔧 Configuration DNS
 
@@ -161,10 +178,10 @@ docker compose ps
 # Logs des services
 docker compose logs backend
 docker compose logs frontend
-docker compose logs nginx
+docker compose logs matomo
 
-# Health check
-curl https://your-domain.com/health
+# Health check (loopback)
+curl http://127.0.0.1:18000/health/live
 ```
 
 ### Sauvegardes Automatiques
@@ -198,14 +215,12 @@ docker compose logs
 docker compose exec backend env | grep -E "(DATABASE|STRIPE|SUPABASE)"
 ```
 
-### Problème : Erreur SSL
+### Problème : Erreur SSL / TLS
 
+TLS is managed by the host Caddy. Check:
 ```bash
-# Vérifiez les certificats
-ls -la docker/ssl/
-
-# Testez la configuration Nginx
-docker compose exec nginx nginx -t
+sudo systemctl status caddy
+sudo journalctl -u caddy --since "1 hour ago"
 ```
 
 ### Problème : Base de données inaccessible

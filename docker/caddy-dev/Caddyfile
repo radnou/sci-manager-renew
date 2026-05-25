@@ -1,0 +1,22 @@
+# Dev-only Caddyfile — local TLS via Caddy's internal CA (no ACME, no outbound requests).
+# Access via https://localhost:8443 after trusting the local CA:
+#   caddy trust   (or: docker exec gerersci_caddy_dev caddy trust)
+
+{
+	# Use Caddy's local CA — no ACME, no port 80 challenge
+	local_certs
+}
+
+localhost {
+	tls internal
+
+	# API routes — proxy to backend
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# All other routes — proxy to frontend
+	handle {
+		reverse_proxy frontend:4173
+	}
+}

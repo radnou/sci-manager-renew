@@ -1,0 +1,28 @@
+# Dev-only — provides local TLS via Caddy in Docker on 127.0.0.1.
+# In production, the host VPS Caddy (managed in vps-infra) handles TLS.
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  caddy_dev:
+    image: caddy:2-alpine
+    container_name: gerersci_caddy_dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8443:443"
+    volumes:
+      - ./docker/caddy-dev/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dev_data:/data
+      - caddy_dev_config:/config
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: true
+    name: gerersci_internal
+
+volumes:
+  caddy_dev_data:
+  caddy_dev_config:

@@ -2,11 +2,13 @@
 set -e
 
 # GererSCI — Production Deployment Script
-# Usage: ./deploy.sh [--initial] [--caddy] [--no-maintenance]
+# Usage: ./deploy.sh [--initial] [--no-maintenance]
 #
 # --initial           First-time setup (installs Docker, configures firewall)
-# --caddy             Use Caddy instead of nginx (auto-HTTPS)
 # --no-maintenance    Skip maintenance page during deploy
+#
+# NOTE: Reverse proxy (TLS, routing) is managed by the host Caddy systemd service
+# in the vps-infra repo. This script does NOT touch Caddy.
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,14 +17,12 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 INITIAL=false
-USE_CADDY=false
 NO_MAINTENANCE=false
 MAINTENANCE_FILE="/tmp/gerersci-maintenance"
 
 for arg in "$@"; do
     case $arg in
         --initial) INITIAL=true ;;
-        --caddy) USE_CADDY=true ;;
         --no-maintenance) NO_MAINTENANCE=true ;;
     esac
 done
@@ -36,8 +36,7 @@ enable_maintenance() {
     if [ "$NO_MAINTENANCE" = true ]; then return; fi
     echo -e "${CYAN}Enabling maintenance page...${NC}"
     touch "$MAINTENANCE_FILE"
-    # Copy flag into Caddy/nginx-visible location
-    docker exec gerersci_caddy sh -c 'touch /tmp/maintenance' 2>/dev/null || \
+    # Signal host Caddy to serve maintenance; nginx fallback for local dev
     docker exec gerersci_nginx sh -c 'touch /tmp/maintenance' 2>/dev/null || true
 }
 
@@ -45,7 +44,6 @@ disable_maintenance() {
     if [ "$NO_MAINTENANCE" = true ]; then return; fi
     echo -e "${CYAN}Disabling maintenance page...${NC}"
     rm -f "$MAINTENANCE_FILE"
-    docker exec gerersci_caddy sh -c 'rm -f /tmp/maintenance' 2>/dev/null || \
     docker exec gerersci_nginx sh -c 'rm -f /tmp/maintenance' 2>/dev/null || true
 }
 
@@ -129,26 +127,10 @@ enable_maintenance
 # Build and deploy
 echo -e "${GREEN}Building and deploying...${NC}"
 
-if [ "$USE_CADDY" = true ]; then
-    COMPOSE_CMD="docker compose -f docker-compose.yml -f docker-compose.caddy.yml"
-else
-    COMPOSE_CMD="docker compose"
-fi
+COMPOSE_CMD="docker compose"
 
 $COMPOSE_CMD build
-$COMPOSE_CMD up -d
-
-# Ensure containers are connected to the shared vps_internal network (Caddy needs it)
-echo -e "${CYAN}Ensuring network connectivity with Caddy...${NC}"
-for container in gerersci_backend gerersci_frontend; do
-    if ! docker network inspect vps_internal --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null | grep -q "$container"; then
-        docker network connect vps_internal "$container" 2>/dev/null && \
-            echo -e "  ${GREEN}✓${NC} $container → vps_internal" || \
-            echo -e "  ${YELLOW}⚠${NC} $container already connected to vps_internal"
-    else
-        echo -e "  ${GREEN}✓${NC} $container already in vps_internal"
-    fi
-done
+$COMPOSE_CMD up -d --remove-orphans
 
 # Wait for services to become healthy
 echo -e "${GREEN}Waiting for services to become healthy...${NC}"
@@ -175,7 +157,7 @@ fi
 # Disable maintenance page — services are ready
 disable_maintenance
 
-# Health checks
+# Health checks against loopback-bound ports
 echo -e "${GREEN}Running health checks...${NC}"
 echo ""
 
@@ -192,24 +174,10 @@ check_service() {
     fi
 }
 
-# Resolve container IPs for internal health checks if not mapping ports
-BACKEND_IP=$(docker inspect -f '{{.NetworkSettings.Networks.vps_internal.IPAddress}}' gerersci_backend 2>/dev/null || echo "localhost")
-FRONTEND_IP=$(docker inspect -f '{{.NetworkSettings.Networks.vps_internal.IPAddress}}' gerersci_frontend 2>/dev/null || echo "localhost")
-
-# Fallback to localhost if IP is empty
-if [ -z "$BACKEND_IP" ]; then BACKEND_IP="localhost"; fi
-if [ -z "$FRONTEND_IP" ]; then FRONTEND_IP="localhost"; fi
-
 FAILURES=0
-check_service "Backend liveness" "http://${BACKEND_IP}:8000/health/live" "-H Host:localhost" || ((FAILURES++))
-check_service "Backend readiness" "http://${BACKEND_IP}:8000/health/ready" "-H Host:localhost" || ((FAILURES++))
-check_service "Frontend" "http://${FRONTEND_IP}:4173/" || ((FAILURES++))
-
-if [ "$USE_CADDY" = true ]; then
-    check_service "Caddy" "http://localhost:80" || ((FAILURES++))
-else
-    check_service "Nginx" "http://localhost:80/nginx-health" || ((FAILURES++))
-fi
+check_service "Backend liveness"  "http://127.0.0.1:18000/health/live"  "" || ((FAILURES++))
+check_service "Backend readiness" "http://127.0.0.1:18000/health/ready" "" || ((FAILURES++))
+check_service "Frontend"          "http://127.0.0.1:14173/"             "" || ((FAILURES++))
 
 echo ""
 echo -e "${GREEN}Service status:${NC}"
@@ -256,7 +224,5 @@ echo -e "  Frontend: https://app.gerersci.fr"
 echo -e "  API:      https://api.gerersci.fr"
 echo -e "  Matomo:   https://analytics.gerersci.fr"
 echo -e "  Status:   https://status.gerersci.fr"
-if [ "$USE_CADDY" = true ]; then
-    echo -e "  Grafana:  https://grafana.gerersci.fr"
-    echo -e "  ${CYAN}Using Caddy (auto-HTTPS)${NC}"
-fi
+echo -e "  Grafana:  https://grafana.gerersci.fr"
+echo -e "  ${CYAN}Reverse proxy: host Caddy (vps-infra/caddy/sites/gerersci.caddy)${NC}"
