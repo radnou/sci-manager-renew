@@ -76,6 +76,7 @@ export type SCIUpdatePayload = {
 	nom?: string;
 	siren?: string | null;
 	regime_fiscal?: 'IR' | 'IS';
+	confirm_regime_change?: boolean;
 	adresse_siege?: string | null;
 	date_creation?: string | null;
 	capital_social?: number | null;
@@ -442,6 +443,14 @@ export type SCICard = {
 	biens_count: number;
 	loyer_total: number;
 	recouvrement: number;
+	dernier_loyer?: LastLoyerInfo | null;
+};
+
+export type LastLoyerInfo = {
+	date?: string | null;
+	montant?: number | null;
+	statut?: string | null;
+	date_paiement?: string | null;
 };
 
 export type ActivityItem = {

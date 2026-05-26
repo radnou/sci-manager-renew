@@ -2,12 +2,12 @@
 	import { onDestroy } from 'svelte';
 	import { theme } from '$lib/stores/theme';
 	import { Button } from '$lib/components/ui/button';
-	import { LaptopMinimal, Moon, Sun } from 'lucide-svelte';
+	import { Moon, Sun } from 'lucide-svelte';
 	import { trackEvent, EVENTS } from '$lib/analytics';
 
-	let currentTheme = $state<'system' | 'light' | 'dark'>('system');
+	let currentTheme = $state<'light' | 'dark'>('light');
 	const unsubscribe = theme.subscribe(value => {
-		currentTheme = value;
+		currentTheme = value as 'light' | 'dark';
 	});
 
 	onDestroy(unsubscribe);
@@ -18,23 +18,16 @@
 	}
 
 	const themeMeta = $derived.by(() => {
-		if (currentTheme === 'system') {
-			return {
-				label: 'Thème système',
-				title: 'Basculer le thème (système, sombre, clair)',
-				icon: LaptopMinimal
-			};
-		}
 		if (currentTheme === 'dark') {
 			return {
 				label: 'Thème sombre',
-				title: 'Basculer le thème (sombre, clair, système)',
+				title: 'Basculer le thème clair',
 				icon: Moon
 			};
 		}
 		return {
 			label: 'Thème clair',
-			title: 'Basculer le thème (clair, système, sombre)',
+			title: 'Basculer le thème sombre',
 			icon: Sun
 		};
 	});

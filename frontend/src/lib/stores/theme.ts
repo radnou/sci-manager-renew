@@ -32,7 +32,7 @@ function applyTheme(nextTheme: ThemePreference, withTransition: boolean) {
 }
 
 function createThemeStore() {
-	const { subscribe, set, update } = writable<ThemePreference>('system');
+	const { subscribe, set, update } = writable<ThemePreference>('light');
 	let mediaQuery: MediaQueryList | null = null;
 	let mediaListener: ((event: MediaQueryListEvent) => void) | null = null;
 
@@ -41,7 +41,7 @@ function createThemeStore() {
 		mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		mediaListener = () => {
 			const savedTheme = normalizeTheme(localStorage.getItem('theme'));
-			if ((savedTheme ?? 'system') === 'system') {
+			if ((savedTheme ?? 'light') === 'system') {
 				applyTheme('system', false);
 			}
 		};
@@ -51,14 +51,14 @@ function createThemeStore() {
 	return {
 		subscribe,
 		toggle: () => update((theme) => {
-			const cycle: ThemePreference[] = ['system', 'dark', 'light'];
+			const cycle: ThemePreference[] = ['light', 'dark'];
 			const nextTheme = cycle[(cycle.indexOf(theme) + 1) % cycle.length];
 			applyTheme(nextTheme, true);
 			return nextTheme;
 		}),
 		set: (theme: ThemePreference) => {
 			const nextTheme: ThemePreference =
-				theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'system';
+				theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'light';
 			set(nextTheme);
 			applyTheme(nextTheme, true);
 		},
@@ -67,7 +67,7 @@ function createThemeStore() {
 			if (!browser) return;
 
 			const savedTheme = normalizeTheme(localStorage.getItem('theme'));
-			const initialTheme: ThemePreference = savedTheme ?? 'system';
+			const initialTheme: ThemePreference = savedTheme ?? 'light';
 
 			set(initialTheme);
 			applyTheme(initialTheme, false);

@@ -41,6 +41,7 @@ class SCIUpdate(BaseModel):
     valeur_nominale_part: float | None = None
     jour_loyer: int | None = Field(default=None, ge=1, le=28)
     date_cloture_exercice: str | None = Field(default=None)
+    confirm_regime_change: bool = Field(default=False, description="Checkbox de confirmation obligatoire pour le changement IR->IS")
 
 
 class AssocieCreate(BaseModel):

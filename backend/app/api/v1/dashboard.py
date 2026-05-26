@@ -54,6 +54,13 @@ class PortfolioKPIs(BaseModel):
     charges_total: float = 0.0
 
 
+class LastLoyerInfo(BaseModel):
+    date: str | None = None
+    montant: float | None = None
+    statut: str | None = None
+    date_paiement: str | None = None
+
+
 class SCICard(BaseModel):
     id: str
     nom: str
@@ -62,6 +69,7 @@ class SCICard(BaseModel):
     loyer_total: float = 0.0
     loyer_payes: float = 0.0
     recouvrement: float = 0.0
+    dernier_loyer: LastLoyerInfo | None = None
 
 
 class ActivityItem(BaseModel):

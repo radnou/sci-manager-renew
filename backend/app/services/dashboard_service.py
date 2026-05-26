@@ -245,7 +245,7 @@ async def get_sci_cards(client, user_id: str) -> list[dict]:
 
     # Fetch biens and loyers for all SCIs at once
     all_biens = _query_in_sci_ids(client, "biens", "id,id_sci", sci_ids)
-    all_loyers = _query_in_sci_ids(client, "loyers", "id_sci,montant,statut", sci_ids)
+    all_loyers = _query_in_sci_ids(client, "loyers", "id_sci,montant,statut,date_loyer,date_paiement", sci_ids)
 
     # Index by SCI
     biens_by_sci: dict[str, int] = {}
@@ -254,6 +254,7 @@ async def get_sci_cards(client, user_id: str) -> list[dict]:
         biens_by_sci[sid] = biens_by_sci.get(sid, 0) + 1
 
     loyers_by_sci: dict[str, dict] = {}
+    dernier_loyer_by_sci: dict[str, dict] = {}
     for l in all_loyers:
         sid = str(l.get("id_sci", ""))
         if sid not in loyers_by_sci:
@@ -263,6 +264,16 @@ async def get_sci_cards(client, user_id: str) -> list[dict]:
         if l.get("statut") == "paye":
             loyers_by_sci[sid]["payes"] += montant
 
+        # Track latest loyer per SCI by date_loyer (fallback to date_paiement)
+        date_key = l.get("date_loyer") or l.get("date_paiement") or ""
+        if sid not in dernier_loyer_by_sci or date_key > dernier_loyer_by_sci[sid]["date"]:
+            dernier_loyer_by_sci[sid] = {
+                "date": date_key,
+                "montant": montant,
+                "statut": l.get("statut", ""),
+                "date_paiement": l.get("date_paiement"),
+            }
+
     cards: list[dict] = []
     for sci in scis_data:
         sid = str(sci.get("id", ""))
@@ -270,6 +281,7 @@ async def get_sci_cards(client, user_id: str) -> list[dict]:
         total = loyer_data["total"]
         payes = loyer_data["payes"]
         recouvrement = round((payes / total * 100) if total > 0 else 0.0, 1)
+        last = dernier_loyer_by_sci.get(sid)
 
         cards.append({
             "id": sid,
@@ -279,6 +291,7 @@ async def get_sci_cards(client, user_id: str) -> list[dict]:
             "loyer_total": round(total, 2),
             "loyer_payes": round(payes, 2),
             "recouvrement": recouvrement,
+            "dernier_loyer": last,
         })
 
     return cards

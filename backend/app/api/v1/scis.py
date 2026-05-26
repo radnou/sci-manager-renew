@@ -336,7 +336,6 @@ async def _require_gerant_for_sci(sci_id: str, request: Request, user_id: str = 
 
 
 @router.patch("/{sci_id}", response_model=SCIResponse)
-@limiter.limit("30/minute")
 async def update_sci(
     sci_id: str,
     payload: SCIUpdate,
@@ -349,6 +348,27 @@ async def update_sci(
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise ResourceNotFoundError("SCI", sci_id)
+
+    new_regime = updates.get("regime_fiscal")
+    confirm_regime_change = updates.pop("confirm_regime_change", False)
+    if new_regime == "IS":
+        client = _get_client(request)
+        current_sci_rows = _execute_select(client.table("sci").select("regime_fiscal").eq("id", sci_id))
+        if current_sci_rows and str(current_sci_rows[0].get("regime_fiscal", "IR")) == "IR":
+            if not confirm_regime_change:
+                from fastapi import HTTPException
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Changement IR -> IS requiert confirmation explicite (consultation expert-comptable)."
+                )
+            logger.warning(
+                "sci_regime_change_ir_to_is",
+                sci_id=sci_id,
+                user_id=user_id,
+                old_regime="IR",
+                new_regime="IS",
+                confirm_regime_change=confirm_regime_change,
+            )
 
     client = _get_client(request)
     result = client.table("sci").update(updates).eq("id", sci_id).execute()

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { Building2, MapPin, Landmark, Scale, Loader2, ArrowLeft, ChevronDown } from 'lucide-svelte';
+	import { Building2, MapPin, Landmark, Scale, Loader2, ArrowLeft, ChevronDown, AlertTriangle } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import type { SCIDetail } from '$lib/api';
 	import { updateSci } from '$lib/api';
@@ -27,12 +27,27 @@
 
 	// Legal section collapsible state — open if any legal field is filled
 	let legalOpen = $state(!!(sci.rcs_numero || sci.forme_juridique || sci.nom_gerant));
-
 	let saving = $state(false);
+
+	const originalRegimeFiscal = sci.regime_fiscal ?? 'IR';
+	const isChangingToIs = $derived(originalRegimeFiscal === 'IR' && regimeFiscal === 'IS');
+	let confirmRegimeChange = $state(false);
+
+	const canSave = $derived(!isChangingToIs || confirmRegimeChange);
+
+	$effect(() => {
+		if (!isChangingToIs) {
+			confirmRegimeChange = false;
+		}
+	});
 
 	async function handleSave() {
 		if (!nom.trim()) {
 			addToast({ title: 'Erreur', description: 'Le nom de la SCI est obligatoire.', variant: 'error' });
+			return;
+		}
+		if (isChangingToIs && !confirmRegimeChange) {
+			addToast({ title: 'Erreur', description: 'Vous devez confirmer avoir consulte votre expert-comptable.', variant: 'error' });
 			return;
 		}
 		saving = true;
@@ -46,12 +61,14 @@
 				capital_social: capitalSocial ? parseFloat(capitalSocial) : null,
 				objet_social: objetSocial.trim() || null,
 				rcs_ville: rcsVille.trim() || null,
-			rcs_numero: rcsNumero.trim() || null,
-			forme_juridique: formeJuridique || null,
-			nom_gerant: nomGerant.trim() || null
+				rcs_numero: rcsNumero.trim() || null,
+				forme_juridique: formeJuridique || null,
+				nom_gerant: nomGerant.trim() || null,
+				confirm_regime_change: confirmRegimeChange
 			});
 			await invalidateAll();
-			addToast({ title: 'SCI modifiée', description: 'Les informations ont été mises à jour.', variant: 'success' });
+			addToast({ title: 'SCI modifiee', description: 'Les informations ont ete mises a jour.', variant: 'success' });
+			confirmRegimeChange = false;
 		} catch (err: any) {
 			addToast({ title: 'Erreur', description: err?.message ?? 'Impossible de modifier la SCI.', variant: 'error' });
 		} finally {
@@ -220,7 +237,7 @@
 				</div>
 				<fieldset>
 					<legend class="mb-1.5 block text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-						Régime fiscal
+						Regime fiscal
 					</legend>
 					<div class="flex gap-2 mt-0.5">
 						{#each (['IR', 'IS'] as const) as rf}
@@ -236,6 +253,33 @@
 							</button>
 						{/each}
 					</div>
+					{#if isChangingToIs}
+						<div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+							<div class="mb-3 flex items-start gap-3">
+								<AlertTriangle class="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+								<div>
+									<p class="text-sm font-semibold text-amber-800 dark:text-amber-200">
+										Attention: passage a l'IS irreversible
+									</p>
+									<p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
+										Le passage de l'IR a l'IS est irreversible sans dissolution de la SCI.
+										Consultez votre expert-comptable avant de proceder.
+									</p>
+								</div>
+							</div>
+							<label class="flex items-start gap-3">
+								<input
+									type="checkbox"
+									bind:checked={confirmRegimeChange}
+									class="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500 dark:border-amber-600 dark:bg-slate-800"
+									disabled={!isGerant}
+								/>
+								<span class="text-sm font-medium text-amber-800 dark:text-amber-200">
+									J'ai consulte mon expert-comptable et je confirme le changement de regime fiscal
+								</span>
+							</label>
+						</div>
+					{/if}
 				</fieldset>
 			</div>
 		</div>
@@ -320,8 +364,9 @@
 				</a>
 				<button
 					type="submit"
-					disabled={saving}
-					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-sky-700 disabled:opacity-50"
+					disabled={saving || !canSave}
+					title={!canSave ? 'Vous devez confirmer avoir consulte votre expert-comptable avant de basculer vers l\'IS' : ''}
+					class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{#if saving}<Loader2 class="h-4 w-4 animate-spin" />{/if}
 					Enregistrer

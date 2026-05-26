@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Building2 } from 'lucide-svelte';
+	import { Building2, Receipt } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import type { SCICard } from '$lib/api';
+	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	interface Props {
@@ -9,14 +10,6 @@
 	}
 
 	let { scis }: Props = $props();
-
-	function formatEur(value: number): string {
-		return new Intl.NumberFormat('fr-FR', {
-			style: 'currency',
-			currency: 'EUR',
-			maximumFractionDigits: 0
-		}).format(value);
-	}
 
 	const statutBadge: Record<string, string> = {
 		configuration:
@@ -32,6 +25,23 @@
 		mise_en_service: 'Mise en service',
 		exploitation: 'Exploitation'
 	};
+
+	const loyerStatusColor: Record<string, string> = {
+		paye: 'text-emerald-600 dark:text-emerald-400',
+		en_attente: 'text-amber-600 dark:text-amber-400',
+		en_retard: 'text-rose-600 dark:text-rose-400',
+		retard: 'text-rose-600 dark:text-rose-400',
+	};
+
+	function getLoyerStatusText(sci: SCICard): string {
+		if (!sci.dernier_loyer) return 'Aucun loyer enregistré';
+		const { montant, date_paiement, statut } = sci.dernier_loyer;
+		if (!montant) return 'Dernier loyer sans montant';
+		if (statut === 'paye' && date_paiement) {
+			return `${formatEur(montant)} — Payé le ${formatFrDate(date_paiement)}`;
+		}
+		return `${formatEur(montant)} — ${statut || 'Statut inconnu'}`;
+	}
 </script>
 
 {#if scis.length === 0}
@@ -91,22 +101,31 @@
 						</div>
 					</div>
 
-					<!-- Quick access to biens -->
-					<div class="mt-3 border-t border-slate-100 pt-2 dark:border-slate-800">
-						<button
-							type="button"
-							class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-							onclick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								goto(`/scis/${sci.id}/biens`);
-							}}
-						>
-							Voir les {sci.biens_count} bien{sci.biens_count > 1 ? 's' : ''} &rarr;
-						</button>
-					</div>
-				</div>
-			</a>
-		{/each}
-	</div>
-{/if}
+  						<!-- Last loyer status -->
+							<div class="mt-3 flex items-start gap-2 text-xs">
+								<Receipt class="mt-0.5 h-3.5 w-3.5 flex-shrink-0 {loyerStatusColor[sci.dernier_loyer?.statut || ''] ?? 'text-slate-400 dark:text-slate-500'}"
+								/>
+								<span class="text-slate-600 dark:text-slate-400">
+									<span class="font-medium">Dernier loyer:</span> {getLoyerStatusText(sci)}
+								</span>
+							</div>
+
+							<!-- Quick access to biens -->
+							<div class="mt-3 border-t border-slate-100 pt-2 dark:border-slate-800">
+								<button
+									type="button"
+									class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+									onclick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										goto(`/scis/${sci.id}/biens`);
+									}}
+								>
+									Voir les {sci.biens_count} bien{sci.biens_count > 1 ? 's' : ''} &rarr;
+								</button>
+							</div>
+						</div>
+					</a>
+				{/each}
+			</div>
+		{/if}
