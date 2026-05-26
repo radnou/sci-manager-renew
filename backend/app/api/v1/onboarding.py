@@ -20,6 +20,20 @@ router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 logger = structlog.get_logger(__name__)
 
 
+class OnboardingProfile(BaseModel):
+    role: str
+    volume: str
+    current_tool: str
+    priorities: list[str]
+
+
+class OnboardingProfilePayload(BaseModel):
+    role: str
+    volume: str
+    current_tool: str
+    priorities: list[str]
+
+
 class OnboardingStatus(BaseModel):
     completed: bool
     sci_created: bool
@@ -27,6 +41,8 @@ class OnboardingStatus(BaseModel):
     bien_created: bool
     bail_created: bool
     notifications_set: bool
+    profile_set: bool = False
+    profile: OnboardingProfile | None = None
 
 
 class OnboardingCompleteResponse(BaseModel):
@@ -37,16 +53,22 @@ def _check_onboarding_progress(request: Request, user_id: str) -> OnboardingStat
     """Check real progress based on existing data."""
     client = get_supabase_user_client(request)
 
-    # Check onboarding_completed flag
+    # Check onboarding_completed flag + profile
     sub_result = (
         client.table("subscriptions")
-        .select("onboarding_completed")
+        .select("onboarding_completed, onboarding_profile")
         .eq("user_id", user_id)
         .execute()
     )
     completed = False
+    profile_set = False
+    profile = None
     if sub_result.data:
         completed = bool(sub_result.data[0].get("onboarding_completed", False))
+        raw_profile = sub_result.data[0].get("onboarding_profile")
+        if raw_profile and isinstance(raw_profile, dict):
+            profile_set = True
+            profile = OnboardingProfile(**raw_profile)
 
     # Check if user has at least one SCI (via associes membership)
     # Filter out demo data in Python to avoid mock/query edge cases
@@ -120,6 +142,8 @@ def _check_onboarding_progress(request: Request, user_id: str) -> OnboardingStat
         bien_created=bien_created,
         bail_created=bail_created,
         notifications_set=notifications_set,
+        profile_set=profile_set,
+        profile=profile,
     )
 
 
@@ -130,6 +154,37 @@ async def get_onboarding_status(
 ) -> OnboardingStatus:
     logger.info("fetching_onboarding_status", user_id=user_id)
     return _check_onboarding_progress(request, user_id)
+
+
+@router.post("/profile", response_model=OnboardingProfile)
+@limiter.limit("30/minute")
+async def save_onboarding_profile(
+    request: Request,
+    payload: OnboardingProfilePayload,
+    user_id: str = Depends(get_current_user),
+) -> OnboardingProfile:
+    """Save onboarding profiling answers for the user."""
+    logger.info("saving_onboarding_profile", user_id=user_id, role=payload.role)
+
+    profile_data = payload.model_dump()
+    client = get_supabase_service_client()
+
+    existing = (
+        client.table("subscriptions")
+        .select("id")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if existing.data:
+        client.table("subscriptions").update(
+            {"onboarding_profile": profile_data}
+        ).eq("user_id", user_id).execute()
+    else:
+        client.table("subscriptions").insert(
+            {"user_id": user_id, "onboarding_profile": profile_data, "status": "free"}
+        ).execute()
+
+    return OnboardingProfile(**profile_data)
 
 
 @router.post("/complete", response_model=OnboardingCompleteResponse)

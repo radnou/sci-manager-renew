@@ -4,6 +4,8 @@ import type {
 	CheckoutSessionResponsePayload,
 	SubscriptionEntitlements,
 	OnboardingStatus,
+	OnboardingProfile,
+	OnboardingProfilePayload,
 	DataExportResponse,
 	DataSummaryResponse,
 	AccountDeleteResponse
@@ -28,6 +30,13 @@ export function cancelSubscription() {
 
 export function fetchOnboardingStatus() {
 	return apiFetch<OnboardingStatus>('/api/v1/onboarding');
+}
+
+export function saveOnboardingProfile(payload: OnboardingProfilePayload) {
+	return apiFetch<OnboardingProfile>('/api/v1/onboarding/profile', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
 }
 
 export function completeOnboarding() {
