@@ -227,8 +227,14 @@ def test_create_loyer_logs_creation():
                 }
             ]
 
+            # Mock select query for duplicate detection (must return no duplicates)
+            mock_select_result = MagicMock()
+            mock_select_result.error = None
+            mock_select_result.data = []
+
             mock_client = MagicMock()
             mock_client.table.return_value.insert.return_value.execute.return_value = mock_result
+            mock_client.table.return_value.select.return_value.eq.return_value.gte.return_value.lte.return_value.limit.return_value.execute.return_value = mock_select_result
             mock_get_client.return_value = mock_client
 
             client = TestClient(app)
@@ -341,8 +347,8 @@ def test_update_bien_logs_operation():
             ]
 
             mock_query = MagicMock()
-            mock_query.select.return_value.eq.return_value.execute.return_value = existing_result
-            mock_query.update.return_value.eq.return_value.execute.return_value = updated_result
+            mock_query.select.return_value.eq.return_value.is_.return_value.execute.return_value = existing_result
+            mock_query.update.return_value.eq.return_value.is_.return_value.execute.return_value = updated_result
 
             mock_client = MagicMock()
             mock_client.table.return_value = mock_query

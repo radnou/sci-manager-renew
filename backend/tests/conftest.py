@@ -336,6 +336,39 @@ class _FakeStorageProxy:
         return self._buckets.setdefault(bucket_name, _FakeBucket())
 
 
+class FakeRpcQuery:
+    def __init__(self, store: dict[str, list[dict]], fn_name: str, params: dict):
+        self.store = store
+        self.fn_name = fn_name
+        self.params = params
+
+    def execute(self) -> FakeResult:
+        if self.fn_name == "increment_quittance_counter":
+            sci_id = self.params.get("p_sci_id")
+            annee_mois = self.params.get("p_annee_mois")
+            compteurs = self.store.setdefault("quittance_compteur", [])
+            
+            # Find or create counter
+            counter = None
+            for c in compteurs:
+                if str(c.get("sci_id")) == str(sci_id) and c.get("annee_mois") == annee_mois:
+                    counter = c
+                    break
+            
+            if counter:
+                counter["dernier_numero"] += 1
+            else:
+                counter = {
+                    "sci_id": sci_id,
+                    "annee_mois": annee_mois,
+                    "dernier_numero": 1
+                }
+                compteurs.append(counter)
+                
+            return FakeResult(data=counter["dernier_numero"])
+        return FakeResult(data=None)
+
+
 class FakeSupabaseClient:
     def __init__(self):
         self.auth = FakeAuth()
@@ -351,6 +384,9 @@ class FakeSupabaseClient:
 
     def table(self, name: str) -> FakeQuery:
         return FakeQuery(self.store, name)
+
+    def rpc(self, fn_name: str, params: dict) -> FakeRpcQuery:
+        return FakeRpcQuery(self.store, fn_name, params)
 
 
 # ── Session-scoped fixtures (boot app + monkeypatch once per worker) ─────

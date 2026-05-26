@@ -175,6 +175,8 @@
 	});
 
 	async function handleGenerateQuittance(loyer: any) {
+		const loyerId = String(loyer.id);
+		if (generatingQuittanceFor === loyerId) return;
 		if (!loyer.id || !nomLocataire) {
 			addToast({
 				title: 'Données manquantes',
@@ -184,7 +186,6 @@
 			return;
 		}
 
-		const loyerId = String(loyer.id);
 		generatingQuittanceFor = loyerId;
 
 		try {
@@ -474,11 +475,16 @@
 							<td class="py-3 pr-4">
 								{#if loyer.statut === 'paye'}
 									<button
-										class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+										class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
 										title="Générer la quittance"
 										onclick={() => handleGenerateQuittance(loyer)}
+										disabled={isGenerating}
 									>
-										<FileText class="h-4 w-4" />
+										{#if isGenerating}
+											<Loader2 class="h-4 w-4 animate-spin" />
+										{:else}
+											<FileText class="h-4 w-4" />
+										{/if}
 									</button>
 								{:else}
 									<span class="text-slate-300 dark:text-slate-600">&mdash;</span>

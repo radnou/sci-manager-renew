@@ -110,31 +110,14 @@ def get_next_quittance_number(
     annee_mois = loyer_date.strftime("%Y%m")
 
     try:
-        # Try to fetch existing counter
-        result = (
-            supabase_client.table("quittance_compteur")
-            .select("dernier_numero")
-            .eq("sci_id", sci_id)
-            .eq("annee_mois", annee_mois)
-            .execute()
-        )
-        rows = result.data or []
-
-        if rows:
-            nouveau = rows[0]["dernier_numero"] + 1
-            supabase_client.table("quittance_compteur").update(
-                {"dernier_numero": nouveau}
-            ).eq("sci_id", sci_id).eq("annee_mois", annee_mois).execute()
-        else:
-            nouveau = 1
-            supabase_client.table("quittance_compteur").insert(
-                {
-                    "sci_id": sci_id,
-                    "annee_mois": annee_mois,
-                    "dernier_numero": nouveau,
-                }
-            ).execute()
-
+        # Call the RPC function atomically
+        result = supabase_client.rpc(
+            "increment_quittance_counter",
+            {"p_sci_id": sci_id, "p_annee_mois": annee_mois}
+        ).execute()
+        nouveau = result.data
+        if nouveau is None:
+            raise Exception("RPC returned null")
         return f"QTT-{annee_mois}-{nouveau:03d}"
     except Exception:
         # Fallback: timestamp-based number (never blocks PDF generation)

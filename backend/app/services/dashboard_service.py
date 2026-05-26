@@ -179,14 +179,24 @@ async def get_portfolio_kpis(client, user_id: str) -> dict:
 
     # Loyers
     loyers = _query_in_sci_ids(client, "loyers", "montant,statut,date_loyer", sci_ids)
+
+    # Cashflow and Taux de recouvrement: trailing 12 months only
+    cutoff_12m = (date.today() - timedelta(days=365)).isoformat()
+
+    loyers_12m = [
+        l for l in loyers
+        if (l.get("date_loyer") or date.today().isoformat()) >= cutoff_12m
+    ]
+    loyers_total_12m = sum(float(l.get("montant") or 0) for l in loyers_12m)
+    loyers_payes_12m_rec = sum(
+        float(l.get("montant") or 0) for l in loyers_12m if l.get("statut") == "paye"
+    )
+    taux_recouvrement = round((loyers_payes_12m_rec / loyers_total_12m * 100) if loyers_total_12m > 0 else 0.0, 1)
+
     loyers_total = sum(float(l.get("montant") or 0) for l in loyers)
     loyers_payes = sum(
         float(l.get("montant") or 0) for l in loyers if l.get("statut") == "paye"
     )
-    taux_recouvrement = round((loyers_payes / loyers_total * 100) if loyers_total > 0 else 0.0, 1)
-
-    # Cashflow: trailing 12 months only
-    cutoff_12m = (date.today() - timedelta(days=365)).isoformat()
     loyers_payes_12m = sum(
         float(l.get("montant") or 0)
         for l in loyers

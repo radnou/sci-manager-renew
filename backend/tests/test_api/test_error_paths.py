@@ -20,6 +20,7 @@ class ErrorQuery:
     def select(self, *a, **k): return self
     def eq(self, *a, **k): return self
     def in_(self, *a, **k): return self
+    def is_(self, *a, **k): return self
     def insert(self, *a, **k): return self
     def update(self, *a, **k): return self
     def delete(self, *a, **k): return self
@@ -177,6 +178,7 @@ class TestScisBiensErrorPaths:
                 return type("Q", (), {
                     "select": lambda s, *a, **k: s,
                     "eq": lambda s, *a, **k: s,
+                    "is_": lambda s, *a, **k: s,
                     "execute": lambda s: FakeResult(data=[]),
                 })()
 
@@ -193,6 +195,7 @@ class TestScisBiensErrorPaths:
                 return type("Q", (), {
                     "select": lambda s, *a, **k: s,
                     "eq": lambda s, *a, **k: s,
+                    "is_": lambda s, *a, **k: s,
                     "execute": lambda s: FakeResult(data=[{"id": "b1", "id_sci": "sci-other"}]),
                 })()
 

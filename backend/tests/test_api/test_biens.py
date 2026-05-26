@@ -296,6 +296,8 @@ def test_update_bien_error_on_update_query(client, auth_headers, fake_supabase):
                     def eq(self, *a, **kw):
                         self._inner = self._inner.eq(*a, **kw)
                         return self
+                    def is_(self, *a, **kw):
+                        return self
                     def execute(self):
                         return FakeResult(data=[], error="update failed")
                 return ErrorQuery(result)
@@ -329,6 +331,8 @@ def test_update_bien_empty_result_after_update(client, auth_headers, fake_supaba
                         self._inner = inner
                     def eq(self, *a, **kw):
                         self._inner = self._inner.eq(*a, **kw)
+                        return self
+                    def is_(self, *a, **kw):
                         return self
                     def execute(self):
                         return FakeResult(data=[])
@@ -545,10 +549,14 @@ def test_update_bien_error_fetching_existing(client, auth_headers, fake_supabase
                         if key == "id":
                             # This is the fetch for the existing bien
                             class ErrorExecute:
+                                def is_(self_inner, *a, **kw):
+                                    return self_inner
                                 def execute(self_inner):
                                     return FakeResult(data=[], error="fetch error")
                             return ErrorExecute()
                         self._inner = self._inner.eq(key, value)
+                        return self
+                    def is_(self, *a, **kw):
                         return self
                     def execute(self):
                         return self._inner.execute()

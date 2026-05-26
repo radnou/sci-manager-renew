@@ -346,11 +346,11 @@ async def update_sci(
     await _require_gerant_for_sci(sci_id, request, user_id)
 
     updates = payload.model_dump(exclude_none=True)
+    confirm_regime_change = updates.pop("confirm_regime_change", False)
     if not updates:
         raise ResourceNotFoundError("SCI", sci_id)
 
     new_regime = updates.get("regime_fiscal")
-    confirm_regime_change = updates.pop("confirm_regime_change", False)
     if new_regime == "IS":
         client = _get_client(request)
         current_sci_rows = _execute_select(client.table("sci").select("regime_fiscal").eq("id", sci_id))

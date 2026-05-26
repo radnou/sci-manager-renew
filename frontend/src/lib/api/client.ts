@@ -88,7 +88,16 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 	});
 
 	if (!response.ok) {
-		const message = await response.text();
+		const rawMessage = await response.text();
+		let message = rawMessage;
+		try {
+			const parsed = JSON.parse(rawMessage);
+			if (parsed && typeof parsed === 'object' && parsed.error) {
+				message = parsed.error;
+			}
+		} catch {
+			// not JSON
+		}
 		switch (response.status) {
 			case 401:
 				throw new AuthError(message || 'Unauthorized');
@@ -145,7 +154,16 @@ export async function apiFetchBlob(endpoint: string, options?: RequestInit): Pro
 	});
 
 	if (!response.ok) {
-		const message = await response.text();
+		const rawMessage = await response.text();
+		let message = rawMessage;
+		try {
+			const parsed = JSON.parse(rawMessage);
+			if (parsed && typeof parsed === 'object' && parsed.error) {
+				message = parsed.error;
+			}
+		} catch {
+			// not JSON
+		}
 		switch (response.status) {
 			case 401:
 				throw new AuthError(message || 'Unauthorized');
