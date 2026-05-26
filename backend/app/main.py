@@ -433,7 +433,19 @@ def _resolved_cors_origins() -> list[str]:
 
     parsed_frontend = urlparse(settings.frontend_url.strip())
     if parsed_frontend.scheme and parsed_frontend.netloc:
-        origins.append(f"{parsed_frontend.scheme}://{parsed_frontend.netloc}")
+        scheme = parsed_frontend.scheme
+        netloc = parsed_frontend.netloc
+        origins.append(f"{scheme}://{netloc}")
+
+        # Also allow bare domain and www variant when frontend is on a subdomain
+        # e.g. app.gerersci.fr → also allow gerersci.fr and www.gerersci.fr
+        host = netloc.split(":")[0]  # strip port if present
+        parts = host.split(".")
+        if len(parts) >= 3:
+            base_domain = ".".join(parts[-2:])
+            port_suffix = f":{netloc.split(':')[1]}" if ":" in netloc else ""
+            origins.append(f"{scheme}://{base_domain}{port_suffix}")
+            origins.append(f"{scheme}://www.{base_domain}{port_suffix}")
 
     # Keep order stable while removing duplicates.
     return list(dict.fromkeys(origins))
