@@ -346,7 +346,7 @@ def test_update_bien_empty_result_after_update(client, auth_headers, fake_supaba
 
 
 def test_delete_bien_error_on_delete_query(client, auth_headers, fake_supabase):
-    """Cover line 166: error when executing delete query."""
+    """Cover error when executing soft-delete update query."""
     from unittest.mock import patch
     from tests.conftest import FakeResult
 
@@ -355,19 +355,21 @@ def test_delete_bien_error_on_delete_query(client, auth_headers, fake_supabase):
     def patched_table(name):
         q = original_table(name)
         if name == "biens":
-            orig_delete = q.delete
-            def delete_with_error():
-                result = orig_delete()
+            orig_update = q.update
+            def update_with_error(*args, **kwargs):
+                result = orig_update(*args, **kwargs)
                 class ErrorQuery:
                     def __init__(self, inner):
                         self._inner = inner
                     def eq(self, *a, **kw):
                         self._inner = self._inner.eq(*a, **kw)
                         return self
+                    def is_(self, *a, **kw):
+                        return self
                     def execute(self):
-                        return FakeResult(data=[], error="delete failed")
+                        return FakeResult(data=[], error="update failed")
                 return ErrorQuery(result)
-            q.delete = delete_with_error
+            q.update = update_with_error
         return q
 
     with patch.object(fake_supabase, "table", side_effect=patched_table):
@@ -564,7 +566,6 @@ def test_update_bien_error_fetching_existing(client, auth_headers, fake_supabase
 
 
 def test_delete_bien_error_fetching_existing(client, auth_headers, fake_supabase):
-    """Cover line 154: error when fetching existing bien for delete."""
     from unittest.mock import patch
     from tests.conftest import FakeResult
 
@@ -582,10 +583,14 @@ def test_delete_bien_error_fetching_existing(client, auth_headers, fake_supabase
                     def eq(self, key, value):
                         if key == "id":
                             class ErrorExecute:
+                                def is_(self_inner, *a, **kw):
+                                    return self_inner
                                 def execute(self_inner):
                                     return FakeResult(data=[], error="fetch error")
                             return ErrorExecute()
                         self._inner = self._inner.eq(key, value)
+                        return self
+                    def is_(self, *a, **kw):
                         return self
                     def execute(self):
                         return self._inner.execute()

@@ -1382,7 +1382,9 @@ class TestCreateLoyerDuplicate:
             json={"id_bien": BIEN_ID, "date_loyer": "2026-05-01", "montant": 1000, "statut": "en_attente"},
             headers=auth_headers,
         )
-        assert response.status_code == 409
+        assert response.status_code == 422
+        assert response.json()["code"] == "business_logic_error"
+        assert "existe déjà" in response.json()["error"]
 
 
 # ──────────────────────────────────────────────────────────────
@@ -2138,14 +2140,13 @@ class TestDeleteResources:
         response = client.delete(f"{BASE}/{BIEN_ID}", headers=auth_headers)
         assert response.status_code == 204
 
-    def test_delete_loyer_via_update_bien(self, client, auth_headers, fake_supabase):
-        """Test deleting a bien removes it from the store."""
+    def test_delete_bien_soft_deletes(self, client, auth_headers, fake_supabase):
         setup(fake_supabase)
         seed_bien(fake_supabase)
         response = client.delete(f"{BASE}/{BIEN_ID}", headers=auth_headers)
         assert response.status_code == 204
-        remaining = [b for b in fake_supabase.store.get("biens", []) if b["id"] == BIEN_ID]
-        assert len(remaining) == 0
+        remaining = [b for b in fake_supabase.store.get("biens", []) if b["id"] == BIEN_ID and b.get("deleted_at") is not None]
+        assert len(remaining) == 1
 
 
 # ──────────────────────────────────────────────────────────────

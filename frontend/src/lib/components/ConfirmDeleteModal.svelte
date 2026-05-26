@@ -7,6 +7,10 @@
 		entityType: string;
 		warningMessage?: string;
 		loading?: boolean;
+		impactSummary?: string;
+		gracePeriodDays?: number;
+		cancelLabel?: string;
+		confirmLabel?: string;
 		onConfirm: () => void;
 		onCancel: () => void;
 	}
@@ -17,6 +21,10 @@
 		entityType,
 		warningMessage = 'Cette action est irréversible. Toutes les données associées seront définitivement supprimées.',
 		loading = false,
+		impactSummary = undefined,
+		gracePeriodDays = undefined,
+		cancelLabel = 'Annuler',
+		confirmLabel = 'Supprimer définitivement',
 		onConfirm,
 		onCancel
 	}: Props = $props();
@@ -125,6 +133,18 @@
 				{warningMessage}
 			</p>
 
+			{#if impactSummary}
+				<p class="mt-2 text-center text-sm font-medium text-rose-600 dark:text-rose-400">
+					Attention : {impactSummary} seront supprimés.
+				</p>
+			{/if}
+
+			{#if gracePeriodDays}
+				<p class="mt-2 text-center text-sm text-amber-600 dark:text-amber-400">
+					Le bien sera définitivement supprimé dans {gracePeriodDays} jours.
+				</p>
+			{/if}
+
 			<!-- Confirmation input -->
 			<div class="mt-5 rounded-xl border border-rose-100 bg-rose-50/50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20">
 				<label
@@ -158,7 +178,7 @@
 					disabled={loading}
 					class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800"
 				>
-					Annuler
+					{cancelLabel}
 				</button>
 				<button
 					onclick={onConfirm}
@@ -168,7 +188,7 @@
 					{#if loading}
 						<Loader2 class="h-4 w-4 animate-spin" />
 					{/if}
-					Supprimer définitivement
+					{confirmLabel}
 				</button>
 			</div>
 		</div>

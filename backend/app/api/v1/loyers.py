@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
 from app.core.exceptions import (
     AuthorizationError,
+    BusinessLogicError,
     DatabaseError,
     ResourceNotFoundError,
     SCIManagerException,
@@ -78,6 +79,25 @@ def _fetch_bien(client, bien_id: str) -> dict:
         raise ValidationError(f"Unknown bien id: {bien_id}")
 
     return rows[0]
+
+
+def _fetch_duplicate_loyer_for_month(client, bien_id: str, date_loyer: date) -> dict | None:
+    """Fetch an existing loyer for the same bien and month (YYYY-MM prefix)."""
+    month_prefix = date_loyer.strftime("%Y-%m")
+    result = (
+        client.table("loyers")
+        .select("id, date_loyer")
+        .eq("id_bien", bien_id)
+        .gte("date_loyer", f"{month_prefix}-01")
+        .lte("date_loyer", f"{month_prefix}-31")
+        .limit(1)
+        .execute()
+    )
+    if getattr(result, "error", None):
+        raise DatabaseError(str(result.error))
+
+    rows = result.data or []
+    return rows[0] if rows else None
 
 
 def _validate_date_range(date_from: date | None, date_to: date | None) -> None:
@@ -168,6 +188,13 @@ async def create_loyer(
             raise ValidationError("id_sci does not match bien ownership")
 
         _require_sci_access(user_sci_ids, target_sci_id)
+
+        existing_loyer = _fetch_duplicate_loyer_for_month(client, payload.id_bien, payload.date_loyer)
+        if existing_loyer:
+            raise BusinessLogicError(
+                "Un loyer existe déjà pour ce mois sur ce bien. Voulez-vous le modifier ?",
+                details={"existing_loyer_id": existing_loyer.get("id")},
+            )
 
         row = payload.model_dump(mode="json")
         row["id_sci"] = target_sci_id

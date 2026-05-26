@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from pydantic import BaseModel
 
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
-from app.core.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
+from app.core.exceptions import BusinessLogicError, DatabaseError, ResourceNotFoundError, ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
 from app.core.rate_limit import limiter
 from app.services.subscription_service import SubscriptionService
@@ -101,9 +101,22 @@ async def create_bien_loyer(
     row["id_bien"] = bien_id
     row["id_sci"] = str(sci_id)
 
-    existing = client.table("loyers").select("id").eq("id_bien", bien_id).eq("date_loyer", row["date_loyer"]).execute()
+    month_prefix = row["date_loyer"][:7]  # YYYY-MM
+    existing = (
+        client.table("loyers")
+        .select("id, date_loyer")
+        .eq("id_bien", bien_id)
+        .gte("date_loyer", f"{month_prefix}-01")
+        .lte("date_loyer", f"{month_prefix}-31")
+        .limit(1)
+        .execute()
+    )
     if existing.data:
-        raise HTTPException(status_code=409, detail="Un loyer existe déjà pour ce bien à cette date")
+        existing_id = existing.data[0].get("id")
+        raise BusinessLogicError(
+            "Un loyer existe déjà pour ce mois sur ce bien. Voulez-vous le modifier ?",
+            details={"existing_loyer_id": existing_id} if existing_id else None,
+        )
 
     write_client = _get_client(request)
     result = write_client.table("loyers").insert(row).execute()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
@@ -35,7 +35,7 @@ def _get_client(request: Request):
 
 
 def _verify_bien_belongs_to_sci(client, bien_id: str, sci_id: str) -> dict:
-    result = client.table("biens").select("*").eq("id", bien_id).execute()
+    result = client.table("biens").select("*").eq("id", bien_id).is_("deleted_at", "null").execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
     rows = result.data or []
@@ -146,6 +146,7 @@ async def list_sci_biens(
         client.table("biens")
         .select("*")
         .eq("id_sci", str(sci_id))
+        .is_("deleted_at", "null")
         .range(start, end)
         .execute()
     )
@@ -485,7 +486,7 @@ async def update_sci_bien(
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    result = client.table("biens").update(update_payload).eq("id", bien_id).execute()
+    result = client.table("biens").update(update_payload).eq("id", bien_id).is_("deleted_at", "null").execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
@@ -509,17 +510,22 @@ async def delete_sci_bien(
     request: Request,
     membership: AssocieMembership = Depends(require_gerant_role),
 ):
-    """Supprime un bien (gérant uniquement)."""
+    """Supprime un bien (gerant uniquement) avec grace de 30 jours."""
     logger.info("deleting_bien_nested", bien_id=bien_id, sci_id=str(sci_id))
 
     client = _get_client(request)
     _verify_bien_belongs_to_sci(client, bien_id, str(sci_id))
 
-    result = client.table("biens").delete().eq("id", bien_id).execute()
+    update_payload = {"deleted_at": datetime.utcnow().isoformat()}
+    result = client.table("biens").update(update_payload).eq("id", bien_id).is_("deleted_at", "null").execute()
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
-    logger.info("bien_deleted_nested", bien_id=bien_id)
+    data = result.data or []
+    if not data:
+        raise ResourceNotFoundError("Bien", bien_id)
+
+    logger.info("bien_soft_deleted_nested", bien_id=bien_id, deleted_at=update_payload["deleted_at"])
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

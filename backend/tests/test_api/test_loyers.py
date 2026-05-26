@@ -566,6 +566,24 @@ def test_create_loyer_with_matching_id_sci(client, auth_headers, fake_supabase):
     assert resp.json()["id_sci"] == "sci-1"
 
 
+def test_create_loyer_duplicate_month_returns_422(client, auth_headers):
+    """POST duplicate loyer for same bien+month returns 422 with business_logic_error."""
+    payload = {
+        "id_bien": "bien-1",
+        "id_locataire": "loc-1",
+        "date_loyer": "2026-03-15",
+        "montant": 999.0,
+        "statut": "en_attente",
+        "quitus_genere": False,
+    }
+    resp = client.post("/api/v1/loyers/?id_sci=sci-1", json=payload, headers=auth_headers)
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["code"] == "business_logic_error"
+    assert "existe déjà" in body["error"]
+    assert body["details"]["existing_loyer_id"]
+
+
 # ── Error paths (monkeypatched) ────────────────────────────────────────
 
 

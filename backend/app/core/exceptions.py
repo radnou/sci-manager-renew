@@ -81,8 +81,8 @@ class BusinessLogicError(GererSCIException):
     Status 422 Unprocessable Entity (syntaxe OK mais logique invalide).
     """
 
-    def __init__(self, message: str):
-        super().__init__(message, status_code=422, code="business_logic_error")
+    def __init__(self, message: str, details: dict | list | str | None = None):
+        super().__init__(message, status_code=422, code="business_logic_error", details=details)
 
 
 # Alias for backward compatibility — used by subscription/entitlement exceptions below.

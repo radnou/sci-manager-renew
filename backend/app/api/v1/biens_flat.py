@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import structlog
 from fastapi import APIRouter, Depends, Request, Response, status
 from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
@@ -32,16 +34,20 @@ def _select_by_sci_scope(client, table_name: str, sci_ids: list[str]):
         return []
 
     query = client.table(table_name).select("*")
+    if table_name == "biens":
+        query = query.is_("deleted_at", "null")
     if hasattr(query, "in_"):
         result = query.in_("id_sci", sci_ids).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
         return result.data or []
 
-    # Test fallback for fake query clients that do not expose `in_`.
     rows: list[dict] = []
     for sci_id in sci_ids:
-        result = client.table(table_name).select("*").eq("id_sci", sci_id).execute()
+        subq = client.table(table_name).select("*")
+        if table_name == "biens":
+            subq = subq.is_("deleted_at", "null")
+        result = subq.eq("id_sci", sci_id).execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
         rows.extend(result.data or [])
@@ -63,7 +69,7 @@ async def list_biens(request: Request, id_sci: str | None = None, user_id: str =
 
     if id_sci:
         _require_sci_access(user_sci_ids, id_sci)
-        result = client.table("biens").select("*").eq("id_sci", id_sci).execute()
+        result = client.table("biens").select("*").eq("id_sci", id_sci).is_("deleted_at", "null").execute()
         if getattr(result, "error", None):
             raise DatabaseError(str(result.error))
         return result.data or []
@@ -113,7 +119,7 @@ async def update_bien(bien_id: str, payload: BienUpdate, request: Request, user_
 
     client = _get_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
-    existing_result = client.table("biens").select("*").eq("id", bien_id).execute()
+    existing_result = client.table("biens").select("*").eq("id", bien_id).is_("deleted_at", "null").execute()
     if getattr(existing_result, "error", None):
         raise DatabaseError(str(existing_result.error))
 
@@ -131,7 +137,7 @@ async def update_bien(bien_id: str, payload: BienUpdate, request: Request, user_
         merged = {**existing, **update_payload}
         rentabilite = SCIService.calculate_rentabilite(merged)
 
-    result = client.table("biens").update(update_payload).eq("id", bien_id).execute()
+    result = client.table("biens").update(update_payload).eq("id", bien_id).is_("deleted_at", "null").execute()
 
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
@@ -154,7 +160,7 @@ async def delete_bien(bien_id: str, request: Request, user_id: str = Depends(get
 
     client = _get_client(request)
     user_sci_ids = _get_user_sci_ids(client, user_id)
-    existing_result = client.table("biens").select("id,id_sci").eq("id", bien_id).execute()
+    existing_result = client.table("biens").select("id,id_sci").eq("id", bien_id).is_("deleted_at", "null").execute()
     if getattr(existing_result, "error", None):
         raise DatabaseError(str(existing_result.error))
 
@@ -165,10 +171,11 @@ async def delete_bien(bien_id: str, request: Request, user_id: str = Depends(get
     existing_sci_id = str(existing_rows[0].get("id_sci") or "")
     _require_sci_access(user_sci_ids, existing_sci_id)
 
-    result = client.table("biens").delete().eq("id", bien_id).execute()
+    update_payload = {"deleted_at": datetime.now(timezone.utc).isoformat()}
+    result = client.table("biens").update(update_payload).eq("id", bien_id).is_("deleted_at", "null").execute()
 
     if getattr(result, "error", None):
         raise DatabaseError(str(result.error))
 
-    logger.info("bien_deleted", bien_id=bien_id)
+    logger.info("bien_soft_deleted", bien_id=bien_id, deleted_at=update_payload["deleted_at"])
     return Response(status_code=status.HTTP_204_NO_CONTENT)
