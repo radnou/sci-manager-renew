@@ -46,7 +46,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@gerersci.fr}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*.gerersci.fr,gerersci.fr,localhost}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*.gerersci.fr,gerersci.fr,localhost,127.0.0.1}
       FRONTEND_URL: ${FRONTEND_URL:-https://app.gerersci.fr}
       SENTRY_DSN: ${SENTRY_DSN:-}
       LOG_LEVEL: ${LOG_LEVEL:-WARNING}
