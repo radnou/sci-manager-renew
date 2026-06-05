@@ -647,7 +647,31 @@ async def add_security_headers(request: Request, call_next):
     # (API, Supabase REST + Realtime WSS, Stripe, analytics, error reporting).
     # Browser blocks fetch BEFORE sending the request when an origin is missing,
     # surfacing as "Failed to fetch" with no backend log entry.
-    matomo_url = os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr")
+    matomo_url = os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr").strip().rstrip("/")
+    plausible_src = os.environ.get("VITE_PLAUSIBLE_SRC", "").strip()
+    plausible_api_host = os.environ.get("VITE_PLAUSIBLE_API_HOST", "").strip().rstrip("/")
+    
+    # Extract Plausible origins to allow in CSP
+    plausible_origins = []
+    if plausible_src:
+        try:
+            parsed = urlparse(plausible_src)
+            if parsed.scheme and parsed.netloc:
+                plausible_origins.append(f"{parsed.scheme}://{parsed.netloc}")
+        except Exception:
+            pass
+    if plausible_api_host:
+        plausible_origins.append(plausible_api_host)
+        
+    # Default trusted analytics origins for fallback
+    default_analytics = ["https://analytics.gerersci.fr", "https://analytics.radnoumane.com"]
+    
+    # Combine unique origins for scripts and connections
+    analytics_origins = list(dict.fromkeys(
+        [matomo_url] + plausible_origins + default_analytics
+    ))
+    analytics_src_str = " ".join(o for o in analytics_origins if o)
+
     api_public_url = os.environ.get("VITE_API_URL", "https://api.gerersci.fr").strip().rstrip("/")
     supabase_public_url = (
         os.environ.get("SUPABASE_PUBLIC_URL")
@@ -680,8 +704,8 @@ async def add_security_headers(request: Request, call_next):
     connect_sources.extend([
         "https://api.stripe.com",
         "https://*.stripe.com",
-        matomo_url,
     ])
+    connect_sources.extend(analytics_origins)
     if sentry_origin:
         connect_sources.append(sentry_origin)
 
@@ -700,7 +724,7 @@ async def add_security_headers(request: Request, call_next):
 
     csp_policy = (
         "default-src 'self'; "
-        f"script-src 'self' https://js.stripe.com {matomo_url}; "
+        f"script-src 'self' https://js.stripe.com {analytics_src_str}; "
         "style-src 'self' 'unsafe-inline'; "  # Tailwind nécessite unsafe-inline
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "
@@ -713,6 +737,7 @@ async def add_security_headers(request: Request, call_next):
         "upgrade-insecure-requests"
     )
     response.headers["Content-Security-Policy"] = csp_policy
+
 
     # Permissions Policy (Feature Policy)
     response.headers["Permissions-Policy"] = (
