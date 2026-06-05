@@ -323,12 +323,16 @@
 		</nav>
 	{/if}
 
-	{#if isPublicRoute(page.url.pathname) && !user}
+	{#if page.url.pathname === '/'}
+		{#if authResolved && user}
+			<section class="flex min-h-[60vh] items-center justify-center">
+				<p class="animate-pulse text-sm text-slate-500">Redirection vers le tableau de bord…</p>
+			</section>
+		{:else}
+			<div id="main-content">{@render children()}</div>
+		{/if}
+	{:else if isPublicRoute(page.url.pathname)}
 		<div id="main-content">{@render children()}</div>
-	{:else if authResolved && user && page.url.pathname === '/'}
-		<section class="flex min-h-[60vh] items-center justify-center">
-			<p class="animate-pulse text-sm text-slate-500">Redirection vers le tableau de bord…</p>
-		</section>
 	{:else if isProtectedRoute(page.url.pathname) && !authResolved}
 		<!-- Silent wait while Supabase restores session from storage -->
 		<section class="flex min-h-[60vh] items-center justify-center">
