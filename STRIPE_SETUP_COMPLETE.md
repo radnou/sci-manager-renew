@@ -1,5 +1,10 @@
 # ✅ Configuration Stripe Complète
 
+> ⚠️ **OBSOLÈTE** — Ce document décrit l'**ancien** compte Stripe
+> (`acct_1SFrVgBCxd3SKdGJ`, prix `..._BCxd3SKdGJ_...`, Pro à 49€). Le projet utilise désormais
+> le compte `acct_1Sei1OHfxmPH8rox`. Pour le diagnostic webhook et le passage en production,
+> voir **`docs/STRIPE_GOLIVE.md`**.
+
 ## 🎯 Produits Créés
 
 | Plan | Product ID | Price ID | Prix | Billing |
