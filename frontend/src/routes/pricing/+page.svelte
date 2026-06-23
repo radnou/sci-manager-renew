@@ -99,7 +99,7 @@
 			if (planKey === 'lifetime') {
 				modalPlanKey = 'lifetime';
 				modalPlanName = 'Fondateur';
-				modalPlanPrice = '500€';
+				modalPlanPrice = '990€';
 				modalPlanPeriod = ' unique';
 				modalPlanFeatures = [
 					'Tout Pilotage inclus — à vie',
@@ -308,7 +308,7 @@
 					</ul>
 				</div>
 				<div class="mt-6 flex flex-col items-center lg:mt-0">
-					<div class="text-5xl font-extrabold text-slate-900 dark:text-white">500€</div>
+					<div class="text-5xl font-extrabold text-slate-900 dark:text-white">990€</div>
 					<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
 						Paiement unique. Pas de mensualité. À vie.
 					</p>

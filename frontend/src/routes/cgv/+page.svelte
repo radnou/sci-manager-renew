@@ -71,9 +71,9 @@
 						</tr>
 						<tr>
 							<td class="py-2 pr-4"><strong>Fondateur</strong></td>
-							<td class="py-2 pr-4">500,00 EUR</td>
-							<td class="py-2 pr-4">100,00 EUR</td>
-							<td class="py-2">600,00 EUR</td>
+							<td class="py-2 pr-4">990,00 EUR</td>
+							<td class="py-2 pr-4">198,00 EUR</td>
+							<td class="py-2">1 188,00 EUR</td>
 						</tr>
 					</tbody>
 				</table>

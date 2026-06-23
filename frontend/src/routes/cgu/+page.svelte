@@ -70,7 +70,7 @@
 					avancées
 				</li>
 				<li>
-					<strong>Fondateur (500€) :</strong> accès permanent à l'ensemble des fonctionnalités Pilotage avec un
+					<strong>Fondateur (990€) :</strong> accès permanent à l'ensemble des fonctionnalités Pilotage avec un
 					paiement unique
 				</li>
 			</ul>

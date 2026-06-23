@@ -41,14 +41,11 @@ live** créés. Il ne manque que : (1) un **webhook live**, (2) le **basculement
 | Gestion annuel  | `price_1TDtVBApRgYAyPDHVjOG7o3N` | 190€ |
 | Pilotage mensuel| `price_1TDtVKApRgYAyPDH5J9tUNFt` | 39€ |
 | Pilotage annuel | `price_1TDtVLApRgYAyPDHbkYyvnmN` | 390€ |
-| Fondateur (one-time) | `price_1TDtVXApRgYAyPDHRY59cZw0` | **500€** ⚠️ |
-| Cabinet mensuel | `price_1TDZKmApRgYAyPDH9TBNLN0C` | 69€ |
-| Cabinet annuel  | `price_1TDZKmApRgYAyPDHQsgS0pou` | 588€ |
+| Fondateur (one-time) | `price_1TlazQApRgYAyPDH449eJzEk` | **990€** |
 
-> ⚠️ **Cohérence prix** : le prix **Fondateur live = 500€** alors que l'app/`plans.ts` affiche
-> 349€. De même Cabinet (69/588 live vs 79/790 ailleurs). **Le prix affiché doit = le prix
-> facturé** (obligation légale). Décider : ajuster le prix Stripe **ou** l'affichage app avant
-> d'ouvrir les paiements.
+> ✅ **Prix alignés** (suite à l'étude de marché, voir `docs/PRICING_STUDY.md`) : Fondateur porté
+> à **990€** (app + Stripe + CGV/CGU). Plan **Cabinet abandonné** (produit + prix archivés dans
+> Stripe). Gestion 19€ / Pilotage 39€ inchangés.
 
 ---
 
@@ -80,16 +77,15 @@ STRIPE_GESTION_MONTHLY_PRICE_ID=price_1TDtVBApRgYAyPDHfVRFGuUj
 STRIPE_GESTION_ANNUAL_PRICE_ID=price_1TDtVBApRgYAyPDHVjOG7o3N
 STRIPE_PILOTAGE_MONTHLY_PRICE_ID=price_1TDtVKApRgYAyPDH5J9tUNFt
 STRIPE_PILOTAGE_ANNUAL_PRICE_ID=price_1TDtVLApRgYAyPDHbkYyvnmN
-STRIPE_FONDATEUR_PRICE_ID=price_1TDtVXApRgYAyPDHRY59cZw0
-STRIPE_CABINET_PRICE_ID=price_1TDZKmApRgYAyPDH9TBNLN0C
-STRIPE_CABINET_ANNUAL_PRICE_ID=price_1TDZKmApRgYAyPDHQsgS0pou
+STRIPE_FONDATEUR_PRICE_ID=price_1TlazQApRgYAyPDH449eJzEk
+# (Cabinet abandonné — ne plus configurer STRIPE_CABINET_*)
 
 # Alias hérités (fallback) = mêmes IDs live
 STRIPE_STARTER_PRICE_ID=price_1TDtVBApRgYAyPDHfVRFGuUj
 STRIPE_STARTER_ANNUAL_PRICE_ID=price_1TDtVBApRgYAyPDHVjOG7o3N
 STRIPE_PRO_PRICE_ID=price_1TDtVKApRgYAyPDH5J9tUNFt
 STRIPE_PRO_ANNUAL_PRICE_ID=price_1TDtVLApRgYAyPDHbkYyvnmN
-STRIPE_LIFETIME_PRICE_ID=price_1TDtVXApRgYAyPDHRY59cZw0
+STRIPE_LIFETIME_PRICE_ID=price_1TlazQApRgYAyPDH449eJzEk
 ```
 
 ## Étape 4 — Redéployer + vérifier
