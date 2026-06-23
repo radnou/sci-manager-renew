@@ -1,152 +1,118 @@
 # Stripe — Diagnostic webhook + Passage en production (LIVE)
 
-> Runbook créé suite à l'alerte Stripe « échecs de livraison de webhooks (mode test) »
-> pour `https://api.gerersci.fr`. Il consigne le diagnostic réel et les étapes exactes de
-> passage en production. Remplace les infos obsolètes de `STRIPE_SETUP_COMPLETE.md`.
+> Runbook créé suite à l'alerte Stripe « échecs de livraison de webhooks (mode test) » pour
+> `https://api.gerersci.fr`. Consigne le diagnostic réel + les étapes exactes de passage en
+> production. Remplace `STRIPE_SETUP_COMPLETE.md` (obsolète).
 
-## TL;DR
+## TL;DR — il y a 3 comptes Stripe, et la prod doit pointer vers le bon
 
-| Sujet | État | Action |
-|------|------|--------|
-| Alerte webhook (mode test) | Vient de l'**ancien compte** `acct_1SFrVgBCxd3SKdGJ`, endpoint `we_1TKFEOBCxd3SKdGJxejXfh7A` | **Désactiver/supprimer** cet endpoint (Étape 1) |
-| Compte actuel `acct_1Sei1OHfxmPH8rox` (env) | Mode **test** OK : catalogue + webhook `we_1TLLSOHfxmPH8roxJdb2BYRv` actifs | Vérifier secret + redéploiement (Étape 2) |
-| Passage en **LIVE** | **BLOQUÉ** : compte non activé (`charges_enabled=false`, `details_submitted=false`) | Activer le compte d'abord (Étape 3) |
-| Cloudflare devant `api.gerersci.fr` | ✅ Vérifié : **ne bloque PAS** Stripe | Aucune action (détail Étape 5) |
+| Compte | ID | Rôle | État |
+|--------|----|----|------|
+| **A** | `acct_1SFrVgBCxd3SKdGJ` | Ancien compte (source de l'alerte webhook `we_1TKFE…`) | À nettoyer |
+| **B** | `acct_1Sei1OHfxmPH8rox` | **Configuré dans l'env actuel** (clés `sk_test_`) — bac à sable | Non activé (test) |
+| **C** | `acct_1SFrY0ApRgYAyPDH` ("SCI Manager") | **LE vrai compte de production** | ✅ **Activé** (`charges_enabled=true`) |
+
+➡️ **Le passage en prod = faire pointer l'env vers le compte C (clés live), pas vers B.**
+Le compte C a déjà : compte activé (IBAN + identité vérifiés), **produits live** et **prix
+live** créés. Il ne manque que : (1) un **webhook live**, (2) le **basculement de l'env**,
+(3) le **redéploiement**.
 
 ## Contexte technique
+- Handler : `POST /api/v1/stripe/webhook` (`backend/app/api/v1/stripe.py:538`) — vérifie la
+  signature avec `STRIPE_WEBHOOK_SECRET` → **400** si mismatch. Events traités :
+  `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`,
+  `invoice.payment_failed`.
+- Le mode (test/live) dépend uniquement des clés (`sk_test_` vs `sk_live_`). Passer en prod =
+  **configuration**, pas de code. `config.py` refuse de démarrer en `APP_ENV=production` avec un
+  secret placeholder.
 
-- Handler webhook : `POST /api/v1/stripe/webhook` (`backend/app/api/v1/stripe.py:538`).
-  Vérifie la signature avec **un seul** `STRIPE_WEBHOOK_SECRET` → **HTTP 400** si elle ne
-  correspond pas. Events traités : `checkout.session.completed`,
-  `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
-- Le code **ne distingue pas test/live** : le mode dépend uniquement des clés (`sk_test_`
-  vs `sk_live_`). Passer en prod = changer la **config**, pas le code.
-- `backend/app/core/config.py` refuse de démarrer en `APP_ENV=production` si un secret est un
-  *placeholder* (mais accepte des clés `sk_test_` — donc « APP_ENV=production + clés test » démarre).
+## Diagnostic constaté
+- **L'alerte vient du compte A** (`we_1TKFEOBCxd3SKdGJxejXfh7A`). L'env utilise le compte B, donc
+  les events du compte A ne passent plus la vérif de signature → 400.
+- Le compte B (env) est en **test**, non activé.
+- Le **compte C** est **activé pour le live** et possède déjà les **produits + prix live**
+  (vérifié via l'API Stripe / MCP, `livemode:true`).
+- **Cloudflare ne bloque PAS Stripe** (vérifié) — voir Étape 5.
 
-## Diagnostic constaté (lecture seule API Stripe, compte de l'env)
+## Prix LIVE existants (compte C `acct_1SFrY0ApRgYAyPDH`)
+| Plan | `price_id` live | Montant |
+|------|-----------------|---------|
+| Gestion mensuel | `price_1TDtVBApRgYAyPDHfVRFGuUj` | 19€ |
+| Gestion annuel  | `price_1TDtVBApRgYAyPDHVjOG7o3N` | 190€ |
+| Pilotage mensuel| `price_1TDtVKApRgYAyPDH5J9tUNFt` | 39€ |
+| Pilotage annuel | `price_1TDtVLApRgYAyPDHbkYyvnmN` | 390€ |
+| Fondateur (one-time) | `price_1TDtVXApRgYAyPDHRY59cZw0` | **500€** ⚠️ |
+| Cabinet mensuel | `price_1TDZKmApRgYAyPDH9TBNLN0C` | 69€ |
+| Cabinet annuel  | `price_1TDZKmApRgYAyPDHQsgS0pou` | 588€ |
 
-Compte configuré dans l'env cloud : **`acct_1Sei1OHfxmPH8rox`** (mode **TEST**).
-
-```
-details_submitted: False   charges_enabled: False   payouts_enabled: False   ← compte NON activé
-```
-
-Webhook (mode test) déjà en place et **activé** :
-
-```
-we_1TLLSOHfxmPH8roxJdb2BYRv  enabled  →  https://api.gerersci.fr/api/v1/stripe/webhook
-```
-
-Catalogue (mode test) cohérent avec l'env :
-
-| Produit | Product ID | Prix mensuel | Prix annuel |
-|--------|-----------|--------------|-------------|
-| Gestion | `prod_UJzQYozlxVoA3H` | `price_1TLLRXHfxmPH8roxJrsHYPE6` (19€) | `price_1TLLRYHfxmPH8roxyDTAptJw` (190€) |
-| Pilotage | `prod_UJzQT6hpsNvvFr` | `price_1TLLRlHfxmPH8roxLXjbMvWt` (39€) | `price_1TLLRmHfxmPH8roxqesclZCF` (390€) |
-| Fondateur | `prod_UJzQ8hZRNQl6QK` | — | `price_1TLLRnHfxmPH8roxBIw3MZ3w` (349€, paiement unique) |
-| Cabinet | `prod_UJzQA2WfscQVwu` | `price_1TLLRx...2bL8diH5` (79€) | `price_1TLLRx...uOE7GDtr` (790€) |
-
-➡️ **Cause de l'alerte** : l'endpoint en échec appartient à l'**ancien compte**
-(`...BCxd3SKdGJ`). Le backend en prod utilise désormais le secret du **nouveau compte**
-(`...HfxmPH8rox`) ; il ne peut donc pas valider les events de l'ancien → 400 systématique.
+> ⚠️ **Cohérence prix** : le prix **Fondateur live = 500€** alors que l'app/`plans.ts` affiche
+> 349€. De même Cabinet (69/588 live vs 79/790 ailleurs). **Le prix affiché doit = le prix
+> facturé** (obligation légale). Décider : ajuster le prix Stripe **ou** l'affichage app avant
+> d'ouvrir les paiements.
 
 ---
 
-## Étape 1 — Stopper les alertes (ancien compte)
+## Étape 1 — Stopper les alertes (compte A)
+Dashboard du **compte A** `acct_1SFrVgBCxd3SKdGJ` → Developers → Webhooks →
+`we_1TKFEOBCxd3SKdGJxejXfh7A` → **Disable** (ou Delete).
 
-Dans le Dashboard du **compte `acct_1SFrVgBCxd3SKdGJ`** (mode test) :
-`Developers → Webhooks → we_1TKFEOBCxd3SKdGJxejXfh7A` → **Disable** (ou **Delete**).
-
-C'est l'unique source des e-mails d'échec. Si ce compte n'est plus utilisé, le supprimer
-entièrement de l'organisation est encore plus propre.
-
-## Étape 2 — Valider le mode TEST du compte actuel
-
-1. Vérifier que le `STRIPE_WEBHOOK_SECRET` de l'env cloud correspond bien au signing secret
-   de `we_1TLLSOHfxmPH8roxJdb2BYRv` (Dashboard `acct_1Sei1OHfxmPH8rox` → Webhooks → cet
-   endpoint → *Signing secret*). Stripe ne renvoie ce secret qu'à la création/rotation.
-2. S'assurer que l'endpoint est abonné aux 4 events gérés (ci-dessus).
-3. **Redéployer** le backend pour qu'il prenne l'env à jour.
-4. Tester : Dashboard → cet endpoint → **Send test event** (`checkout.session.completed`)
-   → réponse attendue **200**. Ou en local : voir Étape 6.
-
-## Étape 3 — Passage en LIVE (⚠️ nécessite l'activation du compte)
-
-### 3a. Activer le compte Stripe (préalable obligatoire)
-Dashboard (compte `acct_1Sei1OHfxmPH8rox`) → **Activer le compte** : infos société (SIREN),
-représentant légal/identité, IBAN. Attendre `charges_enabled = true`. Sans cela, **aucune
-ressource live ni paiement** n'est possible.
-
-### 3b. Créer les produits/prix en mode LIVE
-Basculer le Dashboard en **mode Live**, puis recréer le catalogue à l'identique du test
-(mêmes montants/intervalles que le tableau ci-dessus). Noter les **nouveaux** `price_...` live.
-> Peut être automatisé via le MCP Stripe (`stripe_api_write`) **si** la connexion MCP est en
-> mode live ET autorisée en écriture ; sinon le faire dans le Dashboard.
-
-### 3c. Créer l'endpoint webhook LIVE
-Mode Live → `Developers → Webhooks → Add endpoint` :
+## Étape 2 — Créer le webhook LIVE (compte C, dashboard)
+La gestion des webhooks n'est pas exposée par le MCP → à faire au Dashboard, **compte C, mode
+Live** : Developers → Webhooks → Add endpoint
 - URL : `https://api.gerersci.fr/api/v1/stripe/webhook`
 - Events : `checkout.session.completed`, `customer.subscription.updated`,
   `customer.subscription.deleted`, `invoice.payment_failed`
-- Récupérer le **Signing secret** (`whsec_...`) live.
+- Copier le **Signing secret** (`whsec_…`).
 
-### 3d. Mettre à jour l'env cloud (mêmes variables que d'habitude) avec les valeurs LIVE
+## Étape 3 — Basculer l'env cloud vers le compte C (LIVE)
+Récupérer les clés live du compte C : Dashboard C → Developers → API keys (`sk_live_…`,
+`pk_live_…`). Puis remplacer dans l'env cloud :
+
 ```
+# Clés LIVE (compte C) — à récupérer au dashboard
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_PUBLISHABLE_KEY=pk_live_...
 VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...            # secret de l'endpoint LIVE (3c)
-STRIPE_GESTION_MONTHLY_PRICE_ID=price_...  # live
-STRIPE_GESTION_ANNUAL_PRICE_ID=price_...   # live
-STRIPE_PILOTAGE_MONTHLY_PRICE_ID=price_... # live
-STRIPE_PILOTAGE_ANNUAL_PRICE_ID=price_...  # live
-STRIPE_FONDATEUR_PRICE_ID=price_...        # live
-# alias hérités (mettre = aux IDs live correspondants) :
-STRIPE_STARTER_PRICE_ID / STRIPE_STARTER_ANNUAL_PRICE_ID
-STRIPE_PRO_PRICE_ID / STRIPE_PRO_ANNUAL_PRICE_ID
-STRIPE_LIFETIME_PRICE_ID  STRIPE_CABINET_PRICE_ID  STRIPE_CABINET_ANNUAL_PRICE_ID
+STRIPE_WEBHOOK_SECRET=whsec_...          # secret du webhook créé à l'Étape 2
+
+# Price IDs LIVE (compte C) — valeurs exactes ci-dessous
+STRIPE_GESTION_MONTHLY_PRICE_ID=price_1TDtVBApRgYAyPDHfVRFGuUj
+STRIPE_GESTION_ANNUAL_PRICE_ID=price_1TDtVBApRgYAyPDHVjOG7o3N
+STRIPE_PILOTAGE_MONTHLY_PRICE_ID=price_1TDtVKApRgYAyPDH5J9tUNFt
+STRIPE_PILOTAGE_ANNUAL_PRICE_ID=price_1TDtVLApRgYAyPDHbkYyvnmN
+STRIPE_FONDATEUR_PRICE_ID=price_1TDtVXApRgYAyPDHRY59cZw0
+STRIPE_CABINET_PRICE_ID=price_1TDZKmApRgYAyPDH9TBNLN0C
+STRIPE_CABINET_ANNUAL_PRICE_ID=price_1TDZKmApRgYAyPDHQsgS0pou
+
+# Alias hérités (fallback) = mêmes IDs live
+STRIPE_STARTER_PRICE_ID=price_1TDtVBApRgYAyPDHfVRFGuUj
+STRIPE_STARTER_ANNUAL_PRICE_ID=price_1TDtVBApRgYAyPDHVjOG7o3N
+STRIPE_PRO_PRICE_ID=price_1TDtVKApRgYAyPDH5J9tUNFt
+STRIPE_PRO_ANNUAL_PRICE_ID=price_1TDtVLApRgYAyPDHbkYyvnmN
+STRIPE_LIFETIME_PRICE_ID=price_1TDtVXApRgYAyPDHRY59cZw0
 ```
-(Template complet dans `.env.production.example`.) `APP_ENV=production` peut rester.
 
-### 3e. Redéployer
-`./deploy.sh` (ou le pipeline CI). `config.py` bloquera le démarrage si un secret reste un
-placeholder — garde-fou voulu.
+## Étape 4 — Redéployer + vérifier
+- Redéployer (`./deploy.sh` / CI). `config.py` bloque si un secret reste placeholder.
+- Dashboard C (live) → webhook → **Send test event** → attendu **200**.
+- Faire un vrai paiement (petit montant) → vérifier une ligne `subscriptions` `is_active=true`.
+- Confirmer `STRIPE_SECRET_KEY` commence par `sk_live_`.
 
-## Étape 4 — Vérification finale (LIVE)
-- Dashboard live → endpoint webhook → **Send test event** → **200**.
-- Réaliser un vrai paiement de test (petit montant / carte réelle) → vérifier qu'une ligne
-  `subscriptions` est créée/mise à jour avec `is_active=true` (Supabase).
-- Vérifier le mode des clés : `STRIPE_SECRET_KEY` commence par `sk_live_`.
+## Étape 5 — Cloudflare (vérifié : aucune action)
+`api.gerersci.fr` est derrière **Cloudflare** (zone `gerersci.fr`, plan Free). Vérifié via API :
+BIC=on, Bot Fight Mode=off, aucune règle WAF custom. Un POST avec `User-Agent: Stripe/1.0`
+atteint le backend (400 « Missing Stripe signature » = OK) ; seul un UA générique reçoit le
+`403/1010`. **Cloudflare ne bloque pas Stripe.** Filet de sécurité (si Bot Fight Mode activé un
+jour) : règle WAF *Skip* sur `http.request.uri.path eq "/api/v1/stripe/webhook"`.
 
-## Étape 5 — Cloudflare / WAF (vérifié : aucune action requise)
-`api.gerersci.fr` est derrière **Cloudflare** (zone `gerersci.fr` `2d3932a162707b90e19acfb82511450e`,
-plan Free). Vérification via l'API Cloudflare :
-- **Browser Integrity Check = on**, **Bot Fight Mode = off**, Security level = medium, **aucune
-  règle WAF/firewall custom**.
-- Test du endpoint avec différents User-Agents :
-  - `Stripe/1.0 (+https://stripe.com/docs/webhooks)` → **HTTP 400** (« Missing Stripe signature »)
-    = **passe Cloudflare et atteint le backend** ✅
-  - UA générique (`Python-urllib`) → `403` (err **1010**) = bloqué par *Browser Integrity Check*
-    (comportement normal pour un client non-navigateur).
-
-➡️ **Conclusion : Cloudflare ne bloque PAS les webhooks Stripe.** Le `1010` ne concernait que
-le client de test générique. Aucune règle à ajouter.
-
-> Filet de sécurité (seulement si un jour Bot Fight Mode / Super Bot Fight Mode est activé et
-> challenge Stripe) : créer une règle WAF **Skip** sur
-> `http.request.uri.path eq "/api/v1/stripe/webhook"` (skip BIC + bots).
-
-## Étape 6 — Tester les webhooks en local (mode test)
+## Étape 6 — Tester les webhooks en local (test)
 ```
 stripe login
 stripe listen --forward-to localhost:8001/api/v1/stripe/webhook
-# (utiliser le whsec_ affiché par `stripe listen` comme STRIPE_WEBHOOK_SECRET local)
 stripe trigger checkout.session.completed
 ```
 Backend : `cd backend && PYTHONPATH=. pytest tests -k stripe`.
 
-## Annexe — Mapping plan → variable d'env (référence)
-Résolution dans `backend/app/core/entitlements.py:194` (`resolve_price_id_for_plan`) :
-les noms **Gestion/Pilotage/Fondateur** sont prioritaires, **Starter/Pro** servent de
-fallback. Tous ces vars sont bien transmis au conteneur par `docker-compose.yml:30-43`.
+## Annexe — résolution price_id → plan
+`backend/app/core/entitlements.py:194` : Gestion/Pilotage/Fondateur prioritaires, Starter/Pro en
+fallback. Toutes les vars sont transmises au conteneur par `docker-compose.yml:30-43`.
