@@ -11,7 +11,7 @@
 | Alerte webhook (mode test) | Vient de l'**ancien compte** `acct_1SFrVgBCxd3SKdGJ`, endpoint `we_1TKFEOBCxd3SKdGJxejXfh7A` | **Désactiver/supprimer** cet endpoint (Étape 1) |
 | Compte actuel `acct_1Sei1OHfxmPH8rox` (env) | Mode **test** OK : catalogue + webhook `we_1TLLSOHfxmPH8roxJdb2BYRv` actifs | Vérifier secret + redéploiement (Étape 2) |
 | Passage en **LIVE** | **BLOQUÉ** : compte non activé (`charges_enabled=false`, `details_submitted=false`) | Activer le compte d'abord (Étape 3) |
-| Cloudflare devant `api.gerersci.fr` | Renvoie 403 (err 1010) aux requêtes auto | Vérifier que les IP/User-Agent Stripe ne sont pas bloqués (Étape 5) |
+| Cloudflare devant `api.gerersci.fr` | ✅ Vérifié : **ne bloque PAS** Stripe | Aucune action (détail Étape 5) |
 
 ## Contexte technique
 
@@ -119,13 +119,23 @@ placeholder — garde-fou voulu.
   `subscriptions` est créée/mise à jour avec `is_active=true` (Supabase).
 - Vérifier le mode des clés : `STRIPE_SECRET_KEY` commence par `sk_live_`.
 
-## Étape 5 — Cloudflare / WAF (à contrôler)
-`api.gerersci.fr` est derrière **Cloudflare** (les requêtes automatisées reçoivent `403`,
-erreur **1010**). Si les webhooks Stripe échouent malgré une config correcte, vérifier dans
-Cloudflare que **Bot Fight Mode / WAF** ne challenge pas les POST de Stripe :
-- Autoriser le chemin `/api/v1/stripe/webhook` (WAF skip rule), ou
-- Autoriser l'User-Agent `Stripe/1.0` et/ou les plages d'IP de Stripe
-  (https://docs.stripe.com/ips → webhook IPs).
+## Étape 5 — Cloudflare / WAF (vérifié : aucune action requise)
+`api.gerersci.fr` est derrière **Cloudflare** (zone `gerersci.fr` `2d3932a162707b90e19acfb82511450e`,
+plan Free). Vérification via l'API Cloudflare :
+- **Browser Integrity Check = on**, **Bot Fight Mode = off**, Security level = medium, **aucune
+  règle WAF/firewall custom**.
+- Test du endpoint avec différents User-Agents :
+  - `Stripe/1.0 (+https://stripe.com/docs/webhooks)` → **HTTP 400** (« Missing Stripe signature »)
+    = **passe Cloudflare et atteint le backend** ✅
+  - UA générique (`Python-urllib`) → `403` (err **1010**) = bloqué par *Browser Integrity Check*
+    (comportement normal pour un client non-navigateur).
+
+➡️ **Conclusion : Cloudflare ne bloque PAS les webhooks Stripe.** Le `1010` ne concernait que
+le client de test générique. Aucune règle à ajouter.
+
+> Filet de sécurité (seulement si un jour Bot Fight Mode / Super Bot Fight Mode est activé et
+> challenge Stripe) : créer une règle WAF **Skip** sur
+> `http.request.uri.path eq "/api/v1/stripe/webhook"` (skip BIC + bots).
 
 ## Étape 6 — Tester les webhooks en local (mode test)
 ```
