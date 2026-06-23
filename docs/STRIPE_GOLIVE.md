@@ -14,8 +14,8 @@
 
 ➡️ **Le passage en prod = faire pointer l'env vers le compte C (clés live), pas vers B.**
 Le compte C a déjà : compte activé (IBAN + identité vérifiés), **produits live** et **prix
-live** créés. Il ne manque que : (1) un **webhook live**, (2) le **basculement de l'env**,
-(3) le **redéploiement**.
+live** créés, et le **webhook live est en place** (consolidé — voir Étape 2). Il ne manque que :
+le **basculement de l'env** vers le compte C + le **redéploiement**.
 
 ## Contexte technique
 - Handler : `POST /api/v1/stripe/webhook` (`backend/app/api/v1/stripe.py:538`) — vérifie la
@@ -53,13 +53,15 @@ live** créés. Il ne manque que : (1) un **webhook live**, (2) le **basculement
 Dashboard du **compte A** `acct_1SFrVgBCxd3SKdGJ` → Developers → Webhooks →
 `we_1TKFEOBCxd3SKdGJxejXfh7A` → **Disable** (ou Delete).
 
-## Étape 2 — Créer le webhook LIVE (compte C, dashboard)
-La gestion des webhooks n'est pas exposée par le MCP → à faire au Dashboard, **compte C, mode
-Live** : Developers → Webhooks → Add endpoint
-- URL : `https://api.gerersci.fr/api/v1/stripe/webhook`
-- Events : `checkout.session.completed`, `customer.subscription.updated`,
-  `customer.subscription.deleted`, `invoice.payment_failed`
-- Copier le **Signing secret** (`whsec_…`).
+## Étape 2 — Webhook LIVE (compte C) — ✅ DÉJÀ EN PLACE
+Le webhook live existe et a été consolidé :
+- **`we_1TDPltApRgYAyPDHQfE7OMXo`** (« GérerSCI Production Webhook ») → `https://api.gerersci.fr/api/v1/stripe/webhook`,
+  **enabled**, avec les 4 events requis (`checkout.session.completed`,
+  `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`).
+- L'ancien endpoint redondant `we_1T9YFKApRgYAyPDHFovgMPVx` a été **désactivé** (évite les doubles
+  livraisons + erreurs de signature, car l'env ne porte qu'un seul secret).
+- ⚠️ **Récupérer le signing secret** pour l'env : Dashboard (compte C) → Developers → Webhooks →
+  « GérerSCI Production Webhook » → **Signing secret → Reveal** → c'est ton `STRIPE_WEBHOOK_SECRET`.
 
 ## Étape 3 — Basculer l'env cloud vers le compte C (LIVE)
 Récupérer les clés live du compte C : Dashboard C → Developers → API keys (`sk_live_…`,
