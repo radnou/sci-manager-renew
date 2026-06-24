@@ -187,49 +187,18 @@ services:
       - "api.radnoumane.com:54.38.109.182"
 
   # ============================================================
-  # LOGGING (Loki + Grafana)
+  # LOGGING (Loki + Grafana) — DECOUPLE du deploiement principal
   # ============================================================
-
-  loki:
-    image: grafana/loki:3.4.2
-    container_name: gerersci_loki
-    restart: unless-stopped
-    command: -config.file=/etc/loki/local-config.yaml
-    volumes:
-      - loki_data:/loki
-    networks:
-      - internal
-
-  grafana:
-    image: grafana/grafana:11.6.0
-    container_name: gerersci_grafana
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:13000:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: "https://grafana.radnoumane.com"
-      GF_SERVER_DOMAIN: "grafana.radnoumane.com"
-      GF_SERVER_ENFORCE_DOMAIN: "true"
-      GF_ALERTING_ENABLED: "true"
-      GF_UNIFIED_ALERTING_ENABLED: "true"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
-    depends_on:
-      - loki
-    networks:
-      - internal
+  # Loki + Grafana vivent desormais dans docker-compose.monitoring.yml
+  # pour ne pas bloquer le deploiement de l'app (ex: GRAFANA_ADMIN_PASSWORD).
+  # Lancer la stack monitoring (optionnelle) :
+  #   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 
 volumes:
   backend_logs:
   matomo_db_data:
   matomo_data:
   uptime_kuma_data:
-  loki_data:
-  grafana_data:
 
 networks:
   internal:
