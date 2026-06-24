@@ -164,8 +164,6 @@ async def test_stripe_check_live_key(monkeypatch):
         mock_settings.stripe_starter_annual_price_id = "price_starter_year"
         mock_settings.stripe_pro_price_id = "price_pro_month"
         mock_settings.stripe_pro_annual_price_id = "price_pro_year"
-        mock_settings.stripe_cabinet_price_id = "price_cabinet_month"
-        mock_settings.stripe_cabinet_annual_price_id = "price_cabinet_year"
         mock_settings.stripe_gestion_monthly_price_id = None
         mock_settings.stripe_gestion_annual_price_id = None
         mock_settings.stripe_pilotage_monthly_price_id = None
@@ -174,10 +172,11 @@ async def test_stripe_check_live_key(monkeypatch):
         mock_settings.stripe_lifetime_price_id = None
         with patch("app.api.v1.health.stripe.Price.retrieve_async", return_value={"active": True}) as retrieve:
             result = await _check_stripe()
-    assert retrieve.call_count == 6
+    # Cabinet (plan abandonné) n'est plus validé → 4 prix : starter×2 + pro×2
+    assert retrieve.call_count == 4
     assert result["healthy"] is True
     assert result["mode"] == "live"
-    assert result["validated_price_count"] == 6
+    assert result["validated_price_count"] == 4
 
 
 @pytest.mark.asyncio

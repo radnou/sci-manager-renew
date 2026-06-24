@@ -98,15 +98,16 @@ async def _check_stripe() -> dict:
             "warning": "stripe price validation skipped (placeholder key detected)",
         }
 
-    # Use resolve_price_id_for_plan() — same function the checkout uses
+    # Use resolve_price_id_for_plan() — same function the checkout uses.
+    # Cabinet est un plan ABANDONNE : ses price IDs sont archivés (inactifs) dans
+    # Stripe live et ne doivent plus être validés ici, sinon la sonde renvoie
+    # systématiquement "catalog invalid" et bloque la readiness.
     configured_prices = OrderedDict(
         (
             ("starter_monthly", resolve_price_id_for_plan(PlanKey.STARTER, "month")),
             ("starter_annual", resolve_price_id_for_plan(PlanKey.STARTER, "year")),
             ("pro_monthly", resolve_price_id_for_plan(PlanKey.PRO, "month")),
             ("pro_annual", resolve_price_id_for_plan(PlanKey.PRO, "year")),
-            ("cabinet_monthly", resolve_price_id_for_plan(PlanKey.CABINET, "month")),
-            ("cabinet_annual", resolve_price_id_for_plan(PlanKey.CABINET, "year")),
         )
     )
     # Filter out placeholders
