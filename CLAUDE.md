@@ -306,7 +306,7 @@ PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 1. `core.entitlements` définit les limites par plan (max biens, max SCI, features)
 2. `core.paywall.require_plan()` decorator sur les endpoints protégés
 3. Frontend : `LockedAction` verrouille les writes en demo, `UpgradePrompt` pour les features payantes
-4. Plans: `free` (bloqué, is_active=false) → `starter` (Gestion, 19€/mois) → `pro` (Pilotage, 39€/mois) → `lifetime` (Fondateur, 349€)
+4. Plans: `free` (bloqué, is_active=false) → `starter` (Gestion, 19€/mois) → `pro` (Pilotage, 39€/mois) → `lifetime` (Fondateur, 990€)
 5. **ACTIVE_SUBSCRIPTION_STATUSES**: `{"active", "paid"}` uniquement — pas de trial
 6. Garantie 30 jours remboursement (art. L221-28, clause en CGV)
 
@@ -343,7 +343,7 @@ PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 Ce projet suit une approche produit/marketing avec:
 - **Target**: Gérants de SCI indépendants, cabinets comptables, opérateurs patrimoniaux
 - **Value Prop**: Passer du tableur bricolé au cockpit SCI professionnel
-- **Pricing**: Gestion (19€/mois, 10 biens) + Pilotage (39€/mois, illimité) + Fondateur (349€ lifetime) — pas de free tier, pas de trial
+- **Pricing**: Gestion (19€/mois, 10 biens) + Pilotage (39€/mois, illimité) + Fondateur (990€ lifetime) — pas de free tier, pas de trial
 - **Modèle**: Demo-first ("Full Steak") — l'utilisateur explore des données fictives avant de payer
 - **North Star Metric**: Nombre de SCI actives avec ≥1 loyer enregistré sur 30 jours
 
