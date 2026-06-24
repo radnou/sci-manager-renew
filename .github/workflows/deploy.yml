@@ -80,13 +80,21 @@ jobs:
             docker compose up -d --no-deps frontend
             sleep 10
 
-            # Reload reverse proxy (Caddy or nginx) to pick up config changes
+            # Reload reverse proxy ONLY if it is managed here. In production the
+            # reverse proxy is host-level Caddy (see deploy.sh) which does NOT need
+            # a reload on app-code deploys — the container ports are unchanged. This
+            # step is therefore best-effort and must never fail the deployment.
             if docker ps --format '{{.Names}}' | grep -q gerersci_caddy; then
-              echo "Reloading Caddy..."
-              docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --no-deps caddy
+              echo "Reloading Caddy (compose)..."
+              docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --no-deps caddy || echo "WARN: caddy (compose) reload skipped"
+            elif docker compose ps --services 2>/dev/null | grep -qx nginx; then
+              echo "Reloading nginx (compose)..."
+              docker compose up -d --no-deps nginx || echo "WARN: nginx (compose) reload skipped"
+            elif systemctl is-active --quiet caddy 2>/dev/null; then
+              echo "Reloading host Caddy..."
+              sudo systemctl reload caddy || echo "WARN: host Caddy reload skipped"
             else
-              echo "Reloading nginx..."
-              docker compose up -d --no-deps nginx
+              echo "No compose-managed reverse proxy found; host proxy left untouched (OK)."
             fi
 
             echo "=== Final health checks ==="
