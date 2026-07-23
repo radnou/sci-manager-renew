@@ -7,9 +7,21 @@ import structlog
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from app.core.config import settings
-from app.core.supabase_client import get_supabase_user_client, get_supabase_service_client
-from app.core.exceptions import DatabaseError, ResourceNotFoundError, UpgradeRequiredError
-from app.core.paywall import AssocieMembership, require_gerant_role, require_sci_membership
+from app.core.supabase_client import (
+    get_supabase_user_client,
+    get_supabase_service_client,
+)
+from app.core.exceptions import (
+    DatabaseError,
+    ResourceNotFoundError,
+    UpgradeRequiredError,
+    ValidationError,
+)
+from app.core.paywall import (
+    AssocieMembership,
+    require_gerant_role,
+    require_sci_membership,
+)
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.models.biens import BienResponse
@@ -96,7 +108,9 @@ def _execute_select(query):
     return result.data or []
 
 
-def _select_by_ids(client, table_name: str, ids: list[str], fields: str = "*") -> list[dict]:
+def _select_by_ids(
+    client, table_name: str, ids: list[str], fields: str = "*"
+) -> list[dict]:
     return _select_by_field_values(client, table_name, "id", ids, fields=fields)
 
 
@@ -116,11 +130,17 @@ def _select_by_field_values(
 
     rows: list[dict] = []
     for value in values:
-        rows.extend(_execute_select(client.table(table_name).select(fields).eq(field_name, value)))
+        rows.extend(
+            _execute_select(
+                client.table(table_name).select(fields).eq(field_name, value)
+            )
+        )
     return rows
 
 
-def _select_by_scope(client, table_name: str, sci_ids: list[str], fields: str = "*") -> list[dict]:
+def _select_by_scope(
+    client, table_name: str, sci_ids: list[str], fields: str = "*"
+) -> list[dict]:
     return _select_by_field_values(client, table_name, "id_sci", sci_ids, fields=fields)
 
 
@@ -164,10 +184,18 @@ def _build_sci_overview(
     if not sci_id:
         return None
 
-    related_associes = [row for row in associes_rows if str(row.get("id_sci") or "") == sci_id]
-    related_biens = [row for row in biens_rows if str(row.get("id_sci") or "") == sci_id]
-    related_loyers = [row for row in loyers_rows if str(row.get("id_sci") or "") == sci_id]
-    membership = next((row for row in memberships if str(row.get("id_sci") or "") == sci_id), {})
+    related_associes = [
+        row for row in associes_rows if str(row.get("id_sci") or "") == sci_id
+    ]
+    related_biens = [
+        row for row in biens_rows if str(row.get("id_sci") or "") == sci_id
+    ]
+    related_loyers = [
+        row for row in loyers_rows if str(row.get("id_sci") or "") == sci_id
+    ]
+    membership = next(
+        (row for row in memberships if str(row.get("id_sci") or "") == sci_id), {}
+    )
 
     return SCIOverview(
         id=sci_id,
@@ -201,7 +229,9 @@ async def list_scis(request: Request, user_id: str = Depends(get_current_user)):
 
     overviews: list[SCIOverview] = []
     for sci_row in sci_rows:
-        overview = _build_sci_overview(sci_row, memberships, associes_rows, biens_rows, loyers_rows)
+        overview = _build_sci_overview(
+            sci_row, memberships, associes_rows, biens_rows, loyers_rows
+        )
         if overview:
             overviews.append(overview)
 
@@ -210,7 +240,9 @@ async def list_scis(request: Request, user_id: str = Depends(get_current_user)):
 
 
 @router.get("/{sci_id}", response_model=SCIDetail)
-async def get_sci_detail(sci_id: str, request: Request, user_id: str = Depends(get_current_user)):
+async def get_sci_detail(
+    sci_id: str, request: Request, user_id: str = Depends(get_current_user)
+):
     client = _get_client(request)
 
     memberships = _get_user_memberships(client, user_id)
@@ -222,10 +254,16 @@ async def get_sci_detail(sci_id: str, request: Request, user_id: str = Depends(g
     if not sci_rows:
         raise ResourceNotFoundError("SCI", sci_id)
 
-    associes_rows = _execute_select(client.table("associes").select("*").eq("id_sci", sci_id))
+    associes_rows = _execute_select(
+        client.table("associes").select("*").eq("id_sci", sci_id)
+    )
     biens_rows = _execute_select(client.table("biens").select("*").eq("id_sci", sci_id))
-    loyers_rows = _execute_select(client.table("loyers").select("*").eq("id_sci", sci_id))
-    fiscalite_rows = _execute_select(client.table("fiscalite").select("*").eq("id_sci", sci_id))
+    loyers_rows = _execute_select(
+        client.table("loyers").select("*").eq("id_sci", sci_id)
+    )
+    fiscalite_rows = _execute_select(
+        client.table("fiscalite").select("*").eq("id_sci", sci_id)
+    )
 
     bien_ids = [str(row.get("id")) for row in biens_rows if row.get("id")]
     charges_rows = _select_by_field_values(client, "charges", "id_bien", bien_ids)
@@ -235,12 +273,18 @@ async def get_sci_detail(sci_id: str, request: Request, user_id: str = Depends(g
         for loyer_row in loyers_rows:
             loyer_row.setdefault("id_sci", sci_id)
 
-    overview = _build_sci_overview(sci_rows[0], memberships, associes_rows, biens_rows, loyers_rows)
+    overview = _build_sci_overview(
+        sci_rows[0], memberships, associes_rows, biens_rows, loyers_rows
+    )
     if not overview:
         raise ResourceNotFoundError("SCI", sci_id)
 
-    paid_loyers = [row for row in loyers_rows if str(row.get("statut") or "").lower() == "paye"]
-    pending_loyers = [row for row in loyers_rows if str(row.get("statut") or "").lower() != "paye"]
+    paid_loyers = [
+        row for row in loyers_rows if str(row.get("statut") or "").lower() == "paye"
+    ]
+    pending_loyers = [
+        row for row in loyers_rows if str(row.get("statut") or "").lower() != "paye"
+    ]
 
     return SCIDetail(
         **overview.model_dump(),
@@ -251,22 +295,35 @@ async def get_sci_detail(sci_id: str, request: Request, user_id: str = Depends(g
         paid_loyers_total=_sum_numeric(paid_loyers, "montant"),
         pending_loyers_total=_sum_numeric(pending_loyers, "montant"),
         biens=[BienResponse(**bien) for bien in biens_rows],
-        recent_loyers=[LoyerResponse(**loyer) for loyer in _sort_rows_desc(loyers_rows, "date_loyer")[:8]],
-        recent_charges=[ChargeOverview(**charge) for charge in _sort_rows_desc(charges_rows, "date_paiement")[:8]],
-        fiscalite=[FiscaliteOverview(**fiscalite) for fiscalite in _sort_rows_desc(fiscalite_rows, "annee")[:4]],
+        recent_loyers=[
+            LoyerResponse(**loyer)
+            for loyer in _sort_rows_desc(loyers_rows, "date_loyer")[:8]
+        ],
+        recent_charges=[
+            ChargeOverview(**charge)
+            for charge in _sort_rows_desc(charges_rows, "date_paiement")[:8]
+        ],
+        fiscalite=[
+            FiscaliteOverview(**fiscalite)
+            for fiscalite in _sort_rows_desc(fiscalite_rows, "annee")[:4]
+        ],
     )
 
 
 @router.post("", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=SCIResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute")
-async def create_sci(payload: SCICreate, request: Request, user_id: str = Depends(get_current_user)):
+async def create_sci(
+    payload: SCICreate, request: Request, user_id: str = Depends(get_current_user)
+):
     logger.info("creating_sci", user_id=user_id, nom=payload.nom)
 
     summary = SubscriptionService.enforce_limit(user_id, "scis")
     plan_key = str(summary.get("plan_key") or "")
     features = summary.get("features") or {}
-    if summary.get("current_scis", 0) > 0 and not features.get("multi_sci_enabled", False):
+    if summary.get("current_scis", 0) > 0 and not features.get(
+        "multi_sci_enabled", False
+    ):
         raise UpgradeRequiredError(
             "Le plan actif n'autorise pas la gestion de plusieurs SCI.",
             plan_key=plan_key,
@@ -298,21 +355,27 @@ async def create_sci(payload: SCICreate, request: Request, user_id: str = Depend
     if created.get("nb_parts_total") is not None:
         nb_parts_total = int(created["nb_parts_total"])
 
-    associe_result = client.table("associes").insert(
-        {
-            "id_sci": created["id"],
-            "user_id": user_id,
-            "nom": _associe_nom,
-            "email": None,
-            "nb_parts": nb_parts_total,
-            "part": 100.0,
-            "role": "gerant",
-        }
-    ).execute()
+    associe_result = (
+        client.table("associes")
+        .insert(
+            {
+                "id_sci": created["id"],
+                "user_id": user_id,
+                "nom": _associe_nom,
+                "email": None,
+                "nb_parts": nb_parts_total,
+                "part": 100.0,
+                "role": "gerant",
+            }
+        )
+        .execute()
+    )
     if getattr(associe_result, "error", None):
         raise DatabaseError(str(associe_result.error))
 
-    logger.info("sci_created", user_id=user_id, sci_id=created.get("id"), plan_key=plan_key)
+    logger.info(
+        "sci_created", user_id=user_id, sci_id=created.get("id"), plan_key=plan_key
+    )
     return created
 
 
@@ -320,18 +383,30 @@ async def create_sci(payload: SCICreate, request: Request, user_id: str = Depend
 # UPDATE a SCI
 # ──────────────────────────────────────────────────────────────
 
-async def _require_gerant_for_sci(sci_id: str, request: Request, user_id: str = Depends(get_current_user)) -> str:
+
+async def _require_gerant_for_sci(
+    sci_id: str, request: Request, user_id: str = Depends(get_current_user)
+) -> str:
     """Verify user is gérant of the given SCI. Returns user_id."""
     client = _get_client(request)
     rows = _execute_select(
-        client.table("associes").select("role").eq("id_sci", sci_id).eq("user_id", user_id)
+        client.table("associes")
+        .select("role")
+        .eq("id_sci", sci_id)
+        .eq("user_id", user_id)
     )
     if not rows:
         from fastapi import HTTPException
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SCI non trouvée")
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="SCI non trouvée"
+        )
     if rows[0].get("role") != "gerant":
         from fastapi import HTTPException
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Réservé au gérant")
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Réservé au gérant"
+        )
     return user_id
 
 
@@ -353,13 +428,19 @@ async def update_sci(
     new_regime = updates.get("regime_fiscal")
     if new_regime == "IS":
         client = _get_client(request)
-        current_sci_rows = _execute_select(client.table("sci").select("regime_fiscal").eq("id", sci_id))
-        if current_sci_rows and str(current_sci_rows[0].get("regime_fiscal", "IR")) == "IR":
+        current_sci_rows = _execute_select(
+            client.table("sci").select("regime_fiscal").eq("id", sci_id)
+        )
+        if (
+            current_sci_rows
+            and str(current_sci_rows[0].get("regime_fiscal", "IR")) == "IR"
+        ):
             if not confirm_regime_change:
                 from fastapi import HTTPException
+
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Changement IR -> IS requiert confirmation explicite (consultation expert-comptable)."
+                    detail="Changement IR -> IS requiert confirmation explicite (consultation expert-comptable).",
                 )
             logger.warning(
                 "sci_regime_change_ir_to_is",
@@ -387,6 +468,7 @@ async def update_sci(
 # DELETE a SCI
 # ──────────────────────────────────────────────────────────────
 
+
 @router.delete("/{sci_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("5/minute")
 async def delete_sci(
@@ -400,19 +482,33 @@ async def delete_sci(
     client = _get_client(request)
 
     # Delete biens-linked tables via bien IDs first
-    biens_rows = _execute_select(client.table("biens").select("id").eq("id_sci", sci_id))
+    biens_rows = _execute_select(
+        client.table("biens").select("id").eq("id_sci", sci_id)
+    )
     bien_ids = [str(row["id"]) for row in biens_rows if row.get("id")]
     if bien_ids:
         for bid in bien_ids:
             try:
-                baux_rows = _execute_select(client.table("baux").select("id").eq("id_bien", bid))
+                baux_rows = _execute_select(
+                    client.table("baux").select("id").eq("id_bien", bid)
+                )
                 bail_ids = [str(b["id"]) for b in baux_rows if b.get("id")]
                 if bail_ids:
                     for bail_id in bail_ids:
-                        client.table("bail_locataires").delete().eq("id_bail", bail_id).execute()
+                        client.table("bail_locataires").delete().eq(
+                            "id_bail", bail_id
+                        ).execute()
             except Exception:
                 pass
-        for table in ["charges", "loyers", "baux", "locataires", "documents_bien", "assurances_pno", "frais_agence"]:
+        for table in [
+            "charges",
+            "loyers",
+            "baux",
+            "locataires",
+            "documents_bien",
+            "assurances_pno",
+            "frais_agence",
+        ]:
             for bid in bien_ids:
                 try:
                     client.table(table).delete().eq("id_bien", bid).execute()
@@ -420,7 +516,13 @@ async def delete_sci(
                     pass
 
     # Delete direct children by id_sci
-    for table in ["biens", "associes", "fiscalite", "notifications", "notification_preferences"]:
+    for table in [
+        "biens",
+        "associes",
+        "fiscalite",
+        "notifications",
+        "notification_preferences",
+    ]:
         try:
             client.table(table).delete().eq("id_sci", sci_id).execute()
         except Exception:
@@ -438,6 +540,7 @@ async def delete_sci(
 # LIST associes of a SCI
 # ──────────────────────────────────────────────────────────────
 
+
 @router.get("/{sci_id}/associes", response_model=list[AssocieOverview])
 async def list_sci_associes(
     sci_id: str,
@@ -446,7 +549,9 @@ async def list_sci_associes(
 ):
     """Liste les associés d'une SCI (membre requis)."""
     client = _get_client(request)
-    sci_rows = _execute_select(client.table("sci").select("nb_parts_total").eq("id", sci_id))
+    sci_rows = _execute_select(
+        client.table("sci").select("nb_parts_total").eq("id", sci_id)
+    )
     nb_parts_total = 1000
     if sci_rows and sci_rows[0].get("nb_parts_total") is not None:
         nb_parts_total = int(sci_rows[0]["nb_parts_total"])
@@ -462,7 +567,9 @@ async def list_sci_associes(
                 nb_parts = 100
         elif nb_parts is None:
             nb_parts = 100
-        part_percent = round((nb_parts / nb_parts_total) * 100.0, 2) if nb_parts_total > 0 else 0.0
+        part_percent = (
+            round((nb_parts / nb_parts_total) * 100.0, 2) if nb_parts_total > 0 else 0.0
+        )
         row["nb_parts"] = nb_parts
         row["part"] = part_percent
         res.append(AssocieOverview(**row))
@@ -472,6 +579,7 @@ async def list_sci_associes(
 # ──────────────────────────────────────────────────────────────
 # INVITE associe to a SCI
 # ──────────────────────────────────────────────────────────────
+
 
 class InviteAssociePayload(BaseModel):
     nom: str
@@ -484,7 +592,11 @@ class InviteAssocieResponse(AssocieOverview):
     email_sent: bool = False
 
 
-@router.post("/{sci_id}/associes", response_model=InviteAssocieResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{sci_id}/associes",
+    response_model=InviteAssocieResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 @limiter.limit("30/minute")
 async def invite_sci_associe(
     sci_id: str,
@@ -496,18 +608,24 @@ async def invite_sci_associe(
     logger.info("inviting_associe", sci_id=sci_id, nom=payload.nom)
 
     client = get_supabase_user_client(request)
-    sci_rows = _execute_select(client.table("sci").select("nb_parts_total").eq("id", sci_id))
+    sci_rows = _execute_select(
+        client.table("sci").select("nb_parts_total").eq("id", sci_id)
+    )
     nb_parts_total = 1000
     if sci_rows and sci_rows[0].get("nb_parts_total") is not None:
         nb_parts_total = int(sci_rows[0]["nb_parts_total"])
 
     # Ensure bounds checking:
-    rows = _execute_select(client.table("associes").select("nb_parts").eq("id_sci", sci_id))
+    rows = _execute_select(
+        client.table("associes").select("nb_parts").eq("id_sci", sci_id)
+    )
     total = 0
     for r in rows:
         total += int(r.get("nb_parts") or 0)
     if total + payload.nb_parts > nb_parts_total:
-        raise ValidationError(f"La répartition des parts ne peut pas dépasser le total des parts de la SCI ({nb_parts_total}).")
+        raise ValidationError(
+            f"La répartition des parts ne peut pas dépasser le total des parts de la SCI ({nb_parts_total})."
+        )
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
 
@@ -521,7 +639,9 @@ async def invite_sci_associe(
 
     created = data[0]
     nb_parts = int(created.get("nb_parts") or 0)
-    part_percent = round((nb_parts / nb_parts_total) * 100.0, 2) if nb_parts_total > 0 else 0.0
+    part_percent = (
+        round((nb_parts / nb_parts_total) * 100.0, 2) if nb_parts_total > 0 else 0.0
+    )
     created["part"] = part_percent
     logger.info("associe_invited", associe_id=created.get("id"), sci_id=sci_id)
 
@@ -591,7 +711,9 @@ async def list_sci_documents(
     client = _get_client(request)
 
     # Get all bien IDs for this SCI
-    biens_result = client.table("biens").select("id, adresse").eq("id_sci", sci_id).execute()
+    biens_result = (
+        client.table("biens").select("id, adresse").eq("id_sci", sci_id).execute()
+    )
     if getattr(biens_result, "error", None):
         raise DatabaseError(str(biens_result.error))
 
@@ -623,4 +745,3 @@ async def list_sci_documents(
             doc["url"] = create_document_signed_url(bucket, url)
 
     return docs
-
