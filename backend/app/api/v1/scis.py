@@ -628,6 +628,8 @@ async def invite_sci_associe(
         )
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
+    # Compute part percentage from nb_parts for the NOT NULL column
+    row["part"] = round((payload.nb_parts / nb_parts_total) * 100.0, 2)
 
     result = client.table("associes").insert(row).execute()
     if getattr(result, "error", None):
