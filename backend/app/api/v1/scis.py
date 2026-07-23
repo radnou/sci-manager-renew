@@ -584,7 +584,7 @@ async def list_sci_associes(
 class InviteAssociePayload(BaseModel):
     nom: str
     email: str | None = None
-    nb_parts: int = 100
+    part: float = 100.0
     role: str = "associe"
 
 
@@ -615,6 +615,9 @@ async def invite_sci_associe(
     if sci_rows and sci_rows[0].get("nb_parts_total") is not None:
         nb_parts_total = int(sci_rows[0]["nb_parts_total"])
 
+    # Compute absolute nb_parts from the percentage (0-100) sent by the frontend.
+    nb_parts = int(round((payload.part / 100.0) * nb_parts_total))
+
     # Ensure bounds checking:
     rows = _execute_select(
         client.table("associes").select("nb_parts").eq("id_sci", sci_id)
@@ -622,14 +625,15 @@ async def invite_sci_associe(
     total = 0
     for r in rows:
         total += int(r.get("nb_parts") or 0)
-    if total + payload.nb_parts > nb_parts_total:
+    if total + nb_parts > nb_parts_total:
         raise ValidationError(
             f"La répartition des parts ne peut pas dépasser le total des parts de la SCI ({nb_parts_total})."
         )
     row = payload.model_dump(mode="json")
     row["id_sci"] = sci_id
+    row["nb_parts"] = nb_parts
     # Compute part percentage from nb_parts for the NOT NULL column
-    row["part"] = round((payload.nb_parts / nb_parts_total) * 100.0, 2)
+    row["part"] = round((nb_parts / nb_parts_total) * 100.0, 2)
 
     result = client.table("associes").insert(row).execute()
     if getattr(result, "error", None):
