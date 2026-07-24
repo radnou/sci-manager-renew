@@ -13,7 +13,10 @@ from pydantic import BaseModel
 
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_user_client
+from app.core.supabase_client import (
+    get_supabase_user_client,
+    get_supabase_service_client,
+)
 from app.services.associe_linking import link_user_to_pending_associes
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
@@ -79,8 +82,7 @@ def _check_onboarding_progress(request: Request, user_id: str) -> OnboardingStat
         .execute()
     )
     real_scis = [
-        row for row in (sci_result.data or [])
-        if not row.get("is_demo", False)
+        row for row in (sci_result.data or []) if not row.get("is_demo", False)
     ]
     sci_created = bool(real_scis)
     first_sci_id = str(real_scis[0]["id_sci"]) if real_scis else None
@@ -96,7 +98,9 @@ def _check_onboarding_progress(request: Request, user_id: str) -> OnboardingStat
                 .eq("id_sci", sci_id)
                 .execute()
             )
-            real_biens = [b for b in (bien_result.data or []) if not b.get("is_demo", False)]
+            real_biens = [
+                b for b in (bien_result.data or []) if not b.get("is_demo", False)
+            ]
             if real_biens:
                 bien_created = True
                 break
@@ -111,14 +115,18 @@ def _check_onboarding_progress(request: Request, user_id: str) -> OnboardingStat
                 .eq("id_sci", sci_id)
                 .execute()
             )
-            for bien_row in [b for b in (biens_result.data or []) if not b.get("is_demo", False)]:
+            for bien_row in [
+                b for b in (biens_result.data or []) if not b.get("is_demo", False)
+            ]:
                 bail_result = (
                     client.table("baux")
                     .select("id, is_demo")
                     .eq("id_bien", str(bien_row["id"]))
                     .execute()
                 )
-                real_baux = [b for b in (bail_result.data or []) if not b.get("is_demo", False)]
+                real_baux = [
+                    b for b in (bail_result.data or []) if not b.get("is_demo", False)
+                ]
                 if real_baux:
                     bail_created = True
                     break
@@ -170,15 +178,12 @@ async def save_onboarding_profile(
     client = get_supabase_service_client()
 
     existing = (
-        client.table("subscriptions")
-        .select("id")
-        .eq("user_id", user_id)
-        .execute()
+        client.table("subscriptions").select("id").eq("user_id", user_id).execute()
     )
     if existing.data:
-        client.table("subscriptions").update(
-            {"onboarding_profile": profile_data}
-        ).eq("user_id", user_id).execute()
+        client.table("subscriptions").update({"onboarding_profile": profile_data}).eq(
+            "user_id", user_id
+        ).execute()
     else:
         client.table("subscriptions").insert(
             {"user_id": user_id, "onboarding_profile": profile_data, "status": "free"}
@@ -199,15 +204,12 @@ async def complete_onboarding(
     client = get_supabase_user_client(request)
     # Check if row exists first — if not, create with status='free'
     existing = (
-        client.table("subscriptions")
-        .select("id")
-        .eq("user_id", user_id)
-        .execute()
+        client.table("subscriptions").select("id").eq("user_id", user_id).execute()
     )
     if existing.data:
-        client.table("subscriptions").update(
-            {"onboarding_completed": True}
-        ).eq("user_id", user_id).execute()
+        client.table("subscriptions").update({"onboarding_completed": True}).eq(
+            "user_id", user_id
+        ).execute()
     else:
         client.table("subscriptions").insert(
             {"user_id": user_id, "onboarding_completed": True, "status": "free"}
@@ -222,6 +224,8 @@ async def complete_onboarding(
         if user_email:
             link_user_to_pending_associes(user_id, user_email)
     except Exception:
-        logger.warning("associe_linking_during_onboarding_failed", user_id=user_id, exc_info=True)
+        logger.warning(
+            "associe_linking_during_onboarding_failed", user_id=user_id, exc_info=True
+        )
 
     return OnboardingCompleteResponse(completed=True)
