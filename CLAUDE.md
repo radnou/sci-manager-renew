@@ -11,8 +11,8 @@ GererSCI est une application SaaS pour la gestion de SCI (Sociétés Civiles Imm
 - **Base de données**: Supabase (PostgreSQL) avec RLS (Row-Level Security)
 - **Paiements**: Stripe (abonnements + lifetime deals)
 - **Emails**: Resend pour les emails transactionnels et magic links
-- **Analytics**: Umami (self-hosted)
-- **Infrastructure**: Docker Compose (nginx reverse proxy + services)
+- **Analytics**: Matomo (self-hosted, service `matomo` du compose) + build-args Plausible
+- **Infrastructure**: Docker Compose + **Caddy** en reverse proxy (service systemd sur le VPS, configuré dans le dépôt `vps-infra` — PAS dans ce repo). `docker/nginx.conf` est du **code mort**, ne pas s'y fier.
 
 ## Development Commands
 
@@ -90,7 +90,7 @@ backend/app/
 ├── core/
 │   ├── config.py        # Settings (Pydantic BaseSettings)
 │   ├── security.py      # JWT verification, get_current_user, get_admin_user
-│   ├── paywall.py       # Plan gating decorator (@require_plan)
+│   ├── paywall.py       # check_write_access, require_active_subscription, require_gerant_role
 │   ├── entitlements.py  # Feature limits par plan (max biens, max SCI, etc.)
 │   ├── rate_limit.py    # slowapi rate limiting
 │   ├── supabase_client.py  # Client Supabase factory
@@ -121,7 +121,7 @@ backend/app/
 **Points importants**:
 - **Auth**: Supabase Auth + JWT vérifié dans `core.security`. Admin via `get_admin_user()`
 - **RLS**: Toutes les requêtes DB passent par Supabase client avec JWT utilisateur. Writes via `_get_write_client()` (service role), reads via `_get_client(request)` (user JWT)
-- **Paywall**: `@require_plan("pro")` decorator dans `core.paywall` — vérifie le plan avant accès
+- **Paywall**: `write_protection_middleware` (main.py) + `require_active_subscription` / `require_gerant_role` / `SubscriptionService.enforce_limit`. ⚠️ Le décorateur `@require_plan` **n'existe pas** (erreur de doc historique)
 - **Nested Routes API**: `scis_biens.py` est le plus gros module (~1000 lignes) avec routes `/scis/{sci_id}/biens/{bien_id}/[baux|loyers|charges|documents|assurance-pno|frais-agence]`
 - **Rate Limiting**: slowapi avec limites par endpoint (voir `core.rate_limit`)
 - **PDF Generation**: ReportLab pour quittances + CERFA 2044 + résumé fiscal
@@ -201,7 +201,7 @@ frontend/src/
 - **Svelte 5 Runes**: Utilise `$state`, `$derived`, `$props`, `$effect`, `Snippet` — PAS les anciennes syntaxes (`export let`, `$:`, stores réactifs)
 
 ### Database (Supabase)
-Le schéma SQL est dans `supabase/migrations/` (29 fichiers, `001_init` → `029_credits_immobiliers`). Tables principales:
+Le schéma SQL est dans `supabase/migrations/` (46 fichiers, `001_init` → `043_security_fix_c1_c3_rls`). ⚠️ L'ordre lexicographique est cassé : `0045_`/`0046_` trient **avant** `004_`, et le préfixe `035` est dupliqué (cf. AUDIT HIGH-11). Tables principales:
 - `sci` → Sociétés civiles immobilières
 - `associes` → Associés liés aux SCI (RLS par user_id, rôle: gérant/associé)
 - `biens` → Biens immobiliers (+ `is_demo` flag)
@@ -302,9 +302,38 @@ PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 2. Upload sur Supabase Storage
 3. Retourne URL signée avec expiration
 
+### ⚠️ Invariants de sécurité (audit externe 2026-07-25 — NE PAS CASSER)
+
+Ces règles corrigent des vulnérabilités **critiques vérifiées en production**.
+Voir `AUDIT_EXTERNE_2026-07-25.md` et `BACKLOG.md`.
+
+1. **`subscriptions` n'est JAMAIS écrite par le client utilisateur.** Migration
+   `043` supprime les policies d'écriture user. Toute écriture passe par
+   `get_supabase_service_client()`. Sinon : un utilisateur s'auto-attribue un
+   plan payant illimité (exploit reproduit en prod, finding C1).
+2. **Le catalogue serveur prime sur la ligne DB** :
+   `row = {**row, **snapshot}` dans `subscription_service.py`. Ne jamais
+   réinverser — la ligne DB imposerait ses propres quotas.
+3. **La gestion des associés est réservée aux rôles de gouvernance**
+   (`gerant`, `co_gerant`) via `_require_gerant()` sur POST/PATCH/DELETE. La
+   simple appartenance à la SCI ne suffit pas, sinon un associé se promeut
+   gérant (finding C3).
+4. **`user_id` et `role` fournis par le client sont ignorés/contraints** à la
+   création d'un associé. Le rattachement d'un compte passe par l'invitation
+   email (`associe_linking`).
+5. **Rôles associés : 4 valeurs** — `gerant`, `co_gerant`, `associe`,
+   `usufruitier` (cf. `frontend/src/lib/high-value/associes.ts` et contrainte
+   `associes_role_check`). Restreindre ce référentiel casse la migration et
+   prive les co-gérants de leurs droits.
+6. **Supabase est exposé publiquement** (`/rest/`, `/auth/` sur
+   `api.gerersci.fr`) : **RLS est la seule frontière de sécurité réelle**. Tout
+   contrôle purement applicatif est contournable par appel direct à PostgREST.
+   Toute nouvelle table DOIT avoir RLS activé et des policies explicites.
+   Fermeture de cette exposition à faire dans `vps-infra` (finding C2).
+
 ### Paywall / Plan Gating
 1. `core.entitlements` définit les limites par plan (max biens, max SCI, features)
-2. `core.paywall.require_plan()` decorator sur les endpoints protégés
+2. `write_protection_middleware` (402 sur les writes sans abonnement actif) + `require_active_subscription` / `require_gerant_role` sur les endpoints protégés
 3. Frontend : `LockedAction` verrouille les writes en demo, `UpgradePrompt` pour les features payantes
 4. Plans: `free` (bloqué, is_active=false) → `starter` (Gestion, 19€/mois) → `pro` (Pilotage, 39€/mois) → `lifetime` (Fondateur, 990€)
 5. **ACTIVE_SUBSCRIPTION_STATUSES**: `{"active", "paid"}` uniquement — pas de trial
@@ -324,13 +353,13 @@ PUBLIC_FEATURE_MULTI_SCI_DASHBOARD_V2=true
 5. **Tailwind 4**: Utilise `@tailwindcss/vite` (pas PostCSS). La config est dans `tailwind.config.js`.
 6. **Pnpm**: Le frontend utilise `pnpm`, pas `npm`. Toujours utiliser `pnpm install`.
 7. **Test Coverage**: Les modules dans `frontend/src/lib/high-value/` doivent maintenir ≥90% de couverture.
-8. **Paywall**: Les endpoints protégés utilisent `@require_plan("pro")`. Tester avec un user ayant un plan actif, ou mocker `get_subscription_status`.
+8. **Paywall**: Il n'y a PAS de décorateur `@require_plan`. Le gating réel = `write_protection_middleware` (main.py) + `require_active_subscription` / `require_gerant_role` + `SubscriptionService.enforce_limit`. Tester avec un user ayant un plan actif, ou mocker `_load_subscription_row`.
 9. **Nested Routes**: Les routes frontend `(app)/scis/[sciId]/...` dépendent du layout `[sciId]/+layout.ts` qui charge le contexte SCI. Toujours vérifier que `sciId` est propagé.
 10. **Navigation**: `AppSidebarV2.svelte` est supprimé. La navigation est `AppNavbar.svelte` (4 items: Tableau de bord, Mes SCI ▾, Finances, Pilotage ▾).
 11. **Admin**: Le dashboard admin est à `/admin?secret=ADMIN_SECRET_KEY`. Pas de login requis — protégé par secret URL. Route hors du groupe `(app)` et dans `PUBLIC_ROUTE_PREFIXES`.
-12. **Subscriptions table**: Pas de colonne `plan_key` — toujours résoudre via `stripe_price_id` + `resolve_plan_key_from_price_id()`.
+12. **Subscriptions table**: La colonne `plan_key` **existe** (ajoutée en `0045_subscription_entitlements.sql`). Résoudre en priorité via `stripe_price_id` + `resolve_plan_key_from_price_id()`, avec fallback sur `plan_key`. ⚠️ Ne pas supprimer ce fallback tant que `stripe_price_id` n'est pas renseigné au checkout (audit HIGH-10) : cela rétrograderait tous les clients payants en `free`.
 13. **VPS git**: Ne jamais faire `sudo git pull` sur le VPS — casse les permissions `.git/objects` pour l'auto-deploy CI. Utiliser `git pull` sans sudo.
-14. **Nginx /api proxy**: Le server block frontend (`gerersci.fr`) a un `location /api/` qui proxy vers le backend. Nécessaire pour les appels API depuis les pages publiques (admin).
+14. **Proxy /api**: Le reverse proxy est **Caddy** (systemd, dépôt `vps-infra`), pas nginx. Il route `/api/` vers le backend — nécessaire pour les appels API depuis les pages publiques (admin). Toute modif du bord public (TLS, headers, rate-limit) se fait dans `vps-infra`, hors CI de ce repo.
 15. **SUPABASE_PUBLIC_URL**: Configuré dans `.env` production pour réécrire les magic links de `host.docker.internal:54321` vers `api.gerersci.fr`.
 16. **Vite Proxy**: En dev, `API_URL=''` dans `client.ts` fait passer les appels API par le proxy Vite (port 8001). Évite les problèmes CORS. Configuré dans `vite.config.ts`.
 17. **assurances_pno**: Le nom de table est au **pluriel** (`assurances_pno`), pas `assurance_pno`. Colonnes: `compagnie` (pas `assureur`), `montant_annuel` (pas `prime_annuelle`), `date_echeance` (pas `date_fin`).

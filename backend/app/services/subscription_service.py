@@ -105,16 +105,31 @@ class SubscriptionService:
 
         row_status = str(row.get("status") or "").lower()
 
+        # Sécurité (audit C1) : le catalogue serveur (`build_plan_snapshot`) doit
+        # TOUJOURS primer sur la ligne DB. L'ordre inverse ({**snapshot, **row})
+        # laissait une ligne `subscriptions` forgée imposer ses propres
+        # max_scis/max_biens/features. La migration 043 ferme l'écriture côté RLS ;
+        # cette inversion est la défense en profondeur côté applicatif.
         # Legacy trialing rows → treat as inactive (must re-subscribe)
         if row_status == "trialing":
             snapshot = build_plan_snapshot(PlanKey.FREE)
-            row = {**snapshot, **row}
+            row = {**row, **snapshot}
             row["is_active"] = False
             row["plan_name"] = "Non abonné"
         else:
-            plan_key = row.get("plan_key") or resolve_plan_key_from_price_id(row.get("stripe_price_id")) or PlanKey.FREE.value
+            # Le price_id Stripe est la source de vérité prioritaire sur le plan
+            # payé. Fallback sur `plan_key` de la ligne DB : indispensable tant
+            # que `stripe_price_id` n'est pas renseigné au checkout (cf. audit
+            # HIGH-10) — sans lui, tout client payant existant retomberait en
+            # FREE. Ce fallback est sûr depuis la migration 043 : `plan_key`
+            # n'est plus écrivable que par le service_role.
+            plan_key = (
+                resolve_plan_key_from_price_id(row.get("stripe_price_id"))
+                or row.get("plan_key")
+                or PlanKey.FREE.value
+            )
             snapshot = build_plan_snapshot(plan_key)
-            row = {**snapshot, **row}
+            row = {**row, **snapshot}
             row["is_active"] = row_status in ACTIVE_SUBSCRIPTION_STATUSES
 
         usage = cls.get_usage_counts(user_id)

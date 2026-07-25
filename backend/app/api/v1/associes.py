@@ -12,7 +12,12 @@ from app.core.exceptions import (
 )
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.models.associes import AssocieCreate, AssocieResponse, AssocieUpdate
+from app.models.associes import (
+    GOVERNANCE_ROLES,
+    AssocieCreate,
+    AssocieResponse,
+    AssocieUpdate,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -42,6 +47,42 @@ def _require_sci_access(user_sci_ids: list[str], id_sci: str) -> None:
         raise DatabaseError("Missing id_sci on scoped resource")
     if id_sci not in user_sci_ids:
         raise AuthorizationError("SCI", id_sci)
+
+
+def _require_gerant(client, user_id: str, id_sci: str) -> None:
+    """Exiger que l'appelant soit gérant de la SCI ciblée.
+
+    Sécurité (audit C3, migration 043) : la simple appartenance à la SCI ne
+    suffit pas pour gérer les associés. Sans ce contrôle, un associé pouvait
+    se promouvoir gérant (PATCH {"role": "gerant"}) ou modifier la répartition
+    des parts — avec la portée juridique que cela implique (art. 1865 C. civ.).
+
+    Ne peut pas réutiliser `Depends(require_gerant_role)` : celui-ci attend un
+    `sci_id` en paramètre de route, alors qu'ici l'id_sci est dérivé de la
+    ligne associé ciblée.
+    """
+    if not id_sci:
+        raise DatabaseError("Missing id_sci on scoped resource")
+    rows = _execute_select(
+        client.table("associes")
+        .select("role")
+        .eq("id_sci", id_sci)
+        .eq("user_id", user_id)
+    )
+    if not rows or str(rows[0].get("role") or "").lower() not in GOVERNANCE_ROLES:
+        raise AuthorizationError("SCI", id_sci)
+
+
+def _count_gouvernance(client, id_sci: str) -> int:
+    """Nombre d'associés porteurs d'un rôle de gouvernance (gérant/co-gérant)."""
+    return len(
+        _execute_select(
+            client.table("associes")
+            .select("id")
+            .eq("id_sci", id_sci)
+            .in_("role", sorted(GOVERNANCE_ROLES))
+        )
+    )
 
 
 def _fetch_associe(client, associe_id: str) -> dict:
@@ -177,11 +218,15 @@ async def create_associe(payload: AssocieCreate, request: Request, user_id: str 
 
     try:
         client = get_supabase_user_client(request)
-        user_sci_ids = _get_user_sci_ids(client, user_id)
-        _require_sci_access(user_sci_ids, payload.id_sci)
+        # Sécurité (audit C3) : seul le gérant peut ajouter un associé.
+        _require_gerant(client, user_id, payload.id_sci)
 
         # Resolve payload nb_parts and part
         payload_dict = payload.model_dump(mode="json")
+        # Sécurité (audit C3) : `user_id` ne doit jamais être imposé par le
+        # client — sinon on rattache arbitrairement un compte tiers à la SCI.
+        # Le rattachement se fait par invitation email (associe_linking).
+        payload_dict.pop("user_id", None)
         sci_rows = _execute_select(client.table("sci").select("nb_parts_total").eq("id", payload.id_sci))
         nb_parts_total = 1000
         if sci_rows and sci_rows[0].get("nb_parts_total") is not None:
@@ -236,10 +281,22 @@ async def update_associe(
             raise ValidationError("No update fields provided")
 
         client = get_supabase_user_client(request)
-        user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_associe(client, associe_id)
         id_sci = str(existing.get("id_sci") or "")
-        _require_sci_access(user_sci_ids, id_sci)
+        # Sécurité (audit C3) : seul le gérant peut modifier un associé.
+        # Auparavant la simple appartenance suffisait, ce qui permettait à un
+        # associé de s'auto-promouvoir gérant via {"role": "gerant"}.
+        _require_gerant(client, user_id, id_sci)
+
+        # Le dernier gérant ne peut pas se rétrograder : la SCI se retrouverait
+        # sans gérant, donc sans personne habilitée à gérer les associés.
+        if (
+            "role" in update_payload
+            and str(existing.get("role") or "").lower() in GOVERNANCE_ROLES
+            and str(update_payload["role"] or "").lower() not in GOVERNANCE_ROLES
+        ):
+            if _count_gouvernance(client, id_sci) <= 1:
+                raise ValidationError("Impossible de rétrograder le dernier gérant de la SCI.")
 
         sci_rows = _execute_select(client.table("sci").select("nb_parts_total").eq("id", id_sci))
         nb_parts_total = 1000
@@ -287,18 +344,21 @@ async def delete_associe(associe_id: str, request: Request, user_id: str = Depen
 
     try:
         client = get_supabase_user_client(request)
-        user_sci_ids = _get_user_sci_ids(client, user_id)
         existing = _fetch_associe(client, associe_id)
         id_sci = str(existing.get("id_sci") or "")
-        _require_sci_access(user_sci_ids, id_sci)
+        # Sécurité (audit C3) : seul le gérant peut retirer un associé.
+        _require_gerant(client, user_id, id_sci)
 
         sci_associes = _execute_select(client.table("associes").select("id").eq("id_sci", id_sci))
         if len(sci_associes) <= 1:
             raise ValidationError("La SCI doit conserver au moins un associé.")
 
-        if existing.get("role") == "gerant":
+        if str(existing.get("role") or "").lower() in GOVERNANCE_ROLES:
             gerants = _execute_select(
-                client.table("associes").select("id").eq("id_sci", id_sci).eq("role", "gerant")
+                client.table("associes")
+                .select("id")
+                .eq("id_sci", id_sci)
+                .in_("role", sorted(GOVERNANCE_ROLES))
             )
             if len(gerants) <= 1:
                 raise ValidationError("Impossible de supprimer le dernier gérant de la SCI.")

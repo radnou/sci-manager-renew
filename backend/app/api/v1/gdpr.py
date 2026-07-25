@@ -296,6 +296,14 @@ async def delete_user_account(
     """
     try:
         client = get_supabase_user_client(request)
+        # L'effacement RGPD doit aboutir intégralement : il s'exécute en
+        # service_role, l'autorisation étant déjà établie par le JWT vérifié
+        # (user_id). Avec le client utilisateur, plusieurs suppressions
+        # échouaient silencieusement faute de policy DELETE (RLS renvoie 200
+        # avec 0 ligne), laissant survivre des données personnelles — et
+        # depuis la migration 043, l'écriture sur `subscriptions` est de toute
+        # façon réservée au service_role.
+        erase_client = get_supabase_service_client()
 
         # Log AVANT suppression (important pour audit)
         await AuditLogger.log_gdpr_event(
@@ -313,8 +321,12 @@ async def delete_user_account(
         # 2. Suppression en cascade (dans l'ordre inverse des dépendances)
 
         # User-level tables first (no FK dependency on biens/sci)
-        client.table("notifications").delete().eq("user_id", user_id).execute()
-        client.table("notification_preferences").delete().eq("user_id", user_id).execute()
+        # `notifications` n'a aucune policy DELETE : avec le client utilisateur
+        # cette suppression échouait silencieusement et les notifications
+        # (contenant adresses de biens et noms de locataires) survivaient à la
+        # suppression de compte.
+        erase_client.table("notifications").delete().eq("user_id", user_id).execute()
+        erase_client.table("notification_preferences").delete().eq("user_id", user_id).execute()
 
         # Separate SCIs into exclusive (only this user) vs shared (other associes exist)
         exclusive_sci_ids = []
@@ -377,12 +389,12 @@ async def delete_user_account(
 
         # Associés (only for exclusive SCIs — shared ones already handled above)
         if exclusive_sci_ids:
-            client.table("associes").delete().eq("user_id", user_id).in_("id_sci", exclusive_sci_ids).execute()
+            erase_client.table("associes").delete().eq("user_id", user_id).in_("id_sci", exclusive_sci_ids).execute()
 
         # 3. ANONYMISER (pas supprimer) les données de facturation Stripe
         # Les données de facturation doivent être conservées 10 ans (Code Général des Impôts)
         try:
-            client.table("subscriptions").update(
+            erase_client.table("subscriptions").update(
                 {
                     "status": "deleted",
                     "stripe_customer_id": None,

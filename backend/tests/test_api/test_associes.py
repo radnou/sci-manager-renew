@@ -415,9 +415,11 @@ def test_delete_self_row(client, auth_headers, fake_supabase):
     # associe-2 is in sci-2 alone → last-associe fires first.
     # Add another associe to sci-2 so last-associe check passes,
     # then self-delete check triggers.
+    # role=gerant : sans un second rôle de gouvernance, c'est le garde-fou
+    # "dernier gérant" qui se déclencherait avant le contrôle d'auto-suppression.
     fake_supabase.store["associes"].append(
         {"id": "extra-sci2", "id_sci": "sci-2", "user_id": None,
-         "nom": "Extra", "email": "e@e.com", "part": 10, "role": "associe"}
+         "nom": "Extra", "email": "e@e.com", "part": 10, "role": "gerant"}
     )
     resp = client.delete("/api/v1/associes/associe-2", headers=auth_headers)
     assert resp.status_code == 400

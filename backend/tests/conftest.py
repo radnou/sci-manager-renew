@@ -58,7 +58,12 @@ _INITIAL_STORE: dict[str, list[dict]] = {
     "associes": [
         {"id": "associe-1", "id_sci": "sci-1", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 60, "role": "gerant", "is_demo": False},
         {"id": "associe-1b", "id_sci": "sci-1", "user_id": "user-456", "nom": "Camille Bernard", "email": "camille.bernard@sci.local", "part": 40, "role": "associe", "is_demo": False},
-        {"id": "associe-2", "id_sci": "sci-2", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 100, "role": "associe", "is_demo": False},
+        # role=gerant : depuis le correctif C3 (audit 2026-07-25), la gestion des
+        # associés est réservée aux rôles de gouvernance. Les tests métier de
+        # sci-2 (création/suppression d'associés) supposent un utilisateur
+        # habilité ; l'absence d'habilitation est couverte séparément par
+        # tests/test_api/test_associes_security.py.
+        {"id": "associe-2", "id_sci": "sci-2", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 100, "role": "gerant", "is_demo": False},
     ],
     "deficit_reportable": [],
     "assurances_pno": [

@@ -1,10 +1,11 @@
 # 🚀 GererSCI - Déploiement Production
 
-Guide complet pour déployer GererSCI sur un VPS Scaleway en production.
+Guide complet pour déployer GererSCI sur un VPS OVH en production.
 
 ## 📋 Prérequis
 
-- **VPS Scaleway** : Ubuntu 22.04 LTS (minimum 2GB RAM, 1 vCPU)
+- **VPS OVH** : Ubuntu 22.04 LTS (minimum 2GB RAM, 1 vCPU)
+- **Reverse proxy** : Caddy (service systemd, configuré dans le dépôt `vps-infra` — pas ici)
 - **Domaine** : Configuré avec DNS pointant vers l'IP de votre VPS
 - **Clés API** :
   - Stripe (clés de production)
@@ -259,12 +260,14 @@ docker compose logs db
 - ✅ HTTP/2 activé
 - ✅ Connection pooling
 
-### Monitoring Recommandé
-- **Uptime** : UptimeRobot ou Pingdom
-- **Logs** : Loki + Promtail + Grafana
-- **Métriques** : Prometheus + Node Exporter
+### Monitoring — état réel
+- **Actifs** : Uptime Kuma + Sentry
+- ⚠️ **Loki / Grafana ne tournent PAS en production** : `docker-compose.monitoring.yml`
+  n'est lancé par aucun script de déploiement (découplé au commit `7274a0e`), et
+  **aucun promtail n'existe dans le dépôt** — Loki n'ingérerait rien de toute façon.
+  Voir `BACKLOG.md` (LOW / monitoring).
 
-## 💰 Coûts Scaleway
+## 💰 Coûts OVH
 
 | Service | Configuration | Prix/mois |
 |---------|---------------|-----------|
@@ -281,8 +284,11 @@ docker compose logs db
 - [ ] Authentification Supabase OK
 - [ ] Base de données accessible
 - [ ] SSL valide (A+ sur SSL Labs)
-- [ ] Sauvegardes automatiques actives
-- [ ] Monitoring configuré
+- [ ] ❌ **Sauvegardes automatiques : INEXISTANTES à ce jour** (audit CRITICAL-8).
+      `scripts/backup-remote.sh` cible un service `db` qui n'existe pas dans le
+      compose → no-op silencieux, et aucun cron ne l'appelle. **Faire un
+      `pg_dump` hors VPS avant toute autre action.** Voir `BACKLOG.md`.
+- [ ] Monitoring configuré (Uptime Kuma + Sentry uniquement — cf. ci-dessus)
 
 ## 📞 Support
 
