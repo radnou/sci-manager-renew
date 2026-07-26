@@ -64,7 +64,38 @@ n'a pas fermé cette exposition : elle a déplacé les routes dans
 - [ ] Vérifier : `curl -o /dev/null -w "%{http_code}" https://api.gerersci.fr/rest/v1/sci` → 404
       et que le magic link fonctionne toujours (`/auth/*` doit rester ouvert)
 
-### 4. Nettoyage
+### 4. Trancher la cible de déploiement de la CI
+
+`.github/workflows/deploy.yml:31` fait `cd /opt/gerersci` puis `git pull`,
+`docker compose build`, `up`. Or la production canonique est
+`/opt/vps-infra/services/gerersci/`. Deux lectures possibles, une seule est
+vraie : soit `/opt/gerersci` reste le checkout applicatif servant de contexte de
+build au compose de `vps-infra`, soit c'est un vestige et **la CI reconstruit
+des images sans jamais toucher aux conteneurs en service**. Le workflow n'a pas
+été modifié tant que ce n'est pas tranché.
+
+```bash
+# 1. Les deux répertoires existent-ils, et lequel porte le compose ?
+ls -la /opt/gerersci/ /opt/vps-infra/services/gerersci/ 2>&1 | head -40
+
+# 2. Le checkout applicatif est-il à jour ? (branche + dernier commit)
+git -C /opt/gerersci log --oneline -3 2>/dev/null; git -C /opt/gerersci branch --show-current
+
+# 3. Quel fichier compose a réellement démarré les conteneurs en service ?
+docker inspect $(docker ps -q) \
+  --format '{{index .Config.Labels "com.docker.compose.project.config_files"}} <- {{.Name}}' \
+  2>/dev/null | sort -u
+
+# 4. Depuis quel contexte les images tournantes ont-elles été construites ?
+docker ps --filter name=gerersci --format '{{.Names}}\t{{.Image}}\t{{.CreatedAt}}'
+```
+
+Lecture des résultats : si l'étape 3 renvoie un chemin sous `/opt/vps-infra/…`
+alors que l'étape 2 montre un dépôt à jour dans `/opt/gerersci`, les deux
+coexistent et le workflow builde à côté de la production — c'est le pire cas,
+il déploie en silence dans le vide.
+
+### 5. Nettoyage
 - [ ] Purger le compte de test de l'audit : `be2e22f5-a401-4d25-b2e4-67003bc85df8`
 - [ ] `stripe login` sur le compte **C** (`acct_1SFrY0ApRgYAyPDH`) puis
       `stripe prices list --live` → résout le « produits Stripe disparus »
