@@ -11,7 +11,7 @@ GererSCI est une application SaaS pour la gestion de SCI (Sociétés Civiles Imm
 - **Base de données**: Supabase (PostgreSQL) avec RLS (Row-Level Security)
 - **Paiements**: Stripe (abonnements + lifetime deals)
 - **Emails**: Resend pour les emails transactionnels et magic links
-- **Analytics**: Matomo (self-hosted, service `matomo` du compose) + build-args Plausible
+- **Analytics**: Plausible, hébergé hors de ce dépôt (`/home/ubuntu/infra/services/plausible/`). Les services `matomo` et `uptime-kuma` du compose sont en `profiles: ["disabled"]` et ne tournent pas.
 - **Infrastructure**: Docker Compose + **Caddy** en reverse proxy (service systemd sur le VPS, configuré dans le dépôt `vps-infra` — PAS dans ce repo). `docker/nginx.conf` est du **code mort**, ne pas s'y fier.
 
 ## Development Commands
@@ -360,7 +360,9 @@ Voir `AUDIT_EXTERNE_2026-07-25.md` et `BACKLOG.md`.
 12. **Subscriptions table**: La colonne `plan_key` **existe** (ajoutée en `0045_subscription_entitlements.sql`). Résoudre en priorité via `stripe_price_id` + `resolve_plan_key_from_price_id()`, avec fallback sur `plan_key`. ⚠️ Ne pas supprimer ce fallback tant que `stripe_price_id` n'est pas renseigné au checkout (audit HIGH-10) : cela rétrograderait tous les clients payants en `free`.
 13. **VPS git**: Ne jamais faire `sudo git pull` sur le VPS — casse les permissions `.git/objects` pour l'auto-deploy CI. Utiliser `git pull` sans sudo.
 14. **Proxy /api**: Le reverse proxy est **Caddy** (systemd, dépôt `vps-infra`), pas nginx. Il route `/api/` vers le backend — nécessaire pour les appels API depuis les pages publiques (admin). Toute modif du bord public (TLS, headers, rate-limit) se fait dans `vps-infra`, hors CI de ce repo.
-15. **Emplacements de production** (dépôt [`radnou/vps-infra`](https://github.com/radnou/vps-infra), rien de tout cela n'est géré ici) : compose + `.env` sous `/opt/vps-infra/services/gerersci/` ; config Caddy dans `/etc/caddy/sites/gerersci.caddy` ; frontend `127.0.0.1:14173`, backend `127.0.0.1:18000`, Supabase Kong `127.0.0.1:54321` (aucun bind sur `0.0.0.0`) ; sauvegarde quotidienne 03h00 UTC ; logs et santé sur https://status.radnoumane.com (Dozzle). Ne jamais réintroduire de sauvegarde, de config proxy ou de chemin de déploiement dans ce dépôt.
+15. **Emplacements de production** : voir la section « Production Infrastructure & Deployment Standard (vps-infra) » en fin de fichier. Rien de tout cela n'est géré ici — ne jamais réintroduire de sauvegarde, de configuration proxy ou de chemin de déploiement dans ce dépôt.
+16. **Supabase de production = stack de la CLI**. Les conteneurs s'appellent `supabase_*_sci-manager-renew` (convention `supabase start`, aucun label docker-compose). Conséquences : `supabase_studio` et `supabase_inbucket` tournent en production, et **il n'y a aucun conteneur `realtime` pour gerersci** alors que Caddy route `/realtime/*` vers Kong. Ne pas supposer un déploiement Supabase self-hosted classique.
+17. **Analytics** : Matomo et Uptime Kuma sont en `profiles: ["disabled"]` dans le compose et ne tournent pas. L'analytics réel du VPS est Plausible (`/home/ubuntu/infra/services/plausible/`), hors de ce dépôt.
 15. **SUPABASE_PUBLIC_URL**: Configuré dans `.env` production pour réécrire les magic links de `host.docker.internal:54321` vers `api.gerersci.fr`.
 16. **Vite Proxy**: En dev, `API_URL=''` dans `client.ts` fait passer les appels API par le proxy Vite (port 8001). Évite les problèmes CORS. Configuré dans `vite.config.ts`.
 17. **assurances_pno**: Le nom de table est au **pluriel** (`assurances_pno`), pas `assurance_pno`. Colonnes: `compagnie` (pas `assureur`), `montant_annuel` (pas `prime_annuelle`), `date_echeance` (pas `date_fin`).
@@ -397,37 +399,6 @@ Dashboard/KPIs     → Analytics Reporter + Finance Tracker + frontend-architect
 Infra/Deploy       → devops-architect + security-engineer
 Refactoring        → Software Architect + Code Reviewer + quality-engineer
 ```
-
-## Production Infrastructure & Deployment Standard (vps-infra)
-
-- **Canonical Path on VPS**:  (symlinked to  for 100% path parity).
-- **Reverse Proxy**: Managed host-wide by Caddy in  (versioned in ).
-  - ,  -> Frontend ()
-  -  -> Backend () & Supabase Kong ()
-- **Production Database**: Supabase stack (), running PostgreSQL 17.
-- **Nightly Backups & Restoration**: Managed centrally by  (03:00 UTC daily) and .
-- **Status Dashboard**: Live container logs and status visible at  (Dozzle).
-
-
-## Production Infrastructure & Deployment Standard (vps-infra)
-
-- **Canonical Path on VPS**:  (symlinked to  for 100% path parity).
-- **Reverse Proxy**: Managed host-wide by Caddy in  (versioned in ).
-  - ,  -> Frontend ()
-  -  -> Backend () & Supabase Kong ()
-- **Production Database**: Supabase stack (), running PostgreSQL 17.
-- **Nightly Backups & Restoration**: Managed centrally by  (03:00 UTC daily) and .
-- **Status Dashboard**: Live container logs and status visible at  (Dozzle).
-
-## Production Infrastructure & Deployment Standard (vps-infra)
-
-- **Canonical Path on VPS**:  (symlinked to  for 100% path parity).
-- **Reverse Proxy**: Managed host-wide by Caddy in  (versioned in ).
-  - ,  -> Frontend ()
-  -  -> Backend () & Supabase Kong ()
-- **Production Database**: Supabase stack (), running PostgreSQL 17.
-- **Nightly Backups & Restoration**: Managed centrally by  (03:00 UTC daily) and .
-- **Status Dashboard**: Live container logs and status visible at  (Dozzle).
 
 ## Production Infrastructure & Deployment Standard (vps-infra)
 

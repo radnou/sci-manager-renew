@@ -12,13 +12,14 @@ Rien de tout cela n'est géré depuis ce dépôt.
 
 | Quoi | Où |
 |---|---|
-| Compose de production + `.env` | `/opt/vps-infra/services/gerersci/` (alias `/home/ubuntu/infra/services/gerersci/`) |
+| Compose de production + `.env` | `/opt/vps-infra/services/gerersci/`, **symlink vers `/opt/gerersci`** — c'est bien depuis ce répertoire que tournent les conteneurs (vérifié par `docker inspect` le 2026-07-26) |
+| Base de production | conteneur `supabase_db_sci-manager-renew` (stack CLI Supabase, sans label compose) |
 | Reverse proxy | Caddy, `/etc/caddy/sites/gerersci.caddy` |
 | Frontend | `gerersci.fr`, `www`, `app.gerersci.fr` → `127.0.0.1:14173` |
 | Backend | `api.gerersci.fr` → `127.0.0.1:18000` |
 | Supabase (Kong) | `api.gerersci.fr/{auth,rest,realtime,storage,functions}/*` → `127.0.0.1:54321` |
 | Logs / santé | https://status.radnoumane.com (Dozzle) |
-| Sauvegarde | quotidienne 03h00 UTC, push sur `main` de `vps-infra` |
+| Sauvegarde / restauration | `/opt/vps-infra/scripts/backup.sh` (03h00 UTC) et `/opt/vps-infra/scripts/restore.sh gerersci` |
 
 Aucun conteneur ne doit écouter sur `0.0.0.0` — contrôle : `ss -tlnp | grep -v 127.0.0.1`.
 
@@ -26,16 +27,27 @@ Aucun conteneur ne doit écouter sur `0.0.0.0` — contrôle : `ss -tlnp | grep 
 
 ## 🔥 Aujourd'hui
 
-### 1. Vérifier la sauvegarde (CRITICAL-8, requalifié le 2026-07-26)
-La sauvegarde est assurée par `vps-infra`, pas par ce dépôt — les deux scripts
-locaux étaient des no-op jamais appelés et ont été supprimés. Reste à prouver
-qu'elle tourne, **avant de jouer la migration 043**.
+### 1. Prouver la restauration (CRITICAL-8, requalifié le 2026-07-26)
+La sauvegarde est assurée par `/opt/vps-infra/scripts/backup.sh` (03h00 UTC,
+découverte automatique), pas par ce dépôt — les deux scripts locaux étaient des
+no-op jamais appelés et ont été supprimés. La base de production est
+`supabase_db_sci-manager-renew` (27 tables métier).
 
-- [ ] `systemctl list-timers --all | grep -i backup` puis `crontab -l`
-- [ ] Confirmer qu'un dump de moins de 24 h existe et qu'il couvre la base
-      Supabase de `gerersci` (pas seulement les fichiers de configuration)
-- [ ] **Tester la restauration** sur une base jetable — un dump non restauré
-      n'est pas une sauvegarde. Jamais fait à ce jour.
+Il reste le point qui compte, **avant de jouer la migration 043** : un dump
+n'est une sauvegarde qu'une fois restauré.
+
+- [ ] Vérifier qu'un dump de moins de 24 h existe et qu'il contient bien les
+      tables métier, pas un schéma vide ni une autre base du VPS (il y a
+      `shared_postgres`, `luna_supabase_db`, `bookrcs-staging-postgres`,
+      `capitalismland-db` comme leurres) :
+      ```bash
+      docker exec supabase_db_sci-manager-renew psql -U postgres -d postgres \
+        -c "\dt public.*" | grep -cE 'sci|associes|biens|baux|loyers|subscriptions'
+      ```
+- [ ] **Jouer `/opt/vps-infra/scripts/restore.sh gerersci` vers une base
+      jetable** et compter les lignes des tables métier. Jamais fait à ce jour.
+      Aggravé par HIGH-11 : `0045_`/`0046_` trient avant `004_` et `035` est
+      dupliqué, donc une reconstruction de schéma à neuf part dans le désordre.
 
 ### 2. Déployer le correctif C1/C3
 Le contournement de paiement est **actif en production**.
@@ -64,36 +76,23 @@ n'a pas fermé cette exposition : elle a déplacé les routes dans
 - [ ] Vérifier : `curl -o /dev/null -w "%{http_code}" https://api.gerersci.fr/rest/v1/sci` → 404
       et que le magic link fonctionne toujours (`/auth/*` doit rester ouvert)
 
-### 4. Trancher la cible de déploiement de la CI
+### 4. Nettoyer les conteneurs orphelins de monitoring
 
-`.github/workflows/deploy.yml:31` fait `cd /opt/gerersci` puis `git pull`,
-`docker compose build`, `up`. Or la production canonique est
-`/opt/vps-infra/services/gerersci/`. Deux lectures possibles, une seule est
-vraie : soit `/opt/gerersci` reste le checkout applicatif servant de contexte de
-build au compose de `vps-infra`, soit c'est un vestige et **la CI reconstruit
-des images sans jamais toucher aux conteneurs en service**. Le workflow n'a pas
-été modifié tant que ce n'est pas tranché.
+Tranché le 2026-07-26 : `docker inspect` sur le VPS montre que les conteneurs en
+service viennent de `/opt/gerersci/docker-compose.yml`, désormais symlinké depuis
+`/opt/vps-infra/services/gerersci`. La CI vise donc le bon répertoire (commit
+`3b1c9c5` ajoute le chemin canonique avec repli).
 
-```bash
-# 1. Les deux répertoires existent-ils, et lequel porte le compose ?
-ls -la /opt/gerersci/ /opt/vps-infra/services/gerersci/ 2>&1 | head -40
+Effet de bord constaté : `gerersci_grafana` et `gerersci_loki` **tournent encore**
+alors que le commit `7274a0e` les a retirés du compose principal — ce sont des
+orphelins d'une révision antérieure, que `docker compose up -d` ne supprime pas
+sans `--remove-orphans`. Ils consomment de la mémoire sans rien collecter (aucun
+agent d'ingestion dans le dépôt).
 
-# 2. Le checkout applicatif est-il à jour ? (branche + dernier commit)
-git -C /opt/gerersci log --oneline -3 2>/dev/null; git -C /opt/gerersci branch --show-current
-
-# 3. Quel fichier compose a réellement démarré les conteneurs en service ?
-docker inspect $(docker ps -q) \
-  --format '{{index .Config.Labels "com.docker.compose.project.config_files"}} <- {{.Name}}' \
-  2>/dev/null | sort -u
-
-# 4. Depuis quel contexte les images tournantes ont-elles été construites ?
-docker ps --filter name=gerersci --format '{{.Names}}\t{{.Image}}\t{{.CreatedAt}}'
-```
-
-Lecture des résultats : si l'étape 3 renvoie un chemin sous `/opt/vps-infra/…`
-alors que l'étape 2 montre un dépôt à jour dans `/opt/gerersci`, les deux
-coexistent et le workflow builde à côté de la production — c'est le pire cas,
-il déploie en silence dans le vide.
+- [ ] `docker compose -f /opt/gerersci/docker-compose.yml up -d --remove-orphans`
+      puis vérifier : `docker ps --filter name=gerersci`
+- [ ] Confirmer que `matomo`, `matomo-db` et `uptime-kuma` (passés en
+      `profiles: ["disabled"]`) ne tournent pas non plus
 
 ### 5. Nettoyage
 - [ ] Purger le compte de test de l'audit : `be2e22f5-a401-4d25-b2e4-67003bc85df8`
