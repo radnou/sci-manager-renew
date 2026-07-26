@@ -5,13 +5,37 @@ Checklist opérationnelle courte. Le registre complet des 67 findings est dans
 
 ---
 
+## 📍 Emplacements canoniques de production
+
+Source : dépôt d'infrastructure [`radnou/vps-infra`](https://github.com/radnou/vps-infra).
+Rien de tout cela n'est géré depuis ce dépôt.
+
+| Quoi | Où |
+|---|---|
+| Compose de production + `.env` | `/opt/vps-infra/services/gerersci/` (alias `/home/ubuntu/infra/services/gerersci/`) |
+| Reverse proxy | Caddy, `/etc/caddy/sites/gerersci.caddy` |
+| Frontend | `gerersci.fr`, `www`, `app.gerersci.fr` → `127.0.0.1:14173` |
+| Backend | `api.gerersci.fr` → `127.0.0.1:18000` |
+| Supabase (Kong) | `api.gerersci.fr/{auth,rest,realtime,storage,functions}/*` → `127.0.0.1:54321` |
+| Logs / santé | https://status.radnoumane.com (Dozzle) |
+| Sauvegarde | quotidienne 03h00 UTC, push sur `main` de `vps-infra` |
+
+Aucun conteneur ne doit écouter sur `0.0.0.0` — contrôle : `ss -tlnp | grep -v 127.0.0.1`.
+
+---
+
 ## 🔥 Aujourd'hui
 
-### 1. Sauvegarder la base (CRITICAL-8)
-Aucune sauvegarde n'existe. À faire **avant toute autre action**.
+### 1. Vérifier la sauvegarde (CRITICAL-8, requalifié le 2026-07-26)
+La sauvegarde est assurée par `vps-infra`, pas par ce dépôt — les deux scripts
+locaux étaient des no-op jamais appelés et ont été supprimés. Reste à prouver
+qu'elle tourne, **avant de jouer la migration 043**.
 
-- [ ] `pg_dump` manuel, copié hors du VPS
-- [ ] Vérifier que le dump est lisible (`pg_restore --list`)
+- [ ] `systemctl list-timers --all | grep -i backup` puis `crontab -l`
+- [ ] Confirmer qu'un dump de moins de 24 h existe et qu'il couvre la base
+      Supabase de `gerersci` (pas seulement les fichiers de configuration)
+- [ ] **Tester la restauration** sur une base jetable — un dump non restauré
+      n'est pas une sauvegarde. Jamais fait à ce jour.
 
 ### 2. Déployer le correctif C1/C3
 Le contournement de paiement est **actif en production**.
@@ -28,12 +52,17 @@ Le contournement de paiement est **actif en production**.
 - [ ] Vérifier la suppression de compte RGPD
 
 ### 3. Fermer l'exposition Supabase (CRITICAL-2 + HIGH-1/HIGH-2)
-**Dans le dépôt `vps-infra`**, pas ici.
+**Dans le dépôt `vps-infra`**, pas ici. La centralisation de l'infrastructure
+n'a pas fermé cette exposition : elle a déplacé les routes dans
+`/etc/caddy/sites/gerersci.caddy`.
 
-- [ ] Retirer `/rest/`, `/storage/`, `/realtime/` du vhost `api.gerersci.fr`
+- [ ] Dans `/etc/caddy/sites/gerersci.caddy`, bloc `api.gerersci.fr` : retirer
+      `/rest/*`, `/storage/*`, `/realtime/*` (et `/functions/*` s'il n'est pas
+      utilisé), ne conserver que `/auth/*` vers Kong `127.0.0.1:54321`
 - [ ] Désactiver le signup public GoTrue (`disable_signup: true`)
 - [ ] Désactiver `/docs`, `/redoc`, `/openapi.json` en production
-- [ ] Vérifier : `curl https://api.gerersci.fr/rest/v1/sci` → 404
+- [ ] Vérifier : `curl -o /dev/null -w "%{http_code}" https://api.gerersci.fr/rest/v1/sci` → 404
+      et que le magic link fonctionne toujours (`/auth/*` doit rester ouvert)
 
 ### 4. Nettoyage
 - [ ] Purger le compte de test de l'audit : `be2e22f5-a401-4d25-b2e4-67003bc85df8`

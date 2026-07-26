@@ -135,8 +135,16 @@ est la démonstration.
 production vit dans `vps-infra`. `docker/nginx.conf` est du **code mort**
 (le proxy réel est Caddy, pas nginx).
 
-- [ ] Dans `vps-infra` : retirer le routage de `/rest/`, `/storage/`,
-      `/realtime/` sur le vhost `api.gerersci.fr`, ne conserver que `/auth/`.
+> **Point de situation 2026-07-26.** La rationalisation de l'infrastructure sous
+> `vps-infra` **ne ferme pas ce finding** : elle déplace les routes
+> `/auth/*`, `/rest/*`, `/realtime/*`, `/storage/*`, `/functions/*` du vhost
+> `api.gerersci.fr` vers `/etc/caddy/sites/gerersci.caddy` (Kong `127.0.0.1:54321`).
+> L'exposition publique de PostgREST reste donc active, et avec elle la
+> dépendance totale à RLS. Le correctif est une PR dans `vps-infra`.
+
+- [ ] Dans `vps-infra`, fichier `/etc/caddy/sites/gerersci.caddy` : retirer le
+      routage de `/rest/`, `/storage/`, `/realtime/` sur le vhost
+      `api.gerersci.fr`, ne conserver que `/auth/`.
       Le frontend n'utilise `supabase-js` que pour l'auth (aucun `.from()`
       dans `frontend/src` — vérifié).
 - [ ] Désactiver le signup public GoTrue (finding HIGH-1) — c'est le détonateur
@@ -152,12 +160,19 @@ production vit dans `vps-infra`. `docker/nginx.conf` est du **code mort**
 
 ## ⏳ CRITICAL restants
 
-- [ ] **C8 — Sauvegarde DB.** `scripts/backup-remote.sh:18` cible un service `db`
-      inexistant → no-op silencieux. Aucun cron installé. `README.md:283` coche
-      pourtant « Sauvegardes automatiques actives » (faux).
-      *Action immédiate : `pg_dump` hors VPS aujourd'hui*, puis automatisation,
-      chiffrement, rétention 30 j, et **test de restauration**.
-      Aggravé par HIGH-11 (ordre des migrations cassé → reconstruction incertaine).
+- [x] **C8 — Sauvegarde DB.** *Transféré à `vps-infra` le 2026-07-26.*
+      Le constat d'audit reste exact pour ce dépôt : `backup-remote.sh` ciblait un
+      service `db` inexistant (no-op silencieux) et `backup-db.sh` n'était appelé
+      par personne. Les deux scripts ont été supprimés — la sauvegarde est
+      désormais assurée par [`radnou/vps-infra`](https://github.com/radnou/vps-infra)
+      (dump quotidien 03h00 UTC, push sur `main`, purge des SQL temporaires).
+      - [ ] **Vérifier côté serveur** que la tâche tourne :
+            `systemctl list-timers --all | grep -i backup` puis `crontab -l`
+      - [ ] **Tester une restauration** sur un dump récent — jamais fait, et
+            aggravé par HIGH-11 (ordre des migrations cassé → reconstruction
+            incertaine). Le backup n'est un backup qu'une fois restauré.
+      - [ ] Confirmer que le dump couvre bien la base Supabase de `gerersci` et
+            pas seulement les configurations.
 - [ ] **C9 — Cron dans chaque worker.** `--workers 2` + tâche lancée dans le
       `lifespan` sans verrou → emails et notifications en double, rejoués à
       chaque redéploiement. Sortir le cron du process web (`ENABLE_CRON` +
@@ -244,10 +259,32 @@ dans l'historique git** (`sk_test_…`, `whsec_…`, `re_…`,
 
 ---
 
+## Code mort d'infrastructure — à supprimer ou réorienter (LOW)
+
+Depuis la centralisation de la production dans `vps-infra` (Docker Compose +
+Caddy), ces fichiers décrivent une architecture qui n'existe plus. Ils
+s'exécutent sans erreur fatale et n'ont aucun effet, ce qui est pire qu'une
+erreur : l'audit s'est appuyé sur `docker/nginx.conf` pour conclure à tort que
+le proxy était nginx.
+
+- [ ] `scripts/maintenance-on.sh` / `maintenance-off.sh` — opèrent sur un
+      conteneur `gerersci_nginx` inexistant, échecs avalés par `|| true`. Le
+      mécanisme réel est dans `deploy.sh` (flag `/srv/maintenance/`).
+- [ ] `scripts/init-ssl.sh` — certbot standalone + `systemctl stop nginx`,
+      incompatible avec l'ACME automatique de Caddy.
+- [ ] `docker/nginx.conf`, `docker/nginx-init.conf`, `docker/ssl-params.conf`.
+- [ ] `docs/VPS_PREPARATION_RUNBOOK.md` — décrit une architecture
+      systemd + nginx + certbot entièrement remplacée. À archiver ou réécrire.
+- [ ] `scripts/rollback.sh` — s'appuie sur un `.deploy-history` que rien
+      n'alimente et sur des clés `image:` absentes du compose (cf. HIGH-11).
+
+---
+
 ## Ordre d'exécution recommandé
 
-1. **Aujourd'hui** — C8 (dump manuel), C2 + C1 (fermer l'exposition et déployer
-   la migration 043), H1 + H2 (signup GoTrue, `/docs`).
+1. **Aujourd'hui** — C8 (vérifier la sauvegarde `vps-infra` + tester une
+   restauration), C2 + C1 (fermer l'exposition et déployer la migration 043),
+   H1 + H2 (signup GoTrue, `/docs`).
 2. **Cette semaine** — C3 (déjà prêt, déployé avec C1), C5, C6, C9, H11, H12.
 3. **Ce mois** — C4, C7, chaîne de paiement (H3→H10), H15, H16.
 4. **Ensuite** — chantier exactitude fiscale (MEDIUM), accessibilité, PWA.

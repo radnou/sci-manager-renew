@@ -155,6 +155,8 @@ La base prod est un Supabase auto-hébergé sur le VPS (confirmé indirectement 
 **Impact** : perte totale et irrécupérable (SCI, baux, loyers, quittances, pièces fiscales) en cas de panne disque, ransomware ou migration ratée. Exposition juridique (obligation de conservation). Fin commerciale du produit.
 **Correctif** : (1) `pg_dump` manuel hors VPS **aujourd'hui** ; (2) corriger la cible du script vers le conteneur Postgres Supabase réel ; (3) cron quotidien chiffré → OVH Object Storage, rétention 30 j ; (4) **tester une restauration** — un backup non testé n'est pas un backup. Aggravé par l'ordre de migrations cassé (HIGH-11).
 
+> **Addendum 2026-07-26.** La sauvegarde est désormais assurée par le dépôt d'infrastructure `radnou/vps-infra` (dump quotidien 03h00 UTC, push sur `main`, purge des SQL temporaires). Les deux scripts morts de ce dépôt (`scripts/backup-db.sh`, `scripts/backup-remote.sh`) ont été supprimés — leur constat ci-dessus reste exact au moment de l'audit. Deux points du correctif restent ouverts et ne sont pas attestables depuis ce dépôt : la couverture réelle du dump (base Supabase de `gerersci` et pas seulement les configurations) et le **test de restauration**, toujours jamais effectué.
+
 ## CRITICAL-9 ⚪ [CODE] — Le cron de notifications tourne dans chaque worker → emails en double
 
 **Où** : `backend/Dockerfile` (`--workers 2`) + `backend/app/main.py:222-223` (tâche lancée dans le `lifespan`, par worker, sans verrou) + `main.py:110-144` (cycle exécuté immédiatement au démarrage). Déduplication seulement applicative (`notification_service.py:12`, aucune contrainte UNIQUE en base — vérifié).

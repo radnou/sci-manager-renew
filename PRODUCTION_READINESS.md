@@ -145,8 +145,8 @@ Audit date: 2026-03-27
 |------|--------|---------|
 | Docker Compose with healthchecks | ⚠️ Partiel | OK backend/frontend ; matomo, matomo-db, uptime-kuma sans limite mémoire ni rotation de logs |
 | Deploy guard (no localhost in prod) | ✅ Done | `.env` validation at startup |
-| DB backup cron (daily 3am) | ❌ **NON — CRITIQUE** | **Aucune sauvegarde n'existe.** `scripts/backup-remote.sh:18` cible un service `db` absent du compose → no-op silencieux ; aucun cron ne l'installe (`deploy.sh` n'installe que le cleanup Docker). Perte de données irrécupérable en cas de sinistre (CRITICAL-8) |
-| Restauration testée | ❌ **NON** | Jamais testée. Aggravé par l'ordre de migrations cassé (HIGH-11) qui rend la reconstruction du schéma incertaine |
+| DB backup cron (daily 3am) | ⚠️ **Hors de ce dépôt** | Requalifié le 2026-07-26 : la sauvegarde est assurée par [`radnou/vps-infra`](https://github.com/radnou/vps-infra) — dump quotidien 03h00 UTC, push sur `main` de `vps-infra`. Les deux scripts locaux (`backup-db.sh`, `backup-remote.sh`) étaient des no-op jamais appelés et ont été supprimés. **Non attestable depuis ce dépôt** : vérifier avec `systemctl list-timers --all \| grep -i backup` et `crontab -l` |
+| Restauration testée | ❌ **NON** | Jamais testée, y compris pour les dumps produits par `vps-infra`. Aggravé par l'ordre de migrations cassé (HIGH-11) qui rend la reconstruction du schéma incertaine |
 | Docker cleanup cron (weekly) | ⚠️ Risque | `docker volume prune -f` peut détruire les volumes nommés (Docker < 23) |
 | CI/CD quality gate → auto-deploy | ⚠️ Partiel | Le gate de readiness est **inopérant** (`curl -sf` avale le 503 → le grep ne matche jamais) et le rollback est fictif (HIGH-11). Les migrations DB ne sont jouées par aucun chemin de déploiement (HIGH-12) |
 | Cron notifications idempotent | ❌ **NON** | Lancé dans chaque worker uvicorn sans verrou → emails en double, rejoués à chaque déploiement (CRITICAL-9) |

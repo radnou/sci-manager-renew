@@ -187,9 +187,21 @@ curl http://127.0.0.1:18000/health/live
 
 ### Sauvegardes Automatiques
 
-Le script de déploiement configure des sauvegardes automatiques :
-- **Base de données** : Tous les jours à 2h du matin
-- **SSL** : Renouvellement automatique tous les 3 mois
+**Assurées par le dépôt d'infrastructure [`radnou/vps-infra`](https://github.com/radnou/vps-infra), pas par ce dépôt.**
+D'après ce dépôt d'infra : dump quotidien des bases à 03h00 UTC, synchronisation
+des configurations, push sur la branche `main` de `vps-infra`, purge des fichiers
+SQL temporaires. Ce dépôt-ci n'installe aucune tâche de sauvegarde (`deploy.sh`
+n'installe que le nettoyage Docker).
+
+Vérification côté serveur — à faire, ce dépôt ne peut pas l'attester :
+
+```bash
+systemctl list-timers --all | grep -i backup
+crontab -l
+```
+
+Le certificat TLS est renouvelé automatiquement par Caddy (ACME), également géré
+dans `vps-infra`.
 
 ### Mise à Jour de l'Application
 
@@ -227,12 +239,16 @@ sudo journalctl -u caddy --since "1 hour ago"
 ### Problème : Base de données inaccessible
 
 ```bash
-# Vérifiez la santé de la DB
-docker compose exec db pg_isready -U gerersci -d gerersci_prod
+# Santé applicative (le backend teste sa connexion Supabase)
+curl -sS https://api.gerersci.fr/health/ready
 
-# Consultez les logs de la DB
-docker compose logs db
+# Logs du backend
+docker compose logs backend
 ```
+
+Il n'y a pas de service `db` dans ce compose : PostgreSQL est fourni par la stack
+Supabase, gérée dans `vps-infra`. Console de logs temps réel de tous les
+conteneurs : https://status.radnoumane.com (Dozzle).
 
 ## 🔐 Sécurité
 
@@ -284,10 +300,10 @@ docker compose logs db
 - [ ] Authentification Supabase OK
 - [ ] Base de données accessible
 - [ ] SSL valide (A+ sur SSL Labs)
-- [ ] ❌ **Sauvegardes automatiques : INEXISTANTES à ce jour** (audit CRITICAL-8).
-      `scripts/backup-remote.sh` cible un service `db` qui n'existe pas dans le
-      compose → no-op silencieux, et aucun cron ne l'appelle. **Faire un
-      `pg_dump` hors VPS avant toute autre action.** Voir `BACKLOG.md`.
+- [ ] ⚠️ **Sauvegardes : déléguées à `vps-infra`** (audit CRITICAL-8, requalifié le
+      2026-07-26). Les deux scripts de ce dépôt étaient des no-op jamais appelés
+      et ont été supprimés. Reste à **vérifier côté serveur** que la tâche
+      quotidienne tourne et qu'un dump récent est restaurable — voir `TODO.md`.
 - [ ] Monitoring configuré (Uptime Kuma + Sentry uniquement — cf. ci-dessus)
 
 ## 📞 Support
