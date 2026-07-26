@@ -5,9 +5,12 @@ def test_get_associes_requires_auth(client):
 
 def test_create_update_and_delete_associe(client, auth_headers, fake_supabase):
     # Libère de la capacité sur sci-2 pour accueillir un nouvel associé métier non connecté.
+    # role=gerant : depuis le correctif C3, la gestion des associés exige un rôle
+    # de gouvernance (le fixture par défaut est volontairement non habilité).
     for associe in fake_supabase.store["associes"]:
         if associe["id"] == "associe-2":
             associe["part"] = 60
+            associe["role"] = "gerant"
 
     created = client.post(
         "/api/v1/associes/",
@@ -121,7 +124,13 @@ def test_create_associe_unauthorized_sci(client, auth_headers):
     """Creating in a SCI the user doesn't belong to returns 403."""
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-unknown", "nom": "Intru", "email": "x@x.com", "part": 10, "role": "associe"},
+        json={
+            "id_sci": "sci-unknown",
+            "nom": "Intru",
+            "email": "x@x.com",
+            "part": 10,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 403
@@ -133,9 +142,16 @@ def test_create_associe_without_trailing_slash(client, auth_headers, fake_supaba
     for a in fake_supabase.store["associes"]:
         if a["id"] == "associe-2":
             a["part"] = 50
+            a["role"] = "gerant"  # gestion des associés réservée à la gouvernance (C3)
     resp = client.post(
         "/api/v1/associes",
-        json={"id_sci": "sci-2", "nom": "Nouveau", "email": "n@n.com", "part": 10, "role": "associe"},
+        json={
+            "id_sci": "sci-2",
+            "nom": "Nouveau",
+            "email": "n@n.com",
+            "part": 10,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -145,7 +161,13 @@ def test_create_associe_validation_error_short_name(client, auth_headers):
     """Pydantic rejects names shorter than 2 chars."""
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "A", "email": "a@a.com", "part": 5, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "A",
+            "email": "a@a.com",
+            "part": 5,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 422  # Pydantic validation
@@ -155,7 +177,13 @@ def test_create_associe_validation_error_part_zero(client, auth_headers):
     """Pydantic rejects part <= 0."""
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "Zero Part", "email": "z@z.com", "part": 0, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "Zero Part",
+            "email": "z@z.com",
+            "part": 0,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 422
@@ -166,7 +194,13 @@ def test_create_associe_capital_over_100_with_existing(client, auth_headers):
     # sci-1 seed: 60 + 40 = 100. Adding any part should fail.
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "Too Much", "email": "t@t.com", "part": 1, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "Too Much",
+            "email": "t@t.com",
+            "part": 1,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 400
@@ -202,8 +236,15 @@ def test_update_associe_unauthorized_sci(client, auth_headers, fake_supabase):
     """PATCH on an associe from an unauthorized SCI returns 403."""
     # Add an associe in a SCI user-123 doesn't belong to
     fake_supabase.store["associes"].append(
-        {"id": "associe-foreign", "id_sci": "sci-foreign", "user_id": None,
-         "nom": "Foreign", "email": "f@f.com", "part": 50, "role": "associe"}
+        {
+            "id": "associe-foreign",
+            "id_sci": "sci-foreign",
+            "user_id": None,
+            "nom": "Foreign",
+            "email": "f@f.com",
+            "part": 50,
+            "role": "associe",
+        }
     )
     resp = client.patch(
         "/api/v1/associes/associe-foreign",
@@ -262,8 +303,15 @@ def test_delete_associe_not_found(client, auth_headers):
 def test_delete_associe_unauthorized_sci(client, auth_headers, fake_supabase):
     """DELETE on an associe from a SCI the user doesn't belong to returns 403."""
     fake_supabase.store["associes"].append(
-        {"id": "associe-foreign-del", "id_sci": "sci-foreign", "user_id": None,
-         "nom": "Foreign Del", "email": "fd@f.com", "part": 50, "role": "associe"}
+        {
+            "id": "associe-foreign-del",
+            "id_sci": "sci-foreign",
+            "user_id": None,
+            "nom": "Foreign Del",
+            "email": "fd@f.com",
+            "part": 50,
+            "role": "associe",
+        }
     )
     resp = client.delete("/api/v1/associes/associe-foreign-del", headers=auth_headers)
     assert resp.status_code == 403
@@ -274,18 +322,33 @@ def test_delete_last_associe_blocked(client, auth_headers, fake_supabase):
     # sci-2 has only associe-2 (user-123), but self-delete check comes first.
     # Create a SCI with a single non-self associe to test last-associe guard.
     fake_supabase.store["associes"].append(
-        {"id": "solo-assoc", "id_sci": "sci-1", "user_id": None,
-         "nom": "Solo", "email": "s@s.com", "part": 10, "role": "associe"}
+        {
+            "id": "solo-assoc",
+            "id_sci": "sci-1",
+            "user_id": None,
+            "nom": "Solo",
+            "email": "s@s.com",
+            "part": 10,
+            "role": "associe",
+        }
     )
     # Remove the two existing sci-1 associes so solo-assoc is the only one
     fake_supabase.store["associes"] = [
-        a for a in fake_supabase.store["associes"]
+        a
+        for a in fake_supabase.store["associes"]
         if not (a["id_sci"] == "sci-1" and a["id"] != "solo-assoc")
     ]
     # user-123 needs access to sci-1 still → add a membership
     fake_supabase.store["associes"].append(
-        {"id": "access-assoc", "id_sci": "sci-1", "user_id": "user-123",
-         "nom": "Access", "email": "a@a.com", "part": 5, "role": "gerant"}
+        {
+            "id": "access-assoc",
+            "id_sci": "sci-1",
+            "user_id": "user-123",
+            "nom": "Access",
+            "email": "a@a.com",
+            "part": 5,
+            "role": "gerant",
+        }
     )
     resp = client.delete("/api/v1/associes/solo-assoc", headers=auth_headers)
     # Could be last-associe or self-delete depending on order.
@@ -302,8 +365,15 @@ def test_delete_last_gerant_blocked(client, auth_headers, fake_supabase):
     # Actually, we need to make associe-1b a gerant, remove user_id, then delete.
     # Let's create a scenario: 2 associes, only 1 is gerant, try deleting the gerant.
     fake_supabase.store["associes"].append(
-        {"id": "gerant-only", "id_sci": "sci-1", "user_id": None,
-         "nom": "Only Gerant", "email": "g@g.com", "part": 0.1, "role": "gerant"}
+        {
+            "id": "gerant-only",
+            "id_sci": "sci-1",
+            "user_id": None,
+            "nom": "Only Gerant",
+            "email": "g@g.com",
+            "part": 0.1,
+            "role": "gerant",
+        }
     )
     # sci-1 now has: associe-1 (gerant, user-123), associe-1b (associe), gerant-only (gerant, no user)
     # Delete gerant-only: there are 2 gerants → allowed
@@ -331,36 +401,50 @@ def test_delete_single_gerant_blocked(client, auth_headers, fake_supabase):
         a for a in fake_supabase.store["associes"] if a["id_sci"] != "sci-1"
     ]
     # Add: user-123 as gerant (self), and a non-gerant target
-    fake_supabase.store["associes"].extend([
-        {"id": "g-self", "id_sci": "sci-1", "user_id": "user-123",
-         "nom": "Self Gerant", "email": "sg@g.com", "part": 50, "role": "gerant"},
-        {"id": "target-gerant", "id_sci": "sci-1", "user_id": None,
-         "nom": "Target Gerant", "email": "tg@g.com", "part": 50, "role": "gerant"},
-    ])
+    fake_supabase.store["associes"].extend(
+        [
+            {
+                "id": "g-self",
+                "id_sci": "sci-1",
+                "user_id": "user-123",
+                "nom": "Self Gerant",
+                "email": "sg@g.com",
+                "part": 50,
+                "role": "gerant",
+            },
+            {
+                "id": "target-gerant",
+                "id_sci": "sci-1",
+                "user_id": None,
+                "nom": "Target Gerant",
+                "email": "tg@g.com",
+                "part": 50,
+                "role": "gerant",
+            },
+        ]
+    )
     # Now 2 gerants. Delete target-gerant → 1 gerant remains → allowed.
     resp = client.delete("/api/v1/associes/target-gerant", headers=auth_headers)
     assert resp.status_code == 204
 
-    # Now only g-self is gerant. Add another non-gerant so last-associe doesn't trigger.
+    # Ajoute un non-gérant pour que le garde-fou « dernier associé » ne se
+    # déclenche pas avant celui du dernier gérant.
     fake_supabase.store["associes"].append(
-        {"id": "non-gerant", "id_sci": "sci-1", "user_id": None,
-         "nom": "Non Gerant", "email": "ng@g.com", "part": 10, "role": "associe"}
+        {
+            "id": "non-gerant",
+            "id_sci": "sci-1",
+            "user_id": None,
+            "nom": "Non Gerant",
+            "email": "ng@g.com",
+            "part": 10,
+            "role": "associe",
+        }
     )
-    # Make non-gerant a gerant too, then try to make it the last
-    # Actually: add a gerant with no user_id, so we can delete it and trigger last-gerant.
-    fake_supabase.store["associes"].append(
-        {"id": "last-g", "id_sci": "sci-1", "user_id": None,
-         "nom": "Last Gerant", "email": "lg@g.com", "part": 5, "role": "gerant"}
-    )
-    # Now gerants in sci-1: g-self (user-123) + last-g. Delete last-g → 1 gerant (g-self) → allowed (1 remains).
-    # We need exactly 1 gerant total and try to delete THAT one. But self-delete blocks first.
-    # The only way to trigger last-gerant: target is a gerant, not self, and is the last gerant.
-    # Remove g-self's gerant role, make last-g the ONLY gerant.
-    for a in fake_supabase.store["associes"]:
-        if a["id"] == "g-self":
-            a["role"] = "associe"  # no longer gerant
-    # Now only last-g is gerant. Delete last-g:
-    resp2 = client.delete("/api/v1/associes/last-g", headers=auth_headers)
+    # g-self est désormais le seul rôle de gouvernance de sci-1. Depuis le
+    # correctif C3, seul un gérant peut supprimer un associé : le seul scénario
+    # qui atteint le garde-fou « dernier gérant » est donc le gérant unique qui
+    # supprime sa propre ligne. Ce contrôle passe avant celui de l'auto-suppression.
+    resp2 = client.delete("/api/v1/associes/g-self", headers=auth_headers)
     assert resp2.status_code == 400
     assert "dernier gérant" in resp2.json()["error"]
 
@@ -372,12 +456,28 @@ def test_delete_last_associe_in_sci(client, auth_headers, fake_supabase):
     fake_supabase.store["associes"] = [
         a for a in fake_supabase.store["associes"] if a["id_sci"] != "sci-1"
     ]
-    fake_supabase.store["associes"].extend([
-        {"id": "keeper", "id_sci": "sci-1", "user_id": "user-123",
-         "nom": "Keeper", "email": "k@k.com", "part": 50, "role": "gerant"},
-        {"id": "lonely", "id_sci": "sci-1", "user_id": None,
-         "nom": "Lonely", "email": "l@l.com", "part": 50, "role": "associe"},
-    ])
+    fake_supabase.store["associes"].extend(
+        [
+            {
+                "id": "keeper",
+                "id_sci": "sci-1",
+                "user_id": "user-123",
+                "nom": "Keeper",
+                "email": "k@k.com",
+                "part": 50,
+                "role": "gerant",
+            },
+            {
+                "id": "lonely",
+                "id_sci": "sci-1",
+                "user_id": None,
+                "nom": "Lonely",
+                "email": "l@l.com",
+                "part": 50,
+                "role": "associe",
+            },
+        ]
+    )
     # 2 associes in sci-1. Delete lonely → 1 remains → allowed.
     resp = client.delete("/api/v1/associes/lonely", headers=auth_headers)
     assert resp.status_code == 204
@@ -386,12 +486,28 @@ def test_delete_last_associe_in_sci(client, auth_headers, fake_supabase):
     fake_supabase.store["associes"] = [
         a for a in fake_supabase.store["associes"] if a["id_sci"] != "sci-1"
     ]
-    fake_supabase.store["associes"].extend([
-        {"id": "access-only", "id_sci": "sci-1", "user_id": "user-123",
-         "nom": "Access", "email": "a@a.com", "part": 1, "role": "gerant"},
-        {"id": "the-only-one", "id_sci": "sci-1", "user_id": None,
-         "nom": "Only One", "email": "o@o.com", "part": 99, "role": "associe"},
-    ])
+    fake_supabase.store["associes"].extend(
+        [
+            {
+                "id": "access-only",
+                "id_sci": "sci-1",
+                "user_id": "user-123",
+                "nom": "Access",
+                "email": "a@a.com",
+                "part": 1,
+                "role": "gerant",
+            },
+            {
+                "id": "the-only-one",
+                "id_sci": "sci-1",
+                "user_id": None,
+                "nom": "Only One",
+                "email": "o@o.com",
+                "part": 99,
+                "role": "associe",
+            },
+        ]
+    )
     # Remove access-only from sci-1 to leave just the-only-one. But user needs access...
     # The check counts associes in the SCI: if <= 1, block. With 2 (access-only + the-only-one), it passes.
     # We need exactly 1 in the SCI. But user needs to be in the SCI to have access.
@@ -415,11 +531,22 @@ def test_delete_self_row(client, auth_headers, fake_supabase):
     # associe-2 is in sci-2 alone → last-associe fires first.
     # Add another associe to sci-2 so last-associe check passes,
     # then self-delete check triggers.
-    # role=gerant : sans un second rôle de gouvernance, c'est le garde-fou
-    # "dernier gérant" qui se déclencherait avant le contrôle d'auto-suppression.
+    # Deux rôles de gouvernance sont nécessaires : l'appelant doit être gérant
+    # (correctif C3) et le garde-fou "dernier gérant" passe avant le contrôle
+    # d'auto-suppression.
+    for a in fake_supabase.store["associes"]:
+        if a["id"] == "associe-2":
+            a["role"] = "gerant"
     fake_supabase.store["associes"].append(
-        {"id": "extra-sci2", "id_sci": "sci-2", "user_id": None,
-         "nom": "Extra", "email": "e@e.com", "part": 10, "role": "gerant"}
+        {
+            "id": "extra-sci2",
+            "id_sci": "sci-2",
+            "user_id": None,
+            "nom": "Extra",
+            "email": "e@e.com",
+            "part": 10,
+            "role": "gerant",
+        }
     )
     resp = client.delete("/api/v1/associes/associe-2", headers=auth_headers)
     assert resp.status_code == 400
@@ -443,13 +570,26 @@ def test_parts_with_invalid_float_values(client, auth_headers, fake_supabase):
     """Non-numeric part values in existing rows are skipped (TypeError/ValueError branch)."""
     # Inject a row with a non-numeric part
     fake_supabase.store["associes"].append(
-        {"id": "bad-part", "id_sci": "sci-1", "user_id": None,
-         "nom": "Bad Part", "email": "b@b.com", "part": "not-a-number", "role": "associe"}
+        {
+            "id": "bad-part",
+            "id_sci": "sci-1",
+            "user_id": None,
+            "nom": "Bad Part",
+            "email": "b@b.com",
+            "part": "not-a-number",
+            "role": "associe",
+        }
     )
     # Existing valid parts: 60 + 40 = 100. Adding anything should fail regardless.
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "Extra", "email": "e@e.com", "part": 1, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "Extra",
+            "email": "e@e.com",
+            "part": 1,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 400
@@ -461,10 +601,17 @@ def test_parts_with_none_value(client, auth_headers, fake_supabase):
     for a in fake_supabase.store["associes"]:
         if a["id"] == "associe-2":
             a["part"] = None  # None → 0
+            a["role"] = "gerant"  # gestion des associés réservée à la gouvernance (C3)
     # Only None part → total = 0. Adding 50% → 50% total → OK
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-2", "nom": "Valid", "email": "v@v.com", "part": 50, "role": "associe"},
+        json={
+            "id_sci": "sci-2",
+            "nom": "Valid",
+            "email": "v@v.com",
+            "part": 50,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -473,9 +620,12 @@ def test_parts_with_none_value(client, auth_headers, fake_supabase):
 # ── EDGE CASES: _fetch_associes fallback (no in_ support) ────────────────
 
 
-def test_list_associes_fallback_without_in_support(client, auth_headers, fake_supabase, monkeypatch):
+def test_list_associes_fallback_without_in_support(
+    client, auth_headers, fake_supabase, monkeypatch
+):
     """When FakeQuery doesn't have in_, the fallback per-SCI loop is used."""
     from tests.conftest import FakeQuery as FQ
+
     original_in = FQ.in_
 
     try:
@@ -495,8 +645,15 @@ def test_list_associes_fallback_without_in_support(client, auth_headers, fake_su
 def test_require_sci_access_empty_id_sci(client, auth_headers, fake_supabase):
     """Associe with empty id_sci triggers DatabaseError on update."""
     fake_supabase.store["associes"].append(
-        {"id": "no-sci", "id_sci": "", "user_id": None,
-         "nom": "No Sci", "email": "ns@ns.com", "part": 10, "role": "associe"}
+        {
+            "id": "no-sci",
+            "id_sci": "",
+            "user_id": None,
+            "nom": "No Sci",
+            "email": "ns@ns.com",
+            "part": 10,
+            "role": "associe",
+        }
     )
     resp = client.patch(
         "/api/v1/associes/no-sci",
@@ -510,8 +667,15 @@ def test_require_sci_access_empty_id_sci(client, auth_headers, fake_supabase):
 def test_require_sci_access_none_id_sci(client, auth_headers, fake_supabase):
     """Associe with None id_sci triggers DatabaseError on delete."""
     fake_supabase.store["associes"].append(
-        {"id": "none-sci", "id_sci": None, "user_id": None,
-         "nom": "None Sci", "email": "ns@ns.com", "part": 10, "role": "associe"}
+        {
+            "id": "none-sci",
+            "id_sci": None,
+            "user_id": None,
+            "nom": "None Sci",
+            "email": "ns@ns.com",
+            "part": 10,
+            "role": "associe",
+        }
     )
     # _fetch_associe finds it, id_sci = str(None) = "None" or "" depending on get
     # Actually: existing.get("id_sci") = None → str(None or "") = "" → _require_sci_access("", ...) → empty → DatabaseError
@@ -550,7 +714,10 @@ def test_list_associes_no_memberships(client, auth_headers, fake_supabase):
 
 
 def test_create_associe_requires_auth(client):
-    resp = client.post("/api/v1/associes/", json={"id_sci": "sci-1", "nom": "Test", "part": 10, "role": "associe"})
+    resp = client.post(
+        "/api/v1/associes/",
+        json={"id_sci": "sci-1", "nom": "Test", "part": 10, "role": "associe"},
+    )
     assert resp.status_code == 401
 
 
@@ -587,10 +754,16 @@ def test_create_associe_generic_exception(client, auth_headers, monkeypatch):
     def boom(*a, **kw):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(mod, "_get_user_sci_ids", boom)
+    monkeypatch.setattr(mod, "_require_gerant", boom)
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "Test", "email": "t@t.com", "part": 5, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "Test",
+            "email": "t@t.com",
+            "part": 5,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 503
@@ -603,7 +776,7 @@ def test_update_associe_generic_exception(client, auth_headers, monkeypatch):
     def boom(*a, **kw):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(mod, "_get_user_sci_ids", boom)
+    monkeypatch.setattr(mod, "_require_gerant", boom)
     resp = client.patch(
         "/api/v1/associes/associe-1",
         json={"nom": "Crash"},
@@ -619,7 +792,7 @@ def test_delete_associe_generic_exception(client, auth_headers, monkeypatch):
     def boom(*a, **kw):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(mod, "_get_user_sci_ids", boom)
+    monkeypatch.setattr(mod, "_require_gerant", boom)
     resp = client.delete("/api/v1/associes/associe-1", headers=auth_headers)
     assert resp.status_code == 503
 
@@ -680,6 +853,7 @@ def test_create_insert_returns_error(client, auth_headers, fake_supabase, monkey
 
                 def execute_with_error():
                     from tests.conftest import FakeResult
+
                     return FakeResult(data=[], error="insert failed")
 
                 result_q.execute = execute_with_error
@@ -691,7 +865,13 @@ def test_create_insert_returns_error(client, auth_headers, fake_supabase, monkey
     monkeypatch.setattr(fake_supabase, "table", table_with_insert_error)
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "Insert Fail", "email": "if@if.com", "part": 5, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "Insert Fail",
+            "email": "if@if.com",
+            "part": 5,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 503
@@ -716,6 +896,7 @@ def test_create_insert_returns_empty(client, auth_headers, fake_supabase, monkey
 
                 def execute_empty():
                     from tests.conftest import FakeResult
+
                     return FakeResult(data=[])
 
                 result_q.execute = execute_empty
@@ -727,7 +908,13 @@ def test_create_insert_returns_empty(client, auth_headers, fake_supabase, monkey
     monkeypatch.setattr(fake_supabase, "table", table_with_empty_insert)
     resp = client.post(
         "/api/v1/associes/",
-        json={"id_sci": "sci-1", "nom": "Empty Insert", "email": "ei@ei.com", "part": 5, "role": "associe"},
+        json={
+            "id_sci": "sci-1",
+            "nom": "Empty Insert",
+            "email": "ei@ei.com",
+            "part": 5,
+            "role": "associe",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 503
@@ -752,6 +939,7 @@ def test_update_returns_error(client, auth_headers, fake_supabase, monkeypatch):
 
                     def execute_with_error():
                         from tests.conftest import FakeResult
+
                         return FakeResult(data=[], error="update failed")
 
                     final_q.execute = execute_with_error
@@ -791,6 +979,7 @@ def test_update_returns_empty(client, auth_headers, fake_supabase, monkeypatch):
 
                     def execute_empty():
                         from tests.conftest import FakeResult
+
                         return FakeResult(data=[])
 
                     final_q.execute = execute_empty
@@ -830,6 +1019,7 @@ def test_delete_returns_error(client, auth_headers, fake_supabase, monkeypatch):
 
                     def execute_with_error():
                         from tests.conftest import FakeResult
+
                         return FakeResult(data=[], error="delete failed")
 
                     final_q.execute = execute_with_error
@@ -846,7 +1036,9 @@ def test_delete_returns_error(client, auth_headers, fake_supabase, monkeypatch):
     assert resp.status_code == 503
 
 
-def test_delete_last_associe_in_sci_blocked(client, auth_headers, fake_supabase, monkeypatch):
+def test_delete_last_associe_in_sci_blocked(
+    client, auth_headers, fake_supabase, monkeypatch
+):
     """Deleting when only 1 associe remains in the SCI is blocked."""
     from app.api.v1 import associes as mod
 
@@ -859,6 +1051,7 @@ def test_delete_last_associe_in_sci_blocked(client, auth_headers, fake_supabase,
         # delete flow: 1=_get_user_memberships, 2=_fetch_associe, 3=sci_associes count
         if call_count == 3:
             from tests.conftest import FakeResult
+
             # Return only 1 associe → triggers last-associe guard
             return [{"id": "associe-1b"}]
         return original(query)

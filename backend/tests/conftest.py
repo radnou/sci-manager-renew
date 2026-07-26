@@ -23,28 +23,127 @@ limiter.enabled = False
 
 _INITIAL_STORE: dict[str, list[dict]] = {
     "sci": [
-        {"id": "sci-1", "nom": "SCI Mosa Belleville", "siren": "123456789", "regime_fiscal": "IR", "adresse_siege": "12 rue de Belleville, 75020 Paris", "capital_social": 10000, "nom_gerant": "Test User"},
-        {"id": "sci-2", "nom": "SCI Horizon Lyon", "siren": "987654321", "regime_fiscal": "IS", "adresse_siege": None, "capital_social": None, "nom_gerant": None},
+        {
+            "id": "sci-1",
+            "nom": "SCI Mosa Belleville",
+            "siren": "123456789",
+            "regime_fiscal": "IR",
+            "adresse_siege": "12 rue de Belleville, 75020 Paris",
+            "capital_social": 10000,
+            "nom_gerant": "Test User",
+        },
+        {
+            "id": "sci-2",
+            "nom": "SCI Horizon Lyon",
+            "siren": "987654321",
+            "regime_fiscal": "IS",
+            "adresse_siege": None,
+            "capital_social": None,
+            "nom_gerant": None,
+        },
     ],
     "biens": [
-        {"id": "bien-1", "id_sci": "sci-1", "adresse": "1 rue de la Paix", "ville": "Paris", "code_postal": "75001", "type_bien": "appartement", "surface_m2": 50, "nb_pieces": 2, "loyer_cc": 1200, "statut": "loue", "tmi": 30, "is_demo": False},
-        {"id": "bien-9", "id_sci": "sci-2", "adresse": "42 avenue QA", "ville": "Lyon", "code_postal": "69001", "type_bien": "appartement", "surface_m2": 35, "nb_pieces": 1, "loyer_cc": 980, "statut": "loue", "tmi": 30, "is_demo": False},
-        {"id": "bien-free", "id_sci": "sci-1", "adresse": "5 rue Gratuite", "ville": "Lyon", "code_postal": "69002", "type_bien": "studio", "surface_m2": 20, "nb_pieces": 1, "loyer_cc": 800, "statut": "loue", "tmi": 30, "is_demo": False},
+        {
+            "id": "bien-1",
+            "id_sci": "sci-1",
+            "adresse": "1 rue de la Paix",
+            "ville": "Paris",
+            "code_postal": "75001",
+            "type_bien": "appartement",
+            "surface_m2": 50,
+            "nb_pieces": 2,
+            "loyer_cc": 1200,
+            "statut": "loue",
+            "tmi": 30,
+            "is_demo": False,
+        },
+        {
+            "id": "bien-9",
+            "id_sci": "sci-2",
+            "adresse": "42 avenue QA",
+            "ville": "Lyon",
+            "code_postal": "69001",
+            "type_bien": "appartement",
+            "surface_m2": 35,
+            "nb_pieces": 1,
+            "loyer_cc": 980,
+            "statut": "loue",
+            "tmi": 30,
+            "is_demo": False,
+        },
+        {
+            "id": "bien-free",
+            "id_sci": "sci-1",
+            "adresse": "5 rue Gratuite",
+            "ville": "Lyon",
+            "code_postal": "69002",
+            "type_bien": "studio",
+            "surface_m2": 20,
+            "nb_pieces": 1,
+            "loyer_cc": 800,
+            "statut": "loue",
+            "tmi": 30,
+            "is_demo": False,
+        },
     ],
     "loyers": [
-        {"id": "loyer-1", "id_bien": "bien-1", "date_loyer": "2026-03-01", "montant": 1200.0, "statut": "paye"},
-        {"id": "loyer-2", "id_bien": "bien-9", "date_loyer": "2026-04-01", "montant": 980.0, "statut": "paye"},
-        {"id": "loyer-free", "id_bien": "bien-free", "date_loyer": "2026-01-01", "montant": 800.0, "statut": "paye"},
+        {
+            "id": "loyer-1",
+            "id_bien": "bien-1",
+            "date_loyer": "2026-03-01",
+            "montant": 1200.0,
+            "statut": "paye",
+        },
+        {
+            "id": "loyer-2",
+            "id_bien": "bien-9",
+            "date_loyer": "2026-04-01",
+            "montant": 980.0,
+            "statut": "paye",
+        },
+        {
+            "id": "loyer-free",
+            "id_bien": "bien-free",
+            "date_loyer": "2026-01-01",
+            "montant": 800.0,
+            "statut": "paye",
+        },
     ],
     "baux": [
-        {"id": "bail-1", "id_bien": "bien-1", "date_debut": "2025-01-01", "date_fin": "2027-12-31", "loyer_hc": 1000.0, "charges_locatives": 200.0, "statut": "en_cours", "is_demo": False},
-        {"id": "bail-9", "id_bien": "bien-9", "date_debut": "2025-06-01", "date_fin": None, "loyer_hc": 800.0, "charges_locatives": 180.0, "statut": "en_cours", "is_demo": False},
+        {
+            "id": "bail-1",
+            "id_bien": "bien-1",
+            "date_debut": "2025-01-01",
+            "date_fin": "2027-12-31",
+            "loyer_hc": 1000.0,
+            "charges_locatives": 200.0,
+            "statut": "en_cours",
+            "is_demo": False,
+        },
+        {
+            "id": "bail-9",
+            "id_bien": "bien-9",
+            "date_debut": "2025-06-01",
+            "date_fin": None,
+            "loyer_hc": 800.0,
+            "charges_locatives": 180.0,
+            "statut": "en_cours",
+            "is_demo": False,
+        },
     ],
     "bail_locataires": [
         {"id": "bl-1", "id_bail": "bail-1", "id_locataire": "loc-1"},
     ],
     "locataires": [
-        {"id": "loc-1", "id_bien": "bien-1", "nom": "Dupont", "prenom": "Jean", "email": "jean@test.fr", "date_debut": "2025-01-01", "date_fin": None},
+        {
+            "id": "loc-1",
+            "id_bien": "bien-1",
+            "nom": "Dupont",
+            "prenom": "Jean",
+            "email": "jean@test.fr",
+            "date_debut": "2025-01-01",
+            "date_fin": None,
+        },
     ],
     "quittance_compteur": [],
     "charges": [],
@@ -53,33 +152,84 @@ _INITIAL_STORE: dict[str, list[dict]] = {
         {"user_id": "user-123"},
     ],
     "subscriptions": [
-        {"id": "sub-1", "user_id": "user-123", "status": "active", "plan_key": "pro", "is_active": True, "onboarding_completed": True},
+        {
+            "id": "sub-1",
+            "user_id": "user-123",
+            "status": "active",
+            "plan_key": "pro",
+            "is_active": True,
+            "onboarding_completed": True,
+        },
     ],
     "associes": [
-        {"id": "associe-1", "id_sci": "sci-1", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 60, "role": "gerant", "is_demo": False},
-        {"id": "associe-1b", "id_sci": "sci-1", "user_id": "user-456", "nom": "Camille Bernard", "email": "camille.bernard@sci.local", "part": 40, "role": "associe", "is_demo": False},
-        # role=gerant : depuis le correctif C3 (audit 2026-07-25), la gestion des
-        # associés est réservée aux rôles de gouvernance. Les tests métier de
-        # sci-2 (création/suppression d'associés) supposent un utilisateur
-        # habilité ; l'absence d'habilitation est couverte séparément par
-        # tests/test_api/test_associes_security.py.
-        {"id": "associe-2", "id_sci": "sci-2", "user_id": "user-123", "nom": "Test User", "email": "test.user@sci.local", "part": 100, "role": "gerant", "is_demo": False},
+        {
+            "id": "associe-1",
+            "id_sci": "sci-1",
+            "user_id": "user-123",
+            "nom": "Test User",
+            "email": "test.user@sci.local",
+            "part": 60,
+            "role": "gerant",
+            "is_demo": False,
+        },
+        {
+            "id": "associe-1b",
+            "id_sci": "sci-1",
+            "user_id": "user-456",
+            "nom": "Camille Bernard",
+            "email": "camille.bernard@sci.local",
+            "part": 40,
+            "role": "associe",
+            "is_demo": False,
+        },
+        # role=associe VOLONTAIRE : user-123 est gérant de sci-1 mais simple
+        # associé de sci-2. C'est le seul fixture « membre non habilité » du
+        # projet — il sert de base négative aux gates de gouvernance
+        # (test_scis::test_*_requires_gerant, test_associes_security).
+        # Un test qui a besoin des droits de gestion sur sci-2 promeut la ligne
+        # localement ; ne pas la passer à `gerant` ici, cela rendrait le défaut
+        # permissif et désactiverait silencieusement ces tests négatifs.
+        {
+            "id": "associe-2",
+            "id_sci": "sci-2",
+            "user_id": "user-123",
+            "nom": "Test User",
+            "email": "test.user@sci.local",
+            "part": 100,
+            "role": "associe",
+            "is_demo": False,
+        },
     ],
     "deficit_reportable": [],
     "assurances_pno": [
-        {"id": "pno-1", "id_bien": "bien-1", "compagnie": "MAIF", "date_echeance": "2026-06-01", "montant_annuel": 280},
+        {
+            "id": "pno-1",
+            "id_bien": "bien-1",
+            "compagnie": "MAIF",
+            "date_echeance": "2026-06-01",
+            "montant_annuel": 280,
+        },
     ],
     "evenements_bien": [],
     "calendrier_fiscal": [],
     "assemblees_generales": [
-        {"id": "ag-1", "id_sci": "sci-1", "date_ag": "2026-06-15", "type_ag": "ordinaire", "exercice_annee": 2025, "quorum_atteint": False},
+        {
+            "id": "ag-1",
+            "id_sci": "sci-1",
+            "date_ag": "2026-06-15",
+            "type_ag": "ordinaire",
+            "exercice_annee": 2025,
+            "quorum_atteint": False,
+        },
     ],
     "notifications": [],
 }
 
 
 class FakeResult:
-    def __init__(self, data: list[dict], error: str | None = None, count: int | None = None):
+    def __init__(
+        self, data: list[dict], error: str | None = None, count: int | None = None
+    ):
         self.data = data
         self.error = error
         self.count = len(data) if count is None else count
@@ -289,21 +439,33 @@ class FakeQuery:
 class FakeAuthAdmin:
     def list_users(self, page=1, per_page=50):
         return [
-            type("User", (), {
-                "id": "user-123",
-                "email": "test@sci.local",
-                "created_at": "2026-01-01T00:00:00",
-            })()
+            type(
+                "User",
+                (),
+                {
+                    "id": "user-123",
+                    "email": "test@sci.local",
+                    "created_at": "2026-01-01T00:00:00",
+                },
+            )()
         ]
 
     def get_user_by_id(self, user_id):
-        return type("UserResponse", (), {
-            "user": type("User", (), {
-                "id": user_id,
-                "email": "test@sci.local",
-                "created_at": "2026-01-01T00:00:00",
-            })()
-        })()
+        return type(
+            "UserResponse",
+            (),
+            {
+                "user": type(
+                    "User",
+                    (),
+                    {
+                        "id": user_id,
+                        "email": "test@sci.local",
+                        "created_at": "2026-01-01T00:00:00",
+                    },
+                )()
+            },
+        )()
 
 
 class FakeAuth:
@@ -325,7 +487,9 @@ class _FakeBucket:
         return f"https://storage.local/storage/v1/object/public/documents/{path}"
 
     def create_signed_url(self, path: str, expires_in: int = 3600) -> dict:
-        return {"signedURL": f"https://storage.local/storage/v1/object/sign/documents/{path}?token=fake&expires_in={expires_in}"}
+        return {
+            "signedURL": f"https://storage.local/storage/v1/object/sign/documents/{path}?token=fake&expires_in={expires_in}"
+        }
 
     def remove(self, paths: list[str]):
         self.removed.append(paths)
@@ -352,24 +516,27 @@ class FakeRpcQuery:
             sci_id = self.params.get("p_sci_id")
             annee_mois = self.params.get("p_annee_mois")
             compteurs = self.store.setdefault("quittance_compteur", [])
-            
+
             # Find or create counter
             counter = None
             for c in compteurs:
-                if str(c.get("sci_id")) == str(sci_id) and c.get("annee_mois") == annee_mois:
+                if (
+                    str(c.get("sci_id")) == str(sci_id)
+                    and c.get("annee_mois") == annee_mois
+                ):
                     counter = c
                     break
-            
+
             if counter:
                 counter["dernier_numero"] += 1
             else:
                 counter = {
                     "sci_id": sci_id,
                     "annee_mois": annee_mois,
-                    "dernier_numero": 1
+                    "dernier_numero": 1,
                 }
                 compteurs.append(counter)
-                
+
             return FakeResult(data=counter["dernier_numero"])
         return FakeResult(data=None)
 
@@ -380,6 +547,7 @@ class FakeSupabaseClient:
         self.storage = _FakeStorageProxy()
         self.store: dict[str, list[dict]] = deepcopy(_INITIAL_STORE)
         import app.core.supabase_client as s_client
+
         s_client._test_client = self
 
     def reset_store(self):
@@ -396,6 +564,7 @@ class FakeSupabaseClient:
 
 # ── Session-scoped fixtures (boot app + monkeypatch once per worker) ─────
 
+
 @pytest.fixture(scope="session")
 def _fake_storage_session():
     class FakeStorageService:
@@ -408,7 +577,12 @@ def _fake_storage_session():
         async def create_bucket_if_not_exists(self) -> bool:
             return True
 
-        async def upload_file(self, file_path: str, file_content: bytes, content_type: str = "application/pdf") -> str:
+        async def upload_file(
+            self,
+            file_path: str,
+            file_content: bytes,
+            content_type: str = "application/pdf",
+        ) -> str:
             self.files[file_path] = bytes(file_content)
             return f"https://storage.local/{file_path}"
 
@@ -438,10 +612,31 @@ def _fake_supabase_session() -> FakeSupabaseClient:
 @pytest.fixture(scope="session")
 def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient:
     """Boot TestClient + monkeypatch once per xdist worker."""
-    from app.api.v1 import associes, biens, biens_flat, charges, export, fiscalite, locataires, loyers, notifications, quitus, scis, declarations
+    from app.api.v1 import (
+        associes,
+        biens,
+        biens_flat,
+        charges,
+        export,
+        fiscalite,
+        locataires,
+        loyers,
+        notifications,
+        quitus,
+        scis,
+        declarations,
+    )
     from app.services import declaration_2065_service
     from app.api.v1 import dashboard, notification_preferences
-    from app.api.v1 import assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle, calendrier_fiscal, leads
+    from app.api.v1 import (
+        assemblees_generales,
+        mouvements_parts,
+        import_csv,
+        echeances,
+        sci_lifecycle,
+        calendrier_fiscal,
+        leads,
+    )
     from app.api.v1.biens import (
         biens_core,
         biens_loyers,
@@ -453,7 +648,16 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         biens_evenements,
     )
     from app import main
-    from app.api.v1 import auth, files, gdpr, stripe, onboarding, finances, admin, declarations
+    from app.api.v1 import (
+        auth,
+        files,
+        gdpr,
+        stripe,
+        onboarding,
+        finances,
+        admin,
+        declarations,
+    )
     from app.services import subscription_service, declaration_2065_service
     from app.core import supabase_client as supabase_client_mod, paywall as paywall_mod
 
@@ -465,28 +669,74 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
 
         def fake_service():
             return fake_supabase
+
         fake_service.cache_clear = lambda: None
 
-        for mod in [associes, biens_flat, charges, export, fiscalite, loyers, locataires, scis,
-                    notifications, dashboard, notification_preferences, quitus,
-                    assemblees_generales, mouvements_parts, import_csv, echeances, sci_lifecycle,
-                    calendrier_fiscal, leads, declarations,
-                    biens_core, biens_loyers, biens_baux, biens_charges,
-                    biens_pno, biens_frais, biens_documents, biens_evenements,
-                    declarations, declaration_2065_service]:
+        for mod in [
+            associes,
+            biens_flat,
+            charges,
+            export,
+            fiscalite,
+            loyers,
+            locataires,
+            scis,
+            notifications,
+            dashboard,
+            notification_preferences,
+            quitus,
+            assemblees_generales,
+            mouvements_parts,
+            import_csv,
+            echeances,
+            sci_lifecycle,
+            calendrier_fiscal,
+            leads,
+            declarations,
+            biens_core,
+            biens_loyers,
+            biens_baux,
+            biens_charges,
+            biens_pno,
+            biens_frais,
+            biens_documents,
+            biens_evenements,
+            declarations,
+            declaration_2065_service,
+        ]:
             mp.setattr(mod, "get_supabase_service_client", fake_service, raising=False)
-            mp.setattr(mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
+            mp.setattr(
+                mod,
+                "get_supabase_user_client",
+                lambda request=None: fake_supabase,
+                raising=False,
+            )
 
         def fake_anon():
             return fake_supabase
+
         fake_anon.cache_clear = lambda: None
 
         def fake_user_client(request=None):
             return fake_supabase
 
-        for _mod in [auth, files, gdpr, stripe, subscription_service, onboarding, finances, declaration_2065_service]:
+        for _mod in [
+            auth,
+            files,
+            gdpr,
+            stripe,
+            subscription_service,
+            onboarding,
+            finances,
+            declaration_2065_service,
+        ]:
             mp.setattr(_mod, "get_supabase_service_client", fake_service, raising=False)
-            mp.setattr(_mod, "get_supabase_user_client", lambda request=None: fake_supabase, raising=False)
+            mp.setattr(
+                _mod,
+                "get_supabase_user_client",
+                lambda request=None: fake_supabase,
+                raising=False,
+            )
         mp.setattr(admin, "get_service_client", fake_service, raising=False)
         mp.setattr(supabase_client_mod, "get_supabase_service_client", fake_service)
         mp.setattr(supabase_client_mod, "get_supabase_anon_client", fake_anon)
@@ -502,6 +752,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
         # The _jwks_cache dict is module-level in security.py; mutating it
         # in-place ensures all references see the update.
         import app.core.security as _sec_mod
+
         _sec_mod._jwks_cache["keys"] = []
         _sec_mod._jwks_cache["expires_at"] = 1e15  # ~year 33658, never expires
 
@@ -510,6 +761,7 @@ def _session_client(_fake_supabase_session, _fake_storage_session) -> TestClient
 
 
 # ── Function-scoped fixtures (exposed to tests, reset store each time) ───
+
 
 @pytest.fixture(autouse=True)
 def _reset_store(_fake_supabase_session, _fake_storage_session):

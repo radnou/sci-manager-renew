@@ -46,11 +46,14 @@ def enforce_mode(monkeypatch):
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
     """Active subscription with max_biens=1, user already has 1 bien -> 402 PlanLimitError."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
+    # 5 biens = quota réel du plan Gestion (catalogue serveur). Depuis le
+    # correctif C1, les max_* portés par la ligne `subscriptions` sont ignorés :
+    # seul PLAN_CATALOG fait foi, il faut donc atteindre la vraie limite.
     fake_supabase.store["biens"] = [
         {
-            "id": "bien-existing-1",
+            "id": f"bien-existing-{i}",
             "id_sci": "sci-1",
-            "adresse": "1 rue Existante",
+            "adresse": f"{i} rue Existante",
             "ville": "Lyon",
             "code_postal": "69001",
             "type_locatif": "nu",
@@ -58,6 +61,7 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "charges": 0,
             "tmi": 0,
         }
+        for i in range(1, 6)
     ]
     # Active subscription with tight quota -> quota enforcement triggers.
     fake_supabase.store["subscriptions"] = [
@@ -68,15 +72,15 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
             "is_active": True,
             "stripe_price_id": "price_starter",
             "current_period_end": "2030-01-01T00:00:00+00:00",
-            "max_scis": 1,
-            "max_biens": 1,
             "features": {},
         }
     ]
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+    assert response.status_code == 402, (
+        f"Expected 402, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
@@ -85,11 +89,14 @@ def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase)
 
 def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase):
     """Verify the full error response structure for biens quota enforcement."""
+    # 5 biens = quota réel du plan Gestion (catalogue serveur). Depuis le
+    # correctif C1, les max_* portés par la ligne `subscriptions` sont ignorés :
+    # seul PLAN_CATALOG fait foi, il faut donc atteindre la vraie limite.
     fake_supabase.store["biens"] = [
         {
-            "id": "bien-existing-1",
+            "id": f"bien-existing-{i}",
             "id_sci": "sci-1",
-            "adresse": "1 rue Existante",
+            "adresse": f"{i} rue Existante",
             "ville": "Lyon",
             "code_postal": "69001",
             "type_locatif": "nu",
@@ -97,6 +104,7 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
             "charges": 0,
             "tmi": 0,
         }
+        for i in range(1, 6)
     ]
     # Active subscription with tight quota -> quota enforcement triggers.
     fake_supabase.store["subscriptions"] = [
@@ -107,8 +115,6 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
             "is_active": True,
             "stripe_price_id": "price_starter",
             "current_period_end": "2030-01-01T00:00:00+00:00",
-            "max_scis": 1,
-            "max_biens": 1,
             "features": {},
         }
     ]
@@ -121,8 +127,8 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
     assert "error" in body
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "biens"
-    assert body["details"]["limit"] == 1
-    assert body["details"]["current"] == 1
+    assert body["details"]["limit"] == 5  # quota catalogue du plan Gestion
+    assert body["details"]["current"] == 5
     assert body["details"]["plan_key"] == "starter"
     assert "request_id" in body
 
@@ -174,7 +180,9 @@ def test_create_bien_within_quota_allowed(client, auth_headers, fake_supabase):
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+    assert response.status_code == 201, (
+        f"Expected 201, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["adresse"] == BIEN_PAYLOAD["adresse"]
     assert body["id_sci"] == "sci-1"
@@ -216,7 +224,9 @@ def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+    assert response.status_code == 402, (
+        f"Expected 402, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "scis"
@@ -265,7 +275,9 @@ def test_create_sci_over_quota_error_format(client, auth_headers, fake_supabase)
     assert "request_id" in body
 
 
-def test_create_sci_upgrade_required_returns_402(client, auth_headers, fake_supabase):
+def test_create_sci_upgrade_required_returns_402(
+    client, auth_headers, fake_supabase, monkeypatch
+):
     """Custom plan: max_scis=5, multi_sci_enabled=False, user already has 1 SCI.
 
     enforce_limit passes (current_scis=1 < max_scis=5), but multi_sci_enabled=False
@@ -274,7 +286,25 @@ def test_create_sci_upgrade_required_returns_402(client, auth_headers, fake_supa
     This is an artificial scenario to isolate the UpgradeRequired code path, since
     in practice FREE and STARTER both have max_scis=1 with multi_sci_enabled=False,
     so enforce_limit always fires first.
+
+    Depuis le correctif C1, la ligne `subscriptions` ne peut plus imposer ses
+    propres max_*/features : le scénario doit être monté sur le catalogue
+    serveur, seule source de vérité.
     """
+    import dataclasses
+
+    from app.core import entitlements
+    from app.core.entitlements import PlanKey
+
+    monkeypatch.setitem(
+        entitlements.PLAN_CATALOG,
+        PlanKey.STARTER,
+        dataclasses.replace(
+            entitlements.PLAN_CATALOG[PlanKey.STARTER],
+            max_scis=5,
+            multi_sci_enabled=False,
+        ),
+    )
     fake_supabase.store["associes"] = [
         {
             "id": "associe-1",
@@ -292,22 +322,14 @@ def test_create_sci_upgrade_required_returns_402(client, auth_headers, fake_supa
             "plan_key": "starter",
             "status": "active",
             "is_active": True,
-            "max_scis": 5,  # Artificially high to let enforce_limit pass
-            "max_biens": 5,
-            "features": {
-                "multi_sci_enabled": False,  # This triggers UpgradeRequiredError
-                "charges_enabled": True,
-                "fiscalite_enabled": False,
-                "quitus_enabled": True,
-                "cerfa_enabled": False,
-                "priority_support": False,
-            },
         }
     ]
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+    assert response.status_code == 402, (
+        f"Expected 402, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["code"] == "upgrade_required"
 
@@ -335,7 +357,9 @@ def test_create_sci_within_quota_allowed(client, auth_headers, fake_supabase):
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+    assert response.status_code == 201, (
+        f"Expected 201, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["nom"] == SCI_PAYLOAD["nom"]
 
@@ -382,7 +406,9 @@ def test_create_bien_exactly_at_limit_returns_402(client, auth_headers, fake_sup
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+    assert response.status_code == 402, (
+        f"Expected 402, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["current"] == 5
@@ -426,7 +452,9 @@ def test_create_bien_one_below_limit_allowed(client, auth_headers, fake_supabase
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+    assert response.status_code == 201, (
+        f"Expected 201, got {response.status_code}: {response.text}"
+    )
 
 
 def test_lifetime_plan_no_limit_on_biens(client, auth_headers, fake_supabase):
@@ -466,7 +494,9 @@ def test_lifetime_plan_no_limit_on_biens(client, auth_headers, fake_supabase):
 
     response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+    assert response.status_code == 201, (
+        f"Expected 201, got {response.status_code}: {response.text}"
+    )
 
 
 def test_lifetime_plan_no_limit_on_scis(client, auth_headers, fake_supabase):
@@ -492,11 +522,19 @@ def test_lifetime_plan_no_limit_on_scis(client, auth_headers, fake_supabase):
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+    assert response.status_code == 201, (
+        f"Expected 201, got {response.status_code}: {response.text}"
+    )
 
 
-def test_create_sci_over_quota_with_multiple_existing(client, auth_headers, fake_supabase):
-    """PRO plan: max_scis=10, user already has 10 SCIs -> 402 PlanLimitError."""
+def test_create_sci_over_quota_with_multiple_existing(
+    client, auth_headers, fake_supabase
+):
+    """Plan Gestion (1 SCI au catalogue), l'utilisateur en a déjà 10 -> 402.
+
+    Pilotage est illimité côté catalogue : depuis le correctif C1, une ligne DB
+    ne peut plus lui imposer un max_scis=10.
+    """
     fake_supabase.store["associes"] = [
         {
             "id": f"associe-{i}",
@@ -512,27 +550,19 @@ def test_create_sci_over_quota_with_multiple_existing(client, auth_headers, fake
     fake_supabase.store["subscriptions"] = [
         {
             "user_id": "user-123",
-            "plan_key": "pro",
+            "plan_key": "starter",
             "status": "active",
             "is_active": True,
-            "max_scis": 10,
-            "max_biens": 20,
-            "features": {
-                "multi_sci_enabled": True,
-                "charges_enabled": True,
-                "fiscalite_enabled": True,
-                "quitus_enabled": True,
-                "cerfa_enabled": True,
-                "priority_support": True,
-            },
         }
     ]
 
     response = client.post("/api/v1/scis/", json=SCI_PAYLOAD, headers=auth_headers)
 
-    assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+    assert response.status_code == 402, (
+        f"Expected 402, got {response.status_code}: {response.text}"
+    )
     body = response.json()
     assert body["code"] == "plan_limit_reached"
     assert body["details"]["resource"] == "scis"
     assert body["details"]["current"] == 10
-    assert body["details"]["limit"] == 10
+    assert body["details"]["limit"] == 1

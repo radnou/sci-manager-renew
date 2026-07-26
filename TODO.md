@@ -43,21 +43,36 @@ Le contournement de paiement est **actif en production**.
 
 ---
 
-## ⚠️ Avant de déployer — à lancer en local
+## ✅ Suite de tests — exécutée le 2026-07-26
 
-Les tests **n'ont pas pu être exécutés** pendant l'audit (sandbox en Python 3.10,
-le projet exige 3.12 pour `datetime.UTC`). Les fichiers compilent et passent
-pyflakes, mais la suite doit être verte avant mise en production :
+`PYTHONPATH=. pytest` est **verte** (venv `backend/.venv`, Python 3.11 — 3.12
+n'était pas requis, `datetime.UTC` existe depuis 3.11).
 
-```bash
-cd backend
-PYTHONPATH=. pytest tests/test_api/test_associes.py tests/test_api/test_associes_security.py -v
-PYTHONPATH=. pytest   # suite complète
-```
+Le commit d'audit introduisait 12 régressions, toutes corrigées :
 
-Deux fixtures ont été ajustées (elles encodaient le comportement permissif) :
-`tests/conftest.py` (`associe-2` → `gerant`) et
-`test_associes.py::test_delete_self_row` (`extra-sci2` → `gerant`).
+| Test | Cause | Correctif |
+|---|---|---|
+| `test_scis::test_*_requires_gerant` (2) | le fixture `associe-2` avait été passé à `gerant`, supprimant la seule base négative du projet | fixture remis à `associe` ; les tests concernés promeuvent localement |
+| `test_associes::test_*_generic_exception` (3) | patchaient `_get_user_sci_ids`, que create/update/delete n'appellent plus | patch sur `_require_gerant` |
+| `test_associes::test_delete_single_gerant_blocked` | scénario devenu inatteignable (l'appelant se rétrogradait avant l'appel) | le gérant unique supprime sa propre ligne |
+| `test_plan_enforcement` (6) | fixtures injectant `max_scis`/`max_biens` dans la ligne DB — précisément ce que C1 neutralise | quotas alignés sur `PLAN_CATALOG` ; le cas `upgrade_required` patche le catalogue |
+
+**Trois régressions de production trouvées dans le correctif lui-même :**
+
+- `demo.py` seed/cleanup écrivait avec le JWT utilisateur → la policy
+  `associes_member_insert` de la 043 rejette l'insertion du gérant sur une SCI
+  neuve : **tout le parcours demo-first aurait cassé** dès l'application de la
+  migration. Bascule en service_role + test `test_demo_rls_identity.py`.
+- `gdpr.py` supprimait la ligne associé des SCI partagées avec le JWT
+  utilisateur → suppression silencieusement ignorée pour un non-gérant
+  (non-conformité RGPD). Bascule sur `erase_client`.
+- `subscription_service` : `resolve_plan_key_from_price_id` renvoie `FREE` (et
+  non `None`) pour un `price_id` inconnu. Placé avant le fallback `plan_key`,
+  tout client payant portant un prix historique était rétrogradé à chaque
+  lecture. Ce `FREE` est désormais traité comme non concluant.
+
+Reste non vérifié en conditions réelles : la 043 elle-même (aucune base de test
+avec RLS). Les invariants ci-dessus reposent sur la lecture des policies.
 
 ---
 
