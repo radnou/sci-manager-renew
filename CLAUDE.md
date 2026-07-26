@@ -397,3 +397,44 @@ Dashboard/KPIs     → Analytics Reporter + Finance Tracker + frontend-architect
 Infra/Deploy       → devops-architect + security-engineer
 Refactoring        → Software Architect + Code Reviewer + quality-engineer
 ```
+
+## Production Infrastructure & Deployment Standard (vps-infra)
+
+- **Canonical Path on VPS**:  (symlinked to  for 100% path parity).
+- **Reverse Proxy**: Managed host-wide by Caddy in  (versioned in ).
+  - ,  -> Frontend ()
+  -  -> Backend () & Supabase Kong ()
+- **Production Database**: Supabase stack (), running PostgreSQL 17.
+- **Nightly Backups & Restoration**: Managed centrally by  (03:00 UTC daily) and .
+- **Status Dashboard**: Live container logs and status visible at  (Dozzle).
+
+
+## Production Infrastructure & Deployment Standard (vps-infra)
+
+- **Canonical Path on VPS**:  (symlinked to  for 100% path parity).
+- **Reverse Proxy**: Managed host-wide by Caddy in  (versioned in ).
+  - ,  -> Frontend ()
+  -  -> Backend () & Supabase Kong ()
+- **Production Database**: Supabase stack (), running PostgreSQL 17.
+- **Nightly Backups & Restoration**: Managed centrally by  (03:00 UTC daily) and .
+- **Status Dashboard**: Live container logs and status visible at  (Dozzle).
+
+## Production Infrastructure & Deployment Standard (vps-infra)
+
+- **Canonical Path on VPS**:  (symlinked to  for 100% path parity).
+- **Reverse Proxy**: Managed host-wide by Caddy in  (versioned in ).
+  - ,  -> Frontend ()
+  -  -> Backend () & Supabase Kong ()
+- **Production Database**: Supabase stack (), running PostgreSQL 17.
+- **Nightly Backups & Restoration**: Managed centrally by  (03:00 UTC daily) and .
+- **Status Dashboard**: Live container logs and status visible at  (Dozzle).
+
+## Production Infrastructure & Deployment Standard (vps-infra)
+
+- **Canonical Path on VPS**: `/opt/vps-infra/services/gerersci/` (symlinked to `/opt/gerersci` for 100% path parity).
+- **Reverse Proxy**: Managed host-wide by Caddy in `/etc/caddy/sites/gerersci.caddy` (versioned in `radnou/vps-infra`).
+  - `app.gerersci.fr`, `gerersci.fr` -> Frontend (`127.0.0.1:14173`)
+  - `api.gerersci.fr` -> Backend (`127.0.0.1:18000`) & Supabase Kong (`127.0.0.1:54321`)
+- **Production Database**: Supabase stack (`supabase_db_sci-manager-renew`), running PostgreSQL 17.
+- **Nightly Backups & Restoration**: Managed centrally by `vps-infra/scripts/backup.sh` (03:00 UTC daily) and `vps-infra/scripts/restore.sh gerersci`.
+- **Status Dashboard**: Live container logs and status visible at `https://status.radnoumane.com` (Dozzle).
