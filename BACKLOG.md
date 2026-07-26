@@ -160,7 +160,16 @@ production vit dans `vps-infra`. `docker/nginx.conf` est du **code mort**
 
 ## ⏳ CRITICAL restants
 
-- [x] **C8 — Sauvegarde DB.** *Transféré à `vps-infra` le 2026-07-26.*
+- [ ] **C8 — Sauvegarde DB. ROUVERT le 2026-07-27.** Le transfert vers
+      `vps-infra` ne ferme pas le finding : `scripts/backup.sh` supprime ses
+      propres dumps à l'étape 7 et le `.gitignore` (`*.sql.gz`, `backups/`)
+      empêche l'étape git de les avoir sauvés — vérifié sur trois commits
+      `chore(backup)` qui ne contiennent que des configurations. `restore.sh
+      gerersci` cherche par ailleurs un motif de nom de fichier que
+      `backup.sh` ne produit jamais. **Aucune copie de la base ne survit.**
+      Détail et commandes dans [`TODO.md`](./TODO.md#1-critical-8--rouvert-le-2026-07-27--la-sauvegarde-ne-conserve-rien).
+
+- [x] ~~**C8 — Sauvegarde DB.**~~ *Transféré à `vps-infra` le 2026-07-26 — voir ci-dessus.*
       Le constat d'audit reste exact pour ce dépôt : `backup-remote.sh` ciblait un
       service `db` inexistant (no-op silencieux) et `backup-db.sh` n'était appelé
       par personne. Les deux scripts ont été supprimés — la sauvegarde est

@@ -27,27 +27,45 @@ Aucun conteneur ne doit écouter sur `0.0.0.0` — contrôle : `ss -tlnp | grep 
 
 ## 🔥 Aujourd'hui
 
-### 1. Prouver la restauration (CRITICAL-8, requalifié le 2026-07-26)
-La sauvegarde est assurée par `/opt/vps-infra/scripts/backup.sh` (03h00 UTC,
-découverte automatique), pas par ce dépôt — les deux scripts locaux étaient des
-no-op jamais appelés et ont été supprimés. La base de production est
-`supabase_db_sci-manager-renew` (27 tables métier).
+### 1. CRITICAL-8 — ROUVERT le 2026-07-27 : la sauvegarde ne conserve rien
 
-Il reste le point qui compte, **avant de jouer la migration 043** : un dump
-n'est une sauvegarde qu'une fois restauré.
+Vérifié dans `radnou/vps-infra@9fa4791`, pas supposé. `scripts/backup.sh` dumpe
+correctement `supabase_db_sci-manager-renew`, copie dans `backups/latest/`,
+commite… puis **supprime les dumps** (étape 7). L'étape git ne peut pas les avoir
+sauvés : `.gitignore` ignore `*.sql`, `*.sql.gz` et `backups/`. Contrôle sur
+trois commits `chore(backup)` (`9db2a75`, `7c3e9be`, `09eccb9`) : **aucun dump,
+uniquement des fichiers de configuration**. `INFRA_GUIDELINES.md` §4 affirme
+« Dumps are pushed to GitHub » — le script ne peut pas le faire.
 
-- [ ] Vérifier qu'un dump de moins de 24 h existe et qu'il contient bien les
-      tables métier, pas un schéma vide ni une autre base du VPS (il y a
-      `shared_postgres`, `luna_supabase_db`, `bookrcs-staging-postgres`,
-      `capitalismland-db` comme leurres) :
+Trois défauts aggravants :
+
+- `restore.sh gerersci` cherche `gerersci_supabase_*.sql.gz` alors que
+  `backup.sh` écrit `supabase_db_sci-manager-renew_*.sql.gz` : **la restauration
+  ne trouvera jamais de fichier**. Même décalage pour `bookrcs`.
+- `2>/dev/null … || true` sans contrôle de taille : un `pg_dumpall` en échec
+  produit un gzip valide de 20 octets, indiscernable d'un succès (mesuré).
+- `rm -f backups/latest/*` précède la copie du nouveau dump : un échec
+  silencieux détruit la copie précédente.
+
+**Ne pas jouer la migration 043 avant d'avoir un dump vérifié hors VPS.**
+
+- [ ] Trancher quel script est réellement planifié — `backup.sh` (qui ne garde
+      rien) ou `scripts/backup-vps-infra.sh` (rétention 14 j dans
+      `/opt/backups/vps-infra`, sync rclone vers R2, qui lui semble correct).
+      Les deux déclarent le même cron 03h00 :
       ```bash
-      docker exec supabase_db_sci-manager-renew psql -U postgres -d postgres \
-        -c "\dt public.*" | grep -cE 'sci|associes|biens|baux|loyers|subscriptions'
+      crontab -l; sudo crontab -l; systemctl list-timers --all | grep -i backup
+      ls -lh /opt/backups/vps-infra/db/ 2>/dev/null | tail -5
       ```
-- [ ] **Jouer `/opt/vps-infra/scripts/restore.sh gerersci` vers une base
-      jetable** et compter les lignes des tables métier. Jamais fait à ce jour.
-      Aggravé par HIGH-11 : `0045_`/`0046_` trient avant `004_` et `035` est
-      dupliqué, donc une reconstruction de schéma à neuf part dans le désordre.
+- [ ] Dump manuel immédiat, copié hors du VPS, et vérifié non vide :
+      ```bash
+      docker exec -e PGPASSWORD=postgres supabase_db_sci-manager-renew \
+        pg_dumpall -U supabase_admin | gzip > gerersci_$(date +%F).sql.gz
+      zcat gerersci_$(date +%F).sql.gz | grep -c "CREATE TABLE"   # doit être ≥ 27
+      ```
+- [ ] **Jouer une restauration** vers une base jetable et compter les lignes.
+      Jamais fait. Aggravé par HIGH-11 : `0045_`/`0046_` trient avant `004_` et
+      `035` est dupliqué, donc une reconstruction de schéma part dans le désordre.
 
 ### 2. Déployer le correctif C1/C3
 Le contournement de paiement est **actif en production**.
