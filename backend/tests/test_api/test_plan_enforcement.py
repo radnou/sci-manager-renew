@@ -44,7 +44,7 @@ def enforce_mode(monkeypatch):
 
 
 def test_create_bien_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """Active subscription with max_biens=1, user already has 1 bien -> 402 PlanLimitError."""
+    """Abonnement Gestion actif, 5 biens déjà créés (quota catalogue) -> 402."""
     # Seed: user-123 is associated to sci-1 (via conftest default associes).
     # 5 biens = quota réel du plan Gestion (catalogue serveur). Depuis le
     # correctif C1, les max_* portés par la ligne `subscriptions` sont ignorés :
@@ -134,7 +134,7 @@ def test_create_bien_over_quota_error_format(client, auth_headers, fake_supabase
 
 
 def test_create_bien_within_quota_allowed(client, auth_headers, fake_supabase):
-    """PRO plan: max_biens=15, user has 2 biens -> creation allowed (201)."""
+    """Plan Pilotage (illimité au catalogue), 2 biens -> création autorisée (201)."""
     fake_supabase.store["biens"] = [
         {
             "id": "bien-1",
@@ -194,7 +194,7 @@ def test_create_bien_within_quota_allowed(client, auth_headers, fake_supabase):
 
 
 def test_create_sci_over_quota_returns_402(client, auth_headers, fake_supabase):
-    """Active subscription with max_scis=1, user already has 1 SCI -> 402 PlanLimitError."""
+    """Abonnement Gestion actif (1 SCI au catalogue), 1 SCI existante -> 402."""
     # Override associes so user-123 has exactly 1 SCI membership.
     fake_supabase.store["associes"] = [
         {
@@ -566,3 +566,49 @@ def test_create_sci_over_quota_with_multiple_existing(
     assert body["details"]["resource"] == "scis"
     assert body["details"]["current"] == 10
     assert body["details"]["limit"] == 1
+
+
+def test_forged_subscription_row_cannot_raise_quota(client, auth_headers, fake_supabase):
+    """C1 (bout en bout) — une ligne `subscriptions` forgée ne relève pas le quota.
+
+    L'exploit vérifié en production le 2026-07-25 écrivait directement dans
+    `subscriptions` via PostgREST. La migration 043 ferme ce vecteur côté RLS ;
+    ce test verrouille la défense applicative : l'ordre de fusion
+    `{**row, **snapshot}` de `SubscriptionService.get_subscription_summary`.
+
+    Il échoue si l'ordre est réinversé — contrairement au test unitaire de
+    `test_associes_security.py`, qui réimplémente la fusion au lieu de
+    l'exercer.
+    """
+    fake_supabase.store["biens"] = [
+        {
+            "id": f"bien-{i}",
+            "id_sci": "sci-1",
+            "adresse": f"{i} rue Existante",
+            "ville": "Lyon",
+            "code_postal": "69001",
+            "type_locatif": "nu",
+            "loyer_cc": 900,
+            "charges": 0,
+            "tmi": 0,
+        }
+        for i in range(1, 6)  # 5 biens = quota réel du plan Gestion
+    ]
+    fake_supabase.store["subscriptions"] = [
+        {
+            "user_id": "user-123",
+            "plan_key": "starter",
+            "status": "active",
+            "is_active": True,
+            "current_period_end": "2030-01-01T00:00:00+00:00",
+            # Valeurs forgées : ignorées, seul PLAN_CATALOG fait foi.
+            "max_scis": 999,
+            "max_biens": 999,
+            "features": {"multi_sci_enabled": True, "cerfa_enabled": True},
+        }
+    ]
+
+    response = client.post("/api/v1/biens/", json=BIEN_PAYLOAD, headers=auth_headers)
+
+    assert response.status_code == 402, f"quota forgé accepté : {response.text}"
+    assert response.json()["details"]["limit"] == 5
