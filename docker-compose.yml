@@ -132,6 +132,7 @@ services:
   matomo-db:
     image: mariadb:10.11
     container_name: gerersci_matomo_db
+    profiles: ["disabled"]
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD:-matomo_root_change_me}
@@ -151,6 +152,7 @@ services:
   matomo:
     image: matomo:5-apache
     container_name: gerersci_matomo
+    profiles: ["disabled"]
     restart: unless-stopped
     ports:
       - "127.0.0.1:18080:80"
@@ -176,6 +178,7 @@ services:
   uptime-kuma:
     image: louislam/uptime-kuma:2
     container_name: gerersci_uptime_kuma
+    profiles: ["disabled"]
     restart: unless-stopped
     ports:
       - "127.0.0.1:13001:3001"

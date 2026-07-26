@@ -27,7 +27,7 @@ jobs:
           command_timeout: 10m
           script: |
             set -e
-            cd /opt/gerersci
+            cd /opt/vps-infra/services/gerersci 2>/dev/null || cd /opt/gerersci
 
             echo "=== Backup .env before deploy ==="
             cp .env.production .env.pre-deploy-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
@@ -131,7 +131,7 @@ jobs:
           command_timeout: 5m
           script: |
             set -e
-            cd /opt/gerersci
+            cd /opt/vps-infra/services/gerersci 2>/dev/null || cd /opt/gerersci
 
             echo "=== ROLLBACK: reverting to previous commit ==="
             # Revert to the commit before the failed deploy
