@@ -49,14 +49,33 @@ Trois défauts aggravants :
 
 **Ne pas jouer la migration 043 avant d'avoir un dump vérifié hors VPS.**
 
-- [ ] Trancher quel script est réellement planifié — `backup.sh` (qui ne garde
-      rien) ou `scripts/backup-vps-infra.sh` (rétention 14 j dans
-      `/opt/backups/vps-infra`, sync rclone vers R2, qui lui semble correct).
-      Les deux déclarent le même cron 03h00 :
-      ```bash
-      crontab -l; sudo crontab -l; systemctl list-timers --all | grep -i backup
-      ls -lh /opt/backups/vps-infra/db/ 2>/dev/null | tail -5
-      ```
+**Tranché le 2026-07-27 par inspection du VPS.** Le cron `ubuntu` contient :
+
+```
+0 3 * * * /home/ubuntu/infra/scripts/backup.sh >> /var/log/vps-backup.log 2>&1
+```
+
+C'est le script qui ne garde rien. `backup-vps-infra.sh` — celui qui fonctionne —
+**n'est planifié nulle part**. Constats :
+
+| Fait | Preuve |
+|---|---|
+| Le bon script a cessé de tourner le 2026-07-26 | dernier dump `/opt/backups/vps-infra/db/gerersci_supabase-20260726.sql.gz` (143 K, gzip valide, 79 `CREATE TABLE`) |
+| Le script planifié ne laisse rien | `/home/ubuntu/infra/backups/latest/` : `total 0` |
+| Il ne s'exécute probablement même pas | `/var/log/vps-backup.log` n'existe pas et `ubuntu` ne peut pas écrire dans `/var/log` (`drwxrwxr-x root:syslog`, `touch` → Permission denied). La redirection échoue avant la commande. |
+| Aucune copie hors VPS n'a jamais existé | `rclone` installé mais sans configuration (`rclone.conf` absent) : le `rclone sync` vers R2 du bon script n'a jamais rien envoyé |
+
+- [ ] **Copier hors VPS le dernier dump valide, maintenant** :
+      `scp ovh:/opt/backups/vps-infra/db/gerersci_supabase-20260726.sql.gz .`
+      (un `/tmp/vps_db_dumps_2026-07-26_235239/supabase_db_sci-manager-renew_*.sql.gz`
+      de 726 K, plus complet, traîne aussi sur le VPS — reliquat d'un run manuel)
+- [ ] Remettre `backup-vps-infra.sh` dans le cron à la place de `backup.sh`, et
+      **écrire le log ailleurs que dans `/var/log`** (ex. `/home/ubuntu/logs/`)
+- [ ] Configurer `rclone` pour obtenir enfin une copie hors machine
+- [ ] Corriger `restore.sh gerersci` : il cherche `gerersci_supabase_*.sql.gz`
+      dans `/home/ubuntu/infra/backups/latest` alors que les dumps s'appellent
+      `gerersci_supabase-2026….sql.gz` et vivent dans `/opt/backups/vps-infra/db/`
+      — mauvais répertoire **et** mauvais motif
 - [ ] Dump manuel immédiat, copié hors du VPS, et vérifié non vide :
       ```bash
       docker exec -e PGPASSWORD=postgres supabase_db_sci-manager-renew \
