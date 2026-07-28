@@ -4,7 +4,14 @@ Covers:
 - calculate_regularisation: bail not found, trop_percu, complement_du, equilibre
 - _get_saved_regularisation: row found, none found
 - confirm_regularisation: insert path, update path, error path
+
+Fixtures mis à jour (CRITICAL-6) : les charges portent désormais
+`type_charge="copropriete"` (seule catégorie récupérable selon le décret n° 87-713),
+et les baux portent `date_debut` / `date_fin` pour le prorata d'occupation.
+Les anciens tests conservent leurs assertions numériques car le bail couvre
+l'année complète (12 mois), ce qui maintient `provisions = charges_locatives * 12`.
 """
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -46,12 +53,18 @@ def _default_bail(
     bail_id=BAIL_ID,
     bien_id=BIEN_ID,
     charges_locatives=200.0,
+    date_debut=None,
+    date_fin=None,
 ):
+    # date_debut par défaut au 1er janvier de l'année de test → prorata = 12 mois,
+    # ce qui préserve les assertions numériques existantes (provisions = CL * 12).
     return {
         "id": bail_id,
         "id_bien": bien_id,
         "charges_locatives": charges_locatives,
         "statut": "en_cours",
+        "date_debut": date_debut or f"{ANNEE}-01-01",
+        "date_fin": date_fin,
     }
 
 
@@ -71,8 +84,20 @@ class TestCalculateRegularisationTropPercu:
         c = _make_client(
             baux=[_default_bail(charges_locatives=200.0)],
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 500.0, "date_paiement": f"{ANNEE}-03-15"},
-                {"id": "c2", "id_bien": BIEN_ID, "montant": 500.0, "date_paiement": f"{ANNEE}-09-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 500.0,
+                    "date_paiement": f"{ANNEE}-03-15",
+                    "type_charge": "copropriete",
+                },
+                {
+                    "id": "c2",
+                    "id_bien": BIEN_ID,
+                    "montant": 500.0,
+                    "date_paiement": f"{ANNEE}-09-01",
+                    "type_charge": "copropriete",
+                },
             ],
         )
         result = calculate_regularisation(c, BAIL_ID, ANNEE)
@@ -100,7 +125,13 @@ class TestCalculateRegularisationComplementDu:
         c = _make_client(
             baux=[_default_bail(charges_locatives=100.0)],
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 2000.0, "date_paiement": f"{ANNEE}-06-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 2000.0,
+                    "date_paiement": f"{ANNEE}-06-01",
+                    "type_charge": "copropriete",
+                },
             ],
         )
         result = calculate_regularisation(c, BAIL_ID, ANNEE)
@@ -114,7 +145,13 @@ class TestCalculateRegularisationEquilibre:
         c = _make_client(
             baux=[_default_bail(charges_locatives=100.0)],
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 1200.0, "date_paiement": f"{ANNEE}-01-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 1200.0,
+                    "date_paiement": f"{ANNEE}-01-01",
+                    "type_charge": "copropriete",
+                },
             ],
         )
         result = calculate_regularisation(c, BAIL_ID, ANNEE)
@@ -142,7 +179,13 @@ class TestCalculateRegularisationNullChargesLocatives:
         c = _make_client(
             baux=[_default_bail(charges_locatives=None)],
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 500.0, "date_paiement": f"{ANNEE}-05-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 500.0,
+                    "date_paiement": f"{ANNEE}-05-01",
+                    "type_charge": "copropriete",
+                },
             ],
         )
         result = calculate_regularisation(c, BAIL_ID, ANNEE)
@@ -159,10 +202,28 @@ class TestCalculateRegularisationChargesOutOfYear:
             baux=[_default_bail(charges_locatives=100.0)],
             charges=[
                 # In year → should count
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 600.0, "date_paiement": f"{ANNEE}-06-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 600.0,
+                    "date_paiement": f"{ANNEE}-06-01",
+                    "type_charge": "copropriete",
+                },
                 # Out of year → should NOT count
-                {"id": "c2", "id_bien": BIEN_ID, "montant": 9999.0, "date_paiement": f"{ANNEE + 1}-01-01"},
-                {"id": "c3", "id_bien": BIEN_ID, "montant": 9999.0, "date_paiement": f"{ANNEE - 1}-12-31"},
+                {
+                    "id": "c2",
+                    "id_bien": BIEN_ID,
+                    "montant": 9999.0,
+                    "date_paiement": f"{ANNEE + 1}-01-01",
+                    "type_charge": "copropriete",
+                },
+                {
+                    "id": "c3",
+                    "id_bien": BIEN_ID,
+                    "montant": 9999.0,
+                    "date_paiement": f"{ANNEE - 1}-12-31",
+                    "type_charge": "copropriete",
+                },
             ],
         )
         result = calculate_regularisation(c, BAIL_ID, ANNEE)
@@ -195,8 +256,20 @@ class TestCalculateRegularisationMultipleBiens:
         c = _make_client(
             baux=[_default_bail(charges_locatives=100.0)],
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 300.0, "date_paiement": f"{ANNEE}-03-01"},
-                {"id": "c2", "id_bien": OTHER_BIEN, "montant": 9999.0, "date_paiement": f"{ANNEE}-04-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 300.0,
+                    "date_paiement": f"{ANNEE}-03-01",
+                    "type_charge": "copropriete",
+                },
+                {
+                    "id": "c2",
+                    "id_bien": OTHER_BIEN,
+                    "montant": 9999.0,
+                    "date_paiement": f"{ANNEE}-04-01",
+                    "type_charge": "copropriete",
+                },
             ],
         )
         result = calculate_regularisation(c, BAIL_ID, ANNEE)
@@ -247,7 +320,13 @@ class TestConfirmRegularisationInsert:
         c = _make_client(
             baux=[_default_bail(charges_locatives=100.0)],
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 600.0, "date_paiement": f"{ANNEE}-06-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 600.0,
+                    "date_paiement": f"{ANNEE}-06-01",
+                    "type_charge": "copropriete",
+                },
             ],
             regularisations=[],
         )
@@ -308,7 +387,13 @@ class TestConfirmRegularisationComplementDu:
         c = _make_client(
             baux=[_default_bail(charges_locatives=50.0)],  # provisions = 600
             charges=[
-                {"id": "c1", "id_bien": BIEN_ID, "montant": 1000.0, "date_paiement": f"{ANNEE}-07-01"},
+                {
+                    "id": "c1",
+                    "id_bien": BIEN_ID,
+                    "montant": 1000.0,
+                    "date_paiement": f"{ANNEE}-07-01",
+                    "type_charge": "copropriete",
+                },
             ],
             regularisations=[],
         )
