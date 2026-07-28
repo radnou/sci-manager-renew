@@ -130,12 +130,16 @@ class ResumeFiscalService:
             logger.warning("deficit_reportable_load_failed", sci_id=sci_id, annee=annee)
             return []
 
-    def _save_deficit(self, sci_id: str, annee: int, result: ResumeFiscalResult, client) -> None:
+    def _save_deficit(
+        self, sci_id: str, annee: int, result: ResumeFiscalResult, client
+    ) -> None:
         """Save current year deficit to deficit_reportable table (upsert)."""
         if not result.is_deficit:
             return
         try:
-            total_reportable = result.deficit_interets_emprunt + result.deficit_reportable_foncier
+            total_reportable = (
+                result.deficit_interets_emprunt + result.deficit_reportable_foncier
+            )
             if total_reportable <= 0:
                 return
 
@@ -156,11 +160,24 @@ class ResumeFiscalService:
             logger.warning("deficit_reportable_save_failed", sci_id=sci_id, annee=annee)
 
     def _impute_prior_deficits(
-        self, prior_rows: list[dict], resultat_brut_positif: float, client
+        self,
+        prior_rows: list[dict],
+        resultat_brut_positif: float,
+        client,
+        *,
+        persist: bool = False,
+        annee_imputation: int | None = None,
     ) -> tuple[list[DeficitAnterieur], float]:
         """Impute prior deficits against positive rental income (FIFO).
 
         Returns the list of DeficitAnterieur and total amount imputed.
+
+        Sécurité fiscale (audit C5) : `persist=False` par défaut. Ce calcul est
+        appelé par le GET du résumé fiscal ; y écrire signifiait ré-imputer le
+        déficit antérieur à chaque affichage de la page, jusqu'à vider le solde
+        reportable. L'écriture n'a lieu que sur clôture explicite de l'exercice,
+        et elle est idempotente via `derniere_annee_imputee` : rejouer la
+        clôture d'une année déjà imputée ne modifie plus rien.
         """
         deficits: list[DeficitAnterieur] = []
         remaining_income = resultat_brut_positif
@@ -170,17 +187,46 @@ class ResumeFiscalService:
             solde = self._safe_float(row.get("solde_restant"))
             annee_c = int(row.get("annee_constatation", 0))
             annee_p = int(row.get("annee_prescription", 0))
-            initial = self._safe_float(row.get("deficit_interets")) + self._safe_float(row.get("deficit_charges"))
+            initial = self._safe_float(row.get("deficit_interets")) + self._safe_float(
+                row.get("deficit_charges")
+            )
             prev_imputed = self._safe_float(row.get("total_impute_foncier"))
 
+            # Exercice déjà clôturé pour cette année : `solde_restant` et
+            # `total_impute_foncier` intègrent déjà l'imputation. La rejouer
+            # doublerait le compte — à l'affichage comme en base. On réutilise
+            # le montant mémorisé. Ce test précède celui sur `solde <= 0` :
+            # une imputation totale laisse un solde nul, et son montant doit
+            # tout de même être compté dans le résultat de l'année.
+            if (
+                annee_imputation is not None
+                and int(row.get("annee_derniere_imputation") or 0) == annee_imputation
+            ):
+                deja_impute = self._safe_float(row.get("montant_derniere_imputation"))
+                deja_impute = min(deja_impute, remaining_income)
+                remaining_income = round(remaining_income - deja_impute, 2)
+                total_imputed = round(total_imputed + deja_impute, 2)
+                deficits.append(
+                    DeficitAnterieur(
+                        annee=annee_c,
+                        montant_initial=initial,
+                        total_impute=prev_imputed,
+                        solde_restant=solde,
+                        annee_prescription=annee_p,
+                    )
+                )
+                continue
+
             if solde <= 0:
-                deficits.append(DeficitAnterieur(
-                    annee=annee_c,
-                    montant_initial=initial,
-                    total_impute=prev_imputed,
-                    solde_restant=0,
-                    annee_prescription=annee_p,
-                ))
+                deficits.append(
+                    DeficitAnterieur(
+                        annee=annee_c,
+                        montant_initial=initial,
+                        total_impute=prev_imputed,
+                        solde_restant=0,
+                        annee_prescription=annee_p,
+                    )
+                )
                 continue
 
             impute_now = min(solde, remaining_income)
@@ -191,34 +237,49 @@ class ResumeFiscalService:
                 remaining_income = round(remaining_income - impute_now, 2)
                 total_imputed = round(total_imputed + impute_now, 2)
 
-                # Update the DB row
-                try:
-                    row_id = row.get("id")
-                    if row_id:
-                        client.table("deficit_reportable").update({
-                            "total_impute_foncier": new_total_imputed,
-                            "solde_restant": new_solde,
-                        }).eq("id", row_id).execute()
-                except Exception:
-                    logger.warning("deficit_imputation_update_failed", row_id=row.get("id"))
+                # Écriture réservée à la clôture explicite de l'exercice (C5).
+                if persist:
+                    try:
+                        row_id = row.get("id")
+                        if row_id:
+                            client.table("deficit_reportable").update(
+                                {
+                                    "total_impute_foncier": new_total_imputed,
+                                    "solde_restant": new_solde,
+                                    "annee_derniere_imputation": annee_imputation,
+                                    "montant_derniere_imputation": impute_now,
+                                }
+                            ).eq("id", row_id).execute()
+                    except Exception:
+                        logger.warning(
+                            "deficit_imputation_update_failed", row_id=row.get("id")
+                        )
 
-            deficits.append(DeficitAnterieur(
-                annee=annee_c,
-                montant_initial=initial,
-                total_impute=new_total_imputed,
-                solde_restant=new_solde,
-                annee_prescription=annee_p,
-            ))
+            deficits.append(
+                DeficitAnterieur(
+                    annee=annee_c,
+                    montant_initial=initial,
+                    total_impute=new_total_imputed,
+                    solde_restant=new_solde,
+                    annee_prescription=annee_p,
+                )
+            )
 
         return deficits, total_imputed
 
-    def calculate(self, sci_id: str, annee: int, client) -> ResumeFiscalResult:
+    def calculate(
+        self, sci_id: str, annee: int, client, *, persist: bool = False
+    ) -> ResumeFiscalResult:
         """Calculate the résumé fiscal for a given SCI and year.
 
         Args:
             sci_id: UUID of the SCI.
             annee: Fiscal year (e.g. 2025).
             client: Supabase client (user or service) for DB queries.
+            persist: n'écrire l'imputation des déficits antérieurs qu'à la
+                clôture explicite de l'exercice. **Par défaut le calcul est en
+                lecture seule** (audit C5) : appelé depuis le GET du résumé
+                fiscal, il vidait le déficit reportable à chaque affichage.
 
         Returns:
             A fully populated ResumeFiscalResult.
@@ -228,7 +289,9 @@ class ResumeFiscalService:
         # 1. Fetch SCI data (with extended fields for CERFA)
         sci_rows = self._execute_select(
             client.table("sci")
-            .select("nom, siren, regime_fiscal, adresse_siege, capital_social, nom_gerant")
+            .select(
+                "nom, siren, regime_fiscal, adresse_siege, capital_social, nom_gerant"
+            )
             .eq("id", sci_id)
         )
         if not sci_rows:
@@ -296,7 +359,9 @@ class ResumeFiscalService:
             )
 
             if not loyer_rows:
-                alertes.append(f"Aucun loyer encaissé pour {adresse} ({ville}) en {annee}.")
+                alertes.append(
+                    f"Aucun loyer encaissé pour {adresse} ({ville}) en {annee}."
+                )
 
             # Ligne 215: frais de gestion forfaitaire = 20 € par bien
             detail.ligne_215_frais_gestion = 20.0
@@ -314,7 +379,9 @@ class ResumeFiscalService:
             charges_by_type: dict[str, float] = {}
             for c in charge_rows:
                 t = (c.get("type_charge") or "").lower()
-                charges_by_type[t] = charges_by_type.get(t, 0.0) + self._safe_float(c.get("montant"))
+                charges_by_type[t] = charges_by_type.get(t, 0.0) + self._safe_float(
+                    c.get("montant")
+                )
 
             # Ligne 221: travaux / entretien (all variants)
             detail.ligne_221_travaux = round(
@@ -359,7 +426,9 @@ class ResumeFiscalService:
             if manual_interets == 0.0:
                 credit_rows = self._execute_select(
                     client.table("credits_immobiliers")
-                    .select("montant_emprunte, taux_nominal, taux_assurance, duree_mois, date_debut, mensualite")
+                    .select(
+                        "montant_emprunte, taux_nominal, taux_assurance, duree_mois, date_debut, mensualite"
+                    )
                     .eq("id_bien", bien_id)
                 )
                 auto_interets = 0.0
@@ -370,23 +439,35 @@ class ResumeFiscalService:
                     date_debut_str = credit.get("date_debut") or ""
                     mensualite = self._safe_float(credit.get("mensualite"))
 
-                    if montant <= 0 or taux_nominal <= 0 or duree_mois <= 0 or not date_debut_str:
+                    if (
+                        montant <= 0
+                        or taux_nominal <= 0
+                        or duree_mois <= 0
+                        or not date_debut_str
+                    ):
                         continue
 
                     taux_mensuel = (taux_nominal / 100) / 12
                     capital_restant = montant
                     for mois_num in range(1, duree_mois + 1):
                         interets_mois = round(capital_restant * taux_mensuel, 2)
-                        capital_mois = round(mensualite - interets_mois, 2) if mois_num < duree_mois else round(capital_restant, 2)
+                        capital_mois = (
+                            round(mensualite - interets_mois, 2)
+                            if mois_num < duree_mois
+                            else round(capital_restant, 2)
+                        )
                         if capital_mois < 0:
                             capital_mois = 0.0
 
                         # Determine calendar month for this instalment
                         try:
                             from datetime import date as _date
+
                             start = _date.fromisoformat(date_debut_str)
                             month_offset = (start.month - 1 + mois_num) % 12 + 1
-                            year_offset = start.year + (start.month - 1 + mois_num) // 12
+                            year_offset = (
+                                start.year + (start.month - 1 + mois_num) // 12
+                            )
                             if year_offset == annee:
                                 auto_interets += interets_mois
                         except (ValueError, TypeError):
@@ -418,11 +499,24 @@ class ResumeFiscalService:
             )
 
             # Detect unmapped charge types and generate alertes
-            mapped_types = {"entretien", "travaux", "travaux_entretien", "travaux_amelioration",
-                           "taxe_fonciere", "copropriete", "syndic",
-                           "interets_emprunt", "interets", "credit",
-                           "assurance", "assurance_pno", "prime_assurance",
-                           "frais_gestion", "frais_procedure", "autre_deductible"}
+            mapped_types = {
+                "entretien",
+                "travaux",
+                "travaux_entretien",
+                "travaux_amelioration",
+                "taxe_fonciere",
+                "copropriete",
+                "syndic",
+                "interets_emprunt",
+                "interets",
+                "credit",
+                "assurance",
+                "assurance_pno",
+                "prime_assurance",
+                "frais_gestion",
+                "frais_procedure",
+                "autre_deductible",
+            }
             for ct, montant in charges_by_type.items():
                 if ct and ct not in mapped_types and montant > 0:
                     alertes.append(
@@ -448,7 +542,11 @@ class ResumeFiscalService:
             )
 
             # Alerte: bien avec revenus mais sans aucune charge
-            charges_total = detail.ligne_229_total_charges + detail.ligne_230_interets_emprunt - detail.ligne_215_frais_gestion
+            charges_total = (
+                detail.ligne_229_total_charges
+                + detail.ligne_230_interets_emprunt
+                - detail.ligne_215_frais_gestion
+            )
             if detail.ligne_211_loyers_bruts > 0 and charges_total <= 0:
                 alertes.append(
                     f"{detail.adresse} : aucune charge déductible saisie (hors forfait 20 €). "
@@ -479,7 +577,9 @@ class ResumeFiscalService:
 
             # Other charges: deductible against global income up to 10 700 EUR
             deficit_hors_interets = round(deficit_total - deficit_interets, 2)
-            deficit_imputable_revenu_global = round(min(deficit_hors_interets, 10_700), 2)
+            deficit_imputable_revenu_global = round(
+                min(deficit_hors_interets, 10_700), 2
+            )
             deficit_reportable_foncier = round(
                 deficit_hors_interets - deficit_imputable_revenu_global, 2
             )
@@ -492,33 +592,51 @@ class ResumeFiscalService:
         if resultat_global > 0:
             prior_rows = self._load_prior_deficits(sci_id, annee, client)
             if prior_rows:
-                deficits_anterieurs, total_deficits_anterieurs_imputes = self._impute_prior_deficits(
-                    prior_rows, resultat_global, client
+                deficits_anterieurs, total_deficits_anterieurs_imputes = (
+                    self._impute_prior_deficits(
+                        prior_rows,
+                        resultat_global,
+                        client,
+                        persist=persist,
+                        annee_imputation=annee,
+                    )
                 )
                 # Adjust the result after imputation
-                resultat_global = round(resultat_global - total_deficits_anterieurs_imputes, 2)
+                resultat_global = round(
+                    resultat_global - total_deficits_anterieurs_imputes, 2
+                )
         else:
             # Even if deficit, load prior deficits for display
             prior_rows = self._load_prior_deficits(sci_id, annee, client)
             for row in prior_rows:
-                initial = self._safe_float(row.get("deficit_interets")) + self._safe_float(row.get("deficit_charges"))
-                deficits_anterieurs.append(DeficitAnterieur(
-                    annee=int(row.get("annee_constatation", 0)),
-                    montant_initial=initial,
-                    total_impute=self._safe_float(row.get("total_impute_foncier")),
-                    solde_restant=self._safe_float(row.get("solde_restant")),
-                    annee_prescription=int(row.get("annee_prescription", 0)),
-                ))
+                initial = self._safe_float(
+                    row.get("deficit_interets")
+                ) + self._safe_float(row.get("deficit_charges"))
+                deficits_anterieurs.append(
+                    DeficitAnterieur(
+                        annee=int(row.get("annee_constatation", 0)),
+                        montant_initial=initial,
+                        total_impute=self._safe_float(row.get("total_impute_foncier")),
+                        solde_restant=self._safe_float(row.get("solde_restant")),
+                        annee_prescription=int(row.get("annee_prescription", 0)),
+                    )
+                )
 
         # 6. Quote-part per associé
         associes_qp: list[AssocieQuotePart] = []
-        
+
         # Get the sci's nb_parts_total
-        sci_rows = client.table("sci").select("nb_parts_total").eq("id", sci_id).execute()
+        sci_rows = (
+            client.table("sci").select("nb_parts_total").eq("id", sci_id).execute()
+        )
         nb_parts_total = 1000
-        if getattr(sci_rows, "data", None) and sci_rows.data and sci_rows.data[0].get("nb_parts_total") is not None:
+        if (
+            getattr(sci_rows, "data", None)
+            and sci_rows.data
+            and sci_rows.data[0].get("nb_parts_total") is not None
+        ):
             nb_parts_total = int(sci_rows.data[0]["nb_parts_total"])
-            
+
         total_parts = sum(int(a.get("nb_parts") or 0) for a in associe_rows)
 
         # Validate that parts sum to nb_parts_total
@@ -545,7 +663,9 @@ class ResumeFiscalService:
                 case_4ba = round(max(qp, 0), 2)
                 case_4bb = 0.0
                 case_4bc = 0.0
-                case_4bd = round(total_deficits_anterieurs_imputes * (part / total_parts), 2)
+                case_4bd = round(
+                    total_deficits_anterieurs_imputes * (part / total_parts), 2
+                )
 
                 if qp < 0:
                     qp_deficit = abs(qp)
@@ -553,22 +673,28 @@ class ResumeFiscalService:
                     ratio = part / total_parts
                     case_4bb = round(deficit_imputable_revenu_global * ratio, 2)
                     case_4bc = round(
-                        (deficit_interets_emprunt_val + deficit_reportable_foncier) * ratio, 2
+                        (deficit_interets_emprunt_val + deficit_reportable_foncier)
+                        * ratio,
+                        2,
                     )
 
-                associes_qp.append(AssocieQuotePart(
-                    associe_id=str(a.get("id") or ""),
-                    nom=a.get("nom") or "Associé",
-                    email=a.get("email") or "",
-                    part_pct=pct,
-                    quote_part_resultat=qp,
-                    case_4ba=case_4ba,
-                    case_4bb=case_4bb,
-                    case_4bc=case_4bc,
-                    case_4bd=case_4bd,
-                ))
+                associes_qp.append(
+                    AssocieQuotePart(
+                        associe_id=str(a.get("id") or ""),
+                        nom=a.get("nom") or "Associé",
+                        email=a.get("email") or "",
+                        part_pct=pct,
+                        quote_part_resultat=qp,
+                        case_4ba=case_4ba,
+                        case_4bb=case_4bb,
+                        case_4bc=case_4bc,
+                        case_4bd=case_4bd,
+                    )
+                )
         else:
-            alertes.append("Aucun associé avec parts renseignées — quote-parts non calculables.")
+            alertes.append(
+                "Aucun associé avec parts renseignées — quote-parts non calculables."
+            )
 
         if not associe_rows:
             alertes.append("Aucun associé enregistré pour cette SCI.")
@@ -726,7 +852,9 @@ class ResumeFiscalService:
 
         if existing:
             record_id = existing[0]["id"]
-            update_payload = {k: v for k, v in fiscalite_data.items() if k not in ("id_sci", "annee")}
+            update_payload = {
+                k: v for k, v in fiscalite_data.items() if k not in ("id_sci", "annee")
+            }
             result = (
                 client.table("fiscalite")
                 .update(update_payload)
@@ -734,13 +862,14 @@ class ResumeFiscalService:
                 .execute()
             )
             row = (result.data or [{}])[0]
-            logger.info("fiscalite_prefill_updated", sci_id=sci_id, annee=annee, record_id=record_id)
-        else:
-            result = (
-                client.table("fiscalite")
-                .insert(fiscalite_data)
-                .execute()
+            logger.info(
+                "fiscalite_prefill_updated",
+                sci_id=sci_id,
+                annee=annee,
+                record_id=record_id,
             )
+        else:
+            result = client.table("fiscalite").insert(fiscalite_data).execute()
             row = (result.data or [{}])[0]
             logger.info("fiscalite_prefill_created", sci_id=sci_id, annee=annee)
 

@@ -13,12 +13,20 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.config import settings
-from app.core.exceptions import FeatureDisabledError, ResourceNotFoundError, ValidationError
+from app.core.exceptions import (
+    FeatureDisabledError,
+    ResourceNotFoundError,
+    ValidationError,
+)
+from app.core.paywall import AssocieMembership, require_gerant_role
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_user_client
 from app.services.declaration_2072_service import Declaration2072PdfService
-from app.services.resume_fiscal_pdf_service import ResumeFiscalPdfService, Report2042PdfService
+from app.services.resume_fiscal_pdf_service import (
+    ResumeFiscalPdfService,
+    Report2042PdfService,
+)
 from app.services.resume_fiscal_service import ResumeFiscalService
 from app.services.subscription_service import SubscriptionService
 
@@ -65,6 +73,7 @@ def _ensure_sci_access(client, sci_id: str, user_id: str) -> None:
     )
     if not (assoc_rows.data or []):
         from app.core.exceptions import AuthorizationError
+
         raise AuthorizationError("SCI", sci_id)
 
 
@@ -78,10 +87,14 @@ def _ensure_feature_enabled(user_id: str) -> None:
         )
 
 
-def _calculate_and_validate(sci_id: str, annee: int, client):
-    """Calculate fiscal summary and validate regime."""
+def _calculate_and_validate(sci_id: str, annee: int, client, *, persist: bool = False):
+    """Calculate fiscal summary and validate regime.
+
+    `persist=False` par défaut : le calcul ne doit jamais écrire depuis un GET
+    (audit C5). Seule la clôture d'exercice impute les déficits antérieurs.
+    """
     service = ResumeFiscalService()
-    result = service.calculate(sci_id, annee, client)
+    result = service.calculate(sci_id, annee, client, persist=persist)
 
     if result.regime_fiscal and result.regime_fiscal.upper() == "IS":
         raise ValidationError(
@@ -175,10 +188,12 @@ async def generate_cerfa_2044_pdf(
 
     # Header
     elements.append(Paragraph("Bilan foncier", title_style))
-    elements.append(Paragraph(
-        f"Résumé fiscal — Exercice {payload.annee} — Calcul simplifié",
-        subtitle_style,
-    ))
+    elements.append(
+        Paragraph(
+            f"Résumé fiscal — Exercice {payload.annee} — Calcul simplifié",
+            subtitle_style,
+        )
+    )
 
     if payload.sci_nom:
         elements.append(Paragraph(f"<b>SCI :</b> {payload.sci_nom}", normal_style))
@@ -196,18 +211,22 @@ async def generate_cerfa_2044_pdf(
     ]
 
     table = Table(data, colWidths=[120 * mm, 50 * mm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 11),
-        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f8fafc")),
-        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-    ]))
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 11),
+                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f8fafc")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ]
+        )
+    )
     elements.append(table)
 
     # Charge decomposition (if any detail fields provided)
@@ -219,11 +238,15 @@ async def generate_cerfa_2044_pdf(
         ("Taxe foncière", payload.taxe_fonciere),
         ("Copropriété", payload.copropriete),
     ]
-    filled_details = [(label, val) for label, val in charge_details if val is not None and val > 0]
+    filled_details = [
+        (label, val) for label, val in charge_details if val is not None and val > 0
+    ]
 
     if filled_details:
         elements.append(Spacer(1, 6 * mm))
-        elements.append(Paragraph("<b>Détail des charges déductibles</b>", normal_style))
+        elements.append(
+            Paragraph("<b>Détail des charges déductibles</b>", normal_style)
+        )
         elements.append(Spacer(1, 3 * mm))
 
         detail_data = [["Poste", "Montant (€)"]]
@@ -231,39 +254,52 @@ async def generate_cerfa_2044_pdf(
             detail_data.append([label, f"{val:,.2f}"])
 
         detail_table = Table(detail_data, colWidths=[120 * mm, 50 * mm])
-        detail_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 10),
-            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-        ]))
+        detail_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ]
+            )
+        )
         elements.append(detail_table)
 
     elements.append(Spacer(1, 10 * mm))
 
     # Disclaimer
-    elements.append(Paragraph(
-        "<i>Ce document est un résumé simplifié du calcul foncier, généré par GererSCI. "
-        "Il ne constitue pas le formulaire officiel CERFA 2044 et ne se substitue pas aux "
-        "obligations déclaratives auprès de l'administration fiscale.</i>",
-        ParagraphStyle(
-            "Disclaimer",
-            parent=styles["Normal"],
-            fontSize=8,
-            textColor=colors.HexColor("#94a3b8"),
-            leading=12,
-        ),
-    ))
+    elements.append(
+        Paragraph(
+            "<i>Ce document est un résumé simplifié du calcul foncier, généré par GererSCI. "
+            "Il ne constitue pas le formulaire officiel CERFA 2044 et ne se substitue pas aux "
+            "obligations déclaratives auprès de l'administration fiscale.</i>",
+            ParagraphStyle(
+                "Disclaimer",
+                parent=styles["Normal"],
+                fontSize=8,
+                textColor=colors.HexColor("#94a3b8"),
+                leading=12,
+            ),
+        )
+    )
 
     elements.append(Spacer(1, 4 * mm))
-    elements.append(Paragraph(
-        f"Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} via GererSCI",
-        ParagraphStyle("Footer", parent=styles["Normal"], fontSize=8, textColor=colors.HexColor("#94a3b8")),
-    ))
+    elements.append(
+        Paragraph(
+            f"Généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} via GererSCI",
+            ParagraphStyle(
+                "Footer",
+                parent=styles["Normal"],
+                fontSize=8,
+                textColor=colors.HexColor("#94a3b8"),
+            ),
+        )
+    )
 
     doc.build(elements)
     buffer.seek(0)
@@ -291,6 +327,33 @@ async def get_resume_fiscal_json(
     result = _calculate_and_validate(sci_id, annee, client)
 
     from dataclasses import asdict
+
+    return asdict(result)
+
+
+@router.post("/scis/{sci_id}/resume-fiscal/{annee}/cloturer")
+@limiter.limit("5/minute")
+async def cloturer_exercice_fiscal(
+    sci_id: str,
+    annee: int,
+    request: Request,
+    user_id: str = Depends(get_current_user),
+    membership: AssocieMembership = Depends(require_gerant_role),
+):
+    """Clôturer l'exercice : impute définitivement les déficits fonciers antérieurs.
+
+    Seul point du code autorisé à écrire dans `deficit_reportable` (audit C5).
+    L'opération est idempotente : rejouer la clôture d'une année déjà imputée
+    renvoie le même résultat sans rien modifier (migration 044).
+    """
+    _ensure_feature_enabled(user_id)
+    client = get_supabase_user_client(request)
+    _ensure_sci_access(client, sci_id, user_id)
+
+    result = _calculate_and_validate(sci_id, annee, client, persist=True)
+
+    from dataclasses import asdict
+
     return asdict(result)
 
 
