@@ -19,10 +19,16 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 
 from app.core.security import get_current_user
-from app.services.subscription_service import ACTIVE_SUBSCRIPTION_STATUSES, SubscriptionService
+from app.models.associes import GOVERNANCE_ROLES
+from app.services.subscription_service import (
+    ACTIVE_SUBSCRIPTION_STATUSES,
+    SubscriptionService,
+)
+
 
 def get_supabase_service_client():
     from app.core.supabase_client import get_supabase_service_client as _real
+
     return _real()
 
 
@@ -65,6 +71,7 @@ async def require_active_subscription(
 
     # Load onboarding_completed from DB
     from app.core.supabase_client import get_supabase_service_client
+
     client = get_supabase_service_client()
     result = (
         client.table("subscriptions")
@@ -104,6 +111,7 @@ async def require_sci_membership(
     Raises HTTP 404 if not a member.
     """
     from app.core.supabase_client import get_supabase_service_client
+
     client = get_supabase_service_client()
     result = (
         client.table("associes")
@@ -132,12 +140,19 @@ async def require_gerant_role(
     membership: AssocieMembership = Depends(require_sci_membership),
 ) -> AssocieMembership:
     """
-    Verify user is a gerant (not just associe).
+    Verify user holds a governance role (gerant or co_gerant), not just associe.
     For write operations (POST/PATCH/DELETE).
+
+    Une SCI peut compter plusieurs rôles de gouvernance : le référentiel
+    comporte `gerant` et `co_gerant`, et rien n'impose l'unicité. Ce contrôle
+    ne testait que `gerant`, alors que la fonction SQL `is_user_gerant_of_sci`
+    (migration 043) et `_require_gerant` dans `api/v1/associes.py` couvrent les
+    deux : un co-gérant était donc bloqué côté application tout en étant
+    autorisé côté base. `GOVERNANCE_ROLES` est la source unique de vérité.
     """
-    if membership.role != "gerant":
+    if membership.role not in GOVERNANCE_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès réservé au gérant de la SCI.",
+            detail="Accès réservé au gérant ou au co-gérant de la SCI.",
         )
     return membership
