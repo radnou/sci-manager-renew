@@ -6,6 +6,7 @@ import signal
 import threading
 import time
 import uuid
+from datetime import timedelta
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 from typing import Awaitable, Callable
@@ -47,7 +48,8 @@ from app.api.v1 import (
     comptabilite,
     credits,
     dashboard,
-    declarations,    demo,
+    declarations,
+    demo,
     echeances,
     export,
     files,
@@ -77,6 +79,7 @@ from app.services.irl_service import check_irl_revisions
 from app.services.nurture_service import process_nurture_emails
 from app.services.signup_nurture_service import check_and_send_signup_nurture_emails
 from app.services.bilan_mensuel_service import auto_generate_bilans
+from app.services.cron_lease import acquire_lease
 from app.services.notification_cron import (
     check_bail_renewal,
     check_depot_garantie_restitution,
@@ -91,10 +94,7 @@ from app.services.notification_cron import (
 )
 
 # Configurer logging au démarrage
-configure_logging(
-    log_level=settings.log_level,
-    log_format=settings.log_format
-)
+configure_logging(log_level=settings.log_level, log_format=settings.log_format)
 
 logger = structlog.get_logger(__name__)
 
@@ -105,11 +105,35 @@ shutdown_event = asyncio.Event()
 _cron_task: asyncio.Task | None = None
 
 
+CRON_LEASE_NAME = "notification_cron"
+# Bail un peu plus court que le cycle : le lendemain, le premier worker à se
+# réveiller le trouve expiré et prend la main.
+CRON_LEASE_DUREE = timedelta(hours=23)
+# Intervalle de réveil. Volontairement court devant le bail : si le détenteur
+# meurt en cours de cycle, un autre worker reprend au bout d'une heure au lieu
+# d'attendre un jour.
+CRON_POLL_SECONDS = 3_600
+
+
 async def _notification_cron_loop():
-    """Run notification checks every 24 hours in the background."""
+    """Run notification checks once a day, on a single worker.
+
+    Sécurité fonctionnelle (audit C9) : cette boucle tourne dans le `lifespan`,
+    donc une fois par worker uvicorn. Sans le bail, chaque cycle s'exécutait
+    autant de fois qu'il y a de workers — relances de loyer et emails de nurture
+    envoyés en double aux clients. Le bail sérialise aussi les redéploiements :
+    `asyncio.sleep` repart de zéro à chaque démarrage de processus, si bien que
+    tout déploiement rejouait le cycle immédiatement.
+    """
     while True:
         try:
             client = get_supabase_service_client()
+
+            if not acquire_lease(client, CRON_LEASE_NAME, CRON_LEASE_DUREE):
+                logger.info("notification_cron_lease_held")
+                await asyncio.sleep(CRON_POLL_SECONDS)
+                continue
+
             # Task 1: Auto-generate loyer records on the 1st of each month
             await check_monthly_loyer_generation(client)
             # Task 2: Graduated late payment reminders (J+5, J+15, J+30)
@@ -141,7 +165,9 @@ async def _notification_cron_loop():
             if bilans_count:
                 logger.info("bilans_mensuels_generated", count=bilans_count)
             logger.info("notification_cron_cycle_complete")
-            await asyncio.sleep(86_400)  # 24h
+            # Le bail n'est PAS libéré ici : il expire de lui-même au bout de
+            # 23 h. C'est ce qui empêche un redéploiement de rejouer le cycle.
+            await asyncio.sleep(CRON_POLL_SECONDS)
         except asyncio.CancelledError:
             logger.info("notification_cron_cancelled")
             break
@@ -179,14 +205,17 @@ async def lifespan(app: FastAPI):
     - Nettoie les ressources
     """
     # ==================== STARTUP ====================
-    logger.info("application_starting",
-                app_name=settings.app_name,
-                app_env=settings.app_env,
-                version="1.0.0")
+    logger.info(
+        "application_starting",
+        app_name=settings.app_name,
+        app_env=settings.app_env,
+        version="1.0.0",
+    )
     shutdown_event.clear()
 
     # Configure Stripe global timeout
     import stripe
+
     stripe.max_network_retries = 2
     stripe.default_http_client = stripe.HTTPXClient(
         timeout=settings.stripe_request_timeout_seconds,
@@ -209,7 +238,9 @@ async def lifespan(app: FastAPI):
                 loop.add_signal_handler(sig, lambda s=sig: handle_shutdown_signal(s))
                 configured_signals.append(signal.Signals(sig).name)
             except (NotImplementedError, RuntimeError, ValueError):
-                logger.warning("signal_handler_unavailable", signal=signal.Signals(sig).name)
+                logger.warning(
+                    "signal_handler_unavailable", signal=signal.Signals(sig).name
+                )
         if configured_signals:
             logger.info("signal_handlers_configured", signals=configured_signals)
     else:
@@ -219,6 +250,7 @@ async def lifespan(app: FastAPI):
     # Start the notification cron background task
     global _cron_task  # noqa: PLW0603
     import sys
+
     if "pytest" not in sys.modules:
         _cron_task = asyncio.create_task(_notification_cron_loop())
         logger.info("notification_cron_started")
@@ -244,7 +276,9 @@ async def lifespan(app: FastAPI):
 
     # Grace period: attendre que les requêtes en cours se terminent
     grace_period_seconds = 30
-    logger.info("waiting_for_requests_to_complete", grace_period_seconds=grace_period_seconds)
+    logger.info(
+        "waiting_for_requests_to_complete", grace_period_seconds=grace_period_seconds
+    )
 
     # Attendre un peu pour que les requêtes se terminent
     await asyncio.sleep(min(grace_period_seconds, 5))
@@ -266,7 +300,11 @@ async def cleanup_resources():
     logger.info("cleaning_up_resources")
 
     # Clear les caches Supabase clients
-    from app.core.supabase_client import get_supabase_anon_client, get_supabase_service_client
+    from app.core.supabase_client import (
+        get_supabase_anon_client,
+        get_supabase_service_client,
+    )
+
     get_supabase_anon_client.cache_clear()
     get_supabase_service_client.cache_clear()
 
@@ -281,10 +319,10 @@ app = FastAPI(title="GererSCI API", version="1.0.0", lifespan=lifespan)
 # EXCEPTION HANDLERS GLOBAUX
 # ============================================================
 
+
 @app.exception_handler(GererSCIException)
 async def gerersci_exception_handler(
-    request: Request,
-    exc: GererSCIException
+    request: Request, exc: GererSCIException
 ) -> JSONResponse:
     """
     Handler pour toutes les exceptions métier GererSCI.
@@ -300,7 +338,7 @@ async def gerersci_exception_handler(
         error_message=exc.message,
         status_code=exc.status_code,
         path=request.url.path,
-        method=request.method
+        method=request.method,
     )
 
     return JSONResponse(
@@ -309,15 +347,14 @@ async def gerersci_exception_handler(
             "error": exc.message,
             "code": exc.code,
             "details": exc.details,
-            "request_id": request_id
-        }
+            "request_id": request_id,
+        },
     )
 
 
 @app.exception_handler(RequestValidationError)
 async def request_validation_exception_handler(
-    request: Request,
-    exc: RequestValidationError
+    request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """
     Handler pour les erreurs de validation FastAPI/Pydantic.
@@ -332,7 +369,7 @@ async def request_validation_exception_handler(
         "request_validation_error",
         validation_errors=errors,
         path=request.url.path,
-        method=request.method
+        method=request.method,
     )
 
     return JSONResponse(
@@ -341,15 +378,14 @@ async def request_validation_exception_handler(
             "error": "Validation error",
             "code": "validation_error",
             "details": errors,
-            "request_id": request_id
-        }
+            "request_id": request_id,
+        },
     )
 
 
 @app.exception_handler(PydanticValidationError)
 async def pydantic_validation_exception_handler(
-    request: Request,
-    exc: PydanticValidationError
+    request: Request, exc: PydanticValidationError
 ) -> JSONResponse:
     """Handler pour les ValidationError de Pydantic"""
     request_id = getattr(request.state, "request_id", "unknown")
@@ -357,7 +393,7 @@ async def pydantic_validation_exception_handler(
     logger.warning(
         "pydantic_validation_error",
         validation_errors=_json_safe(exc.errors()),
-        path=request.url.path
+        path=request.url.path,
     )
 
     return JSONResponse(
@@ -366,16 +402,13 @@ async def pydantic_validation_exception_handler(
             "error": "Validation error",
             "code": "validation_error",
             "details": _json_safe(exc.errors()),
-            "request_id": request_id
-        }
+            "request_id": request_id,
+        },
     )
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(
-    request: Request,
-    exc: Exception
-) -> JSONResponse:
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Handler pour toutes les exceptions non gérées.
     En production: cache les détails pour éviter la fuite d'infos.
@@ -390,7 +423,7 @@ async def global_exception_handler(
         error_message=str(exc),
         path=request.url.path,
         method=request.method,
-        exc_info=True  # Inclut la stacktrace dans les logs
+        exc_info=True,  # Inclut la stacktrace dans les logs
     )
 
     # En production: cacher les détails
@@ -405,8 +438,8 @@ async def global_exception_handler(
         content={
             "error": error_message,
             "code": "internal_error",
-            "request_id": request_id
-        }
+            "request_id": request_id,
+        },
     )
 
 
@@ -418,10 +451,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.allowed_hosts
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
 
 def _resolved_cors_origins() -> list[str]:
@@ -482,9 +512,9 @@ _WRITE_EXEMPT_PREFIXES: tuple[str, ...] = (
     "/api/v1/onboarding/",
     "/api/v1/gdpr/",
     "/api/v1/admin/",
-    "/api/v1/notifications/",           # marking as read = UI state, not business data
+    "/api/v1/notifications/",  # marking as read = UI state, not business data
     "/api/v1/user/notification-preferences",  # demo UX: let users set prefs
-    "/api/v1/quitus/public-generate",   # public lead magnet, no auth
+    "/api/v1/quitus/public-generate",  # public lead magnet, no auth
     "/health",
 )
 
@@ -513,6 +543,7 @@ async def write_protection_middleware(
     token = auth_header[7:]
     try:
         from app.core.security import _decode_bearer_token
+
         payload = await _decode_bearer_token(token)
         user_id = payload.get("sub")
     except Exception:
@@ -521,6 +552,7 @@ async def write_protection_middleware(
 
     if user_id:
         from app.core.paywall import check_write_access
+
         if not check_write_access(user_id):
             return JSONResponse(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
@@ -536,8 +568,7 @@ async def write_protection_middleware(
 
 @app.middleware("http")
 async def maintenance_middleware(
-    request: Request,
-    call_next: Callable[[Request], Awaitable[Response]]
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """Block all requests in maintenance mode, except health + webhooks."""
     if settings.maintenance_mode:
@@ -556,7 +587,11 @@ async def maintenance_middleware(
         if settings.beta_password:
             beta_cookie = request.cookies.get("beta_access")
             beta_header = request.headers.get("X-Beta-Password")
-            if (beta_cookie and hmac.compare_digest(beta_cookie, settings.beta_password)) or (beta_header and hmac.compare_digest(beta_header, settings.beta_password)):
+            if (
+                beta_cookie and hmac.compare_digest(beta_cookie, settings.beta_password)
+            ) or (
+                beta_header and hmac.compare_digest(beta_header, settings.beta_password)
+            ):
                 return await call_next(request)
         return JSONResponse(
             status_code=503,
@@ -571,8 +606,7 @@ async def maintenance_middleware(
 
 @app.middleware("http")
 async def logging_middleware(
-    request: Request,
-    call_next: Callable[[Request], Awaitable[Response]]
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """
     Middleware de logging pour toutes les requêtes.
@@ -589,17 +623,27 @@ async def logging_middleware(
     request.state.request_id = request_id
 
     if shutdown_event.is_set() and not request.url.path.startswith("/health"):
-        logger.warning("request_rejected_during_shutdown", path=request.url.path, method=request.method)
+        logger.warning(
+            "request_rejected_during_shutdown",
+            path=request.url.path,
+            method=request.method,
+        )
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"error": "Service shutting down", "code": "service_unavailable", "request_id": request_id},
+            content={
+                "error": "Service shutting down",
+                "code": "service_unavailable",
+                "request_id": request_id,
+            },
         )
 
     # Logger le début de la requête
-    logger.info("request_started",
-                method=request.method,
-                path=request.url.path,
-                client_host=request.client.host if request.client else None)
+    logger.info(
+        "request_started",
+        method=request.method,
+        path=request.url.path,
+        client_host=request.client.host if request.client else None,
+    )
 
     # Mesurer le temps de traitement
     start_time = time.time()
@@ -621,11 +665,13 @@ async def logging_middleware(
     duration = time.time() - start_time
 
     # Logger la fin de la requête
-    logger.info("request_completed",
-                method=request.method,
-                path=request.url.path,
-                status_code=response.status_code,
-                duration_ms=int(duration * 1000))
+    logger.info(
+        "request_completed",
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_ms=int(duration * 1000),
+    )
 
     # Ajouter le request_id dans les headers de réponse pour debugging
     response.headers["X-Request-ID"] = request_id
@@ -640,17 +686,25 @@ async def add_security_headers(request: Request, call_next):
     # Security Headers de base
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains; preload"
+    )
 
     # Content Security Policy (CSP)
     # connect-src must include every origin the browser is allowed to fetch from
     # (API, Supabase REST + Realtime WSS, Stripe, analytics, error reporting).
     # Browser blocks fetch BEFORE sending the request when an origin is missing,
     # surfacing as "Failed to fetch" with no backend log entry.
-    matomo_url = os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr").strip().rstrip("/")
+    matomo_url = (
+        os.environ.get("VITE_MATOMO_URL", "https://analytics.gerersci.fr")
+        .strip()
+        .rstrip("/")
+    )
     plausible_src = os.environ.get("VITE_PLAUSIBLE_SRC", "").strip()
-    plausible_api_host = os.environ.get("VITE_PLAUSIBLE_API_HOST", "").strip().rstrip("/")
-    
+    plausible_api_host = (
+        os.environ.get("VITE_PLAUSIBLE_API_HOST", "").strip().rstrip("/")
+    )
+
     # Extract Plausible origins to allow in CSP
     plausible_origins = []
     if plausible_src:
@@ -662,22 +716,31 @@ async def add_security_headers(request: Request, call_next):
             pass
     if plausible_api_host:
         plausible_origins.append(plausible_api_host)
-        
+
     # Default trusted analytics origins for fallback
-    default_analytics = ["https://analytics.gerersci.fr", "https://analytics.radnoumane.com"]
-    
+    default_analytics = [
+        "https://analytics.gerersci.fr",
+        "https://analytics.radnoumane.com",
+    ]
+
     # Combine unique origins for scripts and connections
-    analytics_origins = list(dict.fromkeys(
-        [matomo_url] + plausible_origins + default_analytics
-    ))
+    analytics_origins = list(
+        dict.fromkeys([matomo_url] + plausible_origins + default_analytics)
+    )
     analytics_src_str = " ".join(o for o in analytics_origins if o)
 
-    api_public_url = os.environ.get("VITE_API_URL", "https://api.gerersci.fr").strip().rstrip("/")
+    api_public_url = (
+        os.environ.get("VITE_API_URL", "https://api.gerersci.fr").strip().rstrip("/")
+    )
     supabase_public_url = (
-        os.environ.get("SUPABASE_PUBLIC_URL")
-        or os.environ.get("VITE_SUPABASE_URL")
-        or settings.supabase_url
-    ).strip().rstrip("/")
+        (
+            os.environ.get("SUPABASE_PUBLIC_URL")
+            or os.environ.get("VITE_SUPABASE_URL")
+            or settings.supabase_url
+        )
+        .strip()
+        .rstrip("/")
+    )
     sentry_dsn = os.environ.get("SENTRY_DSN") or os.environ.get("VITE_SENTRY_DSN", "")
     sentry_origin = ""
     if sentry_dsn:
@@ -698,26 +761,30 @@ async def add_security_headers(request: Request, call_next):
         connect_sources.append(supabase_public_url)
         # Supabase Realtime uses WebSocket — derive wss:// equivalent.
         if supabase_public_url.startswith("https://"):
-            connect_sources.append("wss://" + supabase_public_url[len("https://"):])
+            connect_sources.append("wss://" + supabase_public_url[len("https://") :])
         elif supabase_public_url.startswith("http://"):
-            connect_sources.append("ws://" + supabase_public_url[len("http://"):])
-    connect_sources.extend([
-        "https://api.stripe.com",
-        "https://*.stripe.com",
-    ])
+            connect_sources.append("ws://" + supabase_public_url[len("http://") :])
+    connect_sources.extend(
+        [
+            "https://api.stripe.com",
+            "https://*.stripe.com",
+        ]
+    )
     connect_sources.extend(analytics_origins)
     if sentry_origin:
         connect_sources.append(sentry_origin)
 
     if settings.app_env != Environment.PRODUCTION:
-        connect_sources.extend([
-            "http://localhost:8001",
-            "http://127.0.0.1:8001",
-            "http://localhost:8000",
-            "http://127.0.0.1:8000",
-            "ws://localhost:5173",
-            "ws://127.0.0.1:5173",
-        ])
+        connect_sources.extend(
+            [
+                "http://localhost:8001",
+                "http://127.0.0.1:8001",
+                "http://localhost:8000",
+                "http://127.0.0.1:8000",
+                "ws://localhost:5173",
+                "ws://127.0.0.1:5173",
+            ]
+        )
 
     # Deduplicate while preserving order
     connect_src = " ".join(dict.fromkeys(s for s in connect_sources if s))
@@ -737,7 +804,6 @@ async def add_security_headers(request: Request, call_next):
         "upgrade-insecure-requests"
     )
     response.headers["Content-Security-Policy"] = csp_policy
-
 
     # Permissions Policy (Feature Policy)
     response.headers["Permissions-Policy"] = (
