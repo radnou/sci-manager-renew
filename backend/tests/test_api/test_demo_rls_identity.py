@@ -35,13 +35,18 @@ def test_seed_demo_uses_service_role_client(
         return {"sci_id": "sci-demo"}
 
     monkeypatch.setattr(demo_module, "seed_demo_data", fake_seed)
-    fake_supabase.store["subscriptions"] = [
-        {"user_id": "user-123", "status": "demo", "demo_seeded": False}
-    ]
+    # Aucune ligne d'abonnement : l'endpoint ne peut pas prendre un de ses
+    # retours anticipés (« déjà chargé », « abonnement actif ») et va jusqu'au
+    # seed. Ne pas se contenter d'un statut « demo » : la route déclare
+    # `status_code=201`, donc les retours anticipés répondent 201 eux aussi et
+    # l'assertion de code ne les distingue pas.
+    fake_supabase.store["subscriptions"] = []
 
     resp = client.post("/api/v1/demo/seed", headers=auth_headers)
 
     assert resp.status_code == 201
+    # Discrimine un vrai seed d'un retour anticipé
+    assert resp.json().get("sci_id") == "sci-demo"
     assert captured["client"] is service_sentinel
 
 
