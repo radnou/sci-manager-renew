@@ -17,7 +17,7 @@ Backlog de remédiation issu de l'**audit externe du 2026-07-25**
 | Finding | Sévérité | État | Bloquant go-live |
 |---|---|---|---|
 | C1 — Contournement du paiement | CRITICAL 🔴 | 🔧 Prêt, à déployer | Oui |
-| C2 — Supabase exposé publiquement | CRITICAL 🔴 | 🚫 Bloqué (repo `vps-infra`) | Oui |
+| C2 — Supabase exposé publiquement | CRITICAL 🔴 | ✅ Fermé 2026-07-30 (`/rest`, `/realtime` → 404) | Oui |
 | C3 — Élévation de privilège associés | CRITICAL ⚪ | 🔧 Prêt, à déployer | Oui |
 | C4 — Fondateur 990 € inachetable | CRITICAL ⚪ | ⏳ À faire | Oui |
 | C5 — Déficit foncier corrompu au GET | CRITICAL ⚪ | ⏳ À faire | Oui |
