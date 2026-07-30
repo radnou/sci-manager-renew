@@ -86,32 +86,42 @@ C'est le script qui ne garde rien. `backup-vps-infra.sh` — celui qui fonctionn
       Jamais fait. Aggravé par HIGH-11 : `0045_`/`0046_` trient avant `004_` et
       `035` est dupliqué, donc une reconstruction de schéma part dans le désordre.
 
-### 2. Déployer le correctif C1/C3
-Le contournement de paiement est **actif en production**.
+### 2. ~~Déployer le correctif C1/C3~~ — FAIT le 2026-07-30
 
-- [ ] `psql "$DATABASE_URL" -f supabase/migrations/043_security_fix_c1_c3_rls.sql`
-- [ ] Déployer le backend (migration + patches applicatifs vont ensemble)
-- [ ] Rejouer l'exploit → doit renvoyer 401/403 :
-      ```bash
-      curl -X POST "https://api.gerersci.fr/rest/v1/subscriptions" \
-        -H "apikey: $ANON" -H "Authorization: Bearer $USER_JWT" \
-        -d '{"user_id":"<self>","status":"active","plan_key":"pilotage"}'
-      ```
-- [ ] Vérifier la non-régression : inscription → `/welcome` → onboarding → `/complete`
-- [ ] Vérifier la suppression de compte RGPD
+Code déployé (`bdc7042`, quality-gate vert) puis migrations `043` et `044`
+appliquées sur `supabase_db_sci-manager-renew`. Dump pré-migration copié hors VPS
+(729 K, 114 tables).
 
-### 3. Fermer l'exposition Supabase (CRITICAL-2 + HIGH-1/HIGH-2)
-**Dans le dépôt `vps-infra`**, pas ici. La centralisation de l'infrastructure
-n'a pas fermé cette exposition : elle a déplacé les routes dans
-`/etc/caddy/sites/gerersci.caddy`.
+Exploits rejoués sous le rôle `authenticated`, en transaction annulée :
 
-- [ ] Dans `/etc/caddy/sites/gerersci.caddy`, bloc `api.gerersci.fr` : retirer
-      `/rest/*`, `/storage/*`, `/realtime/*` (et `/functions/*` s'il n'est pas
-      utilisé), ne conserver que `/auth/*` vers Kong `127.0.0.1:54321`
-- [ ] Désactiver le signup public GoTrue (`disable_signup: true`)
-- [ ] Désactiver `/docs`, `/redoc`, `/openapi.json` en production
-- [ ] Vérifier : `curl -o /dev/null -w "%{http_code}" https://api.gerersci.fr/rest/v1/sci` → 404
-      et que le magic link fonctionne toujours (`/auth/*` doit rester ouvert)
+- **C1** — `insert into subscriptions … status='active'` →
+  `ERROR: permission denied for table subscriptions`
+- **C3** — auto-promotion gérant → filtrée par RLS (témoin admin : 1 ligne
+  touchée, utilisateur non-gouvernance : 0)
+
+`subscriptions` ne conserve que `subscriptions_owner_select/SELECT` ;
+`anon`/`authenticated` n'ont plus INSERT/UPDATE/DELETE. `/health/ready` sain
+(database, storage, stripe live 4 prix, resend).
+
+Reste à vérifier manuellement, faute de compte de test : inscription →
+`/welcome` → onboarding → `/complete`, et la suppression de compte RGPD.
+
+### 3. ~~Fermer l'exposition Supabase~~ — FAIT le 2026-07-30 (CRITICAL-2)
+
+`/rest/*` et `/realtime/*` passent en `respond 404` dans
+`/etc/caddy/sites/gerersci.caddy` ; `/auth/*` et `/storage/*` restent ouverts
+(magic links, URL signées de documents). Vérifié depuis l'extérieur :
+`/rest/v1/sci` 200 → **404**, `/auth/v1/settings` 200, `app.gerersci.fr` 200.
+
+Deux points restants :
+
+- [ ] **Kong écoute sur `0.0.0.0:54321`** — `deploy-caddy.sh` refuse de tourner
+      pour cette raison, la config a donc été appliquée à la main après
+      `caddy validate`. Le port est injoignable depuis Internet (testé : timeout,
+      UFW + DOCKER-USER), mais le bind doit passer sur `127.0.0.1` côté CLI
+      Supabase — sinon toute panne de pare-feu rouvre PostgREST en direct.
+- [ ] Désactiver le signup public GoTrue (`disable_signup: true`, HIGH-1) et
+      `/docs`, `/redoc`, `/openapi.json` en production (HIGH-2).
 
 ### 4. Nettoyer les conteneurs orphelins de monitoring
 
