@@ -5,6 +5,7 @@ Endpoints GDPR pour conformité RGPD (Art. 15, 17, 20)
 - Suppression de compte (droit à l'oubli - Art. 17)
 - Résumé des données (droit d'accès - Art. 15)
 """
+
 import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -18,7 +19,10 @@ from app.core.audit_log import AuditLogger
 from app.core.exceptions import SCIManagerException
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
-from app.core.supabase_client import get_supabase_service_client, get_supabase_user_client
+from app.core.supabase_client import (
+    get_supabase_service_client,
+    get_supabase_user_client,
+)
 from app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/gdpr", tags=["gdpr"])
@@ -80,11 +84,13 @@ async def export_user_data(
             "id": auth_user.user.id,
             "email": auth_user.user.email,
             "created_at": auth_user.user.created_at,
-            "email_confirmed_at": auth_user.user.email_confirmed_at
+            "email_confirmed_at": auth_user.user.email_confirmed_at,
         }
 
         # 2. Associés (pour obtenir les SCI IDs)
-        associes_response = client.table("associes").select("*").eq("user_id", user_id).execute()
+        associes_response = (
+            client.table("associes").select("*").eq("user_id", user_id).execute()
+        )
         associes_rows = associes_response.data or []
         export_data["data"]["associes"] = associes_rows
 
@@ -93,7 +99,9 @@ async def export_user_data(
 
         if sci_ids:
             # 3. Biens immobiliers
-            biens_response = client.table("biens").select("*").in_("id_sci", sci_ids).execute()
+            biens_response = (
+                client.table("biens").select("*").in_("id_sci", sci_ids).execute()
+            )
             biens_rows = biens_response.data or []
             export_data["data"]["biens"] = biens_rows
 
@@ -101,46 +109,82 @@ async def export_user_data(
 
             if bien_ids:
                 # 4. Loyers
-                loyers_response = client.table("loyers").select("*").in_("id_bien", bien_ids).execute()
+                loyers_response = (
+                    client.table("loyers")
+                    .select("*")
+                    .in_("id_bien", bien_ids)
+                    .execute()
+                )
                 export_data["data"]["loyers"] = loyers_response.data or []
 
                 # 5. Charges
-                charges_response = client.table("charges").select("*").in_("id_bien", bien_ids).execute()
+                charges_response = (
+                    client.table("charges")
+                    .select("*")
+                    .in_("id_bien", bien_ids)
+                    .execute()
+                )
                 export_data["data"]["charges"] = charges_response.data or []
 
                 # 6. Baux
-                baux_response = client.table("baux").select("*").in_("id_bien", bien_ids).execute()
+                baux_response = (
+                    client.table("baux").select("*").in_("id_bien", bien_ids).execute()
+                )
                 export_data["data"]["baux"] = baux_response.data or []
 
                 # 7. Locataires
-                locataires_response = client.table("locataires").select("*").in_("id_bien", bien_ids).execute()
+                locataires_response = (
+                    client.table("locataires")
+                    .select("*")
+                    .in_("id_bien", bien_ids)
+                    .execute()
+                )
                 export_data["data"]["locataires"] = locataires_response.data or []
 
                 # 8. Documents
-                documents_response = client.table("documents_bien").select("*").in_("id_bien", bien_ids).execute()
+                documents_response = (
+                    client.table("documents_bien")
+                    .select("*")
+                    .in_("id_bien", bien_ids)
+                    .execute()
+                )
                 docs = documents_response.data or []
                 for d in docs:
                     if "file_url" in d and "url" not in d:
                         d["url"] = d["file_url"]
                 export_data["data"]["documents"] = docs
 
-
             # 9. Données fiscales
-            fiscalite_response = client.table("fiscalite").select("*").in_("id_sci", sci_ids).execute()
+            fiscalite_response = (
+                client.table("fiscalite").select("*").in_("id_sci", sci_ids).execute()
+            )
             export_data["data"]["fiscalite"] = fiscalite_response.data or []
 
         # 10. Notifications (user-level)
-        notifications_response = client.table("notifications").select("*").eq("user_id", user_id).execute()
+        notifications_response = (
+            client.table("notifications").select("*").eq("user_id", user_id).execute()
+        )
         export_data["data"]["notifications"] = notifications_response.data or []
 
         # 11. Notification preferences (user-level)
-        notif_prefs_response = client.table("notification_preferences").select("*").eq("user_id", user_id).execute()
-        export_data["data"]["notification_preferences"] = notif_prefs_response.data or []
+        notif_prefs_response = (
+            client.table("notification_preferences")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        export_data["data"]["notification_preferences"] = (
+            notif_prefs_response.data or []
+        )
 
-        export_bytes = json.dumps(export_data, ensure_ascii=False, default=str).encode("utf-8")
+        export_bytes = json.dumps(export_data, ensure_ascii=False, default=str).encode(
+            "utf-8"
+        )
         file_name = f"gdpr-export-{uuid4().hex}.json"
         file_path = f"gdpr/{user_id}/{file_name}"
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=GDPR_EXPORT_TTL_SECONDS)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            seconds=GDPR_EXPORT_TTL_SECONDS
+        )
 
         await storage_service.create_bucket_if_not_exists()
         await storage_service.upload_file(
@@ -148,7 +192,9 @@ async def export_user_data(
             file_content=export_bytes,
             content_type="application/json",
         )
-        signed_url = await storage_service.create_signed_url(file_path, GDPR_EXPORT_TTL_SECONDS)
+        signed_url = await storage_service.create_signed_url(
+            file_path, GDPR_EXPORT_TTL_SECONDS
+        )
 
         try:
             client.table("gdpr_exports").insert(
@@ -182,7 +228,9 @@ async def export_user_data(
         )
 
     except Exception as e:
-        logger.error("gdpr_data_export_failed", user_id=user_id, error=str(e), exc_info=True)
+        logger.error(
+            "gdpr_data_export_failed", user_id=user_id, error=str(e), exc_info=True
+        )
         await AuditLogger.log_gdpr_event(
             event="data_export_failed",
             user_id=user_id,
@@ -229,6 +277,7 @@ async def get_data_summary(
             # Fallback: extract email from JWT token (already validated by get_current_user)
             try:
                 import jwt as pyjwt
+
                 token = request.headers.get("authorization", "").replace("Bearer ", "")
                 payload = pyjwt.decode(token, options={"verify_signature": False})
                 user_email = payload.get("email", "")
@@ -236,18 +285,45 @@ async def get_data_summary(
                 user_email = "unknown"
 
         # Compteurs
-        associes_count = client.table("associes").select("id", count="exact").eq("user_id", user_id).execute()
-        associes_rows = client.table("associes").select("id_sci").eq("user_id", user_id).execute().data or []
+        associes_count = (
+            client.table("associes")
+            .select("id", count="exact")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        associes_rows = (
+            client.table("associes")
+            .select("id_sci")
+            .eq("user_id", user_id)
+            .execute()
+            .data
+            or []
+        )
         sci_ids = [a["id_sci"] for a in associes_rows if a.get("id_sci")]
 
         biens_count = 0
         loyers_count = 0
         if sci_ids:
-            biens_count = client.table("biens").select("id", count="exact").in_("id_sci", sci_ids).execute().count
-            bien_rows = client.table("biens").select("id").in_("id_sci", sci_ids).execute().data or []
+            biens_count = (
+                client.table("biens")
+                .select("id", count="exact")
+                .in_("id_sci", sci_ids)
+                .execute()
+                .count
+            )
+            bien_rows = (
+                client.table("biens").select("id").in_("id_sci", sci_ids).execute().data
+                or []
+            )
             bien_ids = [b["id"] for b in bien_rows if b.get("id")]
             if bien_ids:
-                loyers_count = client.table("loyers").select("id", count="exact").in_("id_bien", bien_ids).execute().count
+                loyers_count = (
+                    client.table("loyers")
+                    .select("id", count="exact")
+                    .in_("id_bien", bien_ids)
+                    .execute()
+                    .count
+                )
 
         return DataSummaryResponse(
             user_id=user_id,
@@ -264,7 +340,9 @@ async def get_data_summary(
         )
 
     except Exception as e:
-        logger.error("gdpr_data_summary_failed", user_id=user_id, error=str(e), exc_info=True)
+        logger.error(
+            "gdpr_data_summary_failed", user_id=user_id, error=str(e), exc_info=True
+        )
         raise SCIManagerException(
             "Échec de la récupération du résumé de données.",
             status_code=500,
@@ -296,6 +374,14 @@ async def delete_user_account(
     """
     try:
         client = get_supabase_user_client(request)
+        # L'effacement RGPD doit aboutir intégralement : il s'exécute en
+        # service_role, l'autorisation étant déjà établie par le JWT vérifié
+        # (user_id). Avec le client utilisateur, plusieurs suppressions
+        # échouaient silencieusement faute de policy DELETE (RLS renvoie 200
+        # avec 0 ligne), laissant survivre des données personnelles — et
+        # depuis la migration 043, l'écriture sur `subscriptions` est de toute
+        # façon réservée au service_role.
+        erase_client = get_supabase_service_client()
 
         # Log AVANT suppression (important pour audit)
         await AuditLogger.log_gdpr_event(
@@ -306,21 +392,35 @@ async def delete_user_account(
         )
 
         # 1. Récupérer les IDs avant suppression
-        associes_response = client.table("associes").select("id_sci").eq("user_id", user_id).execute()
+        associes_response = (
+            client.table("associes").select("id_sci").eq("user_id", user_id).execute()
+        )
         associes_rows = associes_response.data or []
         sci_ids = [a["id_sci"] for a in associes_rows if a.get("id_sci")]
 
         # 2. Suppression en cascade (dans l'ordre inverse des dépendances)
 
         # User-level tables first (no FK dependency on biens/sci)
-        client.table("notifications").delete().eq("user_id", user_id).execute()
-        client.table("notification_preferences").delete().eq("user_id", user_id).execute()
+        # `notifications` n'a aucune policy DELETE : avec le client utilisateur
+        # cette suppression échouait silencieusement et les notifications
+        # (contenant adresses de biens et noms de locataires) survivaient à la
+        # suppression de compte.
+        erase_client.table("notifications").delete().eq("user_id", user_id).execute()
+        erase_client.table("notification_preferences").delete().eq(
+            "user_id", user_id
+        ).execute()
 
         # Separate SCIs into exclusive (only this user) vs shared (other associes exist)
         exclusive_sci_ids = []
         shared_sci_ids = []
         for sci_id in sci_ids:
-            other_assoc = client.table("associes").select("id").eq("id_sci", sci_id).neq("user_id", user_id).execute()
+            other_assoc = (
+                client.table("associes")
+                .select("id")
+                .eq("id_sci", sci_id)
+                .neq("user_id", user_id)
+                .execute()
+            )
             if other_assoc.data:
                 shared_sci_ids.append(sci_id)
             else:
@@ -328,19 +428,34 @@ async def delete_user_account(
 
         # For shared SCIs, only remove the user's associe record (don't delete SCI data)
         for sci_id in shared_sci_ids:
-            client.table("associes").delete().eq("id_sci", sci_id).eq("user_id", user_id).execute()
+            # service_role : depuis la migration 043, la DELETE sur `associes`
+            # exige le rôle gérant. Un simple associé qui supprime son compte
+            # verrait sa ligne (nom, email, parts) survivre silencieusement.
+            erase_client.table("associes").delete().eq("id_sci", sci_id).eq(
+                "user_id", user_id
+            ).execute()
 
         # For exclusive SCIs, full cascade delete
         bien_ids = []
         if exclusive_sci_ids:
-            biens_response = client.table("biens").select("id").in_("id_sci", exclusive_sci_ids).execute()
+            biens_response = (
+                client.table("biens")
+                .select("id")
+                .in_("id_sci", exclusive_sci_ids)
+                .execute()
+            )
             bien_rows = biens_response.data or []
             bien_ids = [b["id"] for b in bien_rows if b.get("id")]
 
         if bien_ids:
             # Clean up storage files for documents before deleting records
             try:
-                docs_response = client.table("documents_bien").select("*").in_("id_bien", bien_ids).execute()
+                docs_response = (
+                    client.table("documents_bien")
+                    .select("*")
+                    .in_("id_bien", bien_ids)
+                    .execute()
+                )
                 doc_rows = docs_response.data or []
                 for doc in doc_rows:
                     doc_url = doc.get("file_url") or doc.get("url")
@@ -353,10 +468,13 @@ async def delete_user_account(
                                 storage_path = str(doc_url).split(path_marker, 1)[1]
                             client.storage.from_("documents").remove([storage_path])
                         except Exception:
-                            logger.warning("gdpr_storage_file_cleanup_failed", doc_id=doc.get("id"))
+                            logger.warning(
+                                "gdpr_storage_file_cleanup_failed", doc_id=doc.get("id")
+                            )
             except Exception:
-                logger.warning("gdpr_document_cleanup_failed", user_id=user_id, bien_ids=bien_ids)
-
+                logger.warning(
+                    "gdpr_document_cleanup_failed", user_id=user_id, bien_ids=bien_ids
+                )
 
             # Documents
             client.table("documents_bien").delete().in_("id_bien", bien_ids).execute()
@@ -373,16 +491,20 @@ async def delete_user_account(
             # Biens
             client.table("biens").delete().in_("id_sci", exclusive_sci_ids).execute()
             # Données fiscales
-            client.table("fiscalite").delete().in_("id_sci", exclusive_sci_ids).execute()
+            client.table("fiscalite").delete().in_(
+                "id_sci", exclusive_sci_ids
+            ).execute()
 
         # Associés (only for exclusive SCIs — shared ones already handled above)
         if exclusive_sci_ids:
-            client.table("associes").delete().eq("user_id", user_id).in_("id_sci", exclusive_sci_ids).execute()
+            erase_client.table("associes").delete().eq("user_id", user_id).in_(
+                "id_sci", exclusive_sci_ids
+            ).execute()
 
         # 3. ANONYMISER (pas supprimer) les données de facturation Stripe
         # Les données de facturation doivent être conservées 10 ans (Code Général des Impôts)
         try:
-            client.table("subscriptions").update(
+            erase_client.table("subscriptions").update(
                 {
                     "status": "deleted",
                     "stripe_customer_id": None,
@@ -393,7 +515,12 @@ async def delete_user_account(
             pass
 
         try:
-            exports_response = client.table("gdpr_exports").select("file_path").eq("user_id", user_id).execute()
+            exports_response = (
+                client.table("gdpr_exports")
+                .select("file_path")
+                .eq("user_id", user_id)
+                .execute()
+            )
             export_rows = exports_response.data or []
             for row in export_rows:
                 file_path = row.get("file_path")
@@ -413,7 +540,10 @@ async def delete_user_account(
             event="account_deleted",
             user_id=user_id,
             request=request,
-            details={"deleted_sci_count": len(sci_ids), "deleted_biens_count": len(bien_ids)},
+            details={
+                "deleted_sci_count": len(sci_ids),
+                "deleted_biens_count": len(bien_ids),
+            },
         )
 
         return AccountDeleteResponse(
@@ -422,7 +552,9 @@ async def delete_user_account(
         )
 
     except Exception as e:
-        logger.error("gdpr_account_delete_failed", user_id=user_id, error=str(e), exc_info=True)
+        logger.error(
+            "gdpr_account_delete_failed", user_id=user_id, error=str(e), exc_info=True
+        )
         await AuditLogger.log_gdpr_event(
             event="account_delete_failed",
             user_id=user_id,

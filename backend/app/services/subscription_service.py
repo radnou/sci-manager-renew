@@ -12,7 +12,11 @@ from app.core.entitlements import (
     get_plan,
     resolve_plan_key_from_price_id,
 )
-from app.core.exceptions import PlanLimitError, SubscriptionInactiveError, UpgradeRequiredError
+from app.core.exceptions import (
+    PlanLimitError,
+    SubscriptionInactiveError,
+    UpgradeRequiredError,
+)
 from app.core.supabase_client import get_supabase_service_client
 
 logger = structlog.get_logger(__name__)
@@ -59,7 +63,9 @@ class SubscriptionService:
     @staticmethod
     def _load_subscription_row(user_id: str) -> dict[str, Any] | None:
         client = get_supabase_service_client()
-        result = client.table("subscriptions").select("*").eq("user_id", user_id).execute()
+        result = (
+            client.table("subscriptions").select("*").eq("user_id", user_id).execute()
+        )
         rows = result.data or []
         if not rows:
             return None
@@ -68,9 +74,18 @@ class SubscriptionService:
     @classmethod
     def get_usage_counts(cls, user_id: str) -> dict[str, int]:
         client = get_supabase_service_client()
-        sci_count = cls._count_query(client.table("associes").select("id", count="exact").eq("user_id", user_id))
+        sci_count = cls._count_query(
+            client.table("associes").select("id", count="exact").eq("user_id", user_id)
+        )
 
-        memberships = client.table("associes").select("id_sci").eq("user_id", user_id).execute().data or []
+        memberships = (
+            client.table("associes")
+            .select("id_sci")
+            .eq("user_id", user_id)
+            .execute()
+            .data
+            or []
+        )
         sci_ids = [str(row.get("id_sci")) for row in memberships if row.get("id_sci")]
 
         if not sci_ids:
@@ -83,7 +98,9 @@ class SubscriptionService:
             bien_count = 0
             for sci_id in sci_ids:
                 bien_count += cls._count_query(
-                    client.table("biens").select("id", count="exact").eq("id_sci", sci_id)
+                    client.table("biens")
+                    .select("id", count="exact")
+                    .eq("id_sci", sci_id)
                 )
 
         return {"current_scis": sci_count, "current_biens": bien_count}
@@ -105,16 +122,34 @@ class SubscriptionService:
 
         row_status = str(row.get("status") or "").lower()
 
+        # Sécurité (audit C1) : le catalogue serveur (`build_plan_snapshot`) doit
+        # TOUJOURS primer sur la ligne DB. L'ordre inverse ({**snapshot, **row})
+        # laissait une ligne `subscriptions` forgée imposer ses propres
+        # max_scis/max_biens/features. La migration 043 ferme l'écriture côté RLS ;
+        # cette inversion est la défense en profondeur côté applicatif.
         # Legacy trialing rows → treat as inactive (must re-subscribe)
         if row_status == "trialing":
             snapshot = build_plan_snapshot(PlanKey.FREE)
-            row = {**snapshot, **row}
+            row = {**row, **snapshot}
             row["is_active"] = False
             row["plan_name"] = "Non abonné"
         else:
-            plan_key = row.get("plan_key") or resolve_plan_key_from_price_id(row.get("stripe_price_id")) or PlanKey.FREE.value
+            # Le price_id Stripe est la source de vérité prioritaire sur le plan
+            # payé. Fallback sur `plan_key` de la ligne DB : indispensable tant
+            # que `stripe_price_id` n'est pas renseigné au checkout (cf. audit
+            # HIGH-10) — sans lui, tout client payant existant retomberait en
+            # FREE. Ce fallback est sûr depuis la migration 043 : `plan_key`
+            # n'est plus écrivable que par le service_role.
+            # `resolve_plan_key_from_price_id` renvoie FREE (et non None) pour un
+            # price_id inconnu du catalogue : prix Stripe historique, migré, ou
+            # issu d'un autre compte. Traiter ce FREE comme « non concluant »,
+            # sinon la ligne d'un client payant est rétrogradée à chaque lecture.
+            resolved = resolve_plan_key_from_price_id(row.get("stripe_price_id"))
+            if resolved == PlanKey.FREE:
+                resolved = None
+            plan_key = resolved or row.get("plan_key") or PlanKey.FREE.value
             snapshot = build_plan_snapshot(plan_key)
-            row = {**snapshot, **row}
+            row = {**row, **snapshot}
             row["is_active"] = row_status in ACTIVE_SUBSCRIPTION_STATUSES
 
         usage = cls.get_usage_counts(user_id)
@@ -132,7 +167,8 @@ class SubscriptionService:
 
         return {
             "plan_key": row.get("plan_key") or PlanKey.FREE.value,
-            "plan_name": row.get("plan_name") or get_plan(row.get("plan_key") or PlanKey.FREE.value).display_name,
+            "plan_name": row.get("plan_name")
+            or get_plan(row.get("plan_key") or PlanKey.FREE.value).display_name,
             "status": row.get("status", "free"),
             "mode": row.get("mode", "subscription"),
             "is_active": bool(row.get("is_active", False)),
@@ -140,7 +176,8 @@ class SubscriptionService:
             "entitlements_version": row.get("entitlements_version", 1),
             "max_scis": max_scis,
             "max_biens": max_biens,
-            "features": row.get("features") or get_plan(row.get("plan_key") or PlanKey.FREE.value).features_payload(),
+            "features": row.get("features")
+            or get_plan(row.get("plan_key") or PlanKey.FREE.value).features_payload(),
             "current_scis": current_scis,
             "current_biens": current_biens,
             "remaining_scis": remaining_scis,
@@ -160,10 +197,15 @@ class SubscriptionService:
                     reason="inactive_subscription",
                     user_id=user_id,
                     plan_key=plan_key,
-                    details={"status": str(summary.get("status")), "feature_name": feature_name},
+                    details={
+                        "status": str(summary.get("status")),
+                        "feature_name": feature_name,
+                    },
                 )
                 return summary
-            raise SubscriptionInactiveError(plan_key=plan_key, status=str(summary.get("status")))
+            raise SubscriptionInactiveError(
+                plan_key=plan_key, status=str(summary.get("status"))
+            )
         if not features.get(feature_name, False):
             if cls._guardrail_allows():
                 cls._log_guardrail_bypass(
@@ -190,10 +232,15 @@ class SubscriptionService:
                     reason="inactive_subscription",
                     user_id=user_id,
                     plan_key=plan_key,
-                    details={"status": str(summary.get("status")), "resource": resource},
+                    details={
+                        "status": str(summary.get("status")),
+                        "resource": resource,
+                    },
                 )
                 return summary
-            raise SubscriptionInactiveError(plan_key=plan_key, status=str(summary.get("status")))
+            raise SubscriptionInactiveError(
+                plan_key=plan_key, status=str(summary.get("status"))
+            )
 
         limit_key = f"max_{resource}"
         current_key = f"current_{resource}"
@@ -214,10 +261,19 @@ class SubscriptionService:
                     reason="limit_reached",
                     user_id=user_id,
                     plan_key=plan_key,
-                    details={"resource": resource, "current": current_value, "limit": limit_value},
+                    details={
+                        "resource": resource,
+                        "current": current_value,
+                        "limit": limit_value,
+                    },
                 )
                 return summary
-            raise PlanLimitError(resource=resource, limit=limit_value, current=current_value, plan_key=plan_key)
+            raise PlanLimitError(
+                resource=resource,
+                limit=limit_value,
+                current=current_value,
+                plan_key=plan_key,
+            )
 
         return summary
 
@@ -229,7 +285,11 @@ class SubscriptionService:
         plan_key: str | None,
         current_period_end: Any = None,
     ) -> dict[str, Any]:
-        resolved_plan_key = plan_key or resolve_plan_key_from_price_id(session_data.get("price_id")) or PlanKey.FREE.value
+        resolved_plan_key = (
+            plan_key
+            or resolve_plan_key_from_price_id(session_data.get("price_id"))
+            or PlanKey.FREE.value
+        )
         snapshot = build_plan_snapshot(resolved_plan_key)
 
         formatted_period_end = None
@@ -237,7 +297,10 @@ class SubscriptionService:
             try:
                 if isinstance(current_period_end, (int, float)):
                     from datetime import datetime, timezone
-                    formatted_period_end = datetime.fromtimestamp(current_period_end, tz=timezone.utc).isoformat()
+
+                    formatted_period_end = datetime.fromtimestamp(
+                        current_period_end, tz=timezone.utc
+                    ).isoformat()
                 else:
                     formatted_period_end = str(current_period_end)
             except Exception:
@@ -248,7 +311,8 @@ class SubscriptionService:
             "stripe_customer_id": session_data.get("customer"),
             "stripe_subscription_id": session_data.get("subscription"),
             "stripe_price_id": session_data.get("price_id"),
-            "mode": session_data.get("mode") or get_plan(resolved_plan_key).checkout_mode,
+            "mode": session_data.get("mode")
+            or get_plan(resolved_plan_key).checkout_mode,
             "status": status_value,
             "current_period_end": formatted_period_end,
             "plan_key": snapshot["plan_key"],

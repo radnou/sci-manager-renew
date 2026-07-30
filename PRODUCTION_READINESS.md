@@ -120,24 +120,36 @@ Audit date: 2026-03-27
 
 | Item | Status | Details |
 |------|--------|---------|
-| JWT verification | ✅ Done | JWKS rotation with cache |
-| RLS on all tables | ✅ Done | Supabase policies |
-| CORS properly configured | ✅ Done | Explicit origins, no wildcard in prod |
-| Security headers (CSP, HSTS, etc.) | ✅ Done | `main.py:525-570` |
-| TrustedHostMiddleware | ✅ Done | `main.py:397-400` |
-| Admin secret-key auth | ✅ Done | URL-based, outside (app) group |
-| No secrets in error responses | ✅ Done | Generic "Internal server error" in prod |
-| Webhook signature verification | ✅ Done | Stripe webhook validates signature |
+> ⚠️ **Ce tableau était partiellement faux.** Corrigé après l'audit externe du
+> 2026-07-25, qui a reproduit un contournement complet du paiement en production.
+> Référence : `AUDIT_EXTERNE_2026-07-25.md` · Suivi : `BACKLOG.md`.
+
+| Item | Status | Details |
+|------|--------|---------|
+| JWT verification | ✅ Done | JWKS rotation with cache — vérifié, solide |
+| RLS on all tables | ⚠️ Partiel | RLS active et **tient pour l'accès anonyme** (vérifié en prod). Mais policies d'écriture trop permissives sur `subscriptions` (C1) et `associes` (C3) → migration `043` corrige, **à déployer** |
+| Supabase non exposé publiquement | ❌ **NON** | `api.gerersci.fr/rest/v1/` et `/auth/v1/` répondent 200 en prod (C2). RLS est donc la seule frontière réelle. À fermer dans `vps-infra` |
+| Signup public désactivé | ❌ **NON** | `disable_signup:false` + `mailer_autoconfirm:true` → compte confirmé instantanément (HIGH-1) |
+| CORS properly configured | ✅ Done | Origine étrangère rejetée — vérifié en prod |
+| Security headers (CSP, HSTS, etc.) | ✅ Done | Posés par **Caddy**, vérifiés en prod (CSP, HSTS preload, X-Frame-Options) |
+| API docs privées en prod | ❌ **NON** | `/docs`, `/redoc`, `/openapi.json` publics — 147 endpoints exposés (HIGH-2) |
+| TrustedHostMiddleware | ✅ Done | — |
+| Admin secret-key auth | ⚠️ Partiel | `hmac.compare_digest`, fail-closed — mais pas de rate-limit dédié ni MFA (MED-22) |
+| No secrets in error responses | ⚠️ Partiel | OK sur le handler global, mais 7 `detail=str(e)` exposent l'exception Python (HIGH-13) |
+| Webhook signature verification | ✅ Done | Signature + idempotence `UNIQUE(event_id)` |
+| Pas de manipulation de prix au checkout | ✅ Done | `price_id` résolu serveur depuis un `plan_key` enum |
 
 ## Infrastructure
 
 | Item | Status | Details |
 |------|--------|---------|
-| Docker Compose with healthchecks | ✅ Done | Backend + frontend + reverse proxy |
+| Docker Compose with healthchecks | ⚠️ Partiel | OK backend/frontend ; matomo, matomo-db, uptime-kuma sans limite mémoire ni rotation de logs |
 | Deploy guard (no localhost in prod) | ✅ Done | `.env` validation at startup |
-| DB backup cron (daily 3am) | ✅ Done | VPS cron |
-| Docker cleanup cron (weekly) | ✅ Done | Sunday 4am |
-| CI/CD quality gate → auto-deploy | ✅ Done | SSH to VPS |
+| DB backup cron (daily 3am) | ⚠️ **Hors de ce dépôt** | Requalifié le 2026-07-26 : la sauvegarde est assurée par [`radnou/vps-infra`](https://github.com/radnou/vps-infra) — dump quotidien 03h00 UTC, push sur `main` de `vps-infra`. Les deux scripts locaux (`backup-db.sh`, `backup-remote.sh`) étaient des no-op jamais appelés et ont été supprimés. **Non attestable depuis ce dépôt** : vérifier avec `systemctl list-timers --all \| grep -i backup` et `crontab -l` |
+| Restauration testée | ❌ **NON** | Jamais testée, y compris pour les dumps produits par `vps-infra`. Aggravé par l'ordre de migrations cassé (HIGH-11) qui rend la reconstruction du schéma incertaine |
+| Docker cleanup cron (weekly) | ⚠️ Risque | `docker volume prune -f` peut détruire les volumes nommés (Docker < 23) |
+| CI/CD quality gate → auto-deploy | ⚠️ Partiel | Le gate de readiness est **inopérant** (`curl -sf` avale le 503 → le grep ne matche jamais) et le rollback est fictif (HIGH-11). Les migrations DB ne sont jouées par aucun chemin de déploiement (HIGH-12) |
+| Cron notifications idempotent | ❌ **NON** | Lancé dans chaque worker uvicorn sans verrou → emails en double, rejoués à chaque déploiement (CRITICAL-9) |
 
 ## Remaining Items (Non-Blocking)
 

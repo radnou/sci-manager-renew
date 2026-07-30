@@ -7,6 +7,8 @@ from datetime import UTC, datetime, timedelta
 
 import structlog
 
+from app.core.supabase_client import get_supabase_service_client
+
 logger = structlog.get_logger(__name__)
 
 
@@ -280,18 +282,22 @@ async def seed_demo_data(client, user_id: str) -> dict:
         logger.warning("demo_seed_skip_evenements_bien", reason="table not found")
 
     # --- Mark demo as seeded in subscriptions ---
+    # Sécurité (audit C1, migration 043) : l'écriture sur `subscriptions` est
+    # réservée au service_role. Le client utilisateur n'a plus que le SELECT.
+    # L'autorisation est déjà établie ici : user_id provient du JWT vérifié.
+    sub_client = get_supabase_service_client()
     sub_check = (
-        client.table("subscriptions")
+        sub_client.table("subscriptions")
         .select("id")
         .eq("user_id", user_id)
         .execute()
     )
     if sub_check.data:
-        client.table("subscriptions").update({
+        sub_client.table("subscriptions").update({
             "demo_seeded": True,
         }).eq("user_id", user_id).execute()
     else:
-        client.table("subscriptions").insert({
+        sub_client.table("subscriptions").insert({
             "user_id": user_id,
             "status": "demo",
             "demo_seeded": True,
@@ -412,8 +418,9 @@ async def cleanup_demo_data(client, user_id: str) -> int:
         r = client.table("sci").delete().eq("id", sci_id).eq("is_demo", True).execute()
         deleted += len(r.data or [])
 
-    # Reset demo_seeded flag and onboarding_completed so the user starts fresh
-    client.table("subscriptions").update({
+    # Reset demo_seeded flag and onboarding_completed so the user starts fresh.
+    # Sécurité (audit C1, migration 043) : écriture `subscriptions` en service_role.
+    get_supabase_service_client().table("subscriptions").update({
         "demo_seeded": False,
         "onboarding_completed": False,
     }).eq("user_id", user_id).execute()

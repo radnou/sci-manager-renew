@@ -14,7 +14,7 @@ from fastapi.responses import Response
 from app.core.exceptions import ValidationError
 from app.core.paywall import AssocieMembership, require_gerant_role
 from app.core.rate_limit import limiter
-from app.core.supabase_client import get_supabase_service_client
+from app.core.supabase_client import get_supabase_user_client
 
 router = APIRouter(prefix="/scis/{sci_id}/import", tags=["import"])
 
@@ -25,7 +25,16 @@ logger = structlog.get_logger(__name__)
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 MAX_ROWS = 500
 
-BIENS_REQUIRED_COLUMNS = {"adresse", "ville", "code_postal", "type_locatif", "surface_m2", "nb_pieces", "loyer_cc", "charges"}
+BIENS_REQUIRED_COLUMNS = {
+    "adresse",
+    "ville",
+    "code_postal",
+    "type_locatif",
+    "surface_m2",
+    "nb_pieces",
+    "loyer_cc",
+    "charges",
+}
 LOYERS_REQUIRED_COLUMNS = {"adresse_bien", "date_loyer", "montant", "statut"}
 
 BIENS_TEMPLATE = """adresse,ville,code_postal,type_locatif,surface_m2,nb_pieces,loyer_cc,charges,dpe_classe
@@ -126,7 +135,9 @@ async def _serve_csv_template(template_type: str):
         content = LOYERS_TEMPLATE.lstrip("\n")
         filename = "template-loyers.csv"
     else:
-        raise ValidationError(f"Type de template invalide: '{template_type}'. Utilisez 'biens' ou 'loyers'.")
+        raise ValidationError(
+            f"Type de template invalide: '{template_type}'. Utilisez 'biens' ou 'loyers'."
+        )
 
     return Response(
         content=content,
@@ -151,6 +162,7 @@ async def get_csv_template(template_type: str):
 # POST /csv — import CSV data
 # ──────────────────────────────────────────────────────────────
 
+
 @router.post("/csv", status_code=status.HTTP_200_OK)
 @limiter.limit("30/minute")
 async def import_csv(
@@ -162,14 +174,18 @@ async def import_csv(
 ):
     """Import biens or loyers from a CSV file into the given SCI."""
     if type not in ("biens", "loyers"):
-        raise ValidationError(f"Type d'import invalide: '{type}'. Utilisez 'biens' ou 'loyers'.")
+        raise ValidationError(
+            f"Type d'import invalide: '{type}'. Utilisez 'biens' ou 'loyers'."
+        )
 
     # Read file content
     file_content = await file.read()
 
     # Validate file size
     if len(file_content) > MAX_FILE_SIZE:
-        raise ValidationError(f"Fichier trop volumineux (max {MAX_FILE_SIZE // (1024 * 1024)} Mo).")
+        raise ValidationError(
+            f"Fichier trop volumineux (max {MAX_FILE_SIZE // (1024 * 1024)} Mo)."
+        )
 
     if len(file_content) == 0:
         raise ValidationError("Fichier vide.")
@@ -200,7 +216,9 @@ async def import_csv(
     # Read all rows
     rows = list(reader)
     if len(rows) > MAX_ROWS:
-        raise ValidationError(f"Trop de lignes ({len(rows)}). Maximum autorisé: {MAX_ROWS}.")
+        raise ValidationError(
+            f"Trop de lignes ({len(rows)}). Maximum autorisé: {MAX_ROWS}."
+        )
 
     write_client = get_supabase_user_client(request)
     imported = 0
@@ -209,7 +227,12 @@ async def import_csv(
 
     if type == "biens":
         # Load existing biens for duplicate detection
-        existing_result = write_client.table("biens").select("adresse,ville").eq("id_sci", str(sci_id)).execute()
+        existing_result = (
+            write_client.table("biens")
+            .select("adresse,ville")
+            .eq("id_sci", str(sci_id))
+            .execute()
+        )
         existing_keys = {
             (row["adresse"].lower(), row["ville"].lower())
             for row in (existing_result.data or [])
@@ -234,9 +257,14 @@ async def import_csv(
 
     else:
         # Loyers import: match adresse_bien to existing biens
-        biens_result = write_client.table("biens").select("id,adresse").eq("id_sci", str(sci_id)).execute()
+        biens_result = (
+            write_client.table("biens")
+            .select("id,adresse")
+            .eq("id_sci", str(sci_id))
+            .execute()
+        )
         adresse_to_bien: dict[str, str] = {}
-        for bien in (biens_result.data or []):
+        for bien in biens_result.data or []:
             if bien.get("adresse"):
                 adresse_to_bien[bien["adresse"].lower()] = bien["id"]
 
@@ -249,7 +277,9 @@ async def import_csv(
             adresse_key = validated.pop("adresse_bien").lower()
             bien_id = adresse_to_bien.get(adresse_key)
             if not bien_id:
-                errors.append(f"Ligne {i}: bien introuvable pour l'adresse '{row.get('adresse_bien', '')}'.")
+                errors.append(
+                    f"Ligne {i}: bien introuvable pour l'adresse '{row.get('adresse_bien', '')}'."
+                )
                 continue
 
             validated["id_bien"] = bien_id

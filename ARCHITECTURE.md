@@ -164,16 +164,28 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    N[Nginx Reverse Proxy] --> FE[Frontend SvelteKit]
+    N[Caddy Reverse Proxy - systemd, repo vps-infra] --> FE[Frontend SvelteKit]
     N --> BE[Backend FastAPI]
+    N -.->|"/rest/ /auth/ /storage/<br/>EXPOSÉ PUBLIQUEMENT"| SB[Supabase (PostgREST + GoTrue)]
     BE --> DB[(Supabase PostgreSQL)]
     BE --> ST[Stripe API]
     FE --> SA[Supabase Auth]
     SA --> DB
+    SB --> DB
 ```
+
+> ⚠️ **Le chemin en pointillés court-circuite le backend.** `api.gerersci.fr/rest/v1/…`
+> expose PostgREST directement (vérifié en production le 2026-07-25). Toute
+> autorisation implémentée uniquement dans FastAPI est donc contournable :
+> **RLS est la seule frontière de sécurité réelle**. Voir `AUDIT_EXTERNE_2026-07-25.md`
+> (findings C1/C2/C3) et `BACKLOG.md`.
 
 ## 8. Notes Phase 1
 
 - Schema SQL initialise toutes les tables metier + indexes + triggers `updated_at`.
 - RLS est activee sur toutes les tables metier et filtre selon appartenance `associes.user_id`.
+- Depuis la migration `043` (correctif audit C1/C3) : l'ecriture sur `subscriptions`
+  est reservee au `service_role`, et la gestion des `associes` aux roles de
+  gouvernance (`gerant`, `co_gerant`). Toute nouvelle table DOIT activer RLS avec
+  des policies explicites — voir les invariants de securite dans `CLAUDE.md`.
 - Les routers backend sont prets pour la Phase 2 (impl detaillee ensuite).

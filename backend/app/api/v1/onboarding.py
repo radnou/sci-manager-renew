@@ -202,16 +202,20 @@ async def complete_onboarding(
     logger.info("completing_onboarding", user_id=user_id)
 
     client = get_supabase_user_client(request)
+    # Sécurité (audit C1, migration 043) : l'écriture sur `subscriptions` est
+    # réservée au service_role. user_id provient du JWT vérifié, donc
+    # l'autorisation est déjà établie à ce stade.
+    sub_client = get_supabase_service_client()
     # Check if row exists first — if not, create with status='free'
     existing = (
-        client.table("subscriptions").select("id").eq("user_id", user_id).execute()
+        sub_client.table("subscriptions").select("id").eq("user_id", user_id).execute()
     )
     if existing.data:
-        client.table("subscriptions").update({"onboarding_completed": True}).eq(
+        sub_client.table("subscriptions").update({"onboarding_completed": True}).eq(
             "user_id", user_id
         ).execute()
     else:
-        client.table("subscriptions").insert(
+        sub_client.table("subscriptions").insert(
             {"user_id": user_id, "onboarding_completed": True, "status": "free"}
         ).execute()
 
