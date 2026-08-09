@@ -10,7 +10,11 @@ from fastapi import APIRouter, Depends, Request
 
 from app.core.entitlements import PlanKey, get_plan, resolve_price_id_for_plan
 from app.core.config import settings
-from app.core.exceptions import ExternalServiceError, FeatureDisabledError, ValidationError
+from app.core.exceptions import (
+    ExternalServiceError,
+    FeatureDisabledError,
+    ValidationError,
+)
 from app.core.rate_limit import limiter
 from app.core.security import get_current_user
 from app.core.supabase_client import get_supabase_service_client
@@ -34,16 +38,58 @@ def _to_str(value: Any) -> str | None:
     return str(value)
 
 
+_LIST_USERS_PAGE_SIZE = 200
+_LIST_USERS_MAX_PAGES = 50
+
+
 def _find_user_by_email(email: str) -> str | None:
-    """Look up user by email via direct auth.users query."""
+    """Look up a Supabase user by email.
+
+    Deux défauts corrigés le 2026-08-09, tous deux silencieux :
+
+    1. `list_users()` retourne `List[User]` depuis supabase-auth 2.x. L'ancien
+       `getattr(existing, "users", [])` donnait donc toujours `[]` sur une
+       liste, et la fonction ne trouvait JAMAIS personne. Conséquence sur le
+       checkout invité : `_create_or_get_user` renvoyait None pour un client
+       qui revient, `_handle_event` sortait sur `if not user_id: return`, et
+       l'abonnement n'était jamais créé — alors que Stripe recevait 200 et que
+       l'événement était marqué traité, ce qui bloquait tout rejeu.
+    2. `list_users()` pagine (50 par défaut) : un utilisateur au-delà de la
+       première page restait introuvable même après le correctif 1.
+
+    On accepte les deux formes de retour pour rester compatible si la
+    bibliothèque change à nouveau. Comparaison insensible à la casse et aux
+    espaces, comme le fait GoTrue lui-même.
+    """
+    target = (email or "").strip().lower()
+    if not target:
+        return None
+
     try:
         client = get_supabase_service_client()
-        existing = client.auth.admin.list_users()
-        for user in getattr(existing, "users", []):
-            if getattr(user, "email", None) == email:
-                return str(user.id)
+        for page in range(1, _LIST_USERS_MAX_PAGES + 1):
+            result = client.auth.admin.list_users(
+                page=page, per_page=_LIST_USERS_PAGE_SIZE
+            )
+            users = (
+                result
+                if isinstance(result, list)
+                else (getattr(result, "users", None) or [])
+            )
+            if not users:
+                return None
+
+            for user in users:
+                if (getattr(user, "email", None) or "").strip().lower() == target:
+                    return str(user.id)
+
+            # Dernière page : inutile d'en demander une de plus.
+            if len(users) < _LIST_USERS_PAGE_SIZE:
+                return None
+
+        logger.warning("find_user_by_email_pagination_exhausted", email=email)
     except Exception:
-        logger.warning("find_user_by_email_failed", email=email)
+        logger.warning("find_user_by_email_failed", email=email, exc_info=True)
     return None
 
 
@@ -56,11 +102,13 @@ def _create_or_get_user(email: str) -> str | None:
 
         client = get_supabase_service_client()
         random_password = secrets.token_urlsafe(32)
-        result = client.auth.admin.create_user({
-            "email": email,
-            "password": random_password,
-            "email_confirm": True,
-        })
+        result = client.auth.admin.create_user(
+            {
+                "email": email,
+                "password": random_password,
+                "email_confirm": True,
+            }
+        )
         if hasattr(result, "user") and result.user:
             return str(result.user.id)
     except Exception as exc:
@@ -72,7 +120,62 @@ def _create_or_get_user(email: str) -> str | None:
     return None
 
 
-def _update_subscription_metadata(sub_id: str, user_id: str, plan_key: str | None) -> None:
+def _resolve_price_id_from_session(session: dict[str, Any]) -> str | None:
+    """Extract the Stripe price id of a completed Checkout Session.
+
+    Un objet `checkout.session` ne porte AUCUN champ `price_id` : le prix vit
+    dans les line items (qui exigent une expansion) ou dans la subscription
+    créée. Sans cette résolution, `stripe_price_id` n'était jamais écrit au
+    checkout, laissant `plan_key` comme unique chemin de résolution du plan
+    (cf. CLAUDE.md, gotcha 12 : ne pas supprimer ce fallback tant que
+    `stripe_price_id` n'est pas renseigné — c'est précisément ce que cette
+    fonction corrige).
+
+    Constaté en production le 2026-08-09 : sur 21 abonnements, 13 sans
+    `stripe_price_id`, dont 2 réellement passés par Stripe.
+
+    Ne lève jamais : un échec de résolution ne doit pas casser le traitement
+    du webhook, qui doit rester idempotent et tolérant.
+    """
+    direct = _to_str(session.get("price_id"))
+    if direct:
+        return direct
+
+    try:
+        stripe.api_key = settings.stripe_secret_key
+
+        # Abonnement : le prix est porté par le premier item de la subscription.
+        sub_id = _to_str(session.get("subscription"))
+        if sub_id:
+            subscription = stripe.Subscription.retrieve(sub_id)
+            items = (subscription.get("items") or {}).get("data") or []
+            if items:
+                price_id = _to_str((items[0].get("price") or {}).get("id"))
+                if price_id:
+                    return price_id
+
+        # Paiement unique (Fondateur) : pas de subscription, on lit les line items.
+        session_id = _to_str(session.get("id"))
+        if session_id:
+            line_items = stripe.checkout.Session.list_line_items(session_id, limit=1)
+            data = line_items.get("data") or []
+            if data:
+                price_id = _to_str((data[0].get("price") or {}).get("id"))
+                if price_id:
+                    return price_id
+    except Exception:
+        logger.warning(
+            "stripe_price_id_resolution_failed",
+            session_id=_to_str(session.get("id")),
+            exc_info=True,
+        )
+
+    return None
+
+
+def _update_subscription_metadata(
+    sub_id: str, user_id: str, plan_key: str | None
+) -> None:
     """Write user_id into Stripe Subscription metadata for future webhooks."""
     try:
         stripe.api_key = settings.stripe_secret_key
@@ -81,7 +184,12 @@ def _update_subscription_metadata(sub_id: str, user_id: str, plan_key: str | Non
             metadata["plan_key"] = plan_key
         stripe.Subscription.modify(sub_id, metadata=metadata)
     except Exception:
-        logger.error("stripe_subscription_metadata_update_failed", sub_id=sub_id, user_id=user_id, exc_info=True)
+        logger.error(
+            "stripe_subscription_metadata_update_failed",
+            sub_id=sub_id,
+            user_id=user_id,
+            exc_info=True,
+        )
 
 
 def _sync_subscription(
@@ -119,7 +227,9 @@ def _sync_subscription_deleted(subscription_data: dict[str, Any]) -> None:
         return
 
     client = get_supabase_service_client()
-    query = client.table("subscriptions").update({"status": "canceled", "is_active": False})
+    query = client.table("subscriptions").update(
+        {"status": "canceled", "is_active": False}
+    )
     if subscription_id:
         query = query.eq("stripe_subscription_id", subscription_id)
     elif customer_id:
@@ -154,11 +264,13 @@ def _mark_event_processed(event_id: str, event_type: str) -> None:
     """Record a Stripe event as processed for idempotency."""
     try:
         client = get_supabase_service_client()
-        client.table("stripe_webhook_events").insert({
-            "event_id": event_id,
-            "event_type": event_type,
-            "processed_at": datetime.now(timezone.utc).isoformat(),
-        }).execute()
+        client.table("stripe_webhook_events").insert(
+            {
+                "event_id": event_id,
+                "event_type": event_type,
+                "processed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).execute()
     except Exception:
         logger.warning("idempotency_mark_failed", event_id=event_id, exc_info=True)
 
@@ -174,13 +286,21 @@ async def _handle_event(event: Any) -> None:
     if event_type == "checkout.session.completed":
         user_id = _to_str(obj.get("client_reference_id"))
         status_value = "active" if obj.get("payment_status") == "paid" else "pending"
-        plan_key = _to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None
+        plan_key = (
+            _to_str(obj.get("metadata", {}).get("plan_key"))
+            if isinstance(obj.get("metadata"), dict)
+            else None
+        )
         checkout_mode = _to_str(obj.get("mode"))
 
         # Guest checkout flow: no client_reference_id
         if not user_id:
             customer_details = obj.get("customer_details", {})
-            email = customer_details.get("email") if isinstance(customer_details, dict) else None
+            email = (
+                customer_details.get("email")
+                if isinstance(customer_details, dict)
+                else None
+            )
             if email:
                 user_id = _create_or_get_user(email)
                 if user_id:
@@ -192,15 +312,29 @@ async def _handle_event(event: Any) -> None:
             return
 
         # Fondateur: one-time payment, no subscription object from Stripe
+        # La session de checkout ne porte pas de `price_id` : on le résout
+        # explicitement, sinon `stripe_price_id` reste NULL et `plan_key`
+        # devient l'unique chemin de résolution du plan.
+        resolved_price_id = _resolve_price_id_from_session(obj)
+
         if checkout_mode == "payment" and plan_key == "fondateur":
             _sync_subscription(
-                {**obj, "client_reference_id": user_id, "mode": "payment"},
+                {
+                    **obj,
+                    "client_reference_id": user_id,
+                    "mode": "payment",
+                    "price_id": resolved_price_id,
+                },
                 "active",
                 plan_key="fondateur",
             )
         else:
             _sync_subscription(
-                {**obj, "client_reference_id": user_id},
+                {
+                    **obj,
+                    "client_reference_id": user_id,
+                    "price_id": resolved_price_id,
+                },
                 status_value,
                 plan_key=plan_key,
             )
@@ -208,15 +342,20 @@ async def _handle_event(event: Any) -> None:
         # Clean up demo data and reset onboarding so user goes through real setup
         try:
             from app.services.demo_service import cleanup_demo_data
+
             service_client = get_supabase_service_client()
             await cleanup_demo_data(service_client, user_id)
             # Reset onboarding so user creates their real SCI/bien
-            service_client.table("subscriptions").update({
-                "onboarding_completed": False,
-            }).eq("user_id", user_id).execute()
+            service_client.table("subscriptions").update(
+                {
+                    "onboarding_completed": False,
+                }
+            ).eq("user_id", user_id).execute()
             logger.info("demo_cleanup_after_checkout", user_id=user_id)
         except Exception:
-            logger.warning("demo_cleanup_failed_after_checkout", user_id=user_id, exc_info=True)
+            logger.warning(
+                "demo_cleanup_failed_after_checkout", user_id=user_id, exc_info=True
+            )
 
         return
 
@@ -247,16 +386,30 @@ async def _handle_event(event: Any) -> None:
             if customer_id:
                 try:
                     client = get_supabase_service_client()
-                    result = client.table("subscriptions").select("user_id").eq("stripe_customer_id", customer_id).limit(1).execute()
+                    result = (
+                        client.table("subscriptions")
+                        .select("user_id")
+                        .eq("stripe_customer_id", customer_id)
+                        .limit(1)
+                        .execute()
+                    )
                     if result.data:
-                        session_like["client_reference_id"] = result.data[0].get("user_id")
+                        session_like["client_reference_id"] = result.data[0].get(
+                            "user_id"
+                        )
                 except Exception:
-                    logger.warning("fallback_user_resolution_failed", customer_id=customer_id, exc_info=True)
+                    logger.warning(
+                        "fallback_user_resolution_failed",
+                        customer_id=customer_id,
+                        exc_info=True,
+                    )
 
         _sync_subscription(
             session_like,
             subscription_status,
-            plan_key=_to_str(obj.get("metadata", {}).get("plan_key")) if isinstance(obj.get("metadata"), dict) else None,
+            plan_key=_to_str(obj.get("metadata", {}).get("plan_key"))
+            if isinstance(obj.get("metadata"), dict)
+            else None,
             current_period_end=obj.get("current_period_end"),
         )
 
@@ -265,25 +418,37 @@ async def _handle_event(event: Any) -> None:
         if customer_id:
             try:
                 client = get_supabase_service_client()
-                result = client.table("subscriptions").select("user_id").eq("stripe_customer_id", customer_id).limit(1).execute()
+                result = (
+                    client.table("subscriptions")
+                    .select("user_id")
+                    .eq("stripe_customer_id", customer_id)
+                    .limit(1)
+                    .execute()
+                )
                 if result.data:
                     user_id = result.data[0].get("user_id")
                     if user_id:
-                        client.table("notifications").insert({
-                            "user_id": user_id,
-                            "type": "payment_failed",
-                            "title": "Paiement échoué",
-                            "message": "Votre paiement a échoué. Mettez à jour votre moyen de paiement pour maintenir votre accès.",
-                            "read": False,
-                        }).execute()
-                        logger.info("payment_failed_notification_created", user_id=user_id)
+                        client.table("notifications").insert(
+                            {
+                                "user_id": user_id,
+                                "type": "payment_failed",
+                                "title": "Paiement échoué",
+                                "message": "Votre paiement a échoué. Mettez à jour votre moyen de paiement pour maintenir votre accès.",
+                                "read": False,
+                            }
+                        ).execute()
+                        logger.info(
+                            "payment_failed_notification_created", user_id=user_id
+                        )
             except Exception:
                 logger.warning("payment_failed_notification_error", exc_info=True)
         return
 
 
 @router.get("/subscription", response_model=SubscriptionEntitlementsResponse)
-async def get_subscription(user_id: str = Depends(get_current_user)) -> SubscriptionEntitlementsResponse:
+async def get_subscription(
+    user_id: str = Depends(get_current_user),
+) -> SubscriptionEntitlementsResponse:
     logger.info("fetching_subscription_entitlements", user_id=user_id)
     summary = SubscriptionService.get_subscription_summary(user_id)
 
@@ -331,13 +496,18 @@ async def create_checkout_session(
     if payload.plan_key == PlanKey.FREE:
         raise ValidationError("Le plan gratuit ne passe pas par Stripe.")
 
-    price_id = resolve_price_id_for_plan(payload.plan_key, billing_period=payload.billing_period)
+    price_id = resolve_price_id_for_plan(
+        payload.plan_key, billing_period=payload.billing_period
+    )
     if not price_id:
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
     checkout_mode = payload.mode or resolved_plan.checkout_mode
     # Allow fondateur/lifetime to use 'payment' mode
-    if checkout_mode != resolved_plan.checkout_mode and payload.plan_key not in (PlanKey.FONDATEUR, PlanKey.LIFETIME):
+    if checkout_mode != resolved_plan.checkout_mode and payload.plan_key not in (
+        PlanKey.FONDATEUR,
+        PlanKey.LIFETIME,
+    ):
         raise ValidationError("Checkout mode does not match the selected plan")
 
     logger.info(
@@ -373,7 +543,9 @@ async def create_checkout_session(
             error=str(exc),
             exc_info=True,
         )
-        raise ExternalServiceError("Stripe", f"Checkout session creation failed: {str(exc)}")
+        raise ExternalServiceError(
+            "Stripe", f"Checkout session creation failed: {str(exc)}"
+        )
 
     session_url = _to_str(getattr(session, "url", None))
     if not session_url and hasattr(session, "get"):
@@ -409,14 +581,18 @@ async def create_guest_checkout(
         )
 
     if payload.plan_key not in ("starter", "pro", "fondateur", "lifetime"):
-        raise ValidationError("plan_key must be 'starter', 'pro', 'fondateur', or 'lifetime'.")
+        raise ValidationError(
+            "plan_key must be 'starter', 'pro', 'fondateur', or 'lifetime'."
+        )
 
     is_one_time = payload.plan_key in ("fondateur", "lifetime")
 
     if not is_one_time and payload.billing_period not in ("month", "year"):
         raise ValidationError("billing_period must be 'month' or 'year'.")
 
-    price_id = resolve_price_id_for_plan(payload.plan_key, billing_period=payload.billing_period)
+    price_id = resolve_price_id_for_plan(
+        payload.plan_key, billing_period=payload.billing_period
+    )
     if not price_id:
         raise ExternalServiceError("Stripe", "Price ID unavailable for requested plan")
 
@@ -444,7 +620,10 @@ async def create_guest_checkout(
             mode=checkout_mode,
             success_url=f"{settings.frontend_url}/welcome?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{settings.frontend_url}/#pricing",
-            metadata={"plan_key": payload.plan_key, "billing_period": payload.billing_period},
+            metadata={
+                "plan_key": payload.plan_key,
+                "billing_period": payload.billing_period,
+            },
         )
     except stripe.error.StripeError as exc:
         logger.error(
@@ -453,7 +632,9 @@ async def create_guest_checkout(
             error=str(exc),
             exc_info=True,
         )
-        raise ExternalServiceError("Stripe", f"Checkout session creation failed: {str(exc)}")
+        raise ExternalServiceError(
+            "Stripe", f"Checkout session creation failed: {str(exc)}"
+        )
 
     session_url = _to_str(getattr(session, "url", None))
     if not session_url and hasattr(session, "get"):
@@ -483,10 +664,18 @@ async def cancel_subscription(
 ):
     """Cancel subscription at end of current period (loi résiliation 3 clics)."""
     if not settings.feature_stripe_payments:
-        raise FeatureDisabledError("Les paiements Stripe sont désactivés.", flag_name="feature_stripe_payments")
+        raise FeatureDisabledError(
+            "Les paiements Stripe sont désactivés.", flag_name="feature_stripe_payments"
+        )
 
     client = get_supabase_service_client()
-    result = client.table("subscriptions").select("stripe_subscription_id").eq("user_id", user_id).limit(1).execute()
+    result = (
+        client.table("subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data or not result.data[0].get("stripe_subscription_id"):
         raise ValidationError("Aucun abonnement actif à résilier.")
@@ -501,7 +690,10 @@ async def cancel_subscription(
         raise ExternalServiceError("Stripe", f"Résiliation échouée: {str(exc)}")
 
     logger.info("subscription_cancelled", user_id=user_id, subscription_id=sub_id)
-    return {"status": "cancelled", "message": "Votre abonnement sera résilié à la fin de la période en cours."}
+    return {
+        "status": "cancelled",
+        "message": "Votre abonnement sera résilié à la fin de la période en cours.",
+    }
 
 
 @router.post("/customer-portal")
@@ -513,10 +705,18 @@ async def create_customer_portal(
     """Create a Stripe Billing Portal session for self-service subscription management."""
     del request
     if not settings.feature_stripe_payments:
-        raise FeatureDisabledError("Les paiements Stripe sont désactivés.", flag_name="feature_stripe_payments")
+        raise FeatureDisabledError(
+            "Les paiements Stripe sont désactivés.", flag_name="feature_stripe_payments"
+        )
 
     client = get_supabase_service_client()
-    result = client.table("subscriptions").select("stripe_customer_id").eq("user_id", user_id).limit(1).execute()
+    result = (
+        client.table("subscriptions")
+        .select("stripe_customer_id")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data or not result.data[0].get("stripe_customer_id"):
         raise ValidationError("Aucun abonnement Stripe trouvé pour cet utilisateur.")
@@ -530,7 +730,9 @@ async def create_customer_portal(
             return_url=f"{settings.frontend_url}/settings",
         )
     except stripe.error.StripeError as exc:
-        raise ExternalServiceError("Stripe", f"Portal session creation failed: {str(exc)}")
+        raise ExternalServiceError(
+            "Stripe", f"Portal session creation failed: {str(exc)}"
+        )
 
     return {"url": portal_session.url}
 
@@ -572,7 +774,9 @@ async def stripe_webhook(request: Request) -> StripeWebhookResponse:
 
     # Idempotency guard: skip already-processed events (Stripe delivers at-least-once)
     if event_id and _is_event_already_processed(event_id):
-        logger.info("stripe_webhook_duplicate_skipped", event_id=event_id, event_type=event_type)
+        logger.info(
+            "stripe_webhook_duplicate_skipped", event_id=event_id, event_type=event_type
+        )
         return StripeWebhookResponse(status="already_processed")
 
     await _handle_event(event)
@@ -607,7 +811,9 @@ async def request_refund(
     client = get_supabase_service_client()
     result = (
         client.table("subscriptions")
-        .select("stripe_subscription_id, stripe_customer_id, guarantee_expires_at, created_at, status, mode")
+        .select(
+            "stripe_subscription_id, stripe_customer_id, guarantee_expires_at, created_at, status, mode"
+        )
         .eq("user_id", user_id)
         .limit(1)
         .execute()
@@ -620,12 +826,16 @@ async def request_refund(
     sub_status = (sub_row.get("status") or "").lower()
 
     if sub_status not in {"active", "paid"}:
-        raise ValidationError("Votre abonnement n'est pas actif. Remboursement impossible.")
+        raise ValidationError(
+            "Votre abonnement n'est pas actif. Remboursement impossible."
+        )
 
     # Check 30-day guarantee window
     guarantee_expires_at = sub_row.get("guarantee_expires_at")
     if guarantee_expires_at:
-        expiry = datetime.fromisoformat(str(guarantee_expires_at).replace("Z", "+00:00"))
+        expiry = datetime.fromisoformat(
+            str(guarantee_expires_at).replace("Z", "+00:00")
+        )
     else:
         # Fallback: 30 days from subscription creation
         created_at = sub_row.get("created_at")
@@ -658,22 +868,34 @@ async def request_refund(
                     refund = stripe.Refund.create(charge=charges.data[0].id)
                     refund_id = refund.id
                 else:
-                    raise ExternalServiceError("Stripe", "Aucun paiement trouvé pour ce client.")
+                    raise ExternalServiceError(
+                        "Stripe", "Aucun paiement trouvé pour ce client."
+                    )
             else:
-                raise ExternalServiceError("Stripe", "Identifiant client Stripe manquant.")
+                raise ExternalServiceError(
+                    "Stripe", "Identifiant client Stripe manquant."
+                )
         else:
             # Subscription: refund latest invoice then cancel
             if not stripe_sub_id:
-                raise ExternalServiceError("Stripe", "Identifiant abonnement Stripe manquant.")
+                raise ExternalServiceError(
+                    "Stripe", "Identifiant abonnement Stripe manquant."
+                )
 
-            invoices = stripe.Invoice.list(subscription=stripe_sub_id, limit=1, status="paid")
+            invoices = stripe.Invoice.list(
+                subscription=stripe_sub_id, limit=1, status="paid"
+            )
             if invoices.data:
                 latest_invoice = invoices.data[0]
                 if latest_invoice.payment_intent:
-                    refund = stripe.Refund.create(payment_intent=latest_invoice.payment_intent)
+                    refund = stripe.Refund.create(
+                        payment_intent=latest_invoice.payment_intent
+                    )
                     refund_id = refund.id
                 else:
-                    raise ExternalServiceError("Stripe", "Aucun paiement associé à la dernière facture.")
+                    raise ExternalServiceError(
+                        "Stripe", "Aucun paiement associé à la dernière facture."
+                    )
             else:
                 raise ExternalServiceError("Stripe", "Aucune facture payée trouvée.")
 
@@ -691,10 +913,12 @@ async def request_refund(
         raise ExternalServiceError("Stripe", f"Remboursement échoué: {str(exc)}")
 
     # Update subscription status in DB
-    client.table("subscriptions").update({
-        "status": "refunded",
-        "is_active": False,
-    }).eq("user_id", user_id).execute()
+    client.table("subscriptions").update(
+        {
+            "status": "refunded",
+            "is_active": False,
+        }
+    ).eq("user_id", user_id).execute()
 
     logger.info(
         "refund_processed",

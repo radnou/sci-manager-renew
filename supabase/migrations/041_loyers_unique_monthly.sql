@@ -6,4 +6,4 @@ DROP INDEX IF EXISTS uq_loyers_bien_date_no_locataire;
 DROP INDEX IF EXISTS uq_loyers_bien_locataire_date;
 
 CREATE UNIQUE INDEX uq_loyers_bien_month
-  ON loyers (id_bien, date_trunc('month', date_loyer));
+  ON loyers (id_bien, date_trunc('month', date_loyer::timestamp));

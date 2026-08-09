@@ -1,2 +1,16 @@
+# pnpm 11 exige une décision explicite pour chaque script post-install.
+# Un script post-install exécute du code arbitraire au moment de l'installation.
+#
+# esbuild        : true  — déjà approuvé dans onlyBuiltDependencies (version commitée).
+#                  Le binaire natif est indispensable au build Vite.
+# @sentry/cli    : false — arrivé en transitif via @sentry/sveltekit. Son script
+#                  télécharge un binaire pour l'envoi de sourcemaps. Aucun plugin
+#                  Sentry n'est branché dans vite.config.ts ni svelte.config.js :
+#                  ce téléchargement ne sert à rien ici. Passer à true seulement
+#                  si l'envoi de sourcemaps est réellement activé au build.
+allowBuilds:
+  '@sentry/cli': false
+  esbuild: true
+
 onlyBuiltDependencies:
   - esbuild
