@@ -71,6 +71,7 @@ from app.api.v1 import (
     stripe,
 )
 from app.core.config import Environment, settings
+from app.core.lifecycle import shutdown_event
 from app.core.exceptions import GererSCIException
 from app.core.logging_config import configure_logging
 from app.core.rate_limit import limiter
@@ -99,7 +100,8 @@ configure_logging(log_level=settings.log_level, log_format=settings.log_format)
 logger = structlog.get_logger(__name__)
 
 # Shutdown event pour coordonner le shutdown gracieux
-shutdown_event = asyncio.Event()
+# shutdown_event est défini dans app.core.lifecycle pour être partagé
+# avec les sondes de santé sans import circulaire.
 
 # Background task handle for notification cron
 _cron_task: asyncio.Task | None = None
@@ -588,7 +590,14 @@ async def maintenance_middleware(
         # The webhook route is /api/v1/stripe/webhook (singular); accept both
         # spellings for defence-in-depth in case the route is ever renamed.
         if (
-            path in ("/api/v1/health", "/api/v1/health/ready")
+            # Le routeur health est monté SANS préfixe (voir include_router
+            # plus bas) : les chemins réels sont /health, /health/live,
+            # /health/ready, /health/flags. L'ancienne liste visait
+            # /api/v1/health*, qui n'existe pas — en maintenance, le
+            # healthcheck Docker (/health/live) prenait donc un 503 et le
+            # conteneur passait unhealthy alors que l'application allait bien.
+            path == "/health"
+            or path.startswith("/health/")
             or path == "/api/v1/stripe/webhook"
             or path.startswith("/api/v1/stripe/webhook/")
             or path.startswith("/api/v1/stripe/webhooks")

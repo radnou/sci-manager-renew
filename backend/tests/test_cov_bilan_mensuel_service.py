@@ -45,7 +45,19 @@ def _empty() -> FakeSupabaseClient:
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Exécute une coroutine sans dépendre de la boucle ambiante.
+
+    `asyncio.get_event_loop()` est un motif antérieur à Python 3.10 : il exige
+    qu'une boucle courante existe et ne soit pas fermée. Or tout test utilisant
+    TestClient en ouvre une puis la ferme. Sous `-n auto --dist worksteal`, ce
+    fichier ne passait donc que s'il atterrissait dans un worker où aucun test
+    HTTP n'avait tourné avant lui : ajouter le moindre fichier de test ailleurs
+    dans la suite suffisait à faire tomber ces 42 tests.
+
+    `asyncio.run()` crée sa propre boucle, l'utilise, la ferme. Indépendant de
+    l'ordre d'exécution.
+    """
+    return asyncio.run(coro)
 
 
 # ---------------------------------------------------------------------------
