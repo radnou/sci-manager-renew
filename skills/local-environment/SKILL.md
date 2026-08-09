@@ -32,7 +32,7 @@ Chaque étape conditionne la suivante. S'arrêter à la première qui échoue, p
 | 1 | Socket Docker | `test -S ~/.orbstack/run/docker.sock && echo OK \|\| echo KO` | `orb start` — **~30 à 60 s à froid** |
 | 2 | Daemon répond | `docker info --format '{{.ServerVersion}}'` | Attendre la fin de l'étape 1 |
 | 3 | Supabase local | `supabase status` | `supabase start` — **plusieurs minutes au 1er run** (téléchargement des images) |
-| 4 | Base seedée | `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tAc "select count(*) from auth.users where email='test@gerersci.fr'"` | `supabase db reset` — **DESTRUCTIF**, voir garde-fous |
+| 4 | Base seedée | `psql "postgresql://<user>:<password>@127.0.0.1:54322/postgres" -tAc "select count(*) from auth.users where email='test@gerersci.fr'"` | `supabase db reset` — **DESTRUCTIF**, voir garde-fous |
 | 5 | Dépendances frontend | `test -d frontend/node_modules && echo OK \|\| echo KO` | `zsh -lc 'cd frontend && pnpm install'` — **~1 à 3 min** |
 | 6 | Fichier d'environnement | `test -f .env && echo OK \|\| echo KO` (noter : `frontend/vite.config.ts` a `envDir: '..'`, le `.env` est lu **à la racine**) | Proposer la copie depuis `.env.example` — **création de fichier, demander l'accord** |
 | 7 | Venv backend | `test -d backend/venv -o -d backend/.venv && echo OK \|\| echo ABSENT` | **Non bloquant** pour la recette frontend. Voir « Ce qui est bloqué sans Python ». |
@@ -67,7 +67,7 @@ Poser exactement ces variables pour toute exécution E2E locale :
 export VITE_SUPABASE_URL=http://localhost:54321
 export E2E_BASE_URL=http://localhost:5173
 export E2E_EMAIL=test@gerersci.fr
-export E2E_PASSWORD=testpassword123
+export E2E_PASSWORD=<mot de passe du seed, cf. supabase/seed.sql>
 ```
 
 **`localhost` et non `127.0.0.1`.** Hypothèse : `frontend/src/lib/supabase.ts:6` appelle `createClient(url, key)` sans `auth.storageKey`, donc supabase-js dérive la clé de session du **premier segment** du hostname, alors que `frontend/e2e/fixtures/auth.fixture.ts:65-66` et `frontend/e2e/production/auth.setup.ts:40-41` la calculent avec le **hostname complet**. Un hôte sans point aligne les deux.

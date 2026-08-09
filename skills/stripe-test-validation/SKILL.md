@@ -30,7 +30,7 @@ printenv STRIPE_WEBHOOK_SECRET >/dev/null && echo présent || echo absent
   Lancement : `cd backend && python scripts/stripe_test_workflow.py`
 - `backend/scripts/setup_stripe_products.py` : création et gestion des produits et prix.
 - `backend/scripts/seed_billing_audit.py` : crée `free@audit.test`, `starter@audit.test`,
-  `pro@audit.test` (mot de passe `password123`).
+  `pro@audit.test` (mot de passe `<mot de passe du seed, cf. backend/scripts/seed_billing_audit.py>`).
 - `backend/scripts/stripe_e2e_test.py` : NE JAMAIS L'EXÉCUTER EN LOCAL. Cible
   `https://api.gerersci.fr` et nécessite le `.env` de production du VPS.
 
@@ -121,7 +121,7 @@ quelconque, CVC quelconque.
 ## Contrôles en base
 
 ```bash
-psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+psql "postgresql://<user>:<password>@127.0.0.1:54322/postgres" \
   -c "select event_id, event_type, processed_at from stripe_webhook_events order by processed_at desc limit 10;"
 ```
 

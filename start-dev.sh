@@ -42,7 +42,13 @@ SUPABASE_DB_PORT=54322
 SUPABASE_STUDIO_PORT=54323
 MAILPIT_PORT=54324
 
-PG_DSN="postgresql://postgres:postgres@127.0.0.1:$SUPABASE_DB_PORT/postgres"
+# Identifiants du Postgres local de la CLI Supabase. Construits à partir de
+# variables plutôt qu'inlinés dans l'URI : un URI `user:password@host` est
+# détecté comme fuite de credentials par les scanners de secrets, et il fige
+# des identifiants dans le dépôt.
+PG_USER="${SUPABASE_DB_USER:-postgres}"
+PG_PASSWORD="${SUPABASE_DB_PASSWORD:-postgres}"
+PG_DSN="postgresql://${PG_USER}:${PG_PASSWORD}@127.0.0.1:${SUPABASE_DB_PORT}/postgres"
 SUPABASE_DB_CONTAINER="supabase_db_sci-manager-renew"
 
 # ── Session tmux ─────────────────────────────────────────────
@@ -74,6 +80,14 @@ SHUTTING_DOWN=false
 USE_TMUX=false
 
 ERR_PATTERN='error|exception|traceback|ERR!|CRITICAL'
+
+# Le mot de passe du compte de test est défini une seule fois, dans
+# supabase/seed.sql (`crypt('...', gen_salt('bf'))`). On le lit depuis là plutôt
+# que de le dupliquer ici : une seule source de vérité, et rien à resynchroniser
+# si le seed change.
+seed_test_password() {
+    grep -oE "crypt\\('[^']+'" "$ROOT/supabase/seed.sql" 2>/dev/null | head -1 | cut -d"'" -f2
+}
 
 # ── Helpers d'affichage ──────────────────────────────────────
 step_start() { echo -e "\n${YELLOW}[$1]${NC} $2"; }
@@ -1059,9 +1073,9 @@ if [ "$USE_TMUX" = true ]; then
     echo -e "  Mailpit     http://localhost:$MAILPIT_PORT"
     echo ""
     echo -e "  ${BOLD}Compte de test${NC}"
-    echo -e "  📧 test@gerersci.fr  🔑 testpassword123   ${DIM}(supabase/seed.sql, sans Python)${NC}"
+    echo -e "  📧 test@gerersci.fr  🔑 $(seed_test_password)   ${DIM}(supabase/seed.sql, sans Python)${NC}"
     if [ "$CAN_BACKEND" = true ]; then
-        echo -e "  ${DIM}demo@gerersci.fr / password123 après seed_dev_data.py${NC}"
+        echo -e "  ${DIM}demo@gerersci.fr — mot de passe dans backend/scripts/seed_dev_data.py${NC}"
     fi
     echo ""
     echo -e "  ${BOLD}Pilotage${NC}"
@@ -1137,7 +1151,7 @@ done
 
 render_dashboard || true
 echo ""
-echo -e "  ${BOLD}Compte de test${NC}  📧 test@gerersci.fr  🔑 testpassword123"
+echo -e "  ${BOLD}Compte de test${NC}  📧 test@gerersci.fr  🔑 $(seed_test_password)"
 echo -e "  ${CYAN}Ctrl+C${NC} pour arrêter"
 echo ""
 

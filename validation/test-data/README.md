@@ -8,12 +8,12 @@ Ce document est la référence de tous les comptes, jeux de données et variable
 
 | Compte | Mot de passe | Créé par | Prérequis | Usage recommandé |
 |---|---|---|---|---|
-| `test@gerersci.fr` | `testpassword123` | `supabase/seed.sql` (lignes 12-13) | `supabase db reset` uniquement - aucun prérequis Python | Compte de référence E2E ; email déjà confirmé ; **RECOMMANDÉ** pour les specs automatisées |
-| `free@audit.test` | `password123` | `backend/scripts/seed_billing_audit.py` | Venv Python actif + script `seed_billing_audit.py` exécuté | Scénarios d'audit de plan free (write protection) |
-| `starter@audit.test` | `password123` | `backend/scripts/seed_billing_audit.py` | Venv Python actif + script `seed_billing_audit.py` exécuté | Scénarios paywall plan Gestion (19 euros/mois) |
-| `pro@audit.test` | `password123` | `backend/scripts/seed_billing_audit.py` | Venv Python actif + script `seed_billing_audit.py` exécuté | Scénarios paywall plan Pilotage (39 euros/mois) et quotas illimités |
-| `demo@gerersci.fr` | `password123` | `backend/scripts/seed_dev_data.py` | Venv Python actif + script `seed_dev_data.py` exécuté | Données demo complètes (1 SCI, 2 biens, baux, loyers). **Déconseillé comme compte E2E principal.** Dérive documentée : ce compte est cité dans `docs/GUIDE-RECETTE.md` et dans `meta.credentials` du cahier ; à corriger vers `test@gerersci.fr`. |
-| `sophie@gerersci.fr` | `password123` | `backend/scripts/seed_marketing_data.py` | Venv Python actif + script `seed_marketing_data.py` exécuté | Utilisé exclusivement par `frontend/e2e/validation/full-visual-audit.spec.ts` |
+| `test@gerersci.fr` | `<mot de passe du seed, cf. supabase/seed.sql>` | `supabase/seed.sql` (lignes 12-13) | `supabase db reset` uniquement - aucun prérequis Python | Compte de référence E2E ; email déjà confirmé ; **RECOMMANDÉ** pour les specs automatisées |
+| `free@audit.test` | `<mot de passe du seed, cf. backend/scripts/seed_billing_audit.py>` | `backend/scripts/seed_billing_audit.py` | Venv Python actif + script `seed_billing_audit.py` exécuté | Scénarios d'audit de plan free (write protection) |
+| `starter@audit.test` | `<mot de passe du seed, cf. backend/scripts/seed_billing_audit.py>` | `backend/scripts/seed_billing_audit.py` | Venv Python actif + script `seed_billing_audit.py` exécuté | Scénarios paywall plan Gestion (19 euros/mois) |
+| `pro@audit.test` | `<mot de passe du seed, cf. backend/scripts/seed_billing_audit.py>` | `backend/scripts/seed_billing_audit.py` | Venv Python actif + script `seed_billing_audit.py` exécuté | Scénarios paywall plan Pilotage (39 euros/mois) et quotas illimités |
+| `demo@gerersci.fr` | `<mot de passe du seed, cf. backend/scripts/seed_billing_audit.py>` | `backend/scripts/seed_dev_data.py` | Venv Python actif + script `seed_dev_data.py` exécuté | Données demo complètes (1 SCI, 2 biens, baux, loyers). **Déconseillé comme compte E2E principal.** Dérive documentée : ce compte est cité dans `docs/GUIDE-RECETTE.md` et dans `meta.credentials` du cahier ; à corriger vers `test@gerersci.fr`. |
+| `sophie@gerersci.fr` | `<mot de passe du seed, cf. backend/scripts/seed_billing_audit.py>` | `backend/scripts/seed_marketing_data.py` | Venv Python actif + script `seed_marketing_data.py` exécuté | Utilisé exclusivement par `frontend/e2e/validation/full-visual-audit.spec.ts` |
 
 ---
 
@@ -44,7 +44,7 @@ Ce document est la référence de tous les comptes, jeux de données et variable
 |---|---|---|
 | `E2E_BASE_URL` | `http://localhost:5173` | URL de base du frontend SvelteKit en dev |
 | `E2E_EMAIL` | `test@gerersci.fr` | Email du compte de test principal |
-| `E2E_PASSWORD` | `testpassword123` | Mot de passe du compte de test principal |
+| `E2E_PASSWORD` | `<mot de passe du seed, cf. supabase/seed.sql>` | Mot de passe du compte de test principal |
 | `VITE_SUPABASE_URL` | `http://localhost:54321` | URL de l'API Supabase locale (Kong) |
 | `E2E_AUTH_TOKEN` | _(déconseillé - voir rang 4)_ | JWT forgé - à proscrire |
 | `E2E_MAGIC_LINK_URL` | `<URL complète du magic link, non définie par défaut>` | URL complète du magic link à visiter directement (pas une URL de base Mailpit) |

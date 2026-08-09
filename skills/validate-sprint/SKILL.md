@@ -114,7 +114,7 @@ cd backend && PYTHONPATH=. pytest tests/<fichier>.py -q
 
 Variables E2E locales : `VITE_SUPABASE_URL=http://localhost:54321`,
 `E2E_BASE_URL=http://localhost:5173`, `E2E_EMAIL=test@gerersci.fr`,
-`E2E_PASSWORD=testpassword123`.
+`E2E_PASSWORD=<mot de passe du seed, cf. supabase/seed.sql>`.
 
 **Partition mocké / réel : établir AVANT l'exécution par le grep suivant.**
 ```bash
@@ -142,7 +142,7 @@ Rapport Playwright : `frontend/playwright-report/validation/index.html`.
 - Erreurs de console navigateur et requêtes HTTP en erreur inattendue (4xx/5xx).
 - Données réellement persistées en base :
   ```bash
-  psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "<requête>"
+  psql "postgresql://<user>:<password>@127.0.0.1:54322/postgres" -c "<requête>"
   ```
 - Logs Docker du service concerné :
   ```bash

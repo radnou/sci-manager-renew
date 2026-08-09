@@ -36,7 +36,7 @@ L'hypothèse **n'a pas pu être vérifiée à la lecture** : `frontend/node_modu
 ## Préconditions
 
 - Environnement : `local`
-- Compte utilisé : `test@gerersci.fr` / `testpassword123` (créé par `supabase/seed.sql:12-13`, email pré-confirmé)
+- Compte utilisé : `test@gerersci.fr` / `<mot de passe du seed, cf. supabase/seed.sql>` (créé par `supabase/seed.sql:12-13`, email pré-confirmé)
 - Données requises : `supabase db reset` effectué, `pnpm install` effectué, stack démarrée via `./start-dev.sh`
 - État de départ : navigateur sans session préexistante
 - **`VITE_SUPABASE_URL` volontairement positionné sur l'hôte À POINTS** : `http://127.0.0.1:54321`
@@ -44,7 +44,7 @@ L'hypothèse **n'a pas pu être vérifiée à la lecture** : `frontend/node_modu
 ## Étapes
 
 1. Vérifier que la stack locale répond : `curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:5173` et `curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:8001/docs`.
-2. Exporter les variables avec l'hôte à points, délibérément : `export VITE_SUPABASE_URL=http://127.0.0.1:54321`, `export E2E_BASE_URL=http://localhost:5173`, `export E2E_EMAIL=test@gerersci.fr`, `export E2E_PASSWORD=testpassword123`.
+2. Exporter les variables avec l'hôte à points, délibérément : `export VITE_SUPABASE_URL=http://127.0.0.1:54321`, `export E2E_BASE_URL=http://localhost:5173`, `export E2E_EMAIL=test@gerersci.fr`, `export E2E_PASSWORD=<mot de passe du seed, cf. supabase/seed.sql>`.
 3. Lancer une spec authentifiée qui consomme la fixture en mode 2 : `zsh -lc 'cd frontend && pnpm exec playwright test --config=e2e/playwright.production.config.ts e2e/production/smoke-auth.spec.ts'`.
 4. Après l'injection de session par la fixture, naviguer sur `/dashboard` et observer si un élément réservé aux utilisateurs authentifiés est **effectivement rendu**.
 5. Répéter les étapes 2 à 4 en remplaçant l'hôte par `http://localhost:54321`.
