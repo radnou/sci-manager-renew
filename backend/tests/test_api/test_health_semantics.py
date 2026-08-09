@@ -30,11 +30,10 @@ from app.core import lifecycle
 @pytest.fixture(autouse=True)
 def _reset_lifecycle():
     """Isole l'état d'arrêt : aucun test ne doit le fuiter sur le suivant."""
-
-    """
     lifecycle.shutdown_event.clear()
     yield
     lifecycle.shutdown_event.clear()
+
 
 # ── Nominal ────────────────────────────────────────────────────────
 
