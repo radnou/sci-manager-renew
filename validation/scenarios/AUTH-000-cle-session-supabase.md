@@ -87,9 +87,35 @@ Type d'anomalie : `manque de test`. **CONSTATER, NE PAS CORRIGER** sans demande 
 
 ## Résultat
 
-| Date | Version / commit | Hôte testé | Statut | Preuve | Note |
-|---|---|---|---|---|---|
-| `<AAAA-MM-JJ>` | `<sha-court>` | `127.0.0.1` | `PASS` / `FAIL` / `BLOCKED` / `NOT_TESTED` | `<chemin PNG>` | `<clé localStorage observée>` |
-| `<AAAA-MM-JJ>` | `<sha-court>` | `localhost` | `PASS` / `FAIL` / `BLOCKED` / `NOT_TESTED` | `<chemin PNG>` | `<clé localStorage observée>` |
+### Écart de méthode, assumé
 
-**Conclusion sur l'hypothèse :** `<CONFIRMÉE / FALSIFIÉE / INDÉTERMINÉE>`
+Les étapes 1 à 6 ci-dessus n'ont **pas** pu être exécutées telles quelles : `smoke-auth.spec.ts:9` impose `test.skip(!process.env.E2E_AUTH_TOKEN)`, donc le spec se skippe en silence en mode 2 (cf. défaut 8 du rapport). Quatre tests annoncés « 4 skipped », aucun exécuté.
+
+L'hypothèse a donc été tranchée **directement contre la bibliothèque installée**, ce qui est une preuve plus forte que le parcours applicatif : elle mesure la dérivation elle-même plutôt que ses conséquences.
+
+```
+node -e "createClient(url, key).auth.storageKey"   # @supabase/supabase-js@2.98.0
+```
+
+| Date | Environnement | `VITE_SUPABASE_URL` | Clé de l'app | Clé de la fixture | Verdict |
+|---|---|---|---|---|---|
+| 2026-08-09 | local | `http://127.0.0.1:54321` | `sb-127-auth-token` | `sb-127.0.0.1-auth-token` | **MISMATCH** |
+| 2026-08-09 | local | `http://localhost:54321` | `sb-localhost-auth-token` | `sb-localhost-auth-token` | MATCH |
+| 2026-08-09 | prod (dérivation) | `https://api.gerersci.fr` | `sb-api-auth-token` | `sb-api.gerersci.fr-auth-token` | **MISMATCH** |
+
+**Conclusion sur l'hypothèse : CONFIRMÉE.**
+
+`@supabase/supabase-js@2.98.0` dérive la clé du **premier segment** du hostname. `frontend/e2e/fixtures/auth.fixture.ts:65-66` et `frontend/e2e/production/auth.setup.ts:40-41` utilisent le hostname complet. Tout hôte comportant un point désaligne les deux, **production comprise** — ce qui explique le `sb-api-auth-token` codé en dur à `auth.fixture.ts:109`, trouvé empiriquement pour la production sans que la dérivation générale soit corrigée.
+
+### Conséquences retenues
+
+1. `VITE_SUPABASE_URL=http://localhost:54321` est conservé comme variable canonique dans `skills/local-environment/SKILL.md` et `validation/test-data/README.md`. Le contournement est **correctif**, pas seulement inoffensif.
+2. Le constat sur `auth.setup.ts:63-66,73` tient : il n'assert que sur sa propre clé et sur `fs.existsSync`, jamais sur un état authentifié rendu. Type d'anomalie : `manque de test`. **CONSTATER, NE PAS CORRIGER.**
+3. Les stratégies d'authentification de rang 2 (login par formulaire) restent immunisées : `billing-audit.spec.ts` a passé 11/11 sur la stack réelle le même jour.
+
+### Statut
+
+| Critère | Statut |
+|---|---|
+| Hypothèse tranchée | `PASS` — confirmée |
+| Parcours applicatif via fixture mode 2 | `BLOCKED` — bloqué par le défaut 8 |
