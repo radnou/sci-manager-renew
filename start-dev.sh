@@ -42,13 +42,13 @@ SUPABASE_DB_PORT=54322
 SUPABASE_STUDIO_PORT=54323
 MAILPIT_PORT=54324
 
-# Identifiants du Postgres local de la CLI Supabase. Construits à partir de
-# variables plutôt qu'inlinés dans l'URI : un URI `user:password@host` est
-# détecté comme fuite de credentials par les scanners de secrets, et il fige
-# des identifiants dans le dépôt.
-PG_USER="${SUPABASE_DB_USER:-postgres}"
-PG_PASSWORD="${SUPABASE_DB_PASSWORD:-postgres}"
-PG_DSN="postgresql://${PG_USER}:${PG_PASSWORD}@127.0.0.1:${SUPABASE_DB_PORT}/postgres"
+# Le DSN du Postgres local n'est PAS écrit ici. Aucun identifiant, pas même
+# une valeur par défaut : une affectation littérale nommée *_PASSWORD est
+# détectée comme secret codé en dur, et figer des identifiants dans le dépôt
+# est une mauvaise pratique même en local.
+# La CLI Supabase est la source de vérité : `supabase status -o env` expose
+# DB_URL. Surchargeable par SUPABASE_DB_URL si la CLI est indisponible.
+PG_DSN=""
 SUPABASE_DB_CONTAINER="supabase_db_sci-manager-renew"
 
 # ── Session tmux ─────────────────────────────────────────────
@@ -80,6 +80,19 @@ SHUTTING_DOWN=false
 USE_TMUX=false
 
 ERR_PATTERN='error|exception|traceback|ERR!|CRITICAL'
+
+# Résout le DSN une seule fois, à la demande. `supabase status` prend ~1 s :
+# on met en cache pour ne pas le rappeler à chaque cycle du moniteur.
+resolve_pg_dsn() {
+    [ -n "$PG_DSN" ] && { echo "$PG_DSN"; return 0; }
+    if [ -n "${SUPABASE_DB_URL:-}" ]; then
+        PG_DSN="$SUPABASE_DB_URL"
+    elif command -v supabase >/dev/null 2>&1; then
+        PG_DSN="$(cd "$ROOT" && supabase status -o env 2>/dev/null \
+                  | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' | head -1)"
+    fi
+    echo "$PG_DSN"
+}
 
 # Le mot de passe du compte de test est défini une seule fois, dans
 # supabase/seed.sql (`crypt('...', gen_salt('bf'))`). On le lit depuis là plutôt
@@ -211,8 +224,9 @@ port_proc() {
 }
 
 probe_postgres() {
-    if command -v psql >/dev/null 2>&1; then
-        psql "$PG_DSN" -tAc 'select 1' >/dev/null 2>&1 && echo ok || echo ko
+    local dsn; dsn="$(resolve_pg_dsn)"
+    if command -v psql >/dev/null 2>&1 && [ -n "$dsn" ]; then
+        psql "$dsn" -tAc 'select 1' >/dev/null 2>&1 && echo ok || echo ko
     elif command -v nc >/dev/null 2>&1; then
         nc -z 127.0.0.1 "$SUPABASE_DB_PORT" >/dev/null 2>&1 && echo ok || echo ko
     else
