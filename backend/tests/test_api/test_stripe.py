@@ -20,7 +20,9 @@ def test_create_checkout_session(client, auth_headers, monkeypatch):
         assert kwargs["metadata"]["plan_key"] == "starter"
         return SimpleNamespace(url="https://checkout.stripe.com/c/pay_test")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create
+    )
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
@@ -35,8 +37,10 @@ def test_create_checkout_session(client, auth_headers, monkeypatch):
 
 def test_create_checkout_session_without_url_fails(client, auth_headers, monkeypatch):
     monkeypatch.setattr(settings, "stripe_starter_price_id", "price_test")
+
     async def _no_url(**_kwargs):
         return SimpleNamespace(url=None)
+
     monkeypatch.setattr(
         "app.api.v1.stripe.stripe.checkout.Session.create_async",
         _no_url,
@@ -57,7 +61,9 @@ def test_create_checkout_session_stripe_error_fails(client, auth_headers, monkey
     async def fake_create(**_kwargs):
         raise stripe.error.StripeError("boom")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create
+    )
 
     response = client.post(
         "/api/v1/stripe/create-checkout-session",
@@ -76,7 +82,9 @@ def test_webhook_signature_invalid(client, monkeypatch):
             http_body=b"{}",
         )
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.Webhook.construct_event", fake_construct_event)
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.Webhook.construct_event", fake_construct_event
+    )
 
     response = client.post(
         "/api/v1/stripe/webhook",
@@ -99,7 +107,9 @@ def test_webhook_invalid_payload(client, monkeypatch):
     def fake_construct_event(*_args, **_kwargs):
         raise ValueError("payload is invalid")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.Webhook.construct_event", fake_construct_event)
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.Webhook.construct_event", fake_construct_event
+    )
 
     response = client.post(
         "/api/v1/stripe/webhook",
@@ -123,7 +133,9 @@ async def test_handle_event_checkout_completed_syncs_active(monkeypatch):
     await stripe_api._handle_event(
         {
             "type": "checkout.session.completed",
-            "data": {"object": {"payment_status": "paid", "client_reference_id": "user-1"}},
+            "data": {
+                "object": {"payment_status": "paid", "client_reference_id": "user-1"}
+            },
         }
     )
     assert captured["status_value"] == "active"
@@ -241,7 +253,9 @@ def test_sync_subscription_deleted_with_service_client(monkeypatch):
     assert writes["executed"] is True
 
 
-def test_get_subscription_returns_blocked_free_fallback(client, auth_headers, free_plan):
+def test_get_subscription_returns_blocked_free_fallback(
+    client, auth_headers, free_plan
+):
     """No subscription returns blocked FREE state (payment-first model)."""
     response = client.get("/api/v1/stripe/subscription", headers=auth_headers)
     assert response.status_code == 200
@@ -302,9 +316,13 @@ def test_guest_checkout_success(client, monkeypatch):
         assert kwargs["mode"] == "subscription"
         assert kwargs["metadata"]["plan_key"] == "starter"
         assert "client_reference_id" not in kwargs
-        return SimpleNamespace(url="https://checkout.stripe.com/c/pay_guest", id="cs_guest_123")
+        return SimpleNamespace(
+            url="https://checkout.stripe.com/c/pay_guest", id="cs_guest_123"
+        )
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create
+    )
 
     response = client.post(
         "/api/v1/stripe/create-guest-checkout",
@@ -330,7 +348,11 @@ def test_guest_checkout_feature_disabled(client, monkeypatch):
 @pytest.mark.asyncio
 async def test_webhook_guest_checkout_creates_user(monkeypatch):
     """checkout.session.completed with no client_reference_id triggers user creation."""
-    from app.api.v1.stripe import _find_user_by_email, _create_or_get_user, _update_subscription_metadata
+    from app.api.v1.stripe import (
+        _find_user_by_email,
+        _create_or_get_user,
+        _update_subscription_metadata,
+    )
 
     # Verify helpers are callable
     assert callable(_find_user_by_email)
@@ -349,11 +371,17 @@ async def test_webhook_guest_checkout_creates_user(monkeypatch):
         return "guest-user-42"
 
     def fake_update_metadata(sub_id, user_id, plan_key):
-        captured["metadata_update"] = {"sub_id": sub_id, "user_id": user_id, "plan_key": plan_key}
+        captured["metadata_update"] = {
+            "sub_id": sub_id,
+            "user_id": user_id,
+            "plan_key": plan_key,
+        }
 
     monkeypatch.setattr(stripe_api, "_sync_subscription", fake_sync)
     monkeypatch.setattr(stripe_api, "_create_or_get_user", fake_create_or_get)
-    monkeypatch.setattr(stripe_api, "_update_subscription_metadata", fake_update_metadata)
+    monkeypatch.setattr(
+        stripe_api, "_update_subscription_metadata", fake_update_metadata
+    )
 
     await stripe_api._handle_event(
         {
@@ -470,19 +498,58 @@ def test_webhook_ignored_when_stripe_disabled(client, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_find_user_by_email_found(monkeypatch):
-    """_find_user_by_email returns user id when email matches."""
+class _FakeUser:
+    def __init__(self, email, uid):
+        self.email = email
+        self.id = uid
 
-    class _User:
-        email = "found@example.com"
-        id = "uid-42"
 
-    class _ListResult:
-        users = [_User()]
+def _client_with_list_users(pages):
+    """Fake Supabase client dont `list_users` pagine comme la vraie API.
+
+    `pages` est une liste de listes d'utilisateurs, une entrée par page.
+    """
 
     class _Admin:
-        def list_users(self):
-            return _ListResult()
+        calls: list[tuple] = []
+
+        def list_users(self, page=None, per_page=None):
+            _Admin.calls.append((page, per_page))
+            idx = (page or 1) - 1
+            return pages[idx] if 0 <= idx < len(pages) else []
+
+    class _Auth:
+        admin = _Admin()
+
+    class _Client:
+        auth = _Auth()
+
+    return _Client()
+
+
+def test_find_user_by_email_found(monkeypatch):
+    """_find_user_by_email trouve l'utilisateur quand list_users renvoie une LISTE.
+
+    Régression du 2026-08-09 : supabase-auth 2.x renvoie `List[User]`, mais le
+    code faisait `getattr(result, "users", [])`. Sur une liste cet appel donne
+    toujours `[]`, donc la fonction ne trouvait jamais personne. Le test
+    précédent mockait un objet portant `.users` — une forme que la
+    bibliothèque ne produit pas — et validait donc le bug.
+    """
+    client = _client_with_list_users([[_FakeUser("found@example.com", "uid-42")]])
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: client)
+    assert stripe_api._find_user_by_email("found@example.com") == "uid-42"
+
+
+def test_find_user_by_email_accepts_legacy_object_shape(monkeypatch):
+    """Compatibilité ascendante si la bibliothèque revient à un objet `.users`."""
+
+    class _ListResult:
+        users = [_FakeUser("legacy@example.com", "uid-legacy")]
+
+    class _Admin:
+        def list_users(self, page=None, per_page=None):
+            return _ListResult() if (page or 1) == 1 else _ListResult.users[:0]
 
     class _Auth:
         admin = _Admin()
@@ -491,7 +558,29 @@ def test_find_user_by_email_found(monkeypatch):
         auth = _Auth()
 
     monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: _Client())
-    assert stripe_api._find_user_by_email("found@example.com") == "uid-42"
+    assert stripe_api._find_user_by_email("legacy@example.com") == "uid-legacy"
+
+
+def test_find_user_by_email_paginates(monkeypatch):
+    """L'utilisateur au-delà de la première page doit être trouvé.
+
+    `list_users()` pagine. Sans parcours des pages suivantes, tout compte
+    au-delà de la première page restait introuvable.
+    """
+    page_size = stripe_api._LIST_USERS_PAGE_SIZE
+    first_page = [_FakeUser(f"u{i}@example.com", f"uid-{i}") for i in range(page_size)]
+    second_page = [_FakeUser("late@example.com", "uid-late")]
+
+    client = _client_with_list_users([first_page, second_page])
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: client)
+    assert stripe_api._find_user_by_email("late@example.com") == "uid-late"
+
+
+def test_find_user_by_email_is_case_insensitive(monkeypatch):
+    """GoTrue normalise les emails : la comparaison doit faire de même."""
+    client = _client_with_list_users([[_FakeUser("Mixed.Case@Example.COM", "uid-7")]])
+    monkeypatch.setattr(stripe_api, "get_supabase_service_client", lambda: client)
+    assert stripe_api._find_user_by_email("  mixed.case@example.com ") == "uid-7"
 
 
 def test_find_user_by_email_not_found(monkeypatch):
@@ -530,7 +619,9 @@ def test_find_user_by_email_exception(monkeypatch):
 
 def test_create_or_get_user_existing(monkeypatch):
     """_create_or_get_user returns existing user id."""
-    monkeypatch.setattr(stripe_api, "_find_user_by_email", lambda _email: "existing-uid")
+    monkeypatch.setattr(
+        stripe_api, "_find_user_by_email", lambda _email: "existing-uid"
+    )
     assert stripe_api._create_or_get_user("x@example.com") == "existing-uid"
 
 
@@ -644,6 +735,7 @@ def test_sync_subscription_exception_path(monkeypatch):
     monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
 
     import pytest as _pytest
+
     with _pytest.raises(RuntimeError, match="db down"):
         stripe_api._sync_subscription(
             {"client_reference_id": "user-1", "customer": "cus_1"},
@@ -660,6 +752,7 @@ def test_sync_subscription_deleted_exception_path(monkeypatch):
     monkeypatch.setattr(stripe_api, "get_supabase_service_client", _boom)
 
     import pytest as _pytest
+
     with _pytest.raises(RuntimeError, match="db down"):
         stripe_api._sync_subscription_deleted({"id": "sub_99", "customer": "cus_99"})
 
@@ -763,7 +856,9 @@ def test_guest_checkout_stripe_error(client, monkeypatch):
     async def fake_create(**_kwargs):
         raise stripe.error.StripeError("boom")
 
-    monkeypatch.setattr("app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create)
+    monkeypatch.setattr(
+        "app.api.v1.stripe.stripe.checkout.Session.create_async", fake_create
+    )
 
     response = client.post(
         "/api/v1/stripe/create-guest-checkout",
@@ -779,6 +874,7 @@ def test_guest_checkout_no_url(client, monkeypatch):
 
     async def _no_url_guest(**_kwargs):
         return SimpleNamespace(url=None, id="cs_no_url")
+
     monkeypatch.setattr(
         "app.api.v1.stripe.stripe.checkout.Session.create_async",
         _no_url_guest,

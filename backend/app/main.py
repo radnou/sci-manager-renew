@@ -217,8 +217,19 @@ async def lifespan(app: FastAPI):
     import stripe
 
     stripe.max_network_retries = 2
+    # allow_sync_methods vaut False par défaut sur HTTPXClient. Sans ce mot-clé,
+    # TOUT appel Stripe synchrone lève
+    #   RuntimeError: HTTPXClient was initialized with allow_sync_methods=False
+    # Or le code en compte plusieurs, sur des chemins clients critiques :
+    #   - api/v1/stripe.py: cancel_subscription -> stripe.Subscription.modify
+    #   - api/v1/stripe.py: request_refund      -> stripe.Charge.list / Refund.create
+    #   - api/v1/stripe.py: _update_subscription_metadata (checkout invité)
+    # Résiliation et remboursement étaient donc inopérants, le remboursement
+    # portant la garantie 30 jours annoncée en CGV (art. L221-28).
+    # Constaté le 2026-08-09. Les appels asynchrones restent inchangés.
     stripe.default_http_client = stripe.HTTPXClient(
         timeout=settings.stripe_request_timeout_seconds,
+        allow_sync_methods=True,
     )
 
     # Configurer les signal handlers pour graceful shutdown
