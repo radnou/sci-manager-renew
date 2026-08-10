@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from app.core.config import Environment, settings
+from app.core.lifecycle import is_shutting_down
 from app.core.entitlements import PlanKey, resolve_price_id_for_plan
 from app.core.supabase_client import get_supabase_service_client
 
@@ -204,18 +205,70 @@ async def feature_flags():
     }
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  SÉMANTIQUE DES SONDES
+#
+#  Liveness  = « le processus est-il récupérable ? »  Non -> redémarre-moi.
+#  Readiness = « puis-je servir du trafic ? »          Non -> retire-moi du LB.
+#
+#  Deux défauts corrigés le 2026-08-10, qui rendaient la surface de santé
+#  fausse dans les deux sens :
+#
+#  1. En mode maintenance, `maintenance_middleware` n'exemptait que
+#     /api/v1/health*, chemins inexistants. /health/live prenait donc un 503
+#     alors que l'application allait bien, et le healthcheck Docker
+#     (docker-compose.yml) marquait le conteneur unhealthy à chaque
+#     maintenance.
+#  2. Pendant un arrêt, `logging_middleware` rejette tout sauf /health*.
+#     Les deux sondes répondaient donc 200 pendant que 100 % du trafic
+#     partait en 503 : un backend bloqué en shutdown se déclarait sain et
+#     n'était jamais redémarré.
+#
+#  Comportement désormais :
+#                      | liveness | readiness
+#    nominal           |   200    |   200
+#    maintenance       |   200    |   503   (processus sain, ne sert pas)
+#    arrêt en cours    |   503    |   503   (redémarre-moi)
+# ═══════════════════════════════════════════════════════════════════
+
+
 @router.get("/health/live")
 async def liveness():
+    """Sonde de vivacité. 503 en arrêt pour qu'un orchestrateur redémarre."""
+    if is_shutting_down():
+        return JSONResponse(
+            status_code=503,
+            content={"status": "shutting_down", "alive": False},
+        )
     return {"status": "alive"}
 
 
 @router.get("/health")
 async def health():
+    if is_shutting_down():
+        return JSONResponse(
+            status_code=503,
+            content={"status": "shutting_down"},
+        )
     return {"status": "ok"}
 
 
 @router.get("/health/ready")
 async def readiness():
+    # Un processus qui s'arrête ou qui est en maintenance ne sert pas de
+    # trafic, quel que soit l'état de ses dépendances. On répond avant même
+    # de les interroger : inutile de payer 500 ms de sondes réseau.
+    if is_shutting_down():
+        return JSONResponse(
+            status_code=503,
+            content={"status": "shutting_down", "ready_for_traffic": False},
+        )
+    if settings.maintenance_mode:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "maintenance", "ready_for_traffic": False},
+        )
+
     checks = {
         "database": await _check_database(),
         "supabase_storage": await _check_supabase_storage(),
