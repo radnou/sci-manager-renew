@@ -6,8 +6,23 @@
 	import { formatEur } from '$lib/high-value/formatters';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { FileText, Calculator, Download, Loader2, AlertTriangle } from 'lucide-svelte';
+	import { totalBilan, postesBilan } from '$lib/high-value/fiscalite';
 
 	const sci = getContext<SCIDetail>('sci');
+
+	// Libellés des postes de bilan. La clé `total` renvoyée par l'API est
+	// volontairement absente : `postesBilan` l'exclut, et le total est affiché
+	// séparément par `totalBilan`.
+	const libelles: Record<string, string> = {
+		immobilisations: 'Immobilisations',
+		creances: 'Créances clients',
+		tresorerie: 'Trésorerie',
+		travaux_en_cours: 'Travaux en cours',
+		capital: 'Capital social',
+		resultat: 'Résultat de l’exercice',
+		emprunts: 'Emprunts'
+	};
+
 
 	let sciId = $derived(page.params.sciId!);
 	let annee = $state(new Date().getFullYear() - 1);
@@ -53,33 +68,7 @@
 		}
 	}
 
-	function bilanItems(bilan: any): Array<{ label: string; value: number }> {
-		const libelles: Record<string, string> = {
-			immobilisations: 'Immobilisations',
-			travaux_en_cours: 'Travaux en cours',
-			creances_clients: 'Créances clients',
-			tresorerie: 'Trésorerie',
-			capital_social: 'Capital social',
-			reserves: 'Réserves',
-			resultat: 'Résultat de l\'exercice',
-			emprunts: 'Emprunts',
-			fournisseurs: 'Dettes fournisseurs',
-			autres_dettes: 'Autres dettes',
-		};
-		return Object.entries(bilan)
-			.filter(([, v]) => v != null && v !== 0)
-			.map(([k, v]) => ({
-				label: libelles[k] ?? k,
-				value: v as number
-			}))
-			.sort((a, b) => b.value - a.value);
-	}
 
-	function bilanTotal(bilan: any): number {
-		return Object.values(bilan)
-			.filter((v): v is number => v != null)
-			.reduce((sum, v) => sum + v, 0);
-	}
 </script>
 
 <svelte:head><title>Déclaration 2065 | {sci.nom} | GérerSCI</title></svelte:head>
@@ -184,7 +173,7 @@
 					<h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
 						Bilan Actif
 					</h3>
-					{#each bilanItems(declaration.actif as any) as item}
+					{#each postesBilan(declaration.actif as any, libelles) as item}
 						<div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
 							<span class="text-sm text-slate-700 dark:text-slate-300">{item.label}</span>
 							<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{formatEur(item.value)}</span>
@@ -192,7 +181,7 @@
 					{/each}
 					<div class="mt-2 flex items-center justify-between border-t border-slate-300 pt-2 dark:border-slate-600">
 						<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Total Actif</span>
-						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(bilanTotal(declaration.actif as any))}</span>
+						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(totalBilan(declaration.actif as any))}</span>
 					</div>
 				</div>
 
@@ -201,7 +190,7 @@
 					<h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
 						Bilan Passif
 					</h3>
-					{#each bilanItems(declaration.passif as any) as item}
+					{#each postesBilan(declaration.passif as any, libelles) as item}
 						<div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
 							<span class="text-sm text-slate-700 dark:text-slate-300">{item.label}</span>
 							<span class="text-sm font-medium text-slate-900 dark:text-slate-100">{formatEur(item.value)}</span>
@@ -209,7 +198,7 @@
 					{/each}
 					<div class="mt-2 flex items-center justify-between border-t border-slate-300 pt-2 dark:border-slate-600">
 						<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Total Passif</span>
-						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(bilanTotal(declaration.passif as any))}</span>
+						<span class="text-sm font-bold text-slate-900 dark:text-slate-100">{formatEur(totalBilan(declaration.passif as any))}</span>
 					</div>
 				</div>
 			</div>

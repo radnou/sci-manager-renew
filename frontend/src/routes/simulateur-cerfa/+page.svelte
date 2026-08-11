@@ -4,6 +4,7 @@
 	import EmailCapture from '$lib/components/EmailCapture.svelte';
 	import { ArrowRight, Calculator, TrendingDown, TrendingUp, Info } from 'lucide-svelte';
 	import { trackEvent, EVENTS } from '$lib/analytics';
+	import { calculerDeficitFoncier } from '$lib/high-value/fiscalite';
 
 	// Form state
 	let loyersAnnuels = $state(0);
@@ -19,12 +20,18 @@
 	const totalCharges = $derived(chargesDeductibles + interetsEmprunt + travaux);
 	const resultatReel = $derived(loyersAnnuels - totalCharges);
 
-	// Deficit foncier: plafond 10 700 EUR imputable sur revenu global (hors interets)
-	const chargesHorsInterets = $derived(chargesDeductibles + travaux);
-	const resultatHorsInterets = $derived(loyersAnnuels - chargesHorsInterets);
-	const deficitImputable = $derived(
-		resultatReel < 0 ? Math.max(resultatHorsInterets < 0 ? resultatHorsInterets : 0, -10700) : 0
+	// Deficit foncier — CGI art. 156-I-3°. L'ordre d'imputation est imposé par
+	// la loi : les interets s'imputent d'abord sur les loyers bruts, puis les
+	// autres charges sur le solde. Le calcul precedent inversait cet ordre et
+	// sous-evaluait le deficit imputable du montant exact des interets.
+	// Extrait dans $lib/high-value/fiscalite.ts, couvert par fiscalite.spec.ts.
+	const deficit = $derived(
+		calculerDeficitFoncier({ loyersAnnuels, chargesDeductibles, interetsEmprunt, travaux })
 	);
+	// Negatif, pour rester compatible avec l'affichage existant.
+	const deficitImputable = $derived(-deficit.deficitImputableRevenuGlobal);
+	const deficitInteretsReportable = $derived(deficit.deficitInteretsReportable);
+	const deficitExcedentaireReportable = $derived(deficit.deficitExcedentaireReportable);
 
 	// Resultat selon regime choisi
 	const resultat = $derived(regime === 'micro' ? microFoncier : resultatReel);
@@ -365,10 +372,17 @@
 									<strong class="text-rose-600 dark:text-rose-400">{formatCurrency(deficitImputable)}</strong>
 									(plafond 10 700 &euro;)
 								</p>
-								{#if resultatReel < 0 && Math.abs(resultatReel) > 10700}
+								{#if deficitExcedentaireReportable > 0}
 									<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-										Le surplus de <strong class="text-rose-600 dark:text-rose-400">{formatCurrency(Math.abs(resultatReel) - 10700)}</strong> est reportable
-										sur vos revenus fonciers des 10 années suivantes.
+										Le surplus de <strong class="text-rose-600 dark:text-rose-400">{formatCurrency(deficitExcedentaireReportable)}</strong>,
+										au-delà du plafond, est reportable sur vos revenus fonciers des 10 années suivantes.
+									</p>
+								{/if}
+								{#if deficitInteretsReportable > 0}
+									<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+										Les <strong class="text-rose-600 dark:text-rose-400">{formatCurrency(deficitInteretsReportable)}</strong>
+										de déficit provenant des intérêts d'emprunt ne s'imputent pas sur le revenu global :
+										ils sont reportables 10 ans sur vos seuls revenus fonciers.
 									</p>
 								{/if}
 							{/if}
