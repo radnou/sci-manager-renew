@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { BailEmbed, LoyerEmbed, CongeType, RegularisationResult, AvenantBailPayload } from '$lib/api';
 	import { formatEur, formatFrDate } from '$lib/high-value/formatters';
-	import { updateLocataire, cloturerBail, donnerConge, fetchRegularisation, confirmRegularisation, creerAvenant, updateBail, type ClotureBailPayload } from '$lib/api';
+	import { createLocataire, attachLocataireToBail, updateLocataire, cloturerBail, donnerConge, fetchRegularisation, confirmRegularisation, creerAvenant, updateBail, type ClotureBailPayload } from '$lib/api';
 	import { addToast } from '$lib/components/ui/toast/toast-store';
 	import { Plus, Pencil, Users, Calendar, History, Mail, Phone, CheckCircle, X, Save, Lock, AlertTriangle, RefreshCw, Calculator, FileSignature, Loader2, ClipboardCheck, Upload, FileText } from 'lucide-svelte';
 	import BailModal from '$lib/components/fiche-bien/modals/BailModal.svelte';
@@ -134,6 +134,61 @@
 			addToast({ title: 'Erreur lors de la mise à jour', variant: 'error' });
 		} finally {
 			savingLocataire = false;
+		}
+	}
+
+	// ── Ajout d'un locataire ─────────────────
+	// Sans ceci, un bail créé hors du wizard d'onboarding ne pouvait JAMAIS
+	// recevoir de locataire : la génération de quittance répondait « Rattachez
+	// un locataire au bail actif » sans qu'aucune interface ne le permette.
+	let showAddLocataire = $state(false);
+	let addLocNom = $state('');
+	let addLocEmail = $state('');
+	let addLocTelephone = $state('');
+	let addingLocataire = $state(false);
+
+	function openAddLocataire() {
+		addLocNom = '';
+		addLocEmail = '';
+		addLocTelephone = '';
+		showAddLocataire = true;
+	}
+
+	function cancelAddLocataire() {
+		showAddLocataire = false;
+	}
+
+	async function submitAddLocataire() {
+		const nom = addLocNom.trim();
+		if (!nom) {
+			addToast({ title: 'Le nom du locataire est obligatoire', variant: 'error' });
+			return;
+		}
+		if (!bail?.id) {
+			addToast({ title: 'Aucun bail actif auquel rattacher le locataire', variant: 'error' });
+			return;
+		}
+		addingLocataire = true;
+		try {
+			const locataire = await createLocataire({
+				id_bien: bienId,
+				nom,
+				email: addLocEmail.trim() || undefined,
+				telephone: addLocTelephone.trim() || undefined,
+				date_debut: bail.date_debut
+			} as any);
+			if (!locataire?.id) throw new Error('Création du locataire sans identifiant');
+			await attachLocataireToBail(sciId, String(bienId), String(bail.id), String(locataire.id));
+			addToast({ title: 'Locataire rattaché au bail', variant: 'success' });
+			showAddLocataire = false;
+			onRefresh();
+		} catch (err: any) {
+			addToast({
+				title: err?.message ?? 'Impossible de rattacher le locataire',
+				variant: 'error'
+			});
+		} finally {
+			addingLocataire = false;
 		}
 	}
 
@@ -539,15 +594,107 @@
 
 			<!-- Locataires Cards -->
 			<div>
-				<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
-					{bail.locataires.length > 1 ? 'Locataires (colocation)' : 'Locataire'}
-				</p>
-				{#if bail.locataires.length === 0}
-					<div class="mt-2 rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
-						<Users class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
-						<p class="text-sm text-slate-400 dark:text-slate-500">Aucun locataire rattaché</p>
+				<div class="flex items-center justify-between">
+					<p class="text-xs font-medium text-slate-500 dark:text-slate-400">
+						{bail.locataires.length > 1 ? 'Locataires (colocation)' : 'Locataire'}
+					</p>
+					{#if isGerant && !showAddLocataire}
+						<button
+							type="button"
+							onclick={openAddLocataire}
+							class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+						>
+							<Plus class="h-3.5 w-3.5" aria-hidden="true" />
+							Ajouter un locataire
+						</button>
+					{/if}
+				</div>
+
+				{#if showAddLocataire}
+					<div class="mt-3 rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+						<div class="mb-3 flex items-center justify-between">
+							<p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Nouveau locataire</p>
+							<button
+								type="button"
+								onclick={cancelAddLocataire}
+								aria-label="Annuler l'ajout du locataire"
+								class="rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+							>
+								<X class="h-4 w-4" aria-hidden="true" />
+							</button>
+						</div>
+						<div class="grid gap-3 sm:grid-cols-3">
+							<label class="block">
+								<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Nom<span aria-hidden="true"> *</span></span>
+								<input
+									type="text"
+									bind:value={addLocNom}
+									required
+									class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+								/>
+							</label>
+							<label class="block">
+								<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Email</span>
+								<input
+									type="email"
+									bind:value={addLocEmail}
+									class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+								/>
+							</label>
+							<label class="block">
+								<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Téléphone</span>
+								<input
+									type="tel"
+									bind:value={addLocTelephone}
+									class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+								/>
+							</label>
+						</div>
+						<div class="mt-3 flex justify-end gap-2">
+							<button
+								type="button"
+								onclick={cancelAddLocataire}
+								class="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+							>
+								Annuler
+							</button>
+							<button
+								type="button"
+								onclick={submitAddLocataire}
+								disabled={addingLocataire || !addLocNom.trim()}
+								class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+							>
+								{#if addingLocataire}
+									<Loader2 class="h-4 w-4 animate-spin" aria-hidden="true" />
+									Rattachement...
+								{:else}
+									<Save class="h-4 w-4" aria-hidden="true" />
+									Rattacher au bail
+								{/if}
+							</button>
+						</div>
 					</div>
-				{:else}
+				{/if}
+
+				{#if bail.locataires.length === 0 && !showAddLocataire}
+					<div class="mt-2 rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
+						<Users class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" aria-hidden="true" />
+						<p class="text-sm text-slate-400 dark:text-slate-500">Aucun locataire rattaché</p>
+						{#if isGerant}
+							<button
+								type="button"
+								onclick={openAddLocataire}
+								class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+							>
+								<Plus class="h-4 w-4" aria-hidden="true" />
+								Ajouter un locataire
+							</button>
+							<p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+								Un locataire est requis pour générer une quittance.
+							</p>
+						{/if}
+					</div>
+				{:else if bail.locataires.length > 0}
 					<div class="mt-3 space-y-3">
 						{#each bail.locataires as loc (loc.id)}
 							<div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
